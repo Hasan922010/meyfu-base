@@ -1,0 +1,12 @@
+import type { ReactElement } from 'react';
+
+import { AppProviders } from '@/app/providers';
+import { AppRouter } from '@/app/router';
+
+export function App(): ReactElement {
+  return (
+    <AppProviders>
+      <AppRouter />
+    </AppProviders>
+  );
+}

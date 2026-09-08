@@ -1,0 +1,55 @@
+{
+  "app": {
+    "name": "MeyFu",
+    "tagline": "Distribution & sales management"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "phone": "Phone number",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "wrongCredentials": "Wrong phone or password"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "sales": "Sales",
+    "orders": "Orders",
+    "clients": "Clients",
+    "warehouse": "Warehouse",
+    "settings": "Settings",
+    "routes": "Routes",
+    "dayClose": "Day close",
+    "expenses": "Expenses",
+    "debts": "Debts",
+    "finance": "Finance",
+    "staff": "Staff",
+    "distributors": "Distributors 360°",
+    "payroll": "Payroll",
+    "reports": "Reports",
+    "ocr": "Invoice scan",
+    "system": "System health",
+    "refdata": "Reference data"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome",
+    "mvpNote": "MVP stage 1 — foundation is ready. Modules will be added in later stages."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "online": "Online",
+    "offline": "Offline",
+    "menu": "Menu",
+    "close": "Close"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This address doesn't exist or has moved.",
+    "home": "Back to home"
+  }
+}
