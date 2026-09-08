@@ -11,6 +11,12 @@ jurnallari **o'zgarmas** (append-only) — xato faqat tuzatuvchi yozuv bilan to'
 
 To'liq spetsifikatsiya: **[`CLAUDE.md`](./CLAUDE.md)** · v4 qo'shimchalari: [`docs/v4.md`](./docs/v4.md)
 
+**Foydalanish qo'llanmasi (rol bo'yicha):** [`docs/qollanma.md`](./docs/qollanma.md) —
+[super admin / menejer](./docs/qollanma-admin.md) ·
+[omborchi](./docs/qollanma-omborchi.md) ·
+[tarqatuvchi](./docs/qollanma-tarqatuvchi.md) ·
+[buxgalter](./docs/qollanma-buxgalter.md)
+
 ---
 
 ## Nima qiladi
