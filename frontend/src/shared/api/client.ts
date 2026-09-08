@@ -73,11 +73,37 @@ api.interceptors.response.use(
   },
 );
 
+const CONN_REFUSED_RE = /ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i;
+
 export function extractApiError(error: unknown): string {
   if (error instanceof AxiosError) {
-    const body = error.response?.data as ApiErrorBody | undefined;
-    if (body && body.success === false) {
+    // 1. Serverdan javob umuman kelmadi — backend o'chiq, tarmoq yo'q yoki timeout
+    if (!error.response) {
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        return "Server javob bermadi (vaqt tugadi). Birozdan so'ng qayta urinib ko'ring.";
+      }
+      return "Serverga ulanib bo'lmadi. Internet aloqasini yoki server ishlayotganini tekshiring.";
+    }
+
+    // 2. Backendning standart xato formati — { success: false, error: { message } }
+    const body = error.response.data as ApiErrorBody | string | undefined;
+    if (typeof body === 'object' && body?.success === false && body.error?.message) {
       return body.error.message;
+    }
+
+    // 3. Javob keldi, lekin standart formatda emas (proxy/gateway/HTML yoki matn)
+    const status = error.response.status;
+    if (typeof body === 'string' && CONN_REFUSED_RE.test(body)) {
+      return "Serverga ulanib bo'lmadi. Server ishga tushirilganini tekshiring.";
+    }
+    if (status === 502 || status === 503 || status === 504) {
+      return "Server vaqtincha ishlamayapti. Birozdan so'ng qayta urinib ko'ring.";
+    }
+    if (status >= 500) {
+      return "Server bilan bog'lanishda xatolik. Birozdan so'ng qayta urinib ko'ring.";
+    }
+    if (status === 404) {
+      return "So'ralgan manzil topilmadi.";
     }
     return error.message;
   }

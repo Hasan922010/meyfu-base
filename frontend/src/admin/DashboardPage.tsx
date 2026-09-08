@@ -29,7 +29,11 @@ export function DashboardPage(): ReactElement {
     <div className="space-y-5">
       <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
 
-      <DataState isLoading={query.isLoading} isError={query.isError}>
+      <DataState
+        isLoading={query.isLoading}
+        isError={query.isError}
+        error={query.error}
+      >
         {query.data && (
           <>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

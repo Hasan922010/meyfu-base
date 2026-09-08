@@ -45,6 +45,7 @@
     "retry": "Retry",
     "online": "Online",
     "offline": "Offline",
+    "serverDown": "No connection to server",
     "menu": "Menu",
     "close": "Close"
   },
