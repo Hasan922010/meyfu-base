@@ -1,0 +1,55 @@
+{
+  "app": {
+    "name": "MeyFu",
+    "tagline": "Tarqatish va sotuv boshqaruvi"
+  },
+  "auth": {
+    "login": "Kirish",
+    "logout": "Chiqish",
+    "phone": "Telefon raqami",
+    "password": "Parol",
+    "signIn": "Tizimga kirish",
+    "signingIn": "Kirilmoqda...",
+    "wrongCredentials": "Telefon yoki parol noto'g'ri"
+  },
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "products": "Mahsulotlar",
+    "sales": "Sotuvlar",
+    "orders": "Buyurtmalar",
+    "clients": "Mijozlar",
+    "warehouse": "Ombor",
+    "settings": "Sozlamalar",
+    "routes": "Marshrutlar",
+    "dayClose": "Kunlik hisob",
+    "expenses": "Xarajatlar",
+    "debts": "Qarzdorlik",
+    "finance": "Moliya",
+    "staff": "Xodimlar",
+    "distributors": "Tarqatuvchilar 360°",
+    "payroll": "Maosh",
+    "reports": "Hisobotlar",
+    "ocr": "Naklit skani",
+    "system": "Tizim salomatligi",
+    "refdata": "Ma'lumotnomalar"
+  },
+  "dashboard": {
+    "title": "Boshqaruv paneli",
+    "welcome": "Xush kelibsiz",
+    "mvpNote": "MVP 1-bosqich — poydevor tayyor. Keyingi bosqichlarda modullar qo'shiladi."
+  },
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik",
+    "retry": "Qayta urinish",
+    "online": "Onlayn",
+    "offline": "Oflayn",
+    "menu": "Menyu",
+    "close": "Yopish"
+  },
+  "notFound": {
+    "title": "Sahifa topilmadi",
+    "body": "Bunday manzil mavjud emas yoki ko'chirilgan.",
+    "home": "Bosh sahifaga"
+  }
+}

@@ -1,0 +1,12 @@
+-r base.txt
+
+# Testing
+pytest==8.3.4
+pytest-django==4.9.0
+pytest-cov==6.0.0
+pytest-asyncio==0.25.3
+factory_boy==3.3.1
+
+# Tooling
+ruff==0.9.3
+django-extensions==3.2.3
