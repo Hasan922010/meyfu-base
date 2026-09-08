@@ -114,6 +114,9 @@ class LoginSerializer(TokenObtainPairSerializer):
     """JWT + foydalanuvchi ma'lumoti bitta javobda."""
 
     username_field = "phone"
+    default_error_messages = {
+        "no_active_account": "Telefon raqami yoki parol noto'g'ri.",
+    }
 
     @classmethod
     def get_token(cls, user):
@@ -123,6 +126,10 @@ class LoginSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        # Telefon raqamini bazadagi ko'rinishga keltiramiz — foydalanuvchi
+        # probel bilan yoki "+998" siz yozsa ham kira olsin (CLAUDE.md 20).
+        raw = attrs.get(self.username_field, "")
+        attrs[self.username_field] = User.normalize_phone(raw)
         data = super().validate(attrs)
         return {
             "success": True,

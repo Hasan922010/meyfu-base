@@ -69,8 +69,13 @@ class User(AbstractUser):
     @staticmethod
     def normalize_phone(phone: str) -> str:
         cleaned = _PHONE_RE.sub("", phone or "").strip()
-        if cleaned and not cleaned.startswith("+") and cleaned.startswith("998"):
-            cleaned = "+" + cleaned
+        if not cleaned or cleaned.startswith("+"):
+            return cleaned
+        if cleaned.startswith("998"):
+            return "+" + cleaned
+        # Lokal 9 xonali raqam (masalan 901234567) → +998 bilan to'ldiramiz
+        if len(cleaned) == 9:
+            return "+998" + cleaned
         return cleaned
 
     def save(self, *args, **kwargs):
