@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { logout } from '@/shared/api/auth';
 import { LanguageSwitch } from '@/shared/components/LanguageSwitch';
@@ -30,6 +30,10 @@ export function ProfilePage(): ReactElement {
 
       <TelegramConnect />
       <LanguageSwitch />
+
+      <Link to="/m/help" className="btn flex w-full items-center justify-center gap-2">
+        📖 Foydalanish yo'riqnomasi
+      </Link>
 
       {isAdmin && (
         <button

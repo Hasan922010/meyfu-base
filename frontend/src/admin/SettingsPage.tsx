@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 
 import { LanguageSwitch } from '@/shared/components/LanguageSwitch';
 import { TelegramConnect } from '@/shared/components/TelegramConnect';
@@ -31,6 +32,12 @@ export function SettingsPage(): ReactElement {
       <div className="max-w-lg space-y-4">
         <TelegramConnect />
         <LanguageSwitch />
+        <Link
+          to="/admin/help"
+          className="block rounded-xl bg-white p-4 text-sm font-medium shadow-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
+        >
+          📖 Foydalanish yo'riqnomasi — rol bo'yicha
+        </Link>
       </div>
 
       <CompanySettingsForm />
