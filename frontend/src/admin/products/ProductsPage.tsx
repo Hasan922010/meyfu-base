@@ -53,6 +53,7 @@ export function ProductsPage(): ReactElement {
         <DataState
           isLoading={query.isLoading}
           isError={query.isError}
+          error={query.error}
           isEmpty={!query.isLoading && rows.length === 0}
           emptyText="Mahsulot topilmadi"
         >
