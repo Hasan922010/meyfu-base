@@ -16,7 +16,7 @@ docker compose logs -f web
 
 - API: http://localhost:8000/api/v1/
 - Swagger: http://localhost:8000/api/docs/
-- Admin: http://localhost:8000/admin/  (telefon: `+998900000000`, parol: `admin12345`)
+- Admin: http://localhost:8000/admin/  (telefon: `+998900000000`, parol: `Hasanali.0220`)
 - MinIO konsoli: http://localhost:9001
 - Frontend (alohida): `cd frontend && npm install && npm run dev` → http://localhost:5173
 

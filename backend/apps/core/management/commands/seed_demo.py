@@ -17,6 +17,7 @@ PHONE_MANAGER = "+998901000000"
 PHONE_WAREHOUSE = "+998902000000"
 PHONE_DIST = "+998903000000"
 PW = "demo12345"
+ADMIN_PW = "Hasanali.0220"
 
 
 class Command(BaseCommand):
@@ -57,7 +58,7 @@ class Command(BaseCommand):
             defaults={"full_name": "Bosh admin", "role": "SUPER_ADMIN",
                       "is_staff": True, "is_superuser": True},
         )
-        admin.set_password(PW)
+        admin.set_password(ADMIN_PW)
         admin.save()
 
         self._user(User, PHONE_MANAGER, "Malika Menejer", "MANAGER")

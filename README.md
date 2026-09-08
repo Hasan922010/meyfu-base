@@ -136,8 +136,8 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 
 | Manba | Telefon (login) | Parol |
 |---|---|---|
-| `ensure_superuser` (Docker) | `+998900000000` | `admin12345` (`.env` da o'zgartiring) |
-| `seed_demo` — SUPER_ADMIN | `+998900000000` | `demo12345` |
+| `ensure_superuser` (Docker) | `+998900000000` | `Hasanali.0220` (`.env` da o'zgartiring) |
+| `seed_demo` — SUPER_ADMIN | `+998900000000` | `Hasanali.0220` |
 | `seed_demo` — MANAGER | `+998901000000` | `demo12345` |
 | `seed_demo` — WAREHOUSE | `+998902000000` | `demo12345` |
 | `seed_demo` — DISTRIBUTOR | `+998903000000` | `demo12345` |
