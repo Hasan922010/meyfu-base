@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options) -> None:
         phone = os.environ.get("DJANGO_SUPERUSER_PHONE", "+998900000000")
-        password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "admin12345")
+        password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "Hasanali.0220")
         full_name = os.environ.get("DJANGO_SUPERUSER_NAME", "Bosh admin")
 
         normalized = User.normalize_phone(phone)
