@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  BookOpen,
   ChartColumn,
   ClipboardList,
   Coins,
@@ -33,6 +34,7 @@ const LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
   { to: '/m/report', label: 'Mening hisobotim', Icon: ChartColumn },
   { to: '/m/payroll', label: 'Mening maoshim', Icon: Coins },
   { to: '/m/sync', label: 'Sinxronizatsiya', Icon: RefreshCw },
+  { to: '/m/help', label: "Yo'riqnoma", Icon: BookOpen },
 ];
 
 export function MobileHomePage(): ReactElement {

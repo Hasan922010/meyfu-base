@@ -31,7 +31,8 @@
     "reports": "Hisobotlar",
     "ocr": "Naklit skani",
     "system": "Tizim salomatligi",
-    "refdata": "Ma'lumotnomalar"
+    "refdata": "Ma'lumotnomalar",
+    "help": "Yo'riqnoma"
   },
   "dashboard": {
     "title": "Boshqaruv paneli",

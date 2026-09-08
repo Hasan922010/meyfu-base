@@ -31,7 +31,8 @@
     "reports": "Reports",
     "ocr": "Invoice scan",
     "system": "System health",
-    "refdata": "Reference data"
+    "refdata": "Reference data",
+    "help": "Guide"
   },
   "dashboard": {
     "title": "Dashboard",

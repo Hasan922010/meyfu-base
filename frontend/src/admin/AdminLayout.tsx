@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  BookOpen,
   CalendarCheck,
   ClipboardList,
   Coins,
@@ -53,6 +54,7 @@ const NAV: { to: string; key: string; end: boolean; Icon: LucideIcon }[] = [
   { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity },
   { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library },
   { to: '/admin/settings', key: 'nav.settings', end: false, Icon: Settings },
+  { to: '/admin/help', key: 'nav.help', end: false, Icon: BookOpen },
 ];
 
 export function AdminLayout(): ReactElement {

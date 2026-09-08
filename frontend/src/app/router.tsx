@@ -22,6 +22,7 @@ import { StaffPage } from '@/admin/staff/StaffPage';
 import { SystemHealthPage } from '@/admin/system/SystemHealthPage';
 import { WarehousePage } from '@/admin/warehouse/WarehousePage';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { GuidePage } from '@/shared/help/GuidePage';
 import { DayCloseWizard } from '@/mobile/DayCloseWizard';
 import { DebtCollectPage } from '@/mobile/DebtCollectPage';
 import { MobileAdminDayClose } from '@/mobile/admin/MobileAdminDayClose';
@@ -135,6 +136,7 @@ const router = createBrowserRouter([
       { path: 'system', element: <SystemHealthPage /> },
       { path: 'refdata', element: <RefDataPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'help', element: <GuidePage /> },
     ],
   },
   {
@@ -172,6 +174,7 @@ const router = createBrowserRouter([
       { path: 'scan', element: <ScanInvoicePage /> },
       { path: 'sync', element: <SyncPage /> },
       { path: 'profile', element: <ProfilePage /> },
+      { path: 'help', element: <GuidePage /> },
     ],
   },
   { path: '*', element: <NotFound /> },

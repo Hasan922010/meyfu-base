@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Boxes, PackagePlus, ScanLine, type LucideIcon } from 'lucide-react';
+import { BookOpen, Boxes, PackagePlus, ScanLine, type LucideIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +10,7 @@ const LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
   { to: '/m/receive', label: 'Tovar qabuli', Icon: PackagePlus },
   { to: '/m/scan', label: 'Naklit skani', Icon: ScanLine },
   { to: '/m/stock', label: 'Ombor qoldig‘i', Icon: Boxes },
+  { to: '/m/help', label: "Yo'riqnoma", Icon: BookOpen },
 ];
 
 export function WarehouseHomePage(): ReactElement {
