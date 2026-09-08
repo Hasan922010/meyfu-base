@@ -52,7 +52,7 @@ export function LoginPage(): ReactElement {
             type="tel"
             inputMode="tel"
             autoComplete="username"
-            placeholder="+998 90 123 45 67"
+            placeholder="+998901234567"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required

@@ -16,6 +16,21 @@ def test_login_returns_token_and_user(api, distributor):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "typed_phone",
+    ["+998 90 111 22 33", "998901112233", "901112233", "+998901112233 "],
+)
+def test_login_accepts_unnormalized_phone(api, distributor, typed_phone):
+    resp = api.post(
+        "/api/v1/auth/login/",
+        {"phone": typed_phone, "password": "pass12345"},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    assert resp.data["data"]["user"]["phone"] == "+998901112233"
+
+
+@pytest.mark.django_db
 def test_login_wrong_password(api, distributor):
     resp = api.post(
         "/api/v1/auth/login/",
