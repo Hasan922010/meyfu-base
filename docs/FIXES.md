@@ -170,25 +170,26 @@ daraxt va navigatsiya ishlaydi; "Qayta urinish" tuzalgan bolani qayta render qil
 **Natija:** `npm run test` (4 passed) · `tsc -b` 0 xato · `npm run lint` 0 · `npm run build` OK.
 **Commit:** _(quyida)_
 
-### [ ] TS-001 — Runtime validatsiya + frontend testlari yo'q
+### [~] TS-001 — Runtime validatsiya + frontend testlari yo'q
 **Manzil:** `src/shared/api/*`, `src/shared/types/*`, `package.json`
-**Bajarilishi kerak:**
-1. **Tip generatsiyasi:** `backend`: `python manage.py spectacular --file schema.yml`
-   (CI qadami). `frontend`: `npx openapi-typescript schema.yml -o src/shared/types/api.gen.ts`
-   + `package.json` skript `gen:api`. Qo'lda tiplarni asta-sekin generatsiyaga
-   ko'chirish (`API-001` shu bilan hal bo'ladi).
-2. **Kritik javoblar uchun `zod`:** login, `/sales/bulk-sync/` natijasi,
-   `pullReferenceData` javoblari — `z.object(...).parse()` API qatlamida. Xato →
-   `ErrorBoundary` yoki aniq toast.
-3. ~~**Vitest:** `vitest` + `@testing-library/react` o'rnatish~~ — **FE-001 da
-   bajarildi** (`vitest@3`, `@testing-library/react@16`, `jsdom`, `src/test/setup.ts`,
-   `npm run test`).
-4. Boshlang'ich testlar: `format.ts` (`money`, `qty`, `numberToWordsUz`),
-   `offline/outbox.ts` (dedup, backoff — `OFF-001`), hisob-kitob (`CALC-001`).
-**Qabul mezoni:** `npm test` yashil; `gen:api` schema bilan tiplar mos; kamida
-`format` va `outbox` testlari bor.
-**Regressiya testi:** o'zi test infratuzilmasi.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+**Bosqichma-bosqich:**
+- [x] **3. Test infratuzilmasi** (FE-001 da) — `vitest@3` + `@testing-library/react@16`
+  + `jsdom` + `fake-indexeddb`; `src/test/setup.ts`; `npm run test`.
+- [x] **4a. Util testlari** — `src/shared/lib/format.test.ts` (10 test — `money`
+  yaxlitlash `CALC-001` hujjatlashtirildi, `qty`, `numberToWordsUz`, `dateShort`),
+  `src/offline/outbox.test.ts` (10 test — `enqueue` idempotent `client_uuid`,
+  `applyResult` SENT/FAILED/CONFLICT, `pendingCount`/`failedCount`/`retryFailed`).
+- [ ] **4b. Hisob-kitob testi** — `CALC-001` bilan birga (bir xil ma'lumot to'plami
+  backend + frontend).
+- [ ] **1. Tip generatsiyasi** — `manage.py spectacular` → `openapi-typescript`
+  → `src/shared/types/api.gen.ts` + `gen:api` skript; qo'lda tiplarni ko'chirish
+  (`API-001` shu bilan hal bo'ladi).
+- [ ] **2. Kritik javoblar uchun `zod`** — login, `/sales/bulk-sync/` natijasi,
+  `pullReferenceData` javoblari — `z.object(...).parse()` API qatlamida.
+**Qabul mezoni:** `npm test` yashil; `gen:api` schema bilan tiplar mos; kritik API
+javoblari runtime'da tekshiriladi.
+**Natija (qism):** 24 vitest passed · `tsc -b` / `lint` / `build` toza.
+**Commit:** 4a — _(quyida)_
 
 ---
 
