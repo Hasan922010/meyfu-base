@@ -107,5 +107,9 @@ export function extractApiError(error: unknown): string {
     }
     return error.message;
   }
+  // Axios bo'lmagan xato (masalan API shakli tekshiruvi — ApiShapeError)
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
   return 'Kutilmagan xatolik.';
 }
