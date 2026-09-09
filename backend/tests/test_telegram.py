@@ -86,6 +86,54 @@ def test_webhook_right_secret(api, settings):
 
 
 @pytest.mark.django_db
+def test_webhook_accepts_header_secret(api, settings):
+    """SEC-004 — `X-Telegram-Bot-Api-Secret-Token` sarlavhasi ham qabul qilinadi."""
+    settings.TELEGRAM_WEBHOOK_SECRET = "s3cret-value-0123456789"
+    resp = api.post(
+        "/api/v1/telegram/webhook/anything/",
+        _msg(1, "/help"),
+        format="json",
+        HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN="s3cret-value-0123456789",
+    )
+    assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_webhook_rejects_when_secret_unset(api, settings):
+    """SEC-004 — kalit bo'sh bo'lsa hech kim o'ta olmaydi (bo'sh == bo'sh emas)."""
+    settings.TELEGRAM_WEBHOOK_SECRET = ""
+    resp = api.post("/api/v1/telegram/webhook//", _msg(1, "/help"), format="json")
+    # bo'sh segment 404 berishi mumkin; aniq segment bilan ham 403 bo'lsin
+    resp2 = api.post("/api/v1/telegram/webhook/x/", _msg(1, "/help"), format="json")
+    assert resp.status_code in (403, 404)
+    assert resp2.status_code == 403
+
+
+@pytest.mark.django_db
+def test_webhook_non_ascii_secret_is_403_not_500(api, settings):
+    settings.TELEGRAM_WEBHOOK_SECRET = "ascii-secret-0123456789"
+    resp = api.post(
+        "/api/v1/telegram/webhook/%C3%BCn%C3%AFcode/", _msg(1, "/help"), format="json"
+    )
+    assert resp.status_code in (403, 404)  # muhimi: 500 emas
+
+
+def test_set_webhook_sends_secret_token(monkeypatch, settings):
+    """SEC-004 — setWebhook chaqiruvi `secret_token` ni yuboradi."""
+    settings.TELEGRAM_BOT_TOKEN = "123:abc"
+    settings.TELEGRAM_WEBHOOK_SECRET = "webhook-secret-0123456789"
+    captured: dict = {}
+
+    from apps.telegram_bot import client
+
+    monkeypatch.setattr(
+        client, "_call", lambda method, payload: captured.update(payload) or {"ok": 1}
+    )
+    assert client.set_webhook("https://x.example.com/hook/")
+    assert captured["secret_token"] == "webhook-secret-0123456789"
+
+
+@pytest.mark.django_db
 def test_expense_approval_via_callback(admin_user, van_stocked, auth_api,
                                        expense_categories):
     admin_user.telegram_chat_id = "700700"

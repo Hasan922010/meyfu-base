@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hmac
+
 from django.conf import settings
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -14,15 +16,36 @@ from .models import TelegramLinkCode
 from .services.webhook import handle_update
 
 
+def _ct_equal(candidate: str, expected: str) -> bool:
+    try:
+        return hmac.compare_digest(candidate, expected)
+    except TypeError:  # ASCII bo'lmagan str — mos emas
+        return False
+
+
+def _secret_ok(request: Request, path_secret: str) -> bool:
+    """Yo'ldagi kalit YOKI `X-Telegram-Bot-Api-Secret-Token` sarlavhasi mos kelsa.
+
+    `hmac.compare_digest` — constant-time (audit SEC-004/SEC-006). Kalit sozlanmagan
+    bo'lsa (bo'sh) — hech kim o'ta olmaydi.
+    """
+    expected = settings.TELEGRAM_WEBHOOK_SECRET or ""
+    if not expected:
+        return False
+    header_secret = request.META.get("HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN", "")
+    return _ct_equal(path_secret, expected) or _ct_equal(header_secret, expected)
+
+
 class TelegramWebhookView(APIView):
-    """Telegram update'larni qabul qiladi. Yo'l ichida maxfiy kalit bilan himoyalangan."""
+    """Telegram update'larni qabul qiladi. Yo'l ichidagi maxfiy kalit va/yoki
+    `X-Telegram-Bot-Api-Secret-Token` sarlavhasi bilan himoyalangan."""
 
     authentication_classes: list = []
     permission_classes = [AllowAny]
 
     @extend_schema(exclude=True)
     def post(self, request: Request, secret: str) -> Response:
-        if secret != settings.TELEGRAM_WEBHOOK_SECRET:
+        if not _secret_ok(request, secret):
             return Response(status=403)
         try:
             handle_update(request.data)
