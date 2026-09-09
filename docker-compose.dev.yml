@@ -1,0 +1,64 @@
+# Lokal ishlab chiqish override'i — `docker-compose.yml` ustidan qo'llanadi.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Farqlari (audit CFG-001): `config.settings.dev` (DEBUG=True, sqlite emas —
+# konteyner Postgres), manba kodi bind-mount (jonli qayta yuklash), `db`/`redis`/
+# `minio`/`web` portlari xostga ochiq, dev bog'liqliklari, standart maxfiy
+# qiymatlar. HECH QACHON ishlab chiqarishda ishlatmang.
+
+x-dev-env: &dev-env
+  DJANGO_SETTINGS_MODULE: config.settings.dev
+  SECRET_KEY: dev-insecure-not-a-secret
+  ALLOWED_HOSTS: "*"
+  CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+  CSRF_TRUSTED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+  DJANGO_SUPERUSER_PHONE: "+998900000000"
+  DJANGO_SUPERUSER_PASSWORD: Hasanali.0220
+  DJANGO_SUPERUSER_NAME: Bosh admin
+
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  web:
+    build:
+      args:
+        REQUIREMENTS: dev
+    environment:
+      <<: *dev-env
+    volumes:
+      - ./backend:/app
+      - media:/app/media
+      - static:/app/staticfiles
+    ports:
+      - "8000:8000"
+
+  worker:
+    build:
+      args:
+        REQUIREMENTS: dev
+    environment:
+      <<: *dev-env
+    volumes:
+      - ./backend:/app
+      - media:/app/media
+
+  beat:
+    build:
+      args:
+        REQUIREMENTS: dev
+    environment:
+      <<: *dev-env
+    volumes:
+      - ./backend:/app
