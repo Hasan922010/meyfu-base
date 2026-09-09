@@ -2,14 +2,24 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from './db';
 import {
+  MAX_ATTEMPTS,
   applyResult,
+  deadCount,
+  deleteOp,
   enqueue,
   failedCount,
   listOutbox,
+  markSending,
   newUuid,
   pendingCount,
   retryFailed,
 } from './outbox';
+
+async function failNTimes(uuid: string, n: number): Promise<void> {
+  for (let i = 0; i < n; i += 1) {
+    await applyResult({ client_uuid: uuid, status: 'FAILED' });
+  }
+}
 
 beforeEach(async () => {
   await db.outbox.clear();
@@ -58,7 +68,7 @@ describe('applyResult', () => {
     expect(await listOutbox()).toHaveLength(0);
   });
 
-  it('FAILED — attempts oshadi, status FAILED', async () => {
+  it('FAILED — attempts oshadi, status FAILED, last_attempt_at yoziladi', async () => {
     const uuid = await enqueue('sale', {}, 'x');
     await applyResult({
       client_uuid: uuid,
@@ -69,6 +79,7 @@ describe('applyResult', () => {
     expect(row?.status).toBe('FAILED');
     expect(row?.attempts).toBe(1);
     expect(row?.error).toBe('boom');
+    expect(typeof row?.last_attempt_at).toBe('number');
   });
 
   it('CONFLICT — status CONFLICT', async () => {
@@ -90,18 +101,48 @@ describe('pendingCount / failedCount / retryFailed', () => {
   it('failedCount faqat 3+ urinishdagilarni sanaydi', async () => {
     const id = newUuid();
     await enqueue('sale', {}, 'x', id);
-    for (let i = 0; i < 3; i += 1) {
-      await applyResult({ client_uuid: id, status: 'FAILED' });
-    }
+    await failNTimes(id, 3);
     expect(await failedCount()).toBe(1);
   });
 
-  it('retryFailed FAILED/CONFLICT ni PENDING ga qaytaradi', async () => {
+  it('retryFailed FAILED/CONFLICT/DEAD ni PENDING ga qaytaradi (attempts=0)', async () => {
     const a = await enqueue('sale', {}, 'a');
-    await applyResult({ client_uuid: a, status: 'FAILED' });
+    await failNTimes(a, 5);
     await retryFailed();
     const [row] = await listOutbox();
     expect(row?.status).toBe('PENDING');
+    expect(row?.attempts).toBe(0);
+    expect(row?.last_attempt_at).toBeNull();
     expect(row?.error).toBeNull();
+  });
+});
+
+describe('OFF-001 — DEAD holati', () => {
+  it(`${MAX_ATTEMPTS} urinishdan keyin DEAD bo'ladi, pendingCount sanamaydi`, async () => {
+    const id = newUuid();
+    await enqueue('sale', {}, 'x', id);
+    await failNTimes(id, MAX_ATTEMPTS);
+    const [row] = await listOutbox();
+    expect(row?.status).toBe('DEAD');
+    expect(await deadCount()).toBe(1);
+    expect(await pendingCount()).toBe(0);
+  });
+
+  it('DEAD operatsiyani deleteOp o‘chiradi', async () => {
+    const id = newUuid();
+    await enqueue('sale', {}, 'x', id);
+    await failNTimes(id, MAX_ATTEMPTS);
+    await deleteOp(id);
+    expect(await listOutbox()).toHaveLength(0);
+  });
+});
+
+describe('markSending', () => {
+  it('last_attempt_at ni belgilaydi va statusni SENDING qiladi', async () => {
+    const id = await enqueue('sale', {}, 'x');
+    await markSending([id]);
+    const [row] = await listOutbox();
+    expect(row?.status).toBe('SENDING');
+    expect(typeof row?.last_attempt_at).toBe('number');
   });
 });

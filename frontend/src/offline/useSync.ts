@@ -2,12 +2,14 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect, useState } from 'react';
 
 import { db } from './db';
-import { pendingCount } from './outbox';
+import { deadCount, pendingCount } from './outbox';
 import { fullSync, pushOutbox } from './sync';
 
 export interface SyncState {
   online: boolean;
   pending: number;
+  /** 20 urinishdan keyin to'xtatilgan operatsiyalar (OFF-001). */
+  dead: number;
   syncing: boolean;
   lastPull: string | null;
   runSync: () => Promise<void>;
@@ -19,6 +21,8 @@ export function useSync(): SyncState {
 
   const pending =
     useLiveQuery(() => pendingCount(), [], 0) ?? 0;
+  const dead =
+    useLiveQuery(() => deadCount(), [], 0) ?? 0;
   const lastPull =
     useLiveQuery(() => db.meta.get('last_pull').then((r) => r?.value ?? null), [], null) ??
     null;
@@ -52,5 +56,5 @@ export function useSync(): SyncState {
     };
   }, []);
 
-  return { online, pending, syncing, lastPull, runSync };
+  return { online, pending, dead, syncing, lastPull, runSync };
 }

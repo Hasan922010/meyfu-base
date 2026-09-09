@@ -254,23 +254,25 @@ yopilgan kundan keyin xarajat rad etilsa `cash_difference` qayta hisoblanadi
 `DayCloseWizard` o'zgarmadi (`cash_expected` ni backenddan oladi).
 **Commit:** _(quyida)_
 
-### [ ] OFF-001 — Outbox backoff va "qotib qolgan" operatsiyalar
-**Manzil:** `src/offline/outbox.ts`, `src/offline/db.ts` (`OutboxOp` tipi)
-**Bajarilishi kerak:**
-1. `OutboxOp` ga `last_attempt_at: number | null`; `applyResult` FAILED holatida
-   `last_attempt_at = Date.now()`.
-2. `backoffElapsed` ni `last_attempt_at` (yoki yo'q bo'lsa `created_at`) dan
-   hisoblash: `Date.now() - (last_attempt_at ?? created_at) > delay`.
-3. `attempts >= 20` → `status: 'DEAD'`; `pendingCount` DEAD ni sanamaydi;
-   `retryFailed` DEAD'ni ham `attempts=0, status='PENDING'` ga tiklash imkoni
-   (foydalanuvchi tugmasi bilan).
-4. `SyncPage.tsx` / `SyncBadge.tsx` — DEAD operatsiyalar alohida ro'yxatda,
-   "20 marta urinildi — tekshiring" + qayta urinish / o'chirish.
-**Qabul mezoni:** doim 500 qaytaradigan mock operatsiya 20 urinishdan keyin DEAD
-bo'lib, alohida UI'da ko'rinadi; badge "kutmoqda" da sanalmaydi.
-**Regressiya testi:** `src/offline/outbox.test.ts` — backoff intervallari,
-DEAD o'tish, dedup (bir `client_uuid` 5 marta → 1 yozuv).
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] OFF-001 — Outbox backoff va "qotib qolgan" operatsiyalar
+**Manzil:** `src/offline/{db,outbox,useSync,SyncBadge}.ts(x)`, `src/mobile/SyncPage.tsx`
+**Bajarildi:**
+1. `OutboxOp` ga `last_attempt_at: number | null` (indekssiz — Dexie migratsiyasi
+   shart emas; eski yozuvlar `?? created_at` bilan ishlaydi).
+2. `backoffElapsed` endi `Date.now() - (last_attempt_at ?? created_at) >= delay`
+   (avval `created_at` dan kümülatif noto'g'ri formula). `markSending`
+   `last_attempt_at` ni belgilaydi.
+3. `MAX_ATTEMPTS = 20` → `applyResult` FAILED da yetganda `status: 'DEAD'`.
+   `pendingCount` DEAD ni sanamaydi; `deadCount()` yangi; `retryFailed` DEAD'ni
+   ham qamraydi va `attempts=0, last_attempt_at=null` ga tiklaydi; `deleteOp()` yangi.
+4. `useSync` `dead` ni beradi; `SyncBadge` DEAD bo'lsa «N ta yuborilmadi» (qizil);
+   `SyncPage` — ogohlantirish banneri + har DEAD op yonida «Navbatdan o'chirish».
+**Qabul mezoni:** ✅ 20 marta FAILED → DEAD; `pendingCount`/badge sanamaydi;
+`retryFailed`/`deleteOp` ishlaydi; backoff oxirgi urinishdan hisoblanadi.
+**Regressiya testi:** `src/offline/outbox.test.ts` — 13 test (DEAD o'tish, deleteOp,
+markSending, dedup, backoff maydonlari).
+**Natija:** 35 vitest passed · `tsc -b` / `lint` / `build` toza.
+**Commit:** _(quyida)_
 
 ### [ ] ORM-001 — `assertNumQueries` qamrovi yo'q
 **Manzil:** `backend/tests/`
@@ -386,7 +388,7 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 2/7 | Past: 1/6
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 3/7 | Past: 1/6
 Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
 SEC-004 ✅, SEC-006 ✅, FE-001 ✅, TS-001 ✅. `fix/audit-stage-10` branch.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
