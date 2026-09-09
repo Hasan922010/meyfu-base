@@ -201,19 +201,19 @@ katalog javoblari runtime'da tekshiriladi (shakl buzilsa `ApiShapeError`).
 
 ## 🟡 O'RTA
 
-### [ ] API-001 — `Sale` / `SaleItem` TS tiplari serializer bilan mos emas
+### [x] API-001 — `Sale` / `SaleItem` TS tiplari serializer bilan mos emas
 **Manzil:** `src/shared/types/sales.ts` ↔ `apps/sales/serializers.py`
-**Bajarilishi kerak (bitta commit — faqat frontend, backend o'zgarmaydi):**
-1. `SaleItem` ga `discount_percent: string`.
-2. `Sale` ga `order: string | null`, `order_number: string | null`,
-   `latitude: string | null`, `longitude: string | null`, `client_uuid: string | null`,
-   `is_synced: boolean`, `device_time: string | null`.
-3. `TS-001` bajarilganda bu fayl generatsiyaga ko'chiriladi — vaqtincha qo'lda.
-**Qabul mezoni:** `tsc --noEmit` toza; `SaleSerializer.Meta.fields` bilan
-`keyof Sale` taqqoslash testi (yoki generatsiya).
-**Regressiya testi:** `src/shared/types/sales.contract.test.ts` (generatsiyadan keyin
-avtomatik).
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+**Bajarildi:** `sales.ts` endi `api.gen.ts` (`components['schemas']`) dan olinadi —
+`PaymentType`/`SaleStatus`/`SaleItem`/`Sale`/`Debt`. Yetishmagan maydonlar
+(`discount_percent`, `order`, `order_number`, `latitude`, `longitude`, `client_uuid`,
+`is_synced`, `device_time`) endi bor. `order_number`/`sale_number` nullability
+`Omit & {...}` bilan to'g'rilandi (drf-spectacular `default=None` ni nullable
+belgilamaydi). Faqat frontend — backend o'zgarmadi.
+**Qabul mezoni:** ✅ `tsc -b` toza; `sales.contract.test.ts` kompilyatsiyada
+maydonlarni tekshiradi; `gen:api` eskirsa yoki serializer o'zgarsa tsc yiqiladi.
+**Regressiya testi:** `src/shared/types/sales.contract.test.ts`.
+**Natija:** 32 vitest passed · `tsc -b` / `lint` / `build` toza.
+**Commit:** _(quyida)_
 
 ### [ ] UX-001 — Backend maydon xatolari formaga bog'lanmaydi
 **Manzil:** `src/shared/api/client.ts`, formalar (`react-hook-form`)
@@ -382,7 +382,7 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 0/7 | Past: 1/6
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 1/7 | Past: 1/6
 Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
 SEC-004 ✅, SEC-006 ✅, FE-001 ✅, TS-001 ✅. `fix/audit-stage-10` branch.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
