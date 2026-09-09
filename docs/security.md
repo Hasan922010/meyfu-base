@@ -33,6 +33,10 @@ Holat: 16-bosqich, 2026-09-07. `python manage.py check --deploy` — **0 muammo*
 - `SECURE_CONTENT_TYPE_NOSNIFF`, `X_FRAME_OPTIONS = DENY`
 - CORS/CSRF — faqat `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` dagi domenlar
 - Prod'da Browsable API renderer o'chirilgan (faqat JSON)
+- Django admin manzili sozlanadigan (`ADMIN_URL`) — standart `/admin/` shart emas (CFG-003)
+- `/health/` anonimga faqat `{success: bool}` beradi; to'liq tafsilot (db/redis/celery/
+  disk) faqat autentifikatsiyalangan foydalanuvchi yoki `X-Health-Token` bilan (SEC-005)
+- Lokal/dev sozlamalarida ham kreditsialli wildcard CORS yo'q — aniq origin ro'yxati (CFG-002)
 
 ## Ma'lumot butunligi
 - Pul/tovar jurnallari append-only: `WalletTransaction`, `StockMovement`,

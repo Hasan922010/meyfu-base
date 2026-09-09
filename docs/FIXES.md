@@ -308,15 +308,9 @@ qoldiqlar izohlangan); `npm run build` + E2E toza.
 **Regressiya testi:** router smoke testi (`TS-001` / `E2E-001`).
 **Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
 
-### [ ] CFG-002 — `local.py` da kreditsialli wildcard CORS
-**Manzil:** `config/settings/local.py:27`
-**Bajarilishi kerak:** `CORS_ALLOW_ALL_ORIGINS = True` ni olib tashlab,
-`CORS_ALLOWED_ORIGINS = ["http://localhost:5173","http://127.0.0.1:5173",
-"http://localhost:5174"]`.
-**Qabul mezoni:** `runserver` + `npm run dev` bilan frontend ishlaydi; boshqa origin'dan
-kredential so'rov rad etiladi.
-**Regressiya testi:** —
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] CFG-002 — `local.py` da kreditsialli wildcard CORS
+**Bajarildi:** `local.py` — `CORS_ALLOW_ALL_ORIGINS` olib tashlandi,
+`CORS_ALLOWED_ORIGINS = [5173/5174 localhost+127.0.0.1]`. **Commit:** config hardening (quyida).
 
 ---
 
@@ -337,31 +331,27 @@ bir xil natija (Bosqich 4.5).
 `src/shared/lib/format.test.ts` (bir xil ma'lumot to'plami).
 **Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
 
-### [ ] SEC-005 — `/health/` anonim infra oshkorligi
-**Manzil:** `apps/core/views.py`
-**Bajarilishi kerak:** anonimga faqat `{"success": bool}` + `200/503`; to'liq
-tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
-`X-Health-Token` bilan.
-**Qabul mezoni:** anonim `GET /health/` → tafsilotsiz; admin → to'liq.
-**Regressiya testi:** `apps/core/tests/test_health.py`.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] SEC-005 — `/health/` anonim infra oshkorligi
+**Bajarildi:** `HealthView` — `JWTAuthentication` (ixtiyoriy) + anonimga faqat
+`{"success": bool}` (200/503); to'liq tafsilot auth foydalanuvchi yoki
+`X-Health-Token` (`HEALTH_DETAIL_TOKEN` env) bilan.
+**Regressiya testi:** `tests/test_health.py` — 4 test (anon minimal / auth to'liq / token).
+**Commit:** config hardening (quyida).
 
 ### [x] SEC-006 — Webhook siri constant-time solishtiruv
 **Manzil:** `apps/telegram_bot/views.py`
 **Bajarildi:** `SEC-004` bilan bitta commitda — `hmac.compare_digest` (`_ct_equal`).
 **Commit:** SEC-004 bilan bir xil.
 
-### [ ] CFG-003 — Django admin standart `/admin/` manzilida
-**Manzil:** `config/urls.py:34`
-**Bajarilishi kerak:** `ADMIN_URL = env("ADMIN_URL", default="admin/")`,
-`path(settings.ADMIN_URL, admin.site.urls)`. `.env.example` da izoh.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] CFG-003 — Django admin standart `/admin/` manzilida
+**Bajarildi:** `base.py` `ADMIN_URL = env("ADMIN_URL", default="admin/")`;
+`urls.py` `path(settings.ADMIN_URL, ...)`; `.env.example` (root + backend) + compose.
+**Commit:** config hardening (quyida).
 
-### [ ] CFG-004 — `dev.py` da `ALLOWED_HOSTS=['*']`
-**Manzil:** `config/settings/dev.py:5`
-**Bajarilishi kerak:** `CFG-001` bajarilgach ta'sir yo'qoladi; baribir
-`ALLOWED_HOSTS = ["localhost","127.0.0.1","web","0.0.0.0"]` ga tor.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] CFG-004 — `dev.py` da `ALLOWED_HOSTS=['*']`
+**Bajarildi:** `dev.py` — `ALLOWED_HOSTS` endi env'dan, default lokal xostlar ro'yxati
+(wildcard emas); `docker-compose.dev.yml` ham aniq ro'yxat beradi.
+**Commit:** config hardening (quyida).
 
 ### [ ] PERF-001 — Katta bundle bo'laklari
 **Manzil:** `src/admin/distributors/DistributorCardPage.tsx`,
@@ -393,13 +383,13 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 5/7 | Past: 1/6
-Oxirgi yangilanish: 2026-09-09 — ✅ CFG-001, SEC-001(kod), SEC-002, SEC-003, SEC-004,
-SEC-006, FE-001, TS-001, API-001, DC-001, OFF-001, UX-001, ORM-001. `fix/audit-stage-10`.
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 6/7 | Past: 5/6
+Oxirgi yangilanish: 2026-09-09 — ✅ CFG-001, SEC-001(kod), SEC-002/003/004/005/006,
+FE-001, TS-001, API-001, DC-001, OFF-001, UX-001, ORM-001, CFG-002/003/004. `fix/audit-stage-10`.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
-Qoldi: O'rta — DEP-001, CFG-002 · Past — CALC-001, SEC-005, CFG-003, CFG-004, PERF-001, E2E-001.
+Qoldi: O'rta — DEP-001 · Past — CALC-001, PERF-001, E2E-001.
 
-Backend: 266 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
+Backend: 268 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
 Frontend: 40 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ · `gen:api` ✅
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)

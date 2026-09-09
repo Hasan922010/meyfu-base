@@ -24,7 +24,13 @@ CHANNEL_LAYERS = {
 
 CELERY_TASK_ALWAYS_EAGER = True
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Kreditsialli wildcard CORS xavfli (audit CFG-002) — aniq ro'yxat.
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

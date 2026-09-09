@@ -248,6 +248,12 @@ SPECTACULAR_SETTINGS = {
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_CREDENTIALS = True
 
+# --- Admin URL (audit CFG-003) — standart /admin/ ni sozlanadigan qilish ---
+ADMIN_URL = env("ADMIN_URL", default="admin/")
+
+# --- /health/ to'liq tafsiloti uchun token (audit SEC-005). Bo'sh — faqat auth. ---
+HEALTH_DETAIL_TOKEN = env("HEALTH_DETAIL_TOKEN", default="")
+
 # --- I18N / vaqt ---
 LANGUAGE_CODE = "uz"
 TIME_ZONE = env("TIME_ZONE", default="Asia/Tashkent")
