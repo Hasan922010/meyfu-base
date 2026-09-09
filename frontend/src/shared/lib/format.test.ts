@@ -21,6 +21,13 @@ describe('money', () => {
     expect(money(-15000)).toBe("−15 000 so'm");
   });
 
+  it('yarim yuqoriga yaxlitlaydi (backend money_round bilan bir yo‘nalish, CALC-001)', () => {
+    // backend: SaleItem.amount = "31876.28" → foydalanuvchiga butun so‘m
+    expect(money('31876.28')).toBe("31 876 so'm");
+    expect(money('0.5')).toBe("1 so'm");
+    expect(money('2.5')).toBe("3 so'm");
+  });
+
   it('NaN da xom qiymatni qaytaradi', () => {
     expect(money('abc')).toBe('abc');
   });
