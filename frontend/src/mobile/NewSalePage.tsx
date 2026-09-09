@@ -214,7 +214,7 @@ export function NewSalePage(): ReactElement {
         )}
 
         <div className="flex gap-2 pt-4">
-          <button className="btn px-5" onClick={() => navigate('/m')}>
+          <button className="btn px-5" onClick={() => void navigate('/m')}>
             Bosh sahifa
           </button>
           <button className="btn-brand px-5" onClick={reset}>

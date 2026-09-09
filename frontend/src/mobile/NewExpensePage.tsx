@@ -70,7 +70,7 @@ export function NewExpensePage(): ReactElement {
         <h1 className="text-xl font-bold">Xarajat saqlandi</h1>
         <p className="text-gray-500">Admin tasdiqlashini kuting.</p>
         <div className="flex gap-2 pt-2">
-          <button className="btn px-5" onClick={() => navigate('/m')}>
+          <button className="btn px-5" onClick={() => void navigate('/m')}>
             Bosh sahifa
           </button>
           <button

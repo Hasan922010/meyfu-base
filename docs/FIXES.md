@@ -293,20 +293,22 @@ bog'liq emas.
 **Natija:** 266 pytest passed (260 + 6). Ruff toza.
 **Commit:** _(quyida)_
 
-### [ ] DEP-001 — `react-router` CVE'lari
+### [x] DEP-001 — `react-router` CVE'lari
 **Manzil:** `frontend/package.json`
-**Bajarilishi kerak:**
-1. `navigate(...)` / `<Navigate to=...>` / `to={...}` chaqiruvlarida foydalanuvchi
-   kiritgan qiymat yo'qligini tasdiqlash (`grep`).
-2. `react-router-dom@7` ga yangilash (breaking — `RouterProvider` API o'zgarishi
-   minimal, `Routes`/`Route` qoladi) yoki 6.x xavfsiz patch chiqsa o'sha.
-3. `npm audit` toza bo'lguncha. **Eslatma:** FE-001 da `@vitest/mocker` moderate
-   advisory ham qo'shildi (GHSA-82fw-gwwq-j7x9 — path traversal, faqat dev-tooling;
-   vitest patch chiqsa yangilash).
-**Qabul mezoni:** `npm audit --audit-level=moderate` → 0 (yoki faqat dev-only
-qoldiqlar izohlangan); `npm run build` + E2E toza.
-**Regressiya testi:** router smoke testi (`TS-001` / `E2E-001`).
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+**Bajarildi:**
+1. `react-router-dom` **6.28 → 7.18.3** — 2 ta moderate advisori (GHSA-wrjc-x8rr-h8h6
+   open redirect, GHSA-337j-9hxr-rhxg SSR hydration) hal bo'ldi. API mos:
+   `createBrowserRouter`/`RouterProvider`/`Routes`/`Route`/`NavLink` o'zgarmadi.
+2. v7 da `navigate()` `Promise<void>` qaytaradi — 10 ta chaqiruv joyi `void navigate(...)`
+   ga o'zgartirildi (`no-floating-promises` / `no-misused-promises`).
+3. `navigate(userInput)` **topilmadi** — barcha manzillar ichki konstantalar.
+4. `js-yaml` (high, `openapi-typescript` transitiv) — `overrides: js-yaml@^4.3.2`.
+5. `backend/schema.yml` + `api.gen.ts` regeneratsiya qilindi (SEC-005 hujjat o'zgarishi).
+**Qoldiq (faqat dev-tooling, ishlab chiqarishga chiqmaydi):** `@vitest/mocker` moderate
+(GHSA-82fw-gwwq-j7x9 — mock redirect path traversal); vitest patch chiqsa yangilanadi.
+**Qabul mezoni:** ✅ `npm audit` — 0 high, faqat 2 moderate dev-only (izohlangan);
+`tsc`/`lint`/`build`/`gen:api`/41 vitest toza.
+**Commit:** _(quyida)_
 
 ### [x] CFG-002 — `local.py` da kreditsialli wildcard CORS
 **Bajarildi:** `local.py` — `CORS_ALLOW_ALL_ORIGINS` olib tashlandi,
@@ -385,7 +387,7 @@ sekin tarmoqdagi tarqatuvchi uchun tezroq. 41 vitest · tsc/lint/build toza.
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 6/7 | Past: 5/6
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 7/7 | Past: 6/6 — DEP-001, PERF-001, CALC-001 ham ✅
 Oxirgi yangilanish: 2026-09-09 — ✅ CFG-001, SEC-001(kod), SEC-002/003/004/005/006,
 FE-001, TS-001, API-001, DC-001, OFF-001, UX-001, ORM-001, CFG-002/003/004. `fix/audit-stage-10`.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.

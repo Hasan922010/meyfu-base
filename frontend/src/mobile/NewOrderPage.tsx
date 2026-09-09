@@ -130,7 +130,7 @@ export function NewOrderPage(): ReactElement {
               : 'Serverga yuborildi — tasdiqlash kutilmoqda.'}
         </p>
         <div className="flex gap-2 pt-4">
-          <button className="btn px-5" onClick={() => navigate('/m/orders')}>
+          <button className="btn px-5" onClick={() => void navigate('/m/orders')}>
             Buyurtmalarim
           </button>
           <button className="btn-brand px-5" onClick={reset}>
