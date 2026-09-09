@@ -1,4 +1,4 @@
-import { CloudOff, RefreshCw, Wifi } from 'lucide-react';
+import { CloudOff, RefreshCw, TriangleAlert, Wifi } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -6,12 +6,16 @@ import type { SyncState } from './useSync';
 
 /** CLAUDE.md 4.5 — yuqorida doim holat. */
 export function SyncBadge({ state }: { state: SyncState }): ReactElement {
-  const { online, pending, syncing } = state;
+  const { online, pending, dead, syncing } = state;
 
   let text: string;
   let cls: string;
   let icon: ReactElement;
-  if (!online) {
+  if (dead > 0) {
+    text = `${dead} ta yuborilmadi`;
+    cls = 'bg-danger/10 text-danger';
+    icon = <TriangleAlert size={14} aria-hidden />;
+  } else if (!online) {
     text = pending > 0 ? `Offline · ${pending} kutmoqda` : 'Offline';
     cls = 'bg-danger/10 text-danger';
     icon = <CloudOff size={14} aria-hidden />;
