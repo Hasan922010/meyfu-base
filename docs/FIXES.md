@@ -170,7 +170,7 @@ daraxt va navigatsiya ishlaydi; "Qayta urinish" tuzalgan bolani qayta render qil
 **Natija:** `npm run test` (4 passed) · `tsc -b` 0 xato · `npm run lint` 0 · `npm run build` OK.
 **Commit:** _(quyida)_
 
-### [~] TS-001 — Runtime validatsiya + frontend testlari yo'q
+### [x] TS-001 — Runtime validatsiya + frontend testlari yo'q
 **Manzil:** `src/shared/api/*`, `src/shared/types/*`, `package.json`
 **Bosqichma-bosqich:**
 - [x] **3. Test infratuzilmasi** (FE-001 da) — `vitest@3` + `@testing-library/react@16`
@@ -185,12 +185,17 @@ daraxt va navigatsiya ishlaydi; "Qayta urinish" tuzalgan bolani qayta render qil
   → `backend/schema.yml` → `openapi-typescript` → `src/shared/types/api.gen.ts`).
   Ikkala fayl commit qilingan; `api.gen.ts` eslint'dan chiqarildi. `tsc`/`lint`/
   `build` toza. Qo'lda tiplarni ko'chirish — `API-001` da.
-- [ ] **2. Kritik javoblar uchun `zod`** — login, `/sales/bulk-sync/` natijasi,
-  `pullReferenceData` javoblari — `z.object(...).parse()` API qatlamida.
-**Qabul mezoni:** `npm test` yashil; `gen:api` schema bilan tiplar mos; kritik API
-javoblari runtime'da tekshiriladi.
-**Natija (qism):** 24 vitest passed · `tsc -b` / `lint` / `build` toza.
-**Commit:** 4a — _(quyida)_
+- [x] **2. Kritik javoblar uchun `zod`** — `src/shared/lib/validate.ts`
+  (`assertApiShape` + `ApiShapeError`), `src/shared/api/schemas.ts` (loose
+  `.passthrough()` sxemalar). Ulandi: `auth.login`, `sync.pushOutbox`
+  (`bulk-sync`), `sync.pullReferenceData` (katalog/mijoz/van). `extractApiError`
+  endi oddiy `Error` xabarini ham ko'rsatadi.
+- [ ] **4b. Hisob-kitob testi** → `CALC-001` bilan.
+- Qolgan qo'lda tiplarni `api.gen.ts` ga ko'chirish → `API-001`.
+**Qabul mezoni:** ✅ `npm test` yashil (31 test); `gen:api` ishlaydi; login/sync/
+katalog javoblari runtime'da tekshiriladi (shakl buzilsa `ApiShapeError`).
+**Natija:** 31 vitest passed · `tsc -b` / `lint` / `build` toza.
+**Commit:** 4a `f473228` · gen `b11e907` · zod — _(quyida)_
 
 ---
 
@@ -377,13 +382,14 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 3/4 | O'rta: 0/7 | Past: 1/6
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 0/7 | Past: 1/6
 Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
-SEC-004 ✅, SEC-006 ✅, FE-001 ✅. `fix/audit-stage-10` branch.
+SEC-004 ✅, SEC-006 ✅, FE-001 ✅, TS-001 ✅. `fix/audit-stage-10` branch.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
+TS-001: 4b (hisob-kitob testi) → CALC-001; qo'lda tiplarni ko'chirish → API-001.
 
 Backend: 258 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
-Frontend: 4 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅
+Frontend: 31 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ · `gen:api` ✅
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 
