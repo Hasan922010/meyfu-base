@@ -11,7 +11,6 @@ import {
 } from '@/shared/api/schemas';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { assertApiShape } from '@/shared/lib/validate';
-import { saveCompanyCache } from '@/mobile/lib/companyCache';
 import type { ApiSuccess } from '@/shared/types/api';
 
 import { db, getMeta, setMeta } from './db';
@@ -107,8 +106,10 @@ export async function pullReferenceData(): Promise<void> {
     // buyurtma oqimi hali yo'q bo'lishi mumkin — jimgina o'tkazamiz
   }
 
-  // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort
+  // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort.
+  // Dinamik import — `companyCache` faqat chek oqimi bilan yuklanadi (PERF-001).
   try {
+    const { saveCompanyCache } = await import('@/mobile/lib/companyCache');
     await saveCompanyCache(await companyApi.public());
   } catch {
     /* rekvizitsiz ham chek chiqadi */
