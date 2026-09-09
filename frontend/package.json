@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:api:schema": "cd ../backend && python manage.py spectacular --settings config.settings.local --file schema.yml",
-    "gen:api": "npm run gen:api:schema && openapi-typescript ../backend/schema.yml -o src/shared/types/api.gen.ts"
+    "gen:api": "npm run gen:api:schema && openapi-typescript ../backend/schema.yml -o src/shared/types/api.gen.ts",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.64.2",
@@ -36,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "1.62.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

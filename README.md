@@ -183,7 +183,13 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 cd backend
 pytest                              # config.settings.test (sqlite, tashqi xizmatlarsiz)
 # yoki: docker compose exec web pytest
+
+cd ../frontend
+npm test                            # vitest — util / API-shakl / ErrorBoundary
+npm run e2e                         # Playwright — backend (sqlite) + dev serverni o'zi ko'taradi
 ```
+
+> `npm run e2e` birinchi marta: `npx playwright install chromium`.
 
 Kritik yo'llar qoplangan: narx limiti, VanStock yetarliligi, qarz limiti, kun yopish
 formulalari, hamyon balansi butunligi, append-only jurnal himoyasi, offline dublikat

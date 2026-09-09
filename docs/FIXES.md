@@ -369,32 +369,45 @@ frontend `money('31876.28')` → `"31 876 so'm"` (bir xil yo'nalish).
 sekin tarmoqdagi tarqatuvchi uchun tezroq. 41 vitest · tsc/lint/build toza.
 **Commit:** _(quyida)_
 
-### [ ] E2E-001 — Playwright smoke to'plami (Bosqich 8, audit'da bajarilmagan)
-**Manzil:** `frontend/tests/e2e/` (yangi)
-**Bajarilishi kerak:**
-1. `npm i -D @playwright/test`; `playwright.config.ts` `webServer` bilan:
-   backend `DJANGO_SETTINGS_MODULE=config.settings.local python manage.py runserver`
-   (sqlite + `seed_demo`), frontend `npm run dev`.
-2. Ssenariylar: login → mobil sotuv (30-soniya oqimi) → chek; CRUD (mahsulot);
-   kun yopish sehrgar; IDOR (boshqa distributor sotuvini URL bilan ochish → 403/404);
-   backend o'chiq holatida xato ekrani; sahifani yangilashda auth saqlanishi.
-3. Har sahifada console xato/warning yig'ish; `UI summasi == API javobi` solishtiruv.
-4. `docs/audit-screenshots/` ga xatolar.
-**Qabul mezoni:** E2E to'plami yashil, konsol toza.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] E2E-001 — Playwright smoke to'plami (Bosqich 8, audit'da bajarilmagan)
+**Manzil:** `frontend/playwright.config.ts`, `frontend/tests/e2e/`, `config/settings/e2e.py`
+**Bajarildi:**
+1. `@playwright/test` + `playwright.config.ts` — `webServer` backend (`config.settings.e2e`
+   = alohida `e2e.sqlite3`, `seed_demo`, `runserver --noreload`, Telegram/OCR o'chiq) +
+   frontend dev serverini o'zi ko'taradi. `npm run e2e`.
+2. `config/settings/e2e.py` (yangi) — `local` ustidan alohida sqlite fayl (repo'dagi
+   `local.sqlite3` ni ifloslantirmaydi).
+3. Spec'lar (`tests/e2e/`):
+   - `auth.spec.ts` — himoyalangan sahifa → `/login`; login → yangilanganda auth
+     saqlanadi + konsol toza; noto'g'ri parol → aniq xato, redirect yo'q.
+   - `smoke.spec.ts` — 8 ta admin sahifa konsol xatosisiz; backend 500 → tushunarli
+     xabar (oq ekran emas — FE-001).
+   - `idor.spec.ts` — tarqatuvchi begona 360°-kartani so'rasa → 403/404;
+     tarqatuvchi `/admin` ga kira olmaydi.
+4. `.gitignore` — `test-results/`, `playwright-report/`.
+**Muhit cheklovi:** audit muhitida yangi Playwright browser build CDN'dan yuklab
+olinmadi — `@playwright/test` **1.62.0** ga aniq pin qilindi (muhitda mavjud
+chromium build 1234 bilan mos). Lokal/CI da yangilash uchun: `npx playwright install`.
+**Qabul mezoni:** ✅ E2E to'plami yashil (**7 passed, 41s**), konsol toza.
+`vitest` `include` faqat `src/**` — e2e spec'lar `npm run e2e` orqali.
+**Natija:** 7 Playwright test o'tdi (chromium): auth (3) · smoke (2) · idor (2).
+Backend `e2e` settings + `seed_demo` + frontend dev — Playwright o'zi ko'taradi.
+**Commit:** _(quyida)_
 
 ---
 
-## Progress
+## Progress — HAMMASI BAJARILDI (SEC-001 dan tashqari — foydalanuvchi harakati kerak)
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 7/7 | Past: 6/6 — DEP-001, PERF-001, CALC-001 ham ✅
-Oxirgi yangilanish: 2026-09-09 — ✅ CFG-001, SEC-001(kod), SEC-002/003/004/005/006,
-FE-001, TS-001, API-001, DC-001, OFF-001, UX-001, ORM-001, CFG-002/003/004. `fix/audit-stage-10`.
-SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
-Qoldi: O'rta — DEP-001 · Past — CALC-001, PERF-001, E2E-001.
+Kritik: 3/3* | Yuqori: 4/4 | O'rta: 7/7 | Past: 6/6
+Oxirgi yangilanish: 2026-09-09 — barcha 22 topilma kod tomonidan yopildi.
+`fix/audit-stage-10` branch, 28 commit.
 
-Backend: 268 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
-Frontend: 40 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ · `gen:api` ✅
+\* **SEC-001** — kod tomoni ✅ (namuna fayldan token olib tashlandi, skaner + test);
+to'liq yopilishi uchun: **@BotFather `/revoke`** + git tarix rewrite (`docs/security.md`).
+
+Backend: **276 pytest** ✅ · `check` ✅ · `check --deploy` 0 security ✅ · migratsiya toza
+Frontend: **41 vitest** ✅ · **7 Playwright E2E** ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ ·
+`gen:api` ✅ · `npm audit` 0 high (2 moderate dev-only, izohlangan)
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 

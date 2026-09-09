@@ -72,6 +72,8 @@ export default defineConfig({
     },
   },
   test: {
+    // faqat unit testlar; tests/e2e/** — Playwright (npm run e2e)
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
