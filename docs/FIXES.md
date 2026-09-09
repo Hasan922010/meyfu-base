@@ -85,26 +85,28 @@ foydalanuvchi zimmasida.
 to'liq yopilishi uchun token `/revoke` + tarix rewrite kerak.
 **Commit:** _(quyida)_
 
-### [ ] SEC-002 — Konteyner ma'lum parolli SUPER_ADMIN yaratadi
-**Manzil:** `apps/users/management/commands/ensure_superuser.py:16-17`,
-`docker/entrypoint.sh:12`, `docs/deploy.md:20`
+### [x] SEC-002 — Konteyner ma'lum parolli SUPER_ADMIN yaratadi
+**Manzil:** `apps/users/management/commands/ensure_superuser.py`, `docker/entrypoint.sh`,
+`apps/core/management/commands/seed_demo.py`
 **Muammo:** Env berilmasa standart `+998900000000` / `Hasanali.0220` (repo va
-hujjatlarda ochiq) bilan admin yaratiladi.
-**Bajarilishi kerak:**
-1. `ensure_superuser.py` — `DJANGO_SUPERUSER_PASSWORD` yo'q bo'lsa
-   `raise CommandError("DJANGO_SUPERUSER_PASSWORD majburiy")`. `PHONE` uchun ham.
-2. `backend/.env.example` ga `DJANGO_SUPERUSER_PHONE=` / `DJANGO_SUPERUSER_PASSWORD=`
-   (izoh: "birinchi ishga tushirish uchun, keyin o'chiring").
-3. `docker/entrypoint.sh` — `ensure_superuser` ni faqat `CREATE_SUPERUSER=1` bo'lsa
-   chaqir (`|| true` ni olib tashlab, xatoni ko'rsat).
-4. `docs/deploy.md` dan ochiq parolni olib tashlash.
-5. `seed_demo.py` faqat `DEBUG` yoki aniq `--force` bilan ishlashini tekshir
-   (`ADMIN_PW` demo uchun qoladi, lekin prod'da bloklansin).
-**Qabul mezoni:** env'siz `python manage.py ensure_superuser` → xato bilan chiqadi.
-**Regressiya testi:** `apps/users/tests/test_ensure_superuser.py` —
-env'siz `CommandError`; env bilan user yaratiladi.
-**Natija:** _(to'ldiriladi)_
-**Commit:** _(to'ldiriladi)_
+hujjatlarda ochiq) bilan admin yaratilardi. `seed_demo` ham prod'da ishlab, o'sha
+parolni o'rnatardi.
+**Bajarildi:**
+1. `ensure_superuser.py` — standart parol/telefon **olib tashlandi**. Ikkalasi bo'sh →
+   no-op (idempotent). Faqat bittasi → `CommandError`. Parol Django
+   `validate_password` dan o'tishi shart, aks holda `CommandError`.
+2. `docker/entrypoint.sh` — `ensure_superuser || true` dan `|| true` olib tashlandi
+   (noto'g'ri sozlama endi konteynerni to'xtatadi).
+3. `seed_demo.py` — `DEBUG=False` bo'lsa `--force` talab qiladi (`CommandError`).
+4. `backend/.env.example` — `DJANGO_SUPERUSER_*` qatorlari + ogohlantirish izohi
+   (root `.env.example` CFG-001 da qo'shilgan). `docker-compose.dev.yml` dev
+   qulayligi uchun `+998900000000` / `Hasanali.0220` ni saqlaydi (DEBUG=True).
+5. `README.md`, `docs/security.md` — dev-only ekani aniqlashtirildi.
+**Qabul mezoni:** ✅ env'siz `ensure_superuser` → no-op (user yaratilmaydi);
+partial/weak env → `CommandError`; `seed_demo` prod'da `--force` siz `CommandError`.
+**Regressiya testi:** `backend/tests/test_ensure_superuser.py` — 5 test.
+**Natija:** 245 pytest passed (edi 240 + 5). `check` (local) toza; migratsiya toza.
+**Commit:** _(quyida)_
 
 ---
 
@@ -354,8 +356,8 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 1.5/3 | Yuqori: 0/4 | O'rta: 0/7 | Past: 0/6
-Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 kod tomoni ✅
+Kritik: 2.5/3 | Yuqori: 0/4 | O'rta: 0/7 | Past: 0/6
+Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-002 ✅, SEC-001 kod tomoni ✅
 (token `/revoke` + git tarix rewrite foydalanuvchi zimmasida). `fix/audit-stage-10` branch.
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)

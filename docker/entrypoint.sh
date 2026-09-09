@@ -17,7 +17,9 @@ fi
 
 if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
   python manage.py migrate --noinput
-  python manage.py ensure_superuser || true
+  # ensure_superuser: env berilmasa no-op; noto'g'ri sozlama bo'lsa xato bilan
+  # to'xtaydi (audit SEC-002) — `|| true` ataylab yo'q.
+  python manage.py ensure_superuser
   python manage.py collectstatic --noinput || true
 fi
 
