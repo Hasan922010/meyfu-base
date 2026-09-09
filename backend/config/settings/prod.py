@@ -34,6 +34,22 @@ ADMINS = [
     if email.strip()
 ]
 
+# --- Telegram webhook siri (audit SEC-004) ---
+# Bot yoqilgan bo'lsa (TELEGRAM_BOT_TOKEN berilgan) webhook siri kuchli bo'lishi
+# shart — base.py dagi "dev-webhook-secret" standarti ishlab chiqarishda taqiqlanadi.
+if TELEGRAM_BOT_TOKEN:  # noqa: F405
+    TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET")
+    if (
+        not TELEGRAM_WEBHOOK_SECRET
+        or TELEGRAM_WEBHOOK_SECRET == "dev-webhook-secret"
+        or len(TELEGRAM_WEBHOOK_SECRET) < 16
+    ):
+        raise ImproperlyConfigured(
+            "TELEGRAM_BOT_TOKEN berilgan — kuchli TELEGRAM_WEBHOOK_SECRET kerak "
+            "(≥16 belgi). Generatsiya: "
+            'python -c "import secrets;print(secrets.token_urlsafe(32))"'
+        )
+
 # --- Xavfsizlik (CLAUDE.md 16) ---
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True

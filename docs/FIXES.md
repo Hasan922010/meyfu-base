@@ -131,18 +131,23 @@ ogohlantirishi.
 bilan) — 0 security ogohlantirishi, exit 0.
 **Commit:** _(quyida)_
 
-### [ ] SEC-004 — `TELEGRAM_WEBHOOK_SECRET` standart qiymati va ochiq webhook
-**Manzil:** `config/settings/base.py:263`, `apps/telegram_bot/views.py:20-25`
-**Bajarilishi kerak:**
-1. `prod.py` — `TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET")` (bot yoqilgan
-   bo'lsa majburiy; `TELEGRAM_BOT_TOKEN` bo'sh bo'lsa e'tibor bermaslik mumkin).
-2. `TelegramWebhookView.post` — `secrets.compare_digest` (`SEC-006` bilan birga).
-3. Telegram `set_telegram_webhook` da `secret_token=` yuborilsa,
-   `X-Telegram-Bot-Api-Secret-Token` sarlavhasini ham tekshir.
-**Qabul mezoni:** noto'g'ri sir bilan `POST /telegram/webhook/xxx/` → 404/403.
-**Regressiya testi:** `apps/telegram_bot/tests/test_webhook.py` — noto'g'ri sir rad
-etiladi; to'g'ri sir qabul qilinadi.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] SEC-004 (+ SEC-006) — `TELEGRAM_WEBHOOK_SECRET` standarti va ochiq webhook
+**Manzil:** `config/settings/base.py:263`, `apps/telegram_bot/views.py`,
+`apps/telegram_bot/client.py`
+**Bajarildi:**
+1. `prod.py` — `TELEGRAM_BOT_TOKEN` berilgan bo'lsa `TELEGRAM_WEBHOOK_SECRET` majburiy:
+   bo'sh / `"dev-webhook-secret"` / <16 belgi → `ImproperlyConfigured`.
+2. `views.py` — `_secret_ok()`: `hmac.compare_digest` (constant-time — **SEC-006**);
+   `X-Telegram-Bot-Api-Secret-Token` sarlavhasini ham qabul qiladi; kalit bo'sh bo'lsa
+   **hamma so'rov rad etiladi** (bo'sh==bo'sh emas); ASCII bo'lmagan kalit → 403 (500 emas).
+3. `client.py set_webhook` — kalit bo'lsa `secret_token` ni `setWebhook` ga yuboradi.
+4. `.env.example` (backend + root) — kuchli sir generatsiya izohi.
+**Qabul mezoni:** ✅ noto'g'ri/bo'sh/ASCIIsiz sir → 403; sarlavha bilan ham ishlaydi;
+prod bot yoqilgan + kuchsiz sir → `ImproperlyConfigured`.
+**Regressiya testi:** `tests/test_telegram.py` (webhook header/unset/non-ascii/
+set_webhook) + `tests/test_deploy_config.py::test_prod_requires_strong_webhook_secret*`.
+**Natija:** 258 pytest passed (edi 251 + 7). `check` toza; migratsiya toza.
+**Commit:** _(quyida)_
 
 ### [ ] FE-001 — `ErrorBoundary` yo'q
 **Manzil:** `src/app/providers.tsx`, `src/app/router.tsx`
@@ -315,11 +320,10 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 **Regressiya testi:** `apps/core/tests/test_health.py`.
 **Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
 
-### [ ] SEC-006 — Webhook siri constant-time solishtiruv
-**Manzil:** `apps/telegram_bot/views.py:25`
-**Bajarilishi kerak:** `secrets.compare_digest(secret, settings.TELEGRAM_WEBHOOK_SECRET)`.
-`SEC-004` bilan bitta commitda.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] SEC-006 — Webhook siri constant-time solishtiruv
+**Manzil:** `apps/telegram_bot/views.py`
+**Bajarildi:** `SEC-004` bilan bitta commitda — `hmac.compare_digest` (`_ct_equal`).
+**Commit:** SEC-004 bilan bir xil.
 
 ### [ ] CFG-003 — Django admin standart `/admin/` manzilida
 **Manzil:** `config/urls.py:34`
@@ -363,13 +367,14 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 1/4 | O'rta: 0/7 | Past: 0/6
-Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-002 ✅, SEC-003 ✅, SEC-001 kod tomoni ✅
-(token `/revoke` + git tarix rewrite foydalanuvchi zimmasida). `fix/audit-stage-10` branch.
+Kritik: 2.5/3 | Yuqori: 2/4 | O'rta: 0/7 | Past: 1/6
+Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-002 ✅, SEC-003 ✅, SEC-004 ✅,
+SEC-006 ✅, SEC-001 kod tomoni ✅ (token `/revoke` + git tarix rewrite foydalanuvchi
+zimmasida). `fix/audit-stage-10` branch.
 
-Har 5 tuzatish tekshiruvi (CFG-001, SEC-001, SEC-002, SEC-003, SEC-004 dan keyin):
-251 pytest ✅ · `check` (local) ✅ · `check --deploy` (prod) 0 security ogohlantirishi ✅ ·
-frontend tegilmagan (tsc/lint o'zgarmagan).
+Har 5 tuzatish tekshiruvi (CFG-001, SEC-001, SEC-002, SEC-003, SEC-004):
+258 pytest ✅ · `check` (local) ✅ · `check --deploy` (prod) 0 security ogohlantirishi ✅ ·
+frontend hali tegilmagan (tsc/lint/build o'zgarmagan — keyingi: FE-001, TS-001).
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 

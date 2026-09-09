@@ -104,18 +104,46 @@ def test_prod_settings_are_hardened() -> None:
 @pytest.mark.parametrize(
     "secret_key",
     [
-        None,  # umuman berilmagan
-        "",  # bo'sh
+        "",  # bo'sh (aniq env — lokal .env ni bosib o'tadi)
         "insecure-dev-key-change-me",  # base.py fallback
         "django-insecure-abc123",  # Django auto-generatsiya prefiksi
         "short",  # juda qisqa
         "x" * 40,  # 50 belgidan qisqa
     ],
 )
-def test_prod_rejects_weak_secret_key(secret_key: str | None) -> None:
+def test_prod_rejects_weak_secret_key(secret_key: str) -> None:
     """SEC-003 — kuchsiz/yo'q `SECRET_KEY` bilan `prod` yuklanmasligi kerak."""
     result = _load_prod_settings("print('loaded')", SECRET_KEY=secret_key)
     assert result.returncode != 0, (
         f"SECRET_KEY={secret_key!r} bilan prod yuklandi — rad etilishi kerak edi"
     )
     assert "ImproperlyConfigured" in result.stderr or "SECRET_KEY" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "webhook_secret",
+    ["", "dev-webhook-secret", "short"],
+)
+def test_prod_requires_strong_webhook_secret_when_bot_enabled(
+    webhook_secret: str,
+) -> None:
+    """SEC-004 — TELEGRAM_BOT_TOKEN berilsa kuchli webhook siri majburiy."""
+    result = _load_prod_settings(
+        "print('loaded')",
+        TELEGRAM_BOT_TOKEN="123456:fake-token",
+        TELEGRAM_WEBHOOK_SECRET=webhook_secret,
+    )
+    assert result.returncode != 0, (
+        f"webhook_secret={webhook_secret!r} bilan prod yuklandi — rad etilishi kerak"
+    )
+    assert "TELEGRAM_WEBHOOK_SECRET" in result.stderr
+
+
+def test_prod_ok_without_bot() -> None:
+    """Bot o'chirilgan bo'lsa webhook siri talab qilinmaydi."""
+    result = _load_prod_settings(
+        "from django.conf import settings; print(settings.TELEGRAM_BOT_TOKEN or 'none')",
+        TELEGRAM_BOT_TOKEN="",
+        TELEGRAM_WEBHOOK_SECRET=None,
+    )
+    assert result.returncode == 0, result.stderr

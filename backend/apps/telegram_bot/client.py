@@ -64,6 +64,12 @@ def edit_message_reply_markup(chat_id: str | int, message_id: int) -> None:
 
 
 def set_webhook(url: str) -> bool:
-    return _call("setWebhook", {"url": url,
-                                "allowed_updates": ["message", "callback_query"]}) \
-        is not None
+    payload: dict[str, Any] = {
+        "url": url,
+        "allowed_updates": ["message", "callback_query"],
+    }
+    # Telegram bu tokenni har so'rovda `X-Telegram-Bot-Api-Secret-Token` sarlavhasida
+    # qaytaradi — sirni URL'dan tashqari yo'l bilan ham tekshirish mumkin (SEC-004).
+    if settings.TELEGRAM_WEBHOOK_SECRET:
+        payload["secret_token"] = settings.TELEGRAM_WEBHOOK_SECRET
+    return _call("setWebhook", payload) is not None
