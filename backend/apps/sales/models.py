@@ -1,7 +1,7 @@
 """Sotuv, qaytarish va qarzdorlik modellari (CLAUDE.md 6 — [MVP])."""
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
@@ -20,7 +20,18 @@ from .constants import (
 )
 
 _ZERO = Decimal("0")
+_CENT = Decimal("0.01")
 _MONEY = {"max_digits": 14, "decimal_places": 2}
+
+
+def money_round(value: Decimal) -> Decimal:
+    """Pul summasini aniq bir qoida bilan yaxlitlaydi: 2 xona, ROUND_HALF_UP.
+
+    Audit CALC-001: DB qatlamining yashirin yaxlitlashiga (ROUND_HALF_EVEN)
+    tayanmasdan, frontend `money()` (Math.round — yarim yuqoriga) bilan bir xil
+    yo'nalishda yaxlitlaymiz.
+    """
+    return (value or _ZERO).quantize(_CENT, rounding=ROUND_HALF_UP)
 _QTY = {"max_digits": 14, "decimal_places": 3}
 _GEO = {"max_digits": 9, "decimal_places": 6, "null": True, "blank": True}
 
@@ -90,7 +101,7 @@ class Sale(BaseModel):
 
     def recalc(self) -> None:
         agg = self.items.aggregate(s=models.Sum("amount"))
-        self.total_amount = (agg["s"] or _ZERO) - self.discount_amount
+        self.total_amount = money_round((agg["s"] or _ZERO) - self.discount_amount)
 
     @property
     def order_taker(self):
@@ -132,8 +143,12 @@ class SaleItem(BaseModel):
 
     def compute(self) -> None:
         gross = (self.quantity or _ZERO) * (self.price or _ZERO)
-        self.amount = gross * (Decimal("1") - (self.discount_percent or _ZERO) / 100)
-        self.profit = self.amount - (self.quantity or _ZERO) * (self.cost_price or _ZERO)
+        self.amount = money_round(
+            gross * (Decimal("1") - (self.discount_percent or _ZERO) / 100)
+        )
+        self.profit = money_round(
+            self.amount - (self.quantity or _ZERO) * (self.cost_price or _ZERO)
+        )
 
 
 class SaleReturn(BaseModel):

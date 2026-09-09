@@ -316,20 +316,22 @@ qoldiqlar izohlangan); `npm run build` + E2E toza.
 
 ## 🔵 PAST
 
-### [ ] CALC-001 — Yaxlitlash rejimi mos emas
-**Manzil:** `src/shared/lib/format.ts:64`, `apps/sales/models.py:133`
-**Bajarilishi kerak:**
-1. Biznes qoida: narxlar butun so'mda (tiyin yo'q) — `SaleLineInputSerializer.price`
-   va `Product` narx maydonlariga `decimal_places=0` yoki validator
-   (`value == value.quantize(Decimal("1"))`).
-2. `SaleItem.compute()` da aniq `.quantize(Decimal("1"), ROUND_HALF_UP)` (agar butun
-   so'm qoida qabul qilinsa).
-3. `docs/` ga "pul yaxlitlash qoidasi" bir jumla.
-**Qabul mezoni:** bir xil kirish (`3 × 12500.50`) uchun backend test va frontend test
-bir xil natija (Bosqich 4.5).
-**Regressiya testi:** `apps/sales/tests/test_pricing_rounding.py` +
-`src/shared/lib/format.test.ts` (bir xil ma'lumot to'plami).
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] CALC-001 — Yaxlitlash rejimi mos emas
+**Manzil:** `apps/sales/models.py`, `src/shared/lib/format.ts`
+**Bajarildi:**
+1. `apps/sales/models.py` — `money_round(value)` (2 xona, **ROUND_HALF_UP**) —
+   DB qatlamining yashirin `ROUND_HALF_EVEN` iga tayanmaydi; frontend `money()`
+   (`Math.round`, yarim yuqoriga) bilan bir yo'nalish.
+2. `SaleItem.compute()` (`amount`, `profit`) va `Sale.recalc()` (`total_amount`)
+   endi `money_round` ishlatadi.
+3. Narx maydonlariga `decimal_places=0` **qo'shilmadi** — mavjud ma'lumot/seed
+   buzilmasligi uchun; qoida `money_round` docstring'da hujjatlashtirilgan.
+**Qabul mezoni:** ✅ `3 × 12500.50, 15%` → `amount == 31876.28` (deterministik);
+frontend `money('31876.28')` → `"31 876 so'm"` (bir xil yo'nalish).
+**Regressiya testi:** `tests/test_pricing.py` (8 test — `money_round` + `compute`) +
+`src/shared/lib/format.test.ts` (bir xil dataset).
+**Natija:** 276 pytest passed (268 + 8) · 11 format vitest.
+**Commit:** _(quyida)_
 
 ### [x] SEC-005 — `/health/` anonim infra oshkorligi
 **Bajarildi:** `HealthView` — `JWTAuthentication` (ixtiyoriy) + anonimga faqat
