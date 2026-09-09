@@ -1,8 +1,12 @@
 """Kun yopish uchun agregatlar (CLAUDE.md 6 — formulalar).
 
-    cash_expected    = cash_sales + debt_collected − approved_expenses(CASH)   [F2]
+    cash_expected    = cash_sales + debt_collected − cash_expenses(rad etilmagan)
     cash_difference  = cash_handed − cash_expected            (manfiy = kamomad)
     stock_difference = loaded_qty − sold_qty − returned_qty
+
+DC-001: `cash_expected` hisobida rad etilmagan BARCHA qo'ldagi-naqd xarajatlar
+(PENDING ham) ayiriladi — tarqatuvchi ko'rsatgan pulni darhol hisobga olamiz.
+Admin xarajatni keyin rad etsa, `refresh_day_close_snapshot` qayta hisoblaydi.
 """
 from __future__ import annotations
 
@@ -124,13 +128,16 @@ def build_snapshot(distributor, date, *, daily_return_items=None) -> DayCloseSna
             status="APPROVED", payment_source="CASH_ON_HAND"
         ).aggregate(s=Sum("amount"))["s"] or _ZERO
     )
-
-    # CLAUDE.md 6 formula: cash_expected = naqd sotuv + undirilgan qarz
-    #                                       − tasdiqlangan qo'ldagi-naqd xarajatlar
+    # DC-001: kassadan kutiladigan puldan rad etilmagan barcha qo'ldagi-naqd
+    # xarajatlar ayiriladi (PENDING ham — tarqatuvchi ko'rsatgan pul).
+    expense_cash_deducted = (
+        day_expenses.filter(payment_source="CASH_ON_HAND")
+        .aggregate(s=Sum("amount"))["s"] or _ZERO
+    )
     snap.cash_expected = (
         snap.cash_sales_amount
         + snap.debt_collected_amount
-        - snap.expense_approved_amount
+        - expense_cash_deducted
     )
     snap.wallet_balance_end = get_or_create_wallet(distributor).balance
 

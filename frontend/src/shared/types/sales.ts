@@ -1,54 +1,21 @@
-export type PaymentType = 'NAQD' | 'PLASTIK' | 'OTKAZMA' | 'QARZ' | 'ARALASH';
-export type SaleStatus = 'COMPLETED' | 'FLAGGED' | 'CONFLICT' | 'CANCELLED';
+import type { components } from '@/shared/types/api.gen';
 
-export interface SaleItem {
-  id: string;
-  product: string;
-  product_name: string;
-  product_sku: string;
-  quantity: string;
-  price: string;
-  cost_price: string;
-  amount: string;
-  profit: string;
-  below_min_price: boolean;
-}
+// Audit API-001: bu tiplar avval qo'lda yozilgan va serializer bilan mos emas edi
+// (`discount_percent`, `order`, `latitude` va h.k. yetishmasdi). Endi OpenAPI
+// sxemasidan olinadi — `npm run gen:api` bilan yangilanadi.
 
-export interface Sale {
-  id: string;
-  number: string;
-  date: string;
-  distributor: string;
-  distributor_name: string;
-  client: string;
-  client_name: string;
-  payment_type: PaymentType;
-  payment_type_display: string;
-  total_amount: string;
-  discount_amount: string;
-  paid_amount: string;
-  debt_amount: string;
-  due_date: string | null;
-  status: SaleStatus;
-  status_display: string;
-  flagged: boolean;
-  flag_reason: string;
-  note: string;
-  items: SaleItem[];
-  created_at: string;
-}
+type Schemas = components['schemas'];
 
-export interface Debt {
-  id: string;
-  client: string;
-  client_name: string;
-  sale: string | null;
-  sale_number: string | null;
-  amount: string;
-  paid_amount: string;
-  remaining: string;
-  due_date: string | null;
-  status: 'ACTIVE' | 'PARTIAL' | 'PAID' | 'OVERDUE';
-  status_display: string;
-  created_at: string;
-}
+export type PaymentType = Schemas['PaymentTypeEnum'];
+export type SaleStatus = Schemas['SaleStatusEnum'];
+export type SaleItem = Schemas['SaleItem'];
+
+// `order_number` / `sale_number` — serializer'da `default=None` (buyurtma/sotuv
+// bo'lmasa `null`), lekin drf-spectacular buni nullable deb belgilamaydi.
+export type Sale = Omit<Schemas['Sale'], 'order_number'> & {
+  readonly order_number: string | null;
+};
+
+export type Debt = Omit<Schemas['Debt'], 'sale_number'> & {
+  readonly sale_number: string | null;
+};

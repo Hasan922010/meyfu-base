@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.core.exceptions import BusinessError
@@ -116,13 +116,7 @@ def submit_day_close(
     return day_close
 
 
-def _fill_snapshot(day_close, distributor, date, return_rows, cash_handed) -> None:
-    snap = build_snapshot(
-        distributor, date,
-        daily_return_items=[
-            {"product": r.product, "quantity": r.quantity} for r in return_rows
-        ],
-    )
+def _apply_snapshot(day_close, snap, cash_handed) -> None:
     day_close.loaded_amount = snap.loaded_amount
     day_close.sold_amount = snap.sold_amount
     day_close.returned_amount = snap.returned_amount
@@ -141,6 +135,47 @@ def _fill_snapshot(day_close, distributor, date, return_rows, cash_handed) -> No
     day_close.visits_count = snap.visits_count
     day_close.new_clients_count = snap.new_clients_count
     day_close.save()
+
+
+def _fill_snapshot(day_close, distributor, date, return_rows, cash_handed) -> None:
+    snap = build_snapshot(
+        distributor, date,
+        daily_return_items=[
+            {"product": r.product, "quantity": r.quantity} for r in return_rows
+        ],
+    )
+    _apply_snapshot(day_close, snap, cash_handed)
+
+
+@transaction.atomic
+def refresh_day_close_snapshot(day_close: DayClose, *, user=None) -> DayClose:
+    """Kun yopish agregatlarini DB'dagi joriy holatdan qayta hisoblaydi (DC-001).
+
+    Xarajat tasdiqlash/rad etish `cash_expected` va `cash_difference` ni
+    o'zgartirishi mumkin — shu yerdan yangilanadi. Jurnal (hamyon/qoldiq) ga
+    ta'sir qilmaydi; faqat hisobot maydonlari. Yopilgan kun bo'lsa AuditLog.
+    """
+    day_close = DayClose.objects.select_for_update().get(pk=day_close.pk)
+    before = {
+        "cash_expected": str(day_close.cash_expected),
+        "cash_difference": str(day_close.cash_difference),
+    }
+    snap = build_snapshot(day_close.distributor, day_close.date)
+    cash_handed = (
+        day_close.cash_handovers.aggregate(s=models.Sum("amount"))["s"] or _ZERO
+    )
+    _apply_snapshot(day_close, snap, cash_handed)
+
+    after = {
+        "cash_expected": str(day_close.cash_expected),
+        "cash_difference": str(day_close.cash_difference),
+    }
+    if day_close.status == DayCloseStatus.CLOSED and before != after:
+        AuditLog.objects.create(
+            user=user, action="dayclose.snapshot_refresh", model_name="DayClose",
+            object_id=str(day_close.id), changes={"before": before, "after": after},
+        )
+    return day_close
 
 
 @transaction.atomic
@@ -209,6 +244,14 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
         distributor=day_close.distributor, date=day_close.date,
         status=LoadingStatus.CONFIRMED,
     ).update(status=LoadingStatus.CLOSED)
+
+    # DC-001: submit'dan keyin bog'langan xarajatlar / status o'zgarishlarini
+    # hisobga olib agregatlarni yangilaymiz (jurnalga ta'sir qilmaydi)
+    _apply_snapshot(
+        day_close,
+        build_snapshot(day_close.distributor, day_close.date),
+        day_close.cash_handovers.aggregate(s=models.Sum("amount"))["s"] or _ZERO,
+    )
 
     day_close.wallet_balance_end = get_or_create_wallet(day_close.distributor).balance
     day_close.status = DayCloseStatus.CLOSED

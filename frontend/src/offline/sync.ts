@@ -3,8 +3,14 @@ import { catalogApi } from '@/shared/api/catalog';
 import { clientsApi } from '@/shared/api/clients';
 import { companyApi } from '@/shared/api/company';
 import { ordersApi } from '@/shared/api/orders';
+import {
+  bulkSyncDataShape,
+  clientListShape,
+  productListShape,
+  vanStockListShape,
+} from '@/shared/api/schemas';
 import { warehouseApi } from '@/shared/api/warehouse';
-import { saveCompanyCache } from '@/mobile/lib/companyCache';
+import { assertApiShape } from '@/shared/lib/validate';
 import type { ApiSuccess } from '@/shared/types/api';
 
 import { db, getMeta, setMeta } from './db';
@@ -26,6 +32,7 @@ let syncing = false;
 export async function pullReferenceData(): Promise<void> {
   const since = await getMeta('catalog_since');
   const catalog = await catalogApi.products({ page_size: 500 });
+  assertApiShape(productListShape, catalog.results, 'sync/catalog');
   await db.products.bulkPut(
     catalog.results.map((p) => ({
       id: p.id,
@@ -42,6 +49,7 @@ export async function pullReferenceData(): Promise<void> {
   );
 
   const clients = await clientsApi.list({ page_size: 500 });
+  assertApiShape(clientListShape, clients.results, 'sync/clients');
   await db.clients.bulkPut(
     clients.results.map((c) => ({
       id: c.id,
@@ -57,6 +65,7 @@ export async function pullReferenceData(): Promise<void> {
   );
 
   const van = await warehouseApi.myVanStock();
+  assertApiShape(vanStockListShape, van, 'sync/van-stock');
   await db.van_stock.clear();
   await db.van_stock.bulkPut(
     van.map((v) => ({
@@ -97,8 +106,10 @@ export async function pullReferenceData(): Promise<void> {
     // buyurtma oqimi hali yo'q bo'lishi mumkin — jimgina o'tkazamiz
   }
 
-  // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort
+  // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort.
+  // Dinamik import — `companyCache` faqat chek oqimi bilan yuklanadi (PERF-001).
   try {
+    const { saveCompanyCache } = await import('@/mobile/lib/companyCache');
     await saveCompanyCache(await companyApi.public());
   } catch {
     /* rekvizitsiz ham chek chiqadi */
@@ -129,6 +140,8 @@ export async function pushOutbox(): Promise<{ sent: number; failed: number }> {
       },
     );
 
+    assertApiShape(bulkSyncDataShape, data.data, 'bulk-sync');
+
     let sent = 0;
     let failed = 0;
     for (const r of data.data.results) {
@@ -137,8 +150,9 @@ export async function pushOutbox(): Promise<{ sent: number; failed: number }> {
       else failed += 1;
     }
     return { sent, failed };
-  } catch {
-    // Tarmoq xatosi — SENDING'larni PENDING'ga qaytaramiz
+  } catch (err) {
+    // Tarmoq yoki javob-shakli xatosi — SENDING'larni PENDING'ga qaytaramiz
+    console.warn('[pushOutbox]', err);
     await db.outbox.where('status').equals('SENDING').modify({ status: 'PENDING' });
     return { sent: 0, failed: 0 };
   } finally {

@@ -1,14 +1,54 @@
 """Production sozlamalari."""
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401,F403
 from .base import env
 
 DEBUG = False
+
+# --- SECRET_KEY (audit SEC-003) ---
+# base.py da dev qulayligi uchun standart qiymat bor; ishlab chiqarishda uni
+# ishlatib bo'lmaydi — env majburiy va kuchli bo'lishi shart.
+SECRET_KEY = env("SECRET_KEY")
+_INSECURE_KEYS = {
+    "insecure-dev-key-change-me",
+    "dev-insecure-not-a-secret",
+    "change-me-in-production",
+    "test-secret-key-not-for-production-0123456789abcdef",
+}
+if not SECRET_KEY or SECRET_KEY in _INSECURE_KEYS or SECRET_KEY.startswith(
+    ("django-insecure-", "insecure-", "change-me")
+):
+    raise ImproperlyConfigured(
+        "Ishlab chiqarishda kuchli SECRET_KEY kerak. Generatsiya qiling: "
+        'python -c "import secrets;print(secrets.token_urlsafe(64))"'
+    )
+if len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured(
+        f"SECRET_KEY juda qisqa ({len(SECRET_KEY)} belgi) — kamida 50 belgi bo'lsin."
+    )
 
 ADMINS = [
     ("Operator", email.strip())
     for email in env("ADMIN_EMAILS", default="").split(",")
     if email.strip()
 ]
+
+# --- Telegram webhook siri (audit SEC-004) ---
+# Bot yoqilgan bo'lsa (TELEGRAM_BOT_TOKEN berilgan) webhook siri kuchli bo'lishi
+# shart — base.py dagi "dev-webhook-secret" standarti ishlab chiqarishda taqiqlanadi.
+if TELEGRAM_BOT_TOKEN:  # noqa: F405
+    TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET")
+    if (
+        not TELEGRAM_WEBHOOK_SECRET
+        or TELEGRAM_WEBHOOK_SECRET == "dev-webhook-secret"
+        or len(TELEGRAM_WEBHOOK_SECRET) < 16
+    ):
+        raise ImproperlyConfigured(
+            "TELEGRAM_BOT_TOKEN berilgan — kuchli TELEGRAM_WEBHOOK_SECRET kerak "
+            "(≥16 belgi). Generatsiya: "
+            'python -c "import secrets;print(secrets.token_urlsafe(32))"'
+        )
 
 # --- Xavfsizlik (CLAUDE.md 16) ---
 SECURE_SSL_REDIRECT = True

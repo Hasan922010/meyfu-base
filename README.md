@@ -79,19 +79,27 @@ Reja: [`docs/pilot.md`](./docs/pilot.md).
 
 ## Ishga tushirish
 
-### Variant A — Docker (prod-ga yaqin, tavsiya etiladi)
+### Variant A — Docker
 
 Barcha xizmatlar (Postgres, Redis, MinIO, Celery, Nginx) konteynerlarda ko'tariladi.
 Migratsiya va standart admin (`ensure_superuser`) entrypoint'da avtomatik bajariladi.
 
+`docker-compose.yml` — ishlab chiqarish bazasi (`config.settings.prod`). Lokal ishlab
+chiqish uchun `docker-compose.dev.yml` override'ini qo'shing (`config.settings.dev`,
+`DEBUG=True`, jonli qayta yuklash, ochiq portlar). Batafsil: [`docs/deploy.md`](docs/deploy.md).
+
 ```bash
-cp backend/.env.example backend/.env      # kerakli sozlamalarni to'ldiring
+cp frontend/.env.example frontend/.env
+export COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml   # bir marta
 docker compose up -d --build
 
 docker compose exec web python manage.py seed_base   # birlik/kategoriya/ombor karkasi
 # ixtiyoriy — to'liq demo ma'lumot (4 rol + 5 kunlik sotuv tarixi):
 docker compose exec web python manage.py seed_demo
 ```
+
+Ishlab chiqarish uchun: `cp .env.example .env` (repo ildizida), haqiqiy qiymatlar bilan
+to'ldiring, `COMPOSE_FILE` siz `docker compose up -d --build`.
 
 | Xizmat | Manzil |
 |---|---|
@@ -106,7 +114,25 @@ docker compose exec web python manage.py seed_demo
 `config.settings.local` — **sqlite + xotiradagi kesh/navbat**, Postgres yoki Redis kerak emas.
 Frontend bilan tez sinov uchun eng qulay yo'l.
 
-**Backend:**
+**Eng qulay yo'l — bitta skript** (venv, migratsiya, seed, admin parol, server — hammasi):
+
+```powershell
+# Windows — ikki marta bosing yoki terminalda:
+scripts\start-backend.bat
+#   yoki to'g'ridan-to'g'ri:
+powershell -ExecutionPolicy Bypass -File scripts\dev-backend.ps1
+
+#   flaglar:
+scripts\dev-backend.ps1 -Fresh          # demo ma'lumotni qayta yaratadi
+scripts\dev-backend.ps1 -Port 8001      # boshqa port
+scripts\dev-backend.ps1 -SkipInstall    # pip install'ni o'tkazib yuboradi (tezroq)
+```
+
+Skript `.venv` bo'lmasa yaratadi, `requirements/dev.txt` o'rnatadi, migratsiya qiladi, baza bo'sh
+bo'lsa `seed_demo` chaqiradi, SUPER_ADMIN parolini `Hasanali.0220` ga keltiradi va `runserver`ni
+ko'taradi. To'xtatish: `Ctrl+C`.
+
+**Qo'lda (bosqichma-bosqich):**
 ```bash
 cd backend
 python -m venv .venv
@@ -132,11 +158,11 @@ npm run dev          # http://localhost:5173  (API so'rovlari 8000-portga proxy 
 
 Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 
-### Kirish ma'lumotlari
+### Kirish ma'lumotlari (faqat DEV — `docker-compose.dev.yml` / `config.settings.local`)
 
 | Manba | Telefon (login) | Parol |
 |---|---|---|
-| `ensure_superuser` (Docker) | `+998900000000` | `Hasanali.0220` (`.env` da o'zgartiring) |
+| `ensure_superuser` (dev override) | `+998900000000` | `Hasanali.0220` |
 | `seed_demo` — SUPER_ADMIN | `+998900000000` | `Hasanali.0220` |
 | `seed_demo` — MANAGER | `+998901000000` | `demo12345` |
 | `seed_demo` — WAREHOUSE | `+998902000000` | `demo12345` |
@@ -144,6 +170,10 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 
 > ⚠️ Login maydoniga telefonни **probel va tiresiz** kiriting: `+998900000000`.
 > `seed_demo --fresh` demo foydalanuvchilarni qayta yaratadi.
+>
+> **Ishlab chiqarishda** standart parol yo'q: `ensure_superuser` faqat `.env` dagi
+> `DJANGO_SUPERUSER_PHONE` + `DJANGO_SUPERUSER_PASSWORD` bo'lsa admin yaratadi
+> (parol Django validatorlaridan o'tishi shart); `seed_demo` `--force` talab qiladi.
 
 ---
 
@@ -153,7 +183,13 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 cd backend
 pytest                              # config.settings.test (sqlite, tashqi xizmatlarsiz)
 # yoki: docker compose exec web pytest
+
+cd ../frontend
+npm test                            # vitest — util / API-shakl / ErrorBoundary
+npm run e2e                         # Playwright — backend (sqlite) + dev serverni o'zi ko'taradi
 ```
+
+> `npm run e2e` birinchi marta: `npx playwright install chromium`.
 
 Kritik yo'llar qoplangan: narx limiti, VanStock yetarliligi, qarz limiti, kun yopish
 formulalari, hamyon balansi butunligi, append-only jurnal himoyasi, offline dublikat

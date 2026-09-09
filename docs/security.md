@@ -33,6 +33,10 @@ Holat: 16-bosqich, 2026-09-07. `python manage.py check --deploy` — **0 muammo*
 - `SECURE_CONTENT_TYPE_NOSNIFF`, `X_FRAME_OPTIONS = DENY`
 - CORS/CSRF — faqat `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` dagi domenlar
 - Prod'da Browsable API renderer o'chirilgan (faqat JSON)
+- Django admin manzili sozlanadigan (`ADMIN_URL`) — standart `/admin/` shart emas (CFG-003)
+- `/health/` anonimga faqat `{success: bool}` beradi; to'liq tafsilot (db/redis/celery/
+  disk) faqat autentifikatsiyalangan foydalanuvchi yoki `X-Health-Token` bilan (SEC-005)
+- Lokal/dev sozlamalarida ham kreditsialli wildcard CORS yo'q — aniq origin ro'yxati (CFG-002)
 
 ## Ma'lumot butunligi
 - Pul/tovar jurnallari append-only: `WalletTransaction`, `StockMovement`,
@@ -49,10 +53,33 @@ Holat: 16-bosqich, 2026-09-07. `python manage.py check --deploy` — **0 muammo*
 - Frontendda yuklashdan oldin siqish (max 1600px) — server yukini kamaytiradi
 
 ## Sirlar (secrets)
-- `.env` `.gitignore` da (tekshirilgan)
+- `.env` `.gitignore` da (tekshirilgan); `.env.example` fayllarida faqat bo'sh yoki
+  `change-me-...` placeholder qiymatlar — `backend/tests/test_no_committed_secrets.py`
+  bilan qoplangan
 - `SECRET_KEY`, `TELEGRAM_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`, DB parol — faqat env
-- `seed_demo` / standart admin parollari — **faqat dev**; prod'da `ensure_superuser`
-  kuchli parol talab qiladi
+- Standart admin paroli **YO'Q** (SEC-002): `ensure_superuser` faqat
+  `DJANGO_SUPERUSER_PHONE` + `DJANGO_SUPERUSER_PASSWORD` berilsa ishlaydi va parolni
+  Django validatorlaridan o'tkazadi; `seed_demo` `DEBUG=False` da `--force` talab qiladi.
+  Dev qulayligi uchun `docker-compose.dev.yml` `+998900000000` / `Hasanali.0220` beradi.
+
+### ⚠️ Sir sizishi (SEC-001, 2026-09-09)
+
+`backend/.env.example` da haqiqiy Telegram bot tokeni commit qilingan edi (dastlabki
+commit `f9188ab` dan beri). Namuna fayldan olib tashlandi (bo'sh qilindi).
+
+**Talab qilinadigan harakatlar:**
+1. **@BotFather → `/revoke`** — eski tokenni bekor qiling (ochiq tarixda qoladi).
+   Yangi tokenni faqat serverdagi `backend/.env` ga yozing.
+2. **Git tarixini tozalash** (repo egalari bilan kelishilgan holda):
+   ```bash
+   pip install git-filter-repo
+   # eski token qiymatini tarixdan oling (bu yerga yozib qo'ymaymiz):
+   OLD=$(git show f9188ab:backend/.env.example | sed -n 's/^TELEGRAM_BOT_TOKEN="\(.*\)"/\1/p')
+   printf '%s==>REDACTED\n' "$OLD" > /tmp/repl.txt
+   git filter-repo --replace-text /tmp/repl.txt && rm /tmp/repl.txt
+   git push --force --all && git push --force --tags   # barcha klonlar qayta olinadi
+   ```
+   Rewrite qilinmasa — token tarixdan o'qib olinishi mumkin, faqat `/revoke` himoya qiladi.
 
 ## Ochiq (kelajak uchun) elementlar
 - [ ] Token blacklist (chiqishda darhol bekor qilish)

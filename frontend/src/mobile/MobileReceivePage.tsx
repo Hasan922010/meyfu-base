@@ -97,7 +97,7 @@ export function MobileReceivePage(): ReactElement {
           Tasdiqlash — admin panelida yoki menejer tomonidan.
         </p>
         <div className="flex gap-2 pt-2">
-          <button className="btn px-5" onClick={() => navigate('/m')}>
+          <button className="btn px-5" onClick={() => void navigate('/m')}>
             Bosh sahifa
           </button>
           <button

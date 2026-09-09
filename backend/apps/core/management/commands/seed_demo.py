@@ -9,7 +9,8 @@ from __future__ import annotations
 import datetime
 from decimal import Decimal
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 PHONE_ADMIN = "+998900000000"
@@ -26,9 +27,17 @@ class Command(BaseCommand):
     def add_arguments(self, parser) -> None:
         parser.add_argument("--fresh", action="store_true",
                             help="Avval demo foydalanuvchilarni o'chirish")
+        parser.add_argument("--force", action="store_true",
+                            help="DEBUG=False bo'lsa ham ishga tushirish")
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
+        # Demo dataset ma'lum parolli hisoblar yaratadi (SUPER_ADMIN ham) —
+        # ishlab chiqarishda tasodifan ishga tushmasin (audit SEC-002).
+        if not settings.DEBUG and not options["force"]:
+            raise CommandError(
+                "seed_demo faqat DEBUG=True da ishlaydi. Ataylab bo'lsa --force bering."
+            )
         from apps.catalog.models import Brand, Category, Product, Unit
         from apps.clients.models import Client, Route
         from apps.expenses.models import ExpenseCategory

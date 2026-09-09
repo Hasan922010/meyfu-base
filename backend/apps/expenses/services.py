@@ -20,6 +20,19 @@ from .models import DistributorExpense, ExpenseCategory, FuelLog
 _ZERO = Decimal("0")
 
 
+def _refresh_dayclose_snapshot(expense: DistributorExpense, user=None) -> None:
+    """DC-001: xarajat tasdiqlansa/rad etilsa o'sha kunning kun-yopish agregatlarini
+    yangilaydi (`cash_expected` / `cash_difference`). Jurnalga ta'sir qilmaydi."""
+    from apps.dayclose.models import DayClose
+    from apps.dayclose.services import refresh_day_close_snapshot
+
+    dc = DayClose.objects.filter(
+        distributor=expense.distributor, date=expense.date
+    ).first()
+    if dc is not None:
+        refresh_day_close_snapshot(dc, user=user)
+
+
 @dataclass
 class ExpenseResult:
     expense: DistributorExpense
@@ -181,6 +194,7 @@ def approve_expense(expense: DistributorExpense, user=None) -> DistributorExpens
         body=f"{expense.category.name} · {expense.amount} so'm",
         data={"expense_id": str(expense.id)},
     )
+    _refresh_dayclose_snapshot(expense, user=user)
     return expense
 
 
@@ -216,4 +230,5 @@ def reject_expense(
         body=f"{expense.category.name} · {expense.amount} so'm. Sabab: {reason}",
         data={"expense_id": str(expense.id)},
     )
+    _refresh_dayclose_snapshot(expense, user=user)
     return expense
