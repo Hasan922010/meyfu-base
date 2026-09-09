@@ -215,20 +215,24 @@ maydonlarni tekshiradi; `gen:api` eskirsa yoki serializer o'zgarsa tsc yiqiladi.
 **Natija:** 32 vitest passed · `tsc -b` / `lint` / `build` toza.
 **Commit:** _(quyida)_
 
-### [ ] UX-001 — Backend maydon xatolari formaga bog'lanmaydi
-**Manzil:** `src/shared/api/client.ts`, formalar (`react-hook-form`)
-**Bajarilishi kerak:**
-1. `client.ts` ga `extractFieldErrors(error): Record<string,string>` —
-   `error.response.data.error.details` dan `{field: message}` (DRF
-   `{"field":["msg"]}` va nested holatlarni qamrab).
-2. Umumiy `useApiForm` yordamchisi yoki har mutation `onError` da
-   `Object.entries(fields).forEach(([k,v]) => setError(k, {message:v}))`.
-3. Kamida: login, xodim yaratish (`StaffForm`), mahsulot (`ProductForm`),
-   mijoz (`ClientForm`).
-**Qabul mezoni:** band telefon bilan xodim yaratishda `phone` maydoni ostida xato
-matni chiqadi (toast emas).
-**Regressiya testi:** `StaffForm.test.tsx` — 400 javob mock, maydon xatosi ko'rinadi.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] UX-001 — Backend maydon xatolari formaga bog'lanmaydi
+**Manzil:** `src/shared/api/client.ts`, `src/shared/lib/formErrors.ts`, forma komponentlari
+**Bajarildi:**
+1. `client.ts` — `extractFieldErrors(error)` (DRF `{"field":["msg"]}` va nested'ni
+   tekis yo'lga keltiradi). `extractApiError` endi maydon xatolarini o'qiladigan
+   matnga aylantiradi (`Telefon: Bu raqam band` — umumiy "So'rovda xatolik bor" emas)
+   → **barcha forma** avtomatik yaxshi xabar ko'radi.
+2. `formErrors.ts` — `applyServerFieldErrors(err, setError, fieldMap)` (RHF `setError`
+   ga bog'laydi; non_field_errors qaytariladi).
+3. Ulandi: `StaffForm` (fieldMap bilan `p_` prefiksi/nested profil), `ProductForm`
+   (`name`/`sku`), `ClientForm` (`name`/`phone`) — maydon ostida xato + umumiy blok
+   `whitespace-pre-line`.
+**Qabul mezoni:** ✅ band telefon bilan xodim yaratishda `phone` maydoni ostida
+xato matni; qolgan formalar ham "maydon: sabab" ko'radi.
+**Regressiya testi:** `src/shared/api/client.test.ts` — 5 test (`extractFieldErrors`
+tekislash, `extractApiError` maydon xulosasi, `{detail}`, tarmoq).
+**Natija:** 40 vitest passed · `tsc -b` / `lint` / `build` toza.
+**Commit:** _(quyida)_
 
 ### [x] DC-001 — Kun yopish snapshot'i `confirm` dan keyin eskiradi
 **Manzil:** `apps/dayclose/services/{snapshot,close}.py`, `apps/expenses/services.py`
@@ -388,7 +392,7 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 3/7 | Past: 1/6
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 4/7 | Past: 1/6
 Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
 SEC-004 ✅, SEC-006 ✅, FE-001 ✅, TS-001 ✅. `fix/audit-stage-10` branch.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.

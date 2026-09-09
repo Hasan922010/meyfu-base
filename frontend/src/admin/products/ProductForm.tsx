@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
+import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Product, ProductInput } from '@/shared/types/catalog';
 
@@ -40,7 +41,7 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
     queryFn: () => catalogApi.brands({ page_size: 200 }),
   });
 
-  const { register, handleSubmit, formState } = useForm<ProductInput>({
+  const { register, handleSubmit, setError, formState } = useForm<ProductInput>({
     defaultValues: product
       ? {
           name: product.name,
@@ -75,6 +76,7 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       void qc.invalidateQueries({ queryKey: ['products'] });
       onDone();
     },
+    onError: (err) => applyServerFieldErrors(err, setError),
   });
 
   return (
@@ -88,10 +90,16 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Nomi *</span>
           <input className="field" {...register('name', { required: true })} />
+          {formState.errors.name?.message && (
+            <span className="text-xs text-danger">{formState.errors.name.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">SKU *</span>
           <input className="field" {...register('sku', { required: true })} />
+          {formState.errors.sku?.message && (
+            <span className="text-xs text-danger">{formState.errors.sku.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Shtrix-kod</span>
@@ -181,7 +189,7 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       )}
 
       {mutation.isError && (
-        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {extractApiError(mutation.error)}
         </p>
       )}
