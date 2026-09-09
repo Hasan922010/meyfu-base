@@ -3,11 +3,34 @@
 Sana: 2026-09-09 | Commit: `34b4bb8` | Django 5.1.6 | React 18.3 | TypeScript 5.7 | DRF 3.15
 
 Audit AUDIT_PROMPT_REACT_TS_DJANGO.md bo'yicha, Bosqich 0–9. Bosqich 10 (tuzatish sikli)
-`docs/FIXES.md` da alohida boshqariladi.
+`docs/FIXES.md` da boshqariladi.
 
 ---
 
-## Xulosa
+## Bosqich 10–11 yakuni (2026-09-09, `fix/audit-stage-10` branch)
+
+**Barcha 22 topilma kod tomonidan yopildi** (28 commit). Yagona istisno — **SEC-001**:
+kod tomoni bajarildi (namuna fayldan token olib tashlandi, skaner + test qo'shildi),
+lekin token bekor qilinishi (**@BotFather `/revoke`**) va git tarix rewrite —
+foydalanuvchi harakati (`docs/security.md` da yo'riqnoma).
+
+| Guruh | Holat |
+|---|---|
+| Kritik (CFG-001, SEC-001, SEC-002) | ✅ (SEC-001 — kod ✅, token revoke foydalanuvchida) |
+| Yuqori (SEC-003, SEC-004, FE-001, TS-001) | ✅ |
+| O'rta (API-001, UX-001, DC-001, OFF-001, ORM-001, DEP-001, CFG-002) | ✅ |
+| Past (CALC-001, SEC-005, SEC-006, CFG-003, CFG-004, PERF-001) | ✅ |
+| Bosqich 8 (E2E-001) | ✅ Playwright — 7 test o'tdi |
+
+**Yakuniy tekshiruv:** Backend **276 pytest** ✅ · `check --deploy` 0 security ✅ ·
+migratsiya toza. Frontend **41 vitest** + **7 Playwright E2E** ✅ · `tsc`/`lint`/`build`
+✅ · `npm audit` 0 high (2 moderate — faqat dev-tooling, izohlangan).
+
+Batafsil har topilma bo'yicha: `docs/FIXES.md`.
+
+---
+
+## Xulosa (dastlabki audit — Bosqich 0–9)
 
 - **Jami topilma: 20** — Kritik: 3, Yuqori: 4, O'rta: 7, Past: 6.
 - Eng xavfli 3 muammo:
