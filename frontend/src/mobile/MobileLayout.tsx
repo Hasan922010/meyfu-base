@@ -15,11 +15,12 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEffect, type ReactElement } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { SyncBadge } from '@/offline/SyncBadge';
 import { useSync } from '@/offline/useSync';
 import { pullReferenceData } from '@/offline/sync';
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -55,6 +56,7 @@ const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT'];
 export function MobileLayout(): ReactElement {
   const user = useAuthStore((s) => s.user);
   const sync = useSync();
+  const location = useLocation();
   const role = user?.role;
   const tabs =
     role === 'WAREHOUSE'
@@ -81,7 +83,9 @@ export function MobileLayout(): ReactElement {
       </header>
 
       <main className="flex-1 p-4 pb-24">
-        <Outlet />
+        <ErrorBoundary key={location.pathname} variant="page">
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md justify-around border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-gray-800 dark:bg-gray-900">

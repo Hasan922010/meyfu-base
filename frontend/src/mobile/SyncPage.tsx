@@ -1,9 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { RefreshCw, RotateCcw, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, RotateCcw, Trash2, TriangleAlert, Wifi, WifiOff } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { db } from '@/offline/db';
-import { retryFailed } from '@/offline/outbox';
+import { deleteOp, retryFailed } from '@/offline/outbox';
 import { useSync } from '@/offline/useSync';
 import { dateShort } from '@/shared/lib/format';
 
@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<string, string> = {
   FAILED: 'Xato',
   CONFLICT: 'Ziddiyat',
   SENT: 'Yuborildi',
+  DEAD: 'Yuborilmadi (20 urinish)',
 };
 
 const STATUS_CLASS: Record<string, string> = {
@@ -20,6 +21,7 @@ const STATUS_CLASS: Record<string, string> = {
   SENDING: 'text-brand',
   FAILED: 'text-danger',
   CONFLICT: 'text-danger',
+  DEAD: 'font-semibold text-danger',
 };
 
 export function SyncPage(): ReactElement {
@@ -29,6 +31,17 @@ export function SyncPage(): ReactElement {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Sinxronizatsiya</h1>
+
+      {sync.dead > 0 && (
+        <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0 text-danger" aria-hidden />
+          <span>
+            {sync.dead} ta operatsiya 20 marta urinishdan keyin yuborilmadi. Quyida
+            «Qayta urinish» yoki har birini alohida o'chiring; muammo takrorlansa
+            adminga xabar bering.
+          </span>
+        </div>
+      )}
 
       <div className="rounded-xl bg-white p-4 text-sm shadow-sm dark:bg-gray-900">
         <div className="flex justify-between">
@@ -87,6 +100,14 @@ export function SyncPage(): ReactElement {
             {op.error && <div className="mt-1 text-xs text-danger">{op.error}</div>}
             {op.attempts > 0 && (
               <div className="text-xs text-gray-400">Urinishlar: {op.attempts}</div>
+            )}
+            {op.status === 'DEAD' && (
+              <button
+                className="mt-2 inline-flex items-center gap-1 text-xs text-danger"
+                onClick={() => void deleteOp(op.client_uuid)}
+              >
+                <Trash2 size={13} aria-hidden /> Navbatdan o'chirish
+              </button>
             )}
           </li>
         ))}

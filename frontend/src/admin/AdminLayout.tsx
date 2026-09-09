@@ -29,6 +29,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { logout } from '@/shared/api/auth';
 import { ConnectionBadge } from '@/shared/components/ConnectionBadge';
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { setDesktopForced } from '@/shared/lib/useIsMobile';
@@ -73,7 +74,7 @@ export function AdminLayout(): ReactElement {
   async function handleLogout(): Promise<void> {
     await logout();
     clear();
-    navigate('/login', { replace: true });
+    void navigate('/login', { replace: true });
   }
 
   const nav = (
@@ -166,7 +167,9 @@ export function AdminLayout(): ReactElement {
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">
-          <Outlet />
+          <ErrorBoundary key={location.pathname} variant="page">
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

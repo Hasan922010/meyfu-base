@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactElement } from 'react';
+import { lazy, Suspense, type ComponentType, type ReactElement } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
 import { AdminLayout } from '@/admin/AdminLayout';
@@ -7,22 +7,34 @@ import { DashboardPage } from '@/admin/DashboardPage';
 import { DistributorsPage } from '@/admin/distributors/DistributorsPage';
 import { DayClosePage } from '@/admin/dayclose/DayClosePage';
 import { ExpensesPage } from '@/admin/expenses/ExpensesPage';
-import { DebtsPage } from '@/admin/finance/DebtsPage';
-import { FinancePage } from '@/admin/finance/FinancePage';
-import { OcrPage } from '@/admin/ocr/OcrPage';
 import { OrdersPage } from '@/admin/orders/OrdersPage';
-import { PayrollPage } from '@/admin/payroll/PayrollPage';
 import { ProductsPage } from '@/admin/products/ProductsPage';
-import { RefDataPage } from '@/admin/refdata/RefDataPage';
-import { ReportsPage } from '@/admin/reports/ReportsPage';
 import { RoutesPage } from '@/admin/routes/RoutesPage';
 import { SalesPage } from '@/admin/sales/SalesPage';
-import { SettingsPage } from '@/admin/SettingsPage';
 import { StaffPage } from '@/admin/staff/StaffPage';
-import { SystemHealthPage } from '@/admin/system/SystemHealthPage';
 import { WarehousePage } from '@/admin/warehouse/WarehousePage';
 import { LoginPage } from '@/features/auth/LoginPage';
-import { GuidePage } from '@/shared/help/GuidePage';
+
+// PERF-001: kam ochiladigan / og'ir admin sahifalari — alohida bo'lakda
+function lz(load: () => Promise<Record<string, unknown>>, name: string) {
+  return lazy(async () => {
+    const mod = await load();
+    return { default: mod[name] as ComponentType };
+  });
+}
+
+const DebtsPage = lz(() => import('@/admin/finance/DebtsPage'), 'DebtsPage');
+const FinancePage = lz(() => import('@/admin/finance/FinancePage'), 'FinancePage');
+const OcrPage = lz(() => import('@/admin/ocr/OcrPage'), 'OcrPage');
+const PayrollPage = lz(() => import('@/admin/payroll/PayrollPage'), 'PayrollPage');
+const RefDataPage = lz(() => import('@/admin/refdata/RefDataPage'), 'RefDataPage');
+const ReportsPage = lz(() => import('@/admin/reports/ReportsPage'), 'ReportsPage');
+const SettingsPage = lz(() => import('@/admin/SettingsPage'), 'SettingsPage');
+const SystemHealthPage = lz(
+  () => import('@/admin/system/SystemHealthPage'),
+  'SystemHealthPage',
+);
+const GuidePage = lz(() => import('@/shared/help/GuidePage'), 'GuidePage');
 import { DayCloseWizard } from '@/mobile/DayCloseWizard';
 import { DebtCollectPage } from '@/mobile/DebtCollectPage';
 import { MobileAdminDayClose } from '@/mobile/admin/MobileAdminDayClose';
@@ -118,8 +130,8 @@ const router = createBrowserRouter([
       { path: 'orders', element: <OrdersPage /> },
       { path: 'day-close', element: <DayClosePage /> },
       { path: 'expenses', element: <ExpensesPage /> },
-      { path: 'debts', element: <DebtsPage /> },
-      { path: 'finance', element: <FinancePage /> },
+      { path: 'debts', element: <Lazy><DebtsPage /></Lazy> },
+      { path: 'finance', element: <Lazy><FinancePage /></Lazy> },
       { path: 'staff', element: <StaffPage /> },
       { path: 'distributors', element: <DistributorsPage /> },
       {
@@ -130,13 +142,13 @@ const router = createBrowserRouter([
           </Lazy>
         ),
       },
-      { path: 'payroll', element: <PayrollPage /> },
-      { path: 'reports', element: <ReportsPage /> },
-      { path: 'ocr', element: <OcrPage /> },
-      { path: 'system', element: <SystemHealthPage /> },
-      { path: 'refdata', element: <RefDataPage /> },
-      { path: 'settings', element: <SettingsPage /> },
-      { path: 'help', element: <GuidePage /> },
+      { path: 'payroll', element: <Lazy><PayrollPage /></Lazy> },
+      { path: 'reports', element: <Lazy><ReportsPage /></Lazy> },
+      { path: 'ocr', element: <Lazy><OcrPage /></Lazy> },
+      { path: 'system', element: <Lazy><SystemHealthPage /></Lazy> },
+      { path: 'refdata', element: <Lazy><RefDataPage /></Lazy> },
+      { path: 'settings', element: <Lazy><SettingsPage /></Lazy> },
+      { path: 'help', element: <Lazy><GuidePage /></Lazy> },
     ],
   },
   {
@@ -174,7 +186,7 @@ const router = createBrowserRouter([
       { path: 'scan', element: <ScanInvoicePage /> },
       { path: 'sync', element: <SyncPage /> },
       { path: 'profile', element: <ProfilePage /> },
-      { path: 'help', element: <GuidePage /> },
+      { path: 'help', element: <Lazy><GuidePage /></Lazy> },
     ],
   },
   { path: '*', element: <NotFound /> },

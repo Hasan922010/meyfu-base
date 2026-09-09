@@ -53,5 +53,11 @@
     "title": "Page not found",
     "body": "This address doesn't exist or has moved.",
     "home": "Back to home"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "body": "An error occurred while loading the page. Please try again.",
+    "retry": "Try again",
+    "home": "Home"
   }
 }

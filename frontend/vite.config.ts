@@ -1,8 +1,9 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url';
 
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [
@@ -69,5 +70,13 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  test: {
+    // faqat unit testlar; tests/e2e/** — Playwright (npm run e2e)
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
   },
 });

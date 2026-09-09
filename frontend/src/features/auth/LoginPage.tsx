@@ -25,7 +25,7 @@ export function LoginPage(): ReactElement {
     onSuccess: (data) => {
       setSession(data);
       const state = location.state as LocationState | null;
-      navigate(state?.from ?? '/', { replace: true });
+      void navigate(state?.from ?? '/', { replace: true });
     },
   });
 

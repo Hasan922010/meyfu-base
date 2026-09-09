@@ -223,3 +223,75 @@ def test_damaged_goods_written_off(auth_api, admin_api, van_stocked):
     wh_stock = Stock.objects.get(warehouse=warehouse, product=product)
     # 500 kirim - 500 yuklash + 390 good + (10 return - 10 writeoff) = 390
     assert wh_stock.quantity == Decimal("390.000")
+
+
+@pytest.mark.django_db
+def test_pending_cash_expense_reduces_expected_cash(
+    auth_api, van_stocked, expense_categories
+):
+    """DC-001: hali tasdiqlanmagan qo'ldagi-naqd xarajat ham kutilgan kassadan
+    ayiriladi (tarqatuvchi ko'rsatgan pul)."""
+    client = van_stocked["client"]
+    product = van_stocked["product"]
+    assert _sale(auth_api, client, product, "100").status_code == 201  # 2 700 000 naqd
+
+    exp = auth_api.post(
+        "/api/v1/expenses/",
+        {"category": str(expense_categories["lunch"].id), "amount": "50000",
+         "payment_source": "CASH_ON_HAND"},
+        format="json",
+    )
+    assert exp.status_code == 201
+    assert exp.data["data"]["status"] == "PENDING"
+
+    p = auth_api.get("/api/v1/day-close/my-today/").data["data"]
+    assert p["cash_sales_amount"] == "2700000.00"
+    assert p["cash_expected"] == "2650000.00"  # 2 700 000 − 50 000
+
+
+@pytest.mark.django_db
+def test_rejecting_expense_recomputes_closed_day(
+    auth_api, admin_api, van_stocked, expense_categories
+):
+    """DC-001: yopilgan kundan keyin xarajat rad etilsa kassa farqi qayta hisoblanadi."""
+    from apps.dayclose.models import DayClose
+
+    client = van_stocked["client"]
+    product = van_stocked["product"]
+    warehouse = van_stocked["warehouse"]
+
+    assert _sale(auth_api, client, product, "100").status_code == 201  # 2 700 000 naqd
+    exp = auth_api.post(
+        "/api/v1/expenses/",
+        {"category": str(expense_categories["lunch"].id), "amount": "50000",
+         "payment_source": "CASH_ON_HAND"},
+        format="json",
+    ).data["data"]
+
+    # tarqatuvchi 2 650 000 topshiradi (xarajatga 50 000 ushlab qoldi)
+    submit = auth_api.post(
+        "/api/v1/day-close/submit/",
+        {"warehouse": str(warehouse.id), "cash_handed": "2650000",
+         "items": [{"product": str(product.id), "quantity": "400", "condition": "GOOD"}]},
+        format="json",
+    )
+    assert submit.status_code == 201, submit.data
+    dc = submit.data["data"]
+    assert dc["cash_difference"] == "0.00"  # xarajat hisobga olindi
+
+    assert admin_api.post(f"/api/v1/day-close/{dc['id']}/confirm/").status_code == 200
+
+    rej = admin_api.post(
+        f"/api/v1/expenses/{exp['id']}/reject/", {"reason": "chek yo'q"}, format="json"
+    )
+    assert rej.status_code == 200
+
+    dc_obj = DayClose.objects.get(pk=dc["id"])
+    assert dc_obj.cash_expected == Decimal("2700000.00")  # endi xarajat ayirilmaydi
+    assert dc_obj.cash_difference == Decimal("-50000.00")  # kamomad
+
+    from apps.core.models import AuditLog
+
+    assert AuditLog.objects.filter(
+        action="dayclose.snapshot_refresh", object_id=str(dc["id"])
+    ).exists()

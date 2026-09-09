@@ -1,4 +1,6 @@
 import { api } from '@/shared/api/client';
+import { loginDataShape } from '@/shared/api/schemas';
+import { assertApiShape } from '@/shared/lib/validate';
 import type { ApiSuccess, LoginResponse, User } from '@/shared/types/api';
 
 export interface LoginPayload {
@@ -9,6 +11,7 @@ export interface LoginPayload {
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   // Login endpointi to'g'ridan-to'g'ri { success, data } qaytaradi
   const { data } = await api.post<ApiSuccess<LoginResponse>>('/auth/login/', payload);
+  assertApiShape(loginDataShape, data?.data, 'login');
   return data.data;
 }
 

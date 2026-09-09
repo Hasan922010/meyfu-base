@@ -5,7 +5,15 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'vite.config.ts', 'eslint.config.js'] },
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'vite.config.ts',
+      'eslint.config.js',
+      'src/shared/types/api.gen.ts', // openapi-typescript tomonidan generatsiya qilingan
+    ],
+  },
   {
     files: ['src/**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],

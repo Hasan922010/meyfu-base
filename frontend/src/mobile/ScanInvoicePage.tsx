@@ -48,7 +48,7 @@ export function ScanInvoicePage(): ReactElement {
           </p>
         )}
         <div className="flex justify-center gap-2">
-          <button className="btn px-5" onClick={() => navigate('/m')}>
+          <button className="btn px-5" onClick={() => void navigate('/m')}>
             Bosh sahifa
           </button>
           <button

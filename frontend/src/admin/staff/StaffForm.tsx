@@ -1,10 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { extractApiError } from '@/shared/api/client';
 import { staffApi, type StaffInput } from '@/shared/api/users';
+import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import type { Role, User } from '@/shared/types/api';
+
+const PROFILE_FIELD_MAP: Record<string, string> = {
+  'distributor_profile.commission_percent': 'p_commission_percent',
+  'distributor_profile.order_commission_percent': 'p_order_commission_percent',
+  'distributor_profile.delivery_commission_percent': 'p_delivery_commission_percent',
+  'distributor_profile.base_salary': 'p_base_salary',
+  'distributor_profile.monthly_plan': 'p_monthly_plan',
+  'distributor_profile.debt_limit': 'p_debt_limit',
+  'distributor_profile.daily_expense_limit': 'p_daily_expense_limit',
+  'distributor_profile.vehicle_number': 'p_vehicle_number',
+};
 
 const ROLES: Array<{ value: Role; label: string }> = [
   { value: 'DISTRIBUTOR', label: 'Tarqatuvchi' },
@@ -36,7 +48,14 @@ export function StaffForm({
   const qc = useQueryClient();
   const pr = staff?.distributor_profile ?? null;
 
-  const { register, handleSubmit, watch } = useForm<FormValues>({
+  const [serverError, setServerError] = useState<string>('');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setError,
+    formState: { errors },
+  } = useForm<FormValues>({
     defaultValues: staff
       ? {
           phone: staff.phone,
@@ -92,11 +111,20 @@ export function StaffForm({
       void qc.invalidateQueries({ queryKey: ['staff'] });
       onDone();
     },
+    onError: (err) => {
+      const leftover = applyServerFieldErrors(err, setError, PROFILE_FIELD_MAP);
+      setServerError(leftover.join(' · ') || extractApiError(err));
+    },
   });
 
   return (
     <form
-      onSubmit={(e) => void handleSubmit((v) => mutation.mutate(v))(e)}
+      onSubmit={(e) =>
+        void handleSubmit((v) => {
+          setServerError('');
+          mutation.mutate(v);
+        })(e)
+      }
       className="space-y-3"
     >
       <div className="grid grid-cols-2 gap-3">
@@ -108,10 +136,16 @@ export function StaffForm({
             disabled={Boolean(staff)}
             {...register('phone', { required: !staff })}
           />
+          {errors.phone?.message && (
+            <span className="text-xs text-danger">{errors.phone.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">F.I.SH. *</span>
           <input className="field" {...register('full_name', { required: true })} />
+          {errors.full_name?.message && (
+            <span className="text-xs text-danger">{errors.full_name.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Rol *</span>
@@ -133,6 +167,9 @@ export function StaffForm({
             autoComplete="new-password"
             {...register('password', { required: !staff, minLength: 8 })}
           />
+          {errors.password?.message && (
+            <span className="text-xs text-danger">{errors.password.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Passport seriyasi</span>
@@ -231,9 +268,9 @@ export function StaffForm({
         </div>
       )}
 
-      {mutation.isError && (
-        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          {extractApiError(mutation.error)}
+      {mutation.isError && serverError && (
+        <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          {serverError}
         </p>
       )}
 

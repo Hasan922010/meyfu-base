@@ -1,39 +1,71 @@
 name: meyfu
 
+# ────────────────────────────────────────────────────────────────────────────
+# ISHLAB CHIQARISH (production) bazasi — `config.settings.prod`.
+#
+#   cp .env.example .env      # → haqiqiy qiymatlar bilan to'ldiring
+#   docker compose up -d --build
+#
+# `prod.py` majburiy o'zgaruvchilar berilmasa (SECRET_KEY, ALLOWED_HOSTS,
+# CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS) ishga tushmaydi — bu ataylab
+# (audit CFG-001 / SEC-003).
+#
+# LOKAL ISHLAB CHIQISH uchun dev override'ni qo'shing (dev settings, manba
+# bind-mount, ochiq portlar, standart maxfiy qiymatlar):
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# ────────────────────────────────────────────────────────────────────────────
+
 x-backend-env: &backend-env
-  DJANGO_SETTINGS_MODULE: config.settings.dev
-  SECRET_KEY: ${SECRET_KEY:-insecure-dev-key-change-me}
-  DEBUG: ${DEBUG:-True}
-  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web,nginx}
-  DATABASE_URL: postgres://meyfu:meyfu@db:5432/meyfu
-  REDIS_URL: redis://redis:6379/0
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+  SECRET_KEY: ${SECRET_KEY:-}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+  CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+  DATABASE_URL: ${DATABASE_URL:-postgres://meyfu:${POSTGRES_PASSWORD:-meyfu}@db:5432/meyfu}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   POSTGRES_HOST: db
-  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+  TIME_ZONE: ${TIME_ZONE:-Asia/Tashkent}
   USE_S3: ${USE_S3:-True}
-  AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
-  AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-minioadmin}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
   AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-meyfu-media}
-  AWS_S3_ENDPOINT_URL: http://minio:9000
-  DJANGO_SUPERUSER_PHONE: ${DJANGO_SUPERUSER_PHONE:-+998900000000}
-  DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-Hasanali.0220}
+  AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-http://minio:9000}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+  ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+  ADMIN_URL: ${ADMIN_URL:-admin/}
+  HEALTH_DETAIL_TOKEN: ${HEALTH_DETAIL_TOKEN:-}
+  BACKUP_DIR: ${BACKUP_DIR:-/backups}
+  TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+  TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-MeyFuBot}
+  TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  # Birinchi ishga tushirishda superuser yaratish uchun (keyin .env dan olib
+  # tashlang). Bo'sh bo'lsa `ensure_superuser` hech narsa qilmaydi.
+  DJANGO_SUPERUSER_PHONE: ${DJANGO_SUPERUSER_PHONE:-}
+  DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
   DJANGO_SUPERUSER_NAME: ${DJANGO_SUPERUSER_NAME:-Bosh admin}
+
+x-backend-build: &backend-build
+  context: .
+  dockerfile: docker/Dockerfile
+  args:
+    REQUIREMENTS: prod
 
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: meyfu
-      POSTGRES_PASSWORD: meyfu
-      POSTGRES_DB: meyfu
+      POSTGRES_USER: ${POSTGRES_USER:-meyfu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meyfu}
+      POSTGRES_DB: ${POSTGRES_DB:-meyfu}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U meyfu"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-meyfu}"]
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - "5432:5432"
 
   redis:
     image: redis:7-alpine
@@ -45,20 +77,15 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-    ports:
-      - "6379:6379"
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
     volumes:
       - miniodata:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -72,24 +99,19 @@ services:
         condition: service_started
     entrypoint: >
       /bin/sh -c "
-      until mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}; do sleep 2; done;
+      until mc alias set local http://minio:9000 ${AWS_ACCESS_KEY_ID:-minioadmin} ${AWS_SECRET_ACCESS_KEY:-minioadmin}; do sleep 2; done;
       mc mb -p local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media};
       mc anonymous set download local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media};
       exit 0;
       "
 
   web:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args:
-        REQUIREMENTS: dev
+    build: *backend-build
     command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
     environment:
       <<: *backend-env
       RUN_MIGRATIONS: "1"
     volumes:
-      - ./backend:/app
       - media:/app/media
       - static:/app/staticfiles
     depends_on:
@@ -97,38 +119,27 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
 
   worker:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args:
-        REQUIREMENTS: dev
+    build: *backend-build
     command: celery -A config worker -l info
     environment:
       <<: *backend-env
       RUN_MIGRATIONS: "0"
     volumes:
-      - ./backend:/app
       - media:/app/media
     depends_on:
       - web
       - redis
 
   beat:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      args:
-        REQUIREMENTS: dev
+    build: *backend-build
     command: celery -A config beat -l info
     environment:
       <<: *backend-env
       RUN_MIGRATIONS: "0"
-    volumes:
-      - ./backend:/app
     depends_on:
       - web
       - redis
@@ -137,9 +148,9 @@ services:
     image: postgres:16-alpine
     environment:
       PGHOST: db
-      PGUSER: meyfu
-      PGPASSWORD: meyfu
-      PGDATABASE: meyfu
+      PGUSER: ${POSTGRES_USER:-meyfu}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-meyfu}
+      PGDATABASE: ${POSTGRES_DB:-meyfu}
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
     volumes:
       - ./scripts:/scripts:ro
@@ -156,7 +167,7 @@ services:
       - static:/app/staticfiles:ro
       - media:/app/media:ro
     ports:
-      - "80:80"
+      - "${HTTP_PORT:-80}:80"
     depends_on:
       - web
 

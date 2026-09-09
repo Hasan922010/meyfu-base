@@ -56,7 +56,13 @@ export interface CachedOrder {
   }>;
 }
 
-export type OutboxStatus = 'PENDING' | 'SENDING' | 'SENT' | 'FAILED' | 'CONFLICT';
+export type OutboxStatus =
+  | 'PENDING'
+  | 'SENDING'
+  | 'SENT'
+  | 'FAILED'
+  | 'CONFLICT'
+  | 'DEAD'; // 20 urinishdan keyin — avtomatik qayta urinilmaydi (audit OFF-001)
 export type OutboxType =
   | 'sale'
   | 'debt_payment'
@@ -71,6 +77,7 @@ export interface OutboxOp {
   type: OutboxType;
   payload: Record<string, unknown>;
   created_at: number;
+  last_attempt_at: number | null; // oxirgi yuborish urinishi — backoff shundan (OFF-001)
   attempts: number;
   status: OutboxStatus;
   error: string | null;
