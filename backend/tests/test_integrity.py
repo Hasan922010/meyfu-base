@@ -90,9 +90,13 @@ def test_nightly_task_writes_auditlog_and_notifies(walleted, admin_user):
 #  Endpointlar
 # --------------------------------------------------------------------------- #
 @pytest.mark.django_db
-def test_health_endpoint_public(api):
-    resp = api.get("/api/v1/health/")
-    assert resp.status_code == 200
+def test_health_endpoint_public(api, auth_api):
+    # anonim — ochiq, lekin minimal (SEC-005)
+    anon = api.get("/api/v1/health/")
+    assert anon.status_code == 200
+    assert "data" not in anon.data
+    # autentifikatsiyalangan — to'liq tafsilot
+    resp = auth_api.get("/api/v1/health/")
     assert resp.data["data"]["checks"]["db"] is True
     assert "disk" in resp.data["data"]["checks"]
 

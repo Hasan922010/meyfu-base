@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.core.models import AuditLog, CompanySettings
 from apps.core.permissions import RolePermission
@@ -23,9 +24,16 @@ _ADMIN_ROLES = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
 
 
 class HealthView(APIView):
-    """Ochiq monitoring endpointi. `?deep=1` — celery ishchisini ham tekshiradi."""
+    """Ochiq monitoring endpointi.
 
-    authentication_classes: list = []
+    Anonim so'rov faqat `{"success": bool}` oladi (audit SEC-005 — infra
+    tafsilotlarini oshkor qilmaslik). To'liq tafsilot (db/redis/celery/disk)
+    faqat autentifikatsiyalangan foydalanuvchiga yoki `X-Health-Token` bilan.
+    `?deep=1` — celery ishchisini ham tekshiradi.
+    """
+
+    # JWT'ni tekshiradi (ixtiyoriy) — auth bo'lsa to'liq tafsilot, aks holda minimal
+    authentication_classes = [JWTAuthentication]
     permission_classes = [AllowAny]
 
     @extend_schema(
@@ -35,12 +43,21 @@ class HealthView(APIView):
         responses={200: dict, 503: dict},
     )
     def get(self, request: Request) -> Response:
+        from django.conf import settings
+
         deep = request.query_params.get("deep") in ("1", "true", "yes")
         data = health_checks(deep=deep)
-        return Response(
-            {"success": data["healthy"], "data": data},
-            status=200 if data["healthy"] else 503,
+        status_code = 200 if data["healthy"] else 503
+
+        token = settings.HEALTH_DETAIL_TOKEN
+        detailed = bool(
+            (request.user and request.user.is_authenticated)
+            or (token and request.headers.get("X-Health-Token") == token)
         )
+        body = {"success": data["healthy"]}
+        if detailed:
+            body["data"] = data
+        return Response(body, status=status_code)
 
 
 class SystemStatusView(APIView):
