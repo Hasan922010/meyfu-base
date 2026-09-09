@@ -53,7 +53,10 @@ Holat: 16-bosqich, 2026-09-07. `python manage.py check --deploy` — **0 muammo*
   `change-me-...` placeholder qiymatlar — `backend/tests/test_no_committed_secrets.py`
   bilan qoplangan
 - `SECRET_KEY`, `TELEGRAM_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`, DB parol — faqat env
-- `seed_demo` / standart admin parollari — **faqat dev**
+- Standart admin paroli **YO'Q** (SEC-002): `ensure_superuser` faqat
+  `DJANGO_SUPERUSER_PHONE` + `DJANGO_SUPERUSER_PASSWORD` berilsa ishlaydi va parolni
+  Django validatorlaridan o'tkazadi; `seed_demo` `DEBUG=False` da `--force` talab qiladi.
+  Dev qulayligi uchun `docker-compose.dev.yml` `+998900000000` / `Hasanali.0220` beradi.
 
 ### ⚠️ Sir sizishi (SEC-001, 2026-09-09)
 

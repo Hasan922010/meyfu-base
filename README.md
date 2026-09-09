@@ -158,11 +158,11 @@ npm run dev          # http://localhost:5173  (API so'rovlari 8000-portga proxy 
 
 Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 
-### Kirish ma'lumotlari
+### Kirish ma'lumotlari (faqat DEV — `docker-compose.dev.yml` / `config.settings.local`)
 
 | Manba | Telefon (login) | Parol |
 |---|---|---|
-| `ensure_superuser` (Docker) | `+998900000000` | `Hasanali.0220` (`.env` da o'zgartiring) |
+| `ensure_superuser` (dev override) | `+998900000000` | `Hasanali.0220` |
 | `seed_demo` — SUPER_ADMIN | `+998900000000` | `Hasanali.0220` |
 | `seed_demo` — MANAGER | `+998901000000` | `demo12345` |
 | `seed_demo` — WAREHOUSE | `+998902000000` | `demo12345` |
@@ -170,6 +170,10 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 
 > ⚠️ Login maydoniga telefonни **probel va tiresiz** kiriting: `+998900000000`.
 > `seed_demo --fresh` demo foydalanuvchilarni qayta yaratadi.
+>
+> **Ishlab chiqarishda** standart parol yo'q: `ensure_superuser` faqat `.env` dagi
+> `DJANGO_SUPERUSER_PHONE` + `DJANGO_SUPERUSER_PASSWORD` bo'lsa admin yaratadi
+> (parol Django validatorlaridan o'tishi shart); `seed_demo` `--force` talab qiladi.
 
 ---
 
