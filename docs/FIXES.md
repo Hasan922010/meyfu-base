@@ -58,21 +58,32 @@ yoqilgan; compose'da `config.settings.dev` yo'q; entrypoint check exit 0.
 Docker CLI audit muhitida yo'q — compose YAML/anchor Python `yaml` bilan tekshirildi.
 **Commit:** _(quyida)_
 
-### [ ] SEC-001 — Haqiqiy Telegram bot tokeni git'da
-**Manzil:** `backend/.env.example:39`
-**Muammo:** `.env.example` da haqiqiy Telegram bot tokeni (git tarixida ham).
-**Bajarilishi kerak:**
-1. **Avval:** @BotFather → `/revoke` bilan tokenni bekor qil (yoki repo egasidan so'ra).
-2. `backend/.env.example` → `TELEGRAM_BOT_TOKEN=` (bo'sh, izoh bilan).
-3. Yangi token faqat serverdagi `backend/.env` ga (git'siz).
-4. `git log --all -S "<token_prefix>"` bilan boshqa joyda yo'qligini tekshir.
-5. **Repo egalari bilan kelishilsa:** `git filter-repo --replace-text` bilan tarixdan
-   olib tashlash (yoki hech bo'lmasa `SECURITY.md` da "token bekor qilingan" deb qayd).
-**Qabul mezoni:** `grep -rn "85686" .` → 0 natija; `.env.example` da bo'sh token.
-**Regressiya testi:** `scripts/check-secrets.sh` (yangi, ixtiyoriy) yoki
-pre-commit `detect-secrets`.
-**Natija:** _(to'ldiriladi)_
-**Commit:** _(to'ldiriladi)_
+### [~] SEC-001 — Haqiqiy Telegram bot tokeni git'da
+**Manzil:** `backend/.env.example:41`
+**Muammo:** `.env.example` da haqiqiy Telegram bot tokeni — dastlabki commit `f9188ab`
+dan beri **butun tarixda**. Faqat `backend/.env.example` da (tracked); `.py`/compose/
+docs'da yo'q. `backend/.env` (git'siz, working tree) da ham bor — bu foydalanuvchining
+lokal fayli.
+**Bajarildi (kod tomoni):**
+1. `backend/.env.example` → `TELEGRAM_BOT_TOKEN=` (bo'sh) + izoh.
+2. `backend/tests/test_no_committed_secrets.py` (yangi) — barcha `*.env.example`
+   fayllarni skanerlaydi: bekor qilingan token qatori, Telegram token shakli,
+   `SECRET/TOKEN/PASSWORD/KEY` qatorlarida uzun (≥20) placeholder bo'lmagan qiymat.
+3. `scripts/check-secrets.sh` (yangi) — pre-commit hook sifatida ishlatiladigan
+   grep-skaner (Telegram token, AWS key, PEM, `.env.example` uzun qiymatlar).
+4. `docs/security.md` — sizish qayd etildi + `git filter-repo` yo'riqnomasi.
+**⚠️ FOYDALANUVCHI HARAKATI (kod bilan hal bo'lmaydi):**
+- **@BotFather → `/revoke`** — eski tokenni bekor qiling. Yangi tokenni faqat
+  serverdagi `backend/.env` ga. Lokal `backend/.env` dagi eski tokenni ham almashtiring.
+- **Git tarixini `git filter-repo` bilan tozalash** (repo egalari kelishuvi bilan;
+  `docs/security.md` da buyruq). Rewrite qilinmasa — `/revoke` yagona himoya.
+**Qabul mezoni:** ✅ `.env.example` da token bo'sh; `test_no_committed_secrets.py`
+o'tadi; `check-secrets.sh` toza. ⏳ Token bekor qilinishi + tarix tozalanishi —
+foydalanuvchi zimmasida.
+**Regressiya testi:** `backend/tests/test_no_committed_secrets.py` — 4 test.
+**Natija:** 240 pytest passed (edi 236 + 4 yangi). Kod tomoni bajarildi; SEC-001
+to'liq yopilishi uchun token `/revoke` + tarix rewrite kerak.
+**Commit:** _(quyida)_
 
 ### [ ] SEC-002 — Konteyner ma'lum parolli SUPER_ADMIN yaratadi
 **Manzil:** `apps/users/management/commands/ensure_superuser.py:16-17`,
@@ -343,8 +354,9 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 1/3 | Yuqori: 0/4 | O'rta: 0/7 | Past: 0/6
-Oxirgi yangilanish: 2026-09-09 — CFG-001 bajarildi (`fix/audit-stage-10` branch)
+Kritik: 1.5/3 | Yuqori: 0/4 | O'rta: 0/7 | Past: 0/6
+Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 kod tomoni ✅
+(token `/revoke` + git tarix rewrite foydalanuvchi zimmasida). `fix/audit-stage-10` branch.
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 
