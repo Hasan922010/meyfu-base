@@ -112,17 +112,24 @@ partial/weak env → `CommandError`; `seed_demo` prod'da `--force` siz `CommandE
 
 ## 🟠 YUQORI
 
-### [ ] SEC-003 — `SECRET_KEY` xavfsiz bo'lmagan standart fallback
-**Manzil:** `config/settings/base.py:24`, `docker-compose.yml`
-**Bajarilishi kerak:**
-1. `prod.py` ga: `SECRET_KEY = env("SECRET_KEY")` (fallbacksiz — yo'q bo'lsa
-   `ImproperlyConfigured`). `base.py` dagi default faqat dev/local/test uchun qoladi.
-2. `docker-compose.yml` — `SECRET_KEY: ${SECRET_KEY:?SECRET_KEY kerak}` (`:-default`
-   o'rniga `:?`).
-3. `.env.example` — `SECRET_KEY=` + izoh: `python -c "import secrets;print(secrets.token_urlsafe(64))"`.
-**Qabul mezoni:** `SECRET_KEY` env'siz `prod` settings import → `ImproperlyConfigured`.
-**Regressiya testi:** `test_settings_prod.py` ga qo'shimcha case.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] SEC-003 — `SECRET_KEY` xavfsiz bo'lmagan standart fallback
+**Manzil:** `config/settings/base.py:24`, `config/settings/prod.py`
+**Bajarildi:**
+1. `prod.py` — `SECRET_KEY = env("SECRET_KEY")` (fallbacksiz). Qo'shimcha tekshiruv:
+   bo'sh, ma'lum insecure qiymatlar (`insecure-*`, `change-me*`, `django-insecure-*`,
+   base/test/dev standartlari) yoki <50 belgi → `ImproperlyConfigured`.
+2. `base.py` fallback faqat dev/local/test uchun qoldi (o'zgarmagan).
+3. `docker-compose.yml` — `${SECRET_KEY:-}` (bo'sh); loud failure endi `prod.py` da
+   (compose `:?` dev override oqimini buzardi — CFG-001 ga qarang). Root `.env.example`
+   da `SECRET_KEY=` + generatsiya izohi (CFG-001 da qo'shilgan).
+**Qabul mezoni:** ✅ `SECRET_KEY` yo'q / bo'sh / insecure / qisqa → `prod` import
+`ImproperlyConfigured`; kuchli kalit bilan yuklanadi; `check --deploy` — 0 security
+ogohlantirishi.
+**Regressiya testi:** `backend/tests/test_deploy_config.py::test_prod_rejects_weak_secret_key`
+(6 parametr) + `test_prod_settings_are_hardened`.
+**Natija:** 251 pytest passed (edi 245 + 6). `check --deploy` (prod, kuchli kalit
+bilan) — 0 security ogohlantirishi, exit 0.
+**Commit:** _(quyida)_
 
 ### [ ] SEC-004 — `TELEGRAM_WEBHOOK_SECRET` standart qiymati va ochiq webhook
 **Manzil:** `config/settings/base.py:263`, `apps/telegram_bot/views.py:20-25`
@@ -356,9 +363,13 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 0/4 | O'rta: 0/7 | Past: 0/6
-Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-002 ✅, SEC-001 kod tomoni ✅
+Kritik: 2.5/3 | Yuqori: 1/4 | O'rta: 0/7 | Past: 0/6
+Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-002 ✅, SEC-003 ✅, SEC-001 kod tomoni ✅
 (token `/revoke` + git tarix rewrite foydalanuvchi zimmasida). `fix/audit-stage-10` branch.
+
+Har 5 tuzatish tekshiruvi (CFG-001, SEC-001, SEC-002, SEC-003, SEC-004 dan keyin):
+251 pytest ✅ · `check` (local) ✅ · `check --deploy` (prod) 0 security ogohlantirishi ✅ ·
+frontend tegilmagan (tsc/lint o'zgarmagan).
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 
