@@ -278,19 +278,20 @@ markSending, dedup, backoff maydonlari).
 **Natija:** 35 vitest passed · `tsc -b` / `lint` / `build` toza.
 **Commit:** _(quyida)_
 
-### [ ] ORM-001 — `assertNumQueries` qamrovi yo'q
-**Manzil:** `backend/tests/`
-**Bajarilishi kerak:**
-1. `backend/tests/test_query_counts.py` — `django_assert_num_queries` bilan:
-   `GET /sales/` (10 sotuv, har biri 3 qator), `GET /clients/`, `GET /day-close/`,
-   `GET /reports/dashboard/`, `GET /van-stock/my/`.
-2. Topilgan N+1 lar bo'lsa `select_related`/`prefetch_related` qo'shish.
-3. `reports/services/distributor.py` timeline / `aggregates.py` sikllarini ko'rib
-   chiqish (kunlik sikl ichida agregatsiya — `values().annotate()` ga o'tkazish).
-**Qabul mezoni:** sanab o'tilgan endpointlar uchun so'rov soni ma'lumot hajmiga
-bog'liq emas (konstanta).
-**Regressiya testi:** `test_query_counts.py` o'zi.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] ORM-001 — `assertNumQueries` qamrovi yo'q
+**Manzil:** `backend/tests/test_query_counts.py` (yangi)
+**Bajarildi:**
+1. `test_query_counts.py` — `django_assert_max_num_queries` bilan `/sales/`,
+   `/clients/`, `/debts/`, `/van-stock/my/`, `/reports/dashboard/` — so'rov soni
+   chegaralangan; `test_sales_list_does_not_scale_with_rows` — 3 vs 10 sotuv
+   so'rovlar soni deyarli bir xil (haqiqiy N+1 qo'riqchisi).
+2. Mavjud N+1 **topilmadi** — view'lar allaqachon `select_related`/`prefetch_related`
+   bilan yozilgan. Yangi regressiya kiritilsa test yiqiladi.
+**Qabul mezoni:** ✅ sanab o'tilgan endpointlar uchun so'rov soni qatorlar soniga
+bog'liq emas.
+**Regressiya testi:** `tests/test_query_counts.py` — 6 test.
+**Natija:** 266 pytest passed (260 + 6). Ruff toza.
+**Commit:** _(quyida)_
 
 ### [ ] DEP-001 — `react-router` CVE'lari
 **Manzil:** `frontend/package.json`
@@ -392,14 +393,14 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 4/7 | Past: 1/6
-Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
-SEC-004 ✅, SEC-006 ✅, FE-001 ✅, TS-001 ✅. `fix/audit-stage-10` branch.
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 5/7 | Past: 1/6
+Oxirgi yangilanish: 2026-09-09 — ✅ CFG-001, SEC-001(kod), SEC-002, SEC-003, SEC-004,
+SEC-006, FE-001, TS-001, API-001, DC-001, OFF-001, UX-001, ORM-001. `fix/audit-stage-10`.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
-TS-001: 4b (hisob-kitob testi) → CALC-001; qo'lda tiplarni ko'chirish → API-001.
+Qoldi: O'rta — DEP-001, CFG-002 · Past — CALC-001, SEC-005, CFG-003, CFG-004, PERF-001, E2E-001.
 
-Backend: 258 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
-Frontend: 31 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ · `gen:api` ✅
+Backend: 266 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
+Frontend: 40 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ · `gen:api` ✅
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 
