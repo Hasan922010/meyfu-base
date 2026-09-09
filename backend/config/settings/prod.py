@@ -1,8 +1,32 @@
 """Production sozlamalari."""
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401,F403
 from .base import env
 
 DEBUG = False
+
+# --- SECRET_KEY (audit SEC-003) ---
+# base.py da dev qulayligi uchun standart qiymat bor; ishlab chiqarishda uni
+# ishlatib bo'lmaydi — env majburiy va kuchli bo'lishi shart.
+SECRET_KEY = env("SECRET_KEY")
+_INSECURE_KEYS = {
+    "insecure-dev-key-change-me",
+    "dev-insecure-not-a-secret",
+    "change-me-in-production",
+    "test-secret-key-not-for-production-0123456789abcdef",
+}
+if not SECRET_KEY or SECRET_KEY in _INSECURE_KEYS or SECRET_KEY.startswith(
+    ("django-insecure-", "insecure-", "change-me")
+):
+    raise ImproperlyConfigured(
+        "Ishlab chiqarishda kuchli SECRET_KEY kerak. Generatsiya qiling: "
+        'python -c "import secrets;print(secrets.token_urlsafe(64))"'
+    )
+if len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured(
+        f"SECRET_KEY juda qisqa ({len(SECRET_KEY)} belgi) — kamida 50 belgi bo'lsin."
+    )
 
 ADMINS = [
     ("Operator", email.strip())

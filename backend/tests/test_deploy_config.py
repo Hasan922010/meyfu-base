@@ -58,19 +58,36 @@ def test_dev_compose_override_exists() -> None:
     )
 
 
-def test_prod_settings_are_hardened() -> None:
-    """`config.settings.prod` yuklanganda xavfsizlik bayroqlari yoqilgan bo'lsin."""
+_STRONG_KEY = "u" + "R7_x9Q2" * 8  # 57 belgi, blocklist'da emas
+
+
+def _load_prod_settings(
+    script: str, **env_overrides: str | None
+) -> subprocess.CompletedProcess:
     env = {
         **os.environ,
         "DJANGO_SETTINGS_MODULE": "config.settings.prod",
-        "SECRET_KEY": "x" * 60,
+        "SECRET_KEY": _STRONG_KEY,
         "ALLOWED_HOSTS": "meyfu.example.com",
         "CORS_ALLOWED_ORIGINS": "https://meyfu.example.com",
+        "CSRF_TRUSTED_ORIGINS": "https://meyfu.example.com",
         "DATABASE_URL": "sqlite:///deploy-check.sqlite3",
         "REDIS_URL": "redis://localhost:6379/0",
     }
-    script = (
-        "import django; django.setup();"
+    for key, value in env_overrides.items():
+        if value is None:
+            env.pop(key, None)
+        else:
+            env[key] = value
+    return subprocess.run(
+        [sys.executable, "-c", "import django; django.setup(); " + script],
+        env=env, cwd=str(BACKEND_DIR), capture_output=True, text=True,
+    )
+
+
+def test_prod_settings_are_hardened() -> None:
+    """`config.settings.prod` yuklanganda xavfsizlik bayroqlari yoqilgan bo'lsin."""
+    result = _load_prod_settings(
         "from django.conf import settings as s;"
         "assert s.DEBUG is False, 'DEBUG must be False';"
         "assert '*' not in s.ALLOWED_HOSTS, 'wildcard host';"
@@ -80,12 +97,25 @@ def test_prod_settings_are_hardened() -> None:
         "assert s.SECURE_SSL_REDIRECT is True;"
         "print('ok')"
     )
-    result = subprocess.run(
-        [sys.executable, "-c", script],
-        env=env,
-        cwd=str(BACKEND_DIR),
-        capture_output=True,
-        text=True,
-    )
     assert result.returncode == 0, result.stderr
     assert "ok" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "secret_key",
+    [
+        None,  # umuman berilmagan
+        "",  # bo'sh
+        "insecure-dev-key-change-me",  # base.py fallback
+        "django-insecure-abc123",  # Django auto-generatsiya prefiksi
+        "short",  # juda qisqa
+        "x" * 40,  # 50 belgidan qisqa
+    ],
+)
+def test_prod_rejects_weak_secret_key(secret_key: str | None) -> None:
+    """SEC-003 — kuchsiz/yo'q `SECRET_KEY` bilan `prod` yuklanmasligi kerak."""
+    result = _load_prod_settings("print('loaded')", SECRET_KEY=secret_key)
+    assert result.returncode != 0, (
+        f"SECRET_KEY={secret_key!r} bilan prod yuklandi — rad etilishi kerak edi"
+    )
+    assert "ImproperlyConfigured" in result.stderr or "SECRET_KEY" in result.stderr
