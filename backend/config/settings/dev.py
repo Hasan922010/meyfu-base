@@ -6,7 +6,7 @@ DEBUG = True
 # `.env` / compose override bermasa lokal xostlar (wildcard emas).
 ALLOWED_HOSTS = env(
     "ALLOWED_HOSTS",
-    default=["localhost", "127.0.0.1", "0.0.0.0", "web", "nginx", "[::1]"],
+    default=["localhost", "127.0.0.1", "[::1]", "web", "nginx"],
 )
 
 INTERNAL_IPS = ["127.0.0.1"]
