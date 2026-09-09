@@ -10,7 +10,9 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "gen:api:schema": "cd ../backend && python manage.py spectacular --settings config.settings.local --file schema.yml",
+    "gen:api": "npm run gen:api:schema && openapi-typescript ../backend/schema.yml -o src/shared/types/api.gen.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.64.2",
@@ -47,6 +49,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "^15.15.0",
     "jsdom": "^25.0.1",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
