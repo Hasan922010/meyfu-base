@@ -53,5 +53,11 @@
     "title": "Sahifa topilmadi",
     "body": "Bunday manzil mavjud emas yoki ko'chirilgan.",
     "home": "Bosh sahifaga"
+  },
+  "errorBoundary": {
+    "title": "Nimadir noto'g'ri ketdi",
+    "body": "Sahifani ochishda xatolik yuz berdi. Qayta urinib ko'ring.",
+    "retry": "Qayta urinish",
+    "home": "Bosh sahifa"
   }
 }

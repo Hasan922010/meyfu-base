@@ -149,22 +149,26 @@ set_webhook) + `tests/test_deploy_config.py::test_prod_requires_strong_webhook_s
 **Natija:** 258 pytest passed (edi 251 + 7). `check` toza; migratsiya toza.
 **Commit:** _(quyida)_
 
-### [ ] FE-001 — `ErrorBoundary` yo'q
-**Manzil:** `src/app/providers.tsx`, `src/app/router.tsx`
-**Bajarilishi kerak:**
-1. `src/shared/components/ErrorBoundary.tsx` — class boundary, fallback UI
-   ("Nimadir noto'g'ri ketdi" + "Qayta yuklash" tugmasi + `import.meta.env.DEV` da
-   xato matni). i18n bilan.
-2. `providers.tsx` da ildizni o'rab olish; `TanStack Query`
-   `QueryErrorResetBoundary` bilan bog'lash.
-3. Mobil va admin layout'lar ichida ham alohida boundary (bitta sahifa xatosi
-   navigatsiyani o'ldirmasin).
-4. (ixtiyoriy) Sentry `captureException` boundary'da.
-**Qabul mezoni:** ataylab throw qiladigan test komponenti butun ilovani emas, faqat
-o'z sohasini yiqitadi.
-**Regressiya testi:** `src/shared/components/ErrorBoundary.test.tsx` (vitest —
-`TS-001` bilan birga o'rnatiladi).
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] FE-001 — `ErrorBoundary` yo'q
+**Manzil:** `src/App.tsx`, `src/admin/AdminLayout.tsx`, `src/mobile/MobileLayout.tsx`
+**Bajarildi:**
+1. `src/shared/components/ErrorBoundary.tsx` (class) + `ErrorFallback.tsx` (funksional,
+   i18n, `import.meta.env.DEV` da xato matni, "Qayta urinish" / "Bosh sahifa").
+2. `App.tsx` — ildizni `<ErrorBoundary variant="screen">` bilan o'radi.
+3. `AdminLayout` / `MobileLayout` — `<Outlet/>` atrofida
+   `<ErrorBoundary key={location.pathname} variant="page">` — bitta sahifa xatosi
+   navigatsiyani (sidebar/bottom-nav) o'ldirmaydi, `key` marshrut o'zgarganda
+   boundary'ni tiklaydi.
+4. i18n: `errorBoundary.*` kalitlari uz/ru/en ga qo'shildi.
+5. `onError` prop — kelajakda Sentry `captureException` uchun ilgak (hozircha
+   `console.error`).
+**Qo'shimcha:** vitest + @testing-library o'rnatildi (`npm run test`) — `TS-001`
+uchun ham asos.
+**Qabul mezoni:** ✅ throw qiladigan bola faqat o'z sohasini yiqitadi; sibling
+daraxt va navigatsiya ishlaydi; "Qayta urinish" tuzalgan bolani qayta render qiladi.
+**Regressiya testi:** `src/shared/components/ErrorBoundary.test.tsx` — 4 test.
+**Natija:** `npm run test` (4 passed) · `tsc -b` 0 xato · `npm run lint` 0 · `npm run build` OK.
+**Commit:** _(quyida)_
 
 ### [ ] TS-001 — Runtime validatsiya + frontend testlari yo'q
 **Manzil:** `src/shared/api/*`, `src/shared/types/*`, `package.json`
@@ -176,8 +180,9 @@ o'z sohasini yiqitadi.
 2. **Kritik javoblar uchun `zod`:** login, `/sales/bulk-sync/` natijasi,
    `pullReferenceData` javoblari — `z.object(...).parse()` API qatlamida. Xato →
    `ErrorBoundary` yoki aniq toast.
-3. **Vitest:** `vitest` + `@testing-library/react` o'rnatish; `package.json` `test`
-   skripti; `npm run build` dan oldin CI'da.
+3. ~~**Vitest:** `vitest` + `@testing-library/react` o'rnatish~~ — **FE-001 da
+   bajarildi** (`vitest@3`, `@testing-library/react@16`, `jsdom`, `src/test/setup.ts`,
+   `npm run test`).
 4. Boshlang'ich testlar: `format.ts` (`money`, `qty`, `numberToWordsUz`),
    `offline/outbox.ts` (dedup, backoff — `OFF-001`), hisob-kitob (`CALC-001`).
 **Qabul mezoni:** `npm test` yashil; `gen:api` schema bilan tiplar mos; kamida
@@ -277,8 +282,11 @@ bog'liq emas (konstanta).
    kiritgan qiymat yo'qligini tasdiqlash (`grep`).
 2. `react-router-dom@7` ga yangilash (breaking — `RouterProvider` API o'zgarishi
    minimal, `Routes`/`Route` qoladi) yoki 6.x xavfsiz patch chiqsa o'sha.
-3. `npm audit` toza bo'lguncha.
-**Qabul mezoni:** `npm audit --audit-level=moderate` → 0; `npm run build` + E2E toza.
+3. `npm audit` toza bo'lguncha. **Eslatma:** FE-001 da `@vitest/mocker` moderate
+   advisory ham qo'shildi (GHSA-82fw-gwwq-j7x9 — path traversal, faqat dev-tooling;
+   vitest patch chiqsa yangilash).
+**Qabul mezoni:** `npm audit --audit-level=moderate` → 0 (yoki faqat dev-only
+qoldiqlar izohlangan); `npm run build` + E2E toza.
 **Regressiya testi:** router smoke testi (`TS-001` / `E2E-001`).
 **Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
 
@@ -367,14 +375,13 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 2/4 | O'rta: 0/7 | Past: 1/6
-Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-002 ✅, SEC-003 ✅, SEC-004 ✅,
-SEC-006 ✅, SEC-001 kod tomoni ✅ (token `/revoke` + git tarix rewrite foydalanuvchi
-zimmasida). `fix/audit-stage-10` branch.
+Kritik: 2.5/3 | Yuqori: 3/4 | O'rta: 0/7 | Past: 1/6
+Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
+SEC-004 ✅, SEC-006 ✅, FE-001 ✅. `fix/audit-stage-10` branch.
+SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
 
-Har 5 tuzatish tekshiruvi (CFG-001, SEC-001, SEC-002, SEC-003, SEC-004):
-258 pytest ✅ · `check` (local) ✅ · `check --deploy` (prod) 0 security ogohlantirishi ✅ ·
-frontend hali tegilmagan (tsc/lint/build o'zgarmagan — keyingi: FE-001, TS-001).
+Backend: 258 pytest ✅ · `check` ✅ · `check --deploy` 0 security ✅
+Frontend: 4 vitest ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅
 
 ## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
 
