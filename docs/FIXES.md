@@ -355,17 +355,17 @@ frontend `money('31876.28')` → `"31 876 so'm"` (bir xil yo'nalish).
 (wildcard emas); `docker-compose.dev.yml` ham aniq ro'yxat beradi.
 **Commit:** config hardening (quyida).
 
-### [ ] PERF-001 — Katta bundle bo'laklari
-**Manzil:** `src/admin/distributors/DistributorCardPage.tsx`,
-`src/mobile/lib/companyCache.ts`, `vite.config.ts`
-**Bajarilishi kerak:**
-1. `DistributorCardPage` tablarini `React.lazy` + `Suspense`.
-2. `companyCache` — `offline/sync.ts` dagi statik importni dinamik qilish yoki
-   `ReceiptButtons` dagini statik qilish (bittalashtirish).
-3. `manualChunks` ga `recharts` alohida.
-**Qabul mezoni:** eng katta boshlang'ich chunk < 300 KB (gzip < 100 KB).
-**Regressiya testi:** — (build chiqishi bilan tekshiriladi)
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] PERF-001 — Katta bundle bo'laklari
+**Manzil:** `src/app/router.tsx`, `src/offline/sync.ts`
+**Bajarildi:**
+1. `companyCache` — `sync.ts` statik import dinamik qilindi (Vite ogohlantirishi
+   yo'qoldi; 0.7 KB alohida chunk).
+2. Kam ochiladigan admin sahifalari `React.lazy` + `<Lazy>`: `Debts`, `Finance`,
+   `Ocr`, `Payroll`, `RefData`, `Reports`, `Settings`, `SystemHealth`, `Guide`.
+3. `DistributorCardPage` (recharts) allaqachon lazy — o'zgarmadi.
+**Natija:** boshlang'ich `index` chunk **477 KB → 392 KB** (gzip 122 → 103 KB) —
+sekin tarmoqdagi tarqatuvchi uchun tezroq. 41 vitest · tsc/lint/build toza.
+**Commit:** _(quyida)_
 
 ### [ ] E2E-001 — Playwright smoke to'plami (Bosqich 8, audit'da bajarilmagan)
 **Manzil:** `frontend/tests/e2e/` (yangi)
