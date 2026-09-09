@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import type { Client, ClientInput } from '@/shared/types/clients';
 
 const TYPES: Array<{ value: string; label: string }> = [
@@ -27,7 +28,12 @@ export function ClientForm({
     queryFn: () => clientsApi.routes({ page_size: 200 }),
   });
 
-  const { register, handleSubmit } = useForm<ClientInput>({
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<ClientInput>({
     defaultValues: client
       ? {
           name: client.name,
@@ -52,6 +58,7 @@ export function ClientForm({
         ? clientsApi.update(client.id, body)
         : clientsApi.create(body);
     },
+    onError: (err) => applyServerFieldErrors(err, setError),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['clients'] });
       onDone();
@@ -69,6 +76,9 @@ export function ClientForm({
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Do'kon nomi *</span>
           <input className="field" {...register('name', { required: true })} />
+          {errors.name?.message && (
+            <span className="text-xs text-danger">{errors.name.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Egasi</span>
@@ -87,6 +97,9 @@ export function ClientForm({
         <label className="block space-y-1">
           <span className="text-sm font-medium">Telefon</span>
           <input className="field" {...register('phone')} />
+          {errors.phone?.message && (
+            <span className="text-xs text-danger">{errors.phone.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Qo'shimcha telefon</span>
@@ -127,7 +140,7 @@ export function ClientForm({
       </div>
 
       {mutation.isError && (
-        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+        <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {extractApiError(mutation.error)}
         </p>
       )}

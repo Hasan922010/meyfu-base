@@ -75,6 +75,70 @@ api.interceptors.response.use(
 
 const CONN_REFUSED_RE = /ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i;
 
+const FIELD_LABELS: Record<string, string> = {
+  non_field_errors: '',
+  detail: '',
+  phone: 'Telefon',
+  password: 'Parol',
+  old_password: 'Joriy parol',
+  new_password: 'Yangi parol',
+  full_name: 'F.I.SH.',
+  amount: 'Summa',
+  price: 'Narx',
+  quantity: 'Miqdor',
+  name: 'Nomi',
+  sku: 'SKU',
+  barcode: 'Shtrix-kod',
+  date: 'Sana',
+  due_date: 'Muddat',
+};
+
+/**
+ * DRF maydon xatolarini (`{"phone": ["..."], "profile": {"x": ["..."]}}`) tekis
+ * `{yo'l: xabar}` ko'rinishiga keltiradi (audit UX-001).
+ */
+export function extractFieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof AxiosError) || !error.response) return {};
+  const body = error.response.data as ApiErrorBody | undefined;
+  const details =
+    body && typeof body === 'object' && body.success === false
+      ? body.error?.details
+      : undefined;
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return {};
+
+  const toText = (v: unknown): string =>
+    typeof v === 'string' ? v : typeof v === 'number' ? String(v) : JSON.stringify(v);
+
+  const out: Record<string, string> = {};
+  const walk = (obj: Record<string, unknown>, prefix: string): void => {
+    for (const [key, value] of Object.entries(obj)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (Array.isArray(value)) {
+        out[path] = value.map(toText).join('. ');
+      } else if (value && typeof value === 'object') {
+        walk(value as Record<string, unknown>, path);
+      } else if (value != null) {
+        out[path] = toText(value);
+      }
+    }
+  };
+  walk(details, '');
+  return out;
+}
+
+function fieldErrorSummary(error: unknown): string | null {
+  const fields = extractFieldErrors(error);
+  const entries = Object.entries(fields);
+  if (entries.length === 0) return null;
+  return entries
+    .map(([path, message]) => {
+      const leaf = path.split('.').pop() ?? path;
+      const label = FIELD_LABELS[leaf] ?? leaf;
+      return label ? `${label}: ${message}` : message;
+    })
+    .join(' · ');
+}
+
 export function extractApiError(error: unknown): string {
   if (error instanceof AxiosError) {
     // 1. Serverdan javob umuman kelmadi — backend o'chiq, tarmoq yo'q yoki timeout
@@ -88,7 +152,8 @@ export function extractApiError(error: unknown): string {
     // 2. Backendning standart xato formati — { success: false, error: { message } }
     const body = error.response.data as ApiErrorBody | string | undefined;
     if (typeof body === 'object' && body?.success === false && body.error?.message) {
-      return body.error.message;
+      // Maydon xatolari bo'lsa — qaysi maydon va nega ekanini ko'rsatamiz
+      return fieldErrorSummary(error) ?? body.error.message;
     }
 
     // 3. Javob keldi, lekin standart formatda emas (proxy/gateway/HTML yoki matn)
