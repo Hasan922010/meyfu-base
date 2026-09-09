@@ -181,9 +181,10 @@ daraxt va navigatsiya ishlaydi; "Qayta urinish" tuzalgan bolani qayta render qil
   `applyResult` SENT/FAILED/CONFLICT, `pendingCount`/`failedCount`/`retryFailed`).
 - [ ] **4b. Hisob-kitob testi** — `CALC-001` bilan birga (bir xil ma'lumot to'plami
   backend + frontend).
-- [ ] **1. Tip generatsiyasi** — `manage.py spectacular` → `openapi-typescript`
-  → `src/shared/types/api.gen.ts` + `gen:api` skript; qo'lda tiplarni ko'chirish
-  (`API-001` shu bilan hal bo'ladi).
+- [x] **1. Tip generatsiyasi** — `frontend` `npm run gen:api` (`manage.py spectacular`
+  → `backend/schema.yml` → `openapi-typescript` → `src/shared/types/api.gen.ts`).
+  Ikkala fayl commit qilingan; `api.gen.ts` eslint'dan chiqarildi. `tsc`/`lint`/
+  `build` toza. Qo'lda tiplarni ko'chirish — `API-001` da.
 - [ ] **2. Kritik javoblar uchun `zod`** — login, `/sales/bulk-sync/` natijasi,
   `pullReferenceData` javoblari — `z.object(...).parse()` API qatlamida.
 **Qabul mezoni:** `npm test` yashil; `gen:api` schema bilan tiplar mos; kritik API
