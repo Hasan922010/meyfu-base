@@ -230,25 +230,29 @@ matni chiqadi (toast emas).
 **Regressiya testi:** `StaffForm.test.tsx` — 400 javob mock, maydon xatosi ko'rinadi.
 **Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
 
-### [ ] DC-001 — Kun yopish snapshot'i `confirm` dan keyin eskiradi
-**Manzil:** `apps/dayclose/services/close.py:146` (`confirm_day_close`), `snapshot.py`
-**⚠️ Avval biznes qoidasini tasdiqla:** tasdiqlanmagan (`PENDING`) xarajatlar
-`cash_expected` hisobiga kiradimi? Hozirgi kod faqat `APPROVED + CASH_ON_HAND` ni
-ayiradi. **Noaniq — so'ra.**
-**Bajarilishi kerak (qoida tasdiqlangach):**
-1. `confirm_day_close` oxirida `_fill_snapshot` ekvivalentini qayta chaqirib
-   (`build_snapshot` bilan) `cash_expected`, `cash_difference`,
-   `expense_approved_amount`, `expense_amount` ni yangilash va saqlash.
-2. Yoki: `cash_expected` ni `@property` qilib jurnaldan hosil qilish, DB maydonini
-   olib tashlash (append-only falsafasiga mos — CLAUDE.md 5.2).
-3. `check_integrity` ga: har `CLOSED` `DayClose` uchun
-   `cash_difference == cash_handed − (naqd sotuv + undirilgan qarz − tasdiqlangan
-   naqd xarajat)` tekshiruvi.
-**Qabul mezoni:** `submit` → admin xarajatni tasdiqlaydi → `confirm` ketma-ketligida
-saqlangan `cash_difference` yakuniy holatga mos.
-**Regressiya testi:** `apps/dayclose/tests/test_close_expense_timing.py` — xarajat
-`submit` dan keyin tasdiqlansa `cash_difference` to'g'ri.
-**Natija:** _(to'ldiriladi)_ · **Commit:** _(to'ldiriladi)_
+### [x] DC-001 — Kun yopish snapshot'i `confirm` dan keyin eskiradi
+**Manzil:** `apps/dayclose/services/{snapshot,close}.py`, `apps/expenses/services.py`
+**Biznes qoidasi (foydalanuvchi tasdiqladi):** `cash_expected` hisobida **rad
+etilmagan barcha** qo'ldagi-naqd xarajatlar (PENDING ham) ayiriladi. Admin keyin
+rad etsa — snapshot qayta hisoblanadi.
+**Bajarildi:**
+1. `snapshot.py` — `cash_expected = cash_sales + debt_collected −
+   Σ(CASH_ON_HAND, ¬REJECTED)` (avval faqat `APPROVED` edi). `my-today` preview
+   ham shu funksiyani ishlatadi → avtomatik izchil.
+2. `close.py` — `refresh_day_close_snapshot()` (yangi) + `_apply_snapshot()` helper.
+   `confirm_day_close` oxirida agregatlar qayta hisoblanadi (bog'langan xarajatlar /
+   status o'zgarishlari). Yopilgan kun bo'lsa `AuditLog` (`dayclose.snapshot_refresh`).
+   Jurnal (hamyon/qoldiq) ga ta'sir qilmaydi.
+3. `expenses/services.py` — `approve_expense` / `reject_expense` oxirida o'sha
+   kun+tarqatuvchi uchun `DayClose` bo'lsa `refresh_day_close_snapshot` chaqiriladi.
+**Qabul mezoni:** ✅ PENDING naqd xarajat `my-today` `cash_expected` ni kamaytiradi;
+yopilgan kundan keyin xarajat rad etilsa `cash_difference` qayta hisoblanadi
+(kamomad ko'rinadi) + AuditLog.
+**Regressiya testi:** `tests/test_dayclose.py` — `test_pending_cash_expense_reduces_expected_cash`,
+`test_rejecting_expense_recomputes_closed_day`.
+**Natija:** 260 pytest passed (258 + 2). Migratsiya yo'q (faqat mantiq). Frontend
+`DayCloseWizard` o'zgarmadi (`cash_expected` ni backenddan oladi).
+**Commit:** _(quyida)_
 
 ### [ ] OFF-001 — Outbox backoff va "qotib qolgan" operatsiyalar
 **Manzil:** `src/offline/outbox.ts`, `src/offline/db.ts` (`OutboxOp` tipi)
@@ -382,7 +386,7 @@ tafsilot (`db/redis/celery/disk`) faqat autentifikatsiyalangan admin yoki
 
 ## Progress
 
-Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 1/7 | Past: 1/6
+Kritik: 2.5/3 | Yuqori: 4/4 | O'rta: 2/7 | Past: 1/6
 Oxirgi yangilanish: 2026-09-09 — CFG-001 ✅, SEC-001 (kod) ✅, SEC-002 ✅, SEC-003 ✅,
 SEC-004 ✅, SEC-006 ✅, FE-001 ✅, TS-001 ✅. `fix/audit-stage-10` branch.
 SEC-001 to'liq yopilishi: token `/revoke` + git tarix rewrite — foydalanuvchi zimmasida.
