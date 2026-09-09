@@ -409,21 +409,39 @@ Backend: **276 pytest** ✅ · `check` ✅ · `check --deploy` 0 security ✅ ·
 Frontend: **41 vitest** ✅ · **7 Playwright E2E** ✅ · `tsc -b` ✅ · `lint` ✅ · `build` ✅ ·
 `gen:api` ✅ · `npm audit` 0 high (2 moderate dev-only, izohlangan)
 
-## Keyingi 3–5 tavsiya (audit yakuniy xulosasi)
+## Keyingi qadamlar (Bosqich 11 dan keyin)
 
-1. **Deploy oqimini prod'ga qaratish** (`CFG-001`) — bu bitta o'zgarish 4 ta
-   xavfsizlik topilmasining amaliy ta'sirini yo'qotadi. Undan oldin hech narsani
-   "ishlab chiqarishga tayyor" deb hisoblamaslik.
-2. **Sirlarni almashtirish** (`SEC-001`, `SEC-002`, `SEC-003`, `SEC-004`) — token
-   bekor qilish, admin parol majburiyligi, `SECRET_KEY`/webhook sirini prod'da talab.
-3. **Frontend sifat poydevori** (`TS-001`) — vitest + OpenAPI→TS generatsiya. Bu
-   `API-001`, `CALC-001` frontend testi, `OFF-001` testi va kelajakdagi driftni
-   bir yo'la yopadi.
-4. **`ErrorBoundary`** (`FE-001`) — kichik, lekin "oq ekran" xavfini yo'qotadi.
-5. **Bosqich 8 ni bajarish** (`E2E-001`) — audit muhitida imkonsiz edi; `local`
-   settings bilan to'liq E2E mumkin va hisob-kitoblarni UI=API=DB bo'yicha tasdiqlaydi.
+### ⚠️ FOYDALANUVCHI HARAKATI — kod bilan hal bo'lmaydi
+1. **Telegram tokenini bekor qilish** — @BotFather `/revoke`; yangi token faqat
+   serverdagi `backend/.env` ga; lokal `backend/.env` dagi eskisini ham almashtirish.
+2. **Git tarixini tozalash** — token 9 commitda qoladi (`docs/security.md` da
+   `git filter-repo` buyrug'i; force-push + hamma qayta klon qiladi).
+3. **Ishlab chiqarish `.env`** — root `.env.example` dan nusxa, kuchli qiymatlar
+   (`SECRET_KEY`, `POSTGRES_PASSWORD`, `ALLOWED_HOSTS`, CORS/CSRF, AWS kalitlari).
 
-**Umumiy baho:** kod sifati yuqori — service layer izchil, `Decimal` intizomi kuchli,
-append-only jurnallar, IDOR himoyasi, `strict` TS, `any` yo'q, 229 test o'tadi.
-Asosiy xavf **kodda emas, deploy/konfiguratsiyada** (`prod.py` yozilgan lekin
-ulanmagan) va **sirlarni boshqarishda**.
+### 📋 Yangi topilma (Bosqich 11 da `pip-audit` bilan aniqlandi)
+4. **`DEP-002` (backend bog'liqliklari eskirgan)** — `requirements/*.txt` pinlar
+   ~7 oy oldingi: `Django==5.1.6` (5.1.15+ patch mavjud), `djangorestframework==3.15.2`
+   (3.17.2), `simplejwt==5.4.0` (5.5.1), `daphne==4.1.2`, `Pillow==11.1.0` — ma'lum
+   CVE'lar. **Alohida PR:** patch-versiyalarga bump + to'liq test. Xavf: hozircha
+   o'rta (ko'pi DoS / chekka holat), lekin muntazam yangilash kerak (Dependabot).
+
+### Uzoq muddat
+5. **CI qurish** — `pytest` + `vitest` + `npm run e2e` + `check --deploy` +
+   `gen:api` drift tekshiruvi + `pip-audit`/`npm audit` har PR da.
+6. **Sentry** ulash (`prod.py` tayyor — faqat `SENTRY_DSN`), `check_integrity`
+   natijasini monitoringga.
+
+---
+
+## Umumiy baho (audit yakuni)
+
+Kod sifati **yuqori** — service layer izchil, `Decimal` intizomi kuchli (endi
+`money_round` bilan deterministik), append-only jurnallar, IDOR himoyasi (E2E bilan
+tasdiqlangan), `strict` TS + `any` yo'q, runtime validatsiya (zod) + ErrorBoundary
+qo'shildi, 276 backend + 41 frontend + 7 E2E test.
+
+Dastlabki asosiy xavf **kodda emas, deploy/konfiguratsiyada edi** (`prod.py` yozilgan
+lekin ulanmagan) va **sirlarni boshqarishda** — ikkalasi ham hal qilindi
+(`CFG-001` + `SEC-001..006`). Qolgan yagona ochiq nuqta — Telegram tokenini
+bekor qilish (foydalanuvchi).
