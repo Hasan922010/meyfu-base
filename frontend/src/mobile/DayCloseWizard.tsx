@@ -116,7 +116,7 @@ export function DayCloseWizard(): ReactElement {
             />
           </div>
         )}
-        <button className="btn-brand px-6" onClick={() => navigate('/m')}>
+        <button className="btn-brand px-6" onClick={() => void navigate('/m')}>
           Bosh sahifa
         </button>
       </div>
@@ -129,7 +129,7 @@ export function DayCloseWizard(): ReactElement {
         <CircleCheckBig size={56} className="mx-auto text-success" aria-hidden />
         <h1 className="text-xl font-bold">Kun yopildi</h1>
         <p className="text-gray-500">Admin tasdiqlashini kuting.</p>
-        <button className="btn-brand px-6" onClick={() => navigate('/m')}>
+        <button className="btn-brand px-6" onClick={() => void navigate('/m')}>
           Bosh sahifa
         </button>
       </div>

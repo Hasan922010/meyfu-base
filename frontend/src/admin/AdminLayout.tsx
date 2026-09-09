@@ -74,7 +74,7 @@ export function AdminLayout(): ReactElement {
   async function handleLogout(): Promise<void> {
     await logout();
     clear();
-    navigate('/login', { replace: true });
+    void navigate('/login', { replace: true });
   }
 
   const nav = (

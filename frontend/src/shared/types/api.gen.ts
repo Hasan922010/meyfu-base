@@ -1087,7 +1087,12 @@ export interface paths {
         };
         /**
          * Tizim salomatligi (db, redis, disk, celery)
-         * @description Ochiq monitoring endpointi. `?deep=1` — celery ishchisini ham tekshiradi.
+         * @description Ochiq monitoring endpointi.
+         *
+         *     Anonim so'rov faqat `{"success": bool}` oladi (audit SEC-005 — infra
+         *     tafsilotlarini oshkor qilmaslik). To'liq tafsilot (db/redis/celery/disk)
+         *     faqat autentifikatsiyalangan foydalanuvchiga yoki `X-Health-Token` bilan.
+         *     `?deep=1` — celery ishchisini ham tekshiradi.
          */
         get: operations["health_retrieve"];
         put?: never;
