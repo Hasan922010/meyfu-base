@@ -15,6 +15,7 @@ from rest_framework.exceptions import (
     AuthenticationFailed,
     NotAuthenticated,
     PermissionDenied,
+    Throttled,
 )
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
@@ -90,6 +91,16 @@ def api_exception_handler(exc: Exception, context: dict) -> Response | None:
         # Auth klassi bo'lmagan view'larda DRF 403 qaytaradi — biz 401 ga keltiramiz
         response.status_code = status.HTTP_401_UNAUTHORIZED
         code = "NOT_AUTHENTICATED"
+    elif isinstance(exc, Throttled):
+        # DRF standart xabari inglizcha — CLAUDE.md 20: o'zbekcha, aniq, ayblovsiz
+        wait = int(exc.wait) if exc.wait is not None else None
+        message = (
+            f"Juda ko'p urinish. {wait} soniyadan so'ng qayta urinib ko'ring."
+            if wait is not None
+            else "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring."
+        )
+        response.data = _error_body("THROTTLED", message, {})
+        return response
     elif isinstance(exc, Http404):
         code = "NOT_FOUND"
     elif isinstance(exc, PermissionDenied):
