@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "MeyFu"
+description = "Tarqatuvchilik, ombor, sotuv, qarzdorlik, moliya va hisobotlarni boshqaruvchi MeyFu web ilovasi."
+version = "1.0.0"
+id = "artifacts/meyfu-app"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18557
+
+[services.development]
+run = "pnpm --filter @workspace/meyfu-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/meyfu-app", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/meyfu-app/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18557"
+BASE_PATH = "/"
