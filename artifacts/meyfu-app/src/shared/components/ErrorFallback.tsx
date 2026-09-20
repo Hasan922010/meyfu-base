@@ -21,7 +21,7 @@ export function ErrorFallback({
   return (
     <div className={wrap} role="alert">
       <p className="text-4xl" aria-hidden>
-        
+        ⚠️
       </p>
       <h1 className="text-lg font-semibold">
         {t('errorBoundary.title', 'Nimadir noto‘g‘ri ketdi')}

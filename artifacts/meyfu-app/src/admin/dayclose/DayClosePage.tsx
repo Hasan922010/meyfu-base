@@ -160,7 +160,9 @@ export function DayClosePage(): ReactElement {
                       <span>
                         {it.product_name}{' '}
                         {it.condition !== 'GOOD' && (
-                          <span className="text-danger">({it.condition})</span>
+                          <span className="text-danger">
+                            ({it.condition === 'DAMAGED' ? 'brak' : "muddati o'tgan"})
+                          </span>
                         )}
                       </span>
                       <span>{qty(it.quantity)}</span>

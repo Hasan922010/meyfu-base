@@ -184,6 +184,7 @@ export function ExpensesPage(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -194,6 +195,7 @@ export function ExpensesPage(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="Keyingi sahifa"
           >
             ›
           </button>
@@ -207,7 +209,7 @@ export function ExpensesPage(): ReactElement {
       >
         <div className="space-y-3">
           <p className="text-sm text-gray-500">
-            Sabab tarqatuvchiga ko'rsatiladi (CLAUDE.md §8 — ayblovsiz).
+            Sabab tarqatuvchiga ko'rsatiladi — iltimos, aniq va hurmatli yozing.
           </p>
           <textarea
             className="field min-h-[80px] py-2"

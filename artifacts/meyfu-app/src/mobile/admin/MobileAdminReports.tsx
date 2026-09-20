@@ -4,7 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
 import { reportsApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
-import { money } from '@/shared/lib/format';
+import { dateShort, money } from '@/shared/lib/format';
 
 function firstOfMonth(): string {
   const d = new Date();
@@ -31,7 +31,7 @@ export function MobileAdminReports(): ReactElement {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Hisobotlar</h1>
       <p className="text-xs text-gray-500">
-        Davr: {range.date_from} — {range.date_to}
+        Davr: {dateShort(range.date_from)} — {dateShort(range.date_to)}
       </p>
 
       <DataState isLoading={pnl.isLoading} isError={pnl.isError}>
@@ -79,7 +79,7 @@ export function MobileAdminReports(): ReactElement {
                 key={i}
                 className="flex items-center justify-between rounded-xl bg-white p-3 text-sm shadow-sm dark:bg-gray-900"
               >
-                <span>{String(r.day ?? r.date ?? '')}</span>
+                <span>{dateShort(String(r.day ?? r.date ?? ''))}</span>
                 <span className="text-right">
                   <span className="font-medium">{money(String(r.amount))}</span>
                   {r.count != null && (

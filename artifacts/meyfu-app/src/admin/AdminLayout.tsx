@@ -153,7 +153,7 @@ export function AdminLayout(): ReactElement {
               className="text-brand hover:underline md:hidden"
               aria-label="Mobil versiya"
             >
-              
+              📱
             </button>
             <span className="hidden truncate text-gray-500 sm:inline">
               {user?.full_name}

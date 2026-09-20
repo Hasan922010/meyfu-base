@@ -9,14 +9,14 @@ import { Modal } from '@/shared/components/Modal';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Route } from '@/shared/types/clients';
 
-const WEEKDAYS: Array<{ n: number; label: string }> = [
-  { n: 1, label: 'Du' },
-  { n: 2, label: 'Se' },
-  { n: 3, label: 'Ch' },
-  { n: 4, label: 'Pa' },
-  { n: 5, label: 'Ju' },
-  { n: 6, label: 'Sh' },
-  { n: 7, label: 'Ya' },
+const WEEKDAYS: Array<{ n: number; label: string; full: string }> = [
+  { n: 1, label: 'Du', full: 'Dushanba' },
+  { n: 2, label: 'Se', full: 'Seshanba' },
+  { n: 3, label: 'Ch', full: 'Chorshanba' },
+  { n: 4, label: 'Pa', full: 'Payshanba' },
+  { n: 5, label: 'Ju', full: 'Juma' },
+  { n: 6, label: 'Sh', full: 'Shanba' },
+  { n: 7, label: 'Ya', full: 'Yakshanba' },
 ];
 
 function RouteForm({
@@ -87,6 +87,8 @@ function RouteForm({
               <button
                 key={w.n}
                 type="button"
+                title={w.full}
+                aria-label={w.full}
                 onClick={() =>
                   setDays((prev) =>
                     active ? prev.filter((d) => d !== w.n) : [...prev, w.n],

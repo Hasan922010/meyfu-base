@@ -338,6 +338,9 @@ export function NewSalePage(): ReactElement {
                 value={pickedPrice}
                 onChange={(e) => setPickedPrice(e.target.value)}
               />
+              <p className="text-xs text-gray-400">
+                Taxminiy narx: {suggestedPrice(picked)}
+              </p>
               <button
                 className="btn-brand w-full"
                 disabled={Number(pickedPrice || suggestedPrice(picked)) <= 0}
@@ -447,6 +450,11 @@ export function NewSalePage(): ReactElement {
                   <span className="text-xs text-gray-500">
                     Qarzga qoladi: {money(Math.max(0, total - Number(cashPart || 0)))}
                   </span>
+                  {(Number(cashPart) <= 0 || Number(cashPart) >= total) && (
+                    <p className="text-xs text-pending">
+                      Naqd summa 0 dan katta va jamidan kichik bo'lishi kerak.
+                    </p>
+                  )}
                 </div>
               )}
               <label className="block space-y-1">

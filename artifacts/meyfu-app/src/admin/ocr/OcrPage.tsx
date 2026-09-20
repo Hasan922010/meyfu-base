@@ -16,6 +16,13 @@ import { dateShort } from '@/shared/lib/format';
 import { OcrUpload } from './OcrUpload';
 import { ScanReview } from './ScanReview';
 
+const MATCH_STATUS_LABEL: Record<string, string> = {
+  EXACT: 'Aniq mos',
+  FUZZY: "O'xshash (tasdiq kerak)",
+  NEW: 'Yangi mahsulot',
+  UNMATCHED: 'Topilmadi',
+};
+
 const STATUS_CLASS: Record<string, string> = {
   PROCESSING: 'text-brand',
   NEEDS_REVIEW: 'text-pending',
@@ -194,7 +201,7 @@ export function OcrPage(): ReactElement {
                 <div className="mb-2 font-semibold">Moslik taqsimoti</div>
                 {Object.entries(metrics.data.match_breakdown).map(([k, v]) => (
                   <div key={k} className="flex justify-between">
-                    <span className="text-gray-500">{k}</span>
+                    <span className="text-gray-500">{MATCH_STATUS_LABEL[k] ?? k}</span>
                     <span>{v}</span>
                   </div>
                 ))}

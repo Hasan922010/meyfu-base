@@ -10,6 +10,8 @@ interface Props {
   error?: unknown;
   isEmpty?: boolean;
   emptyText?: string;
+  /** Keyingi qadam: masalan "Yangi mijoz qo'shish uchun + tugmasini bosing." */
+  emptyHint?: string;
   children: ReactNode;
 }
 
@@ -19,6 +21,7 @@ export function DataState({
   error,
   isEmpty,
   emptyText,
+  emptyHint,
   children,
 }: Props): ReactElement {
   const { t } = useTranslation();
@@ -31,9 +34,10 @@ export function DataState({
     );
   if (isEmpty)
     return (
-      <p className="p-8 text-center text-gray-400">
-        {emptyText ?? 'Ma’lumot yo’q'}
-      </p>
+      <div className="p-8 text-center text-gray-400">
+        <p>{emptyText ?? "Ma'lumot yo'q"}</p>
+        {emptyHint && <p className="mt-1 text-xs">{emptyHint}</p>}
+      </div>
     );
   return <>{children}</>;
 }

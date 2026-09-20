@@ -188,7 +188,7 @@ export function ScanReview({
               )}
               {d.status === 'CONFIRMED' && (
                 <p className="flex items-center justify-center gap-1.5 text-center text-sm text-success">
-                  <CircleCheckBig size={15} aria-hidden /> Tasdiqlangan · Purchase yaratildi
+                  <CircleCheckBig size={15} aria-hidden /> Tasdiqlangan · Kirim hujjati yaratildi
                 </p>
               )}
             </>

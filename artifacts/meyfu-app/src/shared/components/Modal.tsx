@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface Props extends PropsWithChildren {
   open: boolean;
@@ -22,6 +22,8 @@ export function Modal({
   children,
   size = 'md',
 }: Props): ReactElement | null {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -31,6 +33,13 @@ export function Modal({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
+    return () => previouslyFocused?.focus();
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -39,7 +48,12 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className={`mt-10 w-full ${WIDTH[size]} rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-900`}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className={`mt-10 w-full ${WIDTH[size]} rounded-2xl bg-white p-5 shadow-xl outline-none dark:bg-gray-900`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

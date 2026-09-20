@@ -37,6 +37,7 @@ export function DayCloseWizard(): ReactElement {
 
   const [rows, setRows] = useState<ReturnRow[]>([]);
   const [cashHanded, setCashHanded] = useState<string>('');
+  const [note, setNote] = useState<string>('');
   const [initialised, setInitialised] = useState<boolean>(false);
 
   const data = today.data;
@@ -77,6 +78,7 @@ export function DayCloseWizard(): ReactElement {
       dayCloseApi.submit({
         warehouse: warehouses.data?.results[0]?.id ?? '',
         cash_handed: cashHanded || '0',
+        note: note || undefined,
         items: rows
           .filter((r) => Number(r.quantity) > 0)
           .map((r) => ({
@@ -250,6 +252,17 @@ export function DayCloseWizard(): ReactElement {
               ? 'Kassa farqi yo\'q'
               : `Kassa farqi: ${money(cashDiff)}${cashDiff < 0 ? ' (kamomad)' : ''}`}
           </div>
+          {cashDiff < 0 && (
+            <label className="block space-y-1">
+              <span className="text-sm font-medium">Izoh (ixtiyoriy)</span>
+              <textarea
+                className="field min-h-[70px] py-2"
+                placeholder="Kamomad sababini yozing — bu jarima emas, tushuntirish uchun"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </label>
+          )}
           <div className="flex gap-2">
             <button
               className="btn flex flex-1 items-center justify-center gap-1.5"

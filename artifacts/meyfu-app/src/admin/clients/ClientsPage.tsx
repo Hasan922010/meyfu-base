@@ -98,6 +98,7 @@ export function ClientsPage(): ReactElement {
           isError={query.isError}
           isEmpty={!query.isLoading && rows.length === 0}
           emptyText="Mijoz topilmadi"
+          emptyHint="Yangi mijoz qo'shish uchun yuqoridagi tugmani bosing."
         >
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
@@ -157,6 +158,7 @@ export function ClientsPage(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -167,6 +169,7 @@ export function ClientsPage(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="Keyingi sahifa"
           >
             ›
           </button>

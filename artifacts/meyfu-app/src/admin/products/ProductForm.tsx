@@ -147,7 +147,7 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         disabled={!canEditPrice}
       >
         <legend className="px-1 text-xs text-gray-500">
-          Narxlar {canEditPrice ? '' : '(faqat SUPER_ADMIN)'}
+          Narxlar {canEditPrice ? '' : '(faqat bosh administrator tahrirlaydi)'}
         </legend>
         <label className="block space-y-1">
           <span className="text-sm">Tannarx</span>

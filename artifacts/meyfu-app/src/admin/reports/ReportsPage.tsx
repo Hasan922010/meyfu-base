@@ -9,6 +9,7 @@ import {
   type ReportDimension,
 } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
+import { PAYMENT_TYPE_LABEL } from '@/shared/lib/labels';
 import { money } from '@/shared/lib/format';
 
 type Tab = 'query' | 'abc' | 'pnl';
@@ -34,6 +35,10 @@ const ABC_DIMS: Array<{ v: ReportDimension; l: string }> = [
   { v: 'client', l: 'Mijoz' },
   { v: 'category', l: 'Kategoriya' },
 ];
+
+const DIM_LABEL: Record<string, string> = Object.fromEntries(
+  QUERY_DIMS.map((d) => [d.v, d.l]),
+);
 
 const PAYMENT_TYPES = ['NAQD', 'PLASTIK', 'OTKAZMA', 'QARZ', 'ARALASH'];
 
@@ -205,7 +210,7 @@ function QueryTab({ range }: { range: Range }): ReactElement {
             <option value="">Barcha to'lovlar</option>
             {PAYMENT_TYPES.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {PAYMENT_TYPE_LABEL[p] ?? p}
               </option>
             ))}
           </select>
@@ -232,7 +237,7 @@ function QueryTab({ range }: { range: Range }): ReactElement {
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
-                <th className="p-3 capitalize">{keyName}</th>
+                <th className="p-3 capitalize">{DIM_LABEL[keyName] ?? keyName}</th>
                 <th className="p-3 text-right">Summa</th>
                 <th className="p-3 text-right">Foyda</th>
                 <th className="p-3 text-right">Margin %</th>
@@ -342,7 +347,7 @@ function AbcTab({ range }: { range: Range }): ReactElement {
               <table className="w-full text-sm">
                 <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
                   <tr>
-                    <th className="p-3 capitalize">{keyName}</th>
+                    <th className="p-3 capitalize">{DIM_LABEL[keyName] ?? keyName}</th>
                     <th className="p-3 text-right">Summa</th>
                     <th className="p-3 text-right">Ulush %</th>
                     <th className="p-3 text-right">Jami %</th>

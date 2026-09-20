@@ -9,6 +9,7 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
+import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 
 const STATUS_CLASS: Record<string, string> = {
@@ -22,6 +23,7 @@ export function MobileAdminSales(): ReactElement {
   const qc = useQueryClient();
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['admin-sales-m', { status, page }],
@@ -42,7 +44,10 @@ export function MobileAdminSales(): ReactElement {
   });
   const cancel = useMutation({
     mutationFn: (id: string) => salesApi.cancel(id, 'Admin bekor qildi'),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin-sales-m'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-sales-m'] });
+      setCancelId(null);
+    },
   });
 
   const rows = query.data?.results ?? [];
@@ -119,30 +124,33 @@ export function MobileAdminSales(): ReactElement {
               )}
 
               {s.status === 'CONFLICT' && (
-                <div className="flex gap-2">
-                  <button
-                    className="btn flex-1 bg-success text-white"
-                    onClick={() => resolve.mutate({ id: s.id, accept: true })}
-                  >
-                    Qabul
-                  </button>
-                  <button
-                    className="btn flex-1 text-danger"
-                    onClick={() => resolve.mutate({ id: s.id, accept: false })}
-                  >
-                    Rad
-                  </button>
+                <div className="space-y-1.5">
+                  <p className="text-xs text-gray-500">
+                    Sotuv paytida ombor qoldig'i yetarli emas edi. <b>Qabul</b> —
+                    qoldiq minusga tushishiga qaramay sotuvni tasdiqlaysiz. <b>Rad</b>{' '}
+                    — sotuv bekor qilinadi.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn flex-1 bg-success text-white"
+                      onClick={() => resolve.mutate({ id: s.id, accept: true })}
+                    >
+                      Qabul
+                    </button>
+                    <button
+                      className="btn flex-1 text-danger"
+                      onClick={() => resolve.mutate({ id: s.id, accept: false })}
+                    >
+                      Rad
+                    </button>
+                  </div>
                 </div>
               )}
               {(s.status === 'COMPLETED' || s.status === 'FLAGGED') && (
                 <button
                   className="text-sm text-danger"
                   disabled={cancel.isPending}
-                  onClick={() => {
-                    if (window.confirm(`${s.number} bekor qilinsinmi?`)) {
-                      cancel.mutate(s.id);
-                    }
-                  }}
+                  onClick={() => setCancelId(s.id)}
                 >
                   Bekor qilish
                 </button>
@@ -158,6 +166,7 @@ export function MobileAdminSales(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -168,11 +177,34 @@ export function MobileAdminSales(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="Keyingi sahifa"
           >
             ›
           </button>
         </div>
       )}
+
+      <Modal
+        open={cancelId !== null}
+        title="Sotuvni bekor qilish"
+        onClose={() => setCancelId(null)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">
+            {rows.find((r) => r.id === cancelId)?.number} raqamli sotuv bekor
+            qilinsinmi? Tovar qoldig'i va hamyon balansi avtomatik qaytariladi.
+          </p>
+          <button
+            className="btn-brand w-full"
+            disabled={cancel.isPending}
+            onClick={() => {
+              if (cancelId) cancel.mutate(cancelId);
+            }}
+          >
+            Ha, bekor qilish
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -32,7 +32,10 @@ export function WalletPage(): ReactElement {
         </div>
         <div className="mt-2 space-y-0.5 text-xs opacity-90">
           <div className="flex justify-between">
-            <span>Rasmiy balans</span>
+            <span>
+              Rasmiy balans{' '}
+              <span className="opacity-70">(tasdiqlangandan keyin)</span>
+            </span>
             <span>{money(wallet.data?.balance ?? '0')}</span>
           </div>
           <div className="flex justify-between">

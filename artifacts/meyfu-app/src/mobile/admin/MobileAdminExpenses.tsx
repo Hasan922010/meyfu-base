@@ -109,13 +109,13 @@ export function MobileAdminExpenses(): ReactElement {
                     disabled={approve.isPending}
                     onClick={() => approve.mutate(e.id)}
                   >
-                     Tasdiqlash
+                    ✅ Tasdiqlash
                   </button>
                   <button
                     className="btn flex-1 text-danger"
                     onClick={() => setRejecting(e)}
                   >
-                     Rad etish
+                    ❌ Rad etish
                   </button>
                 </div>
               ) : (
