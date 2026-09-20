@@ -2,6 +2,9 @@ import os
 
 from celery import Celery
 
+from env_bootstrap import apply_settings_module
+
+apply_settings_module()
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.prod")
 
 app = Celery("meyfu")

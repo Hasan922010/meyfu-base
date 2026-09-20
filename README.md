@@ -114,23 +114,33 @@ to'ldiring, `COMPOSE_FILE` siz `docker compose up -d --build`.
 `config.settings.local` — **sqlite + xotiradagi kesh/navbat**, Postgres yoki Redis kerak emas.
 Frontend bilan tez sinov uchun eng qulay yo'l.
 
-**Eng qulay yo'l — bitta skript** (venv, migratsiya, seed, admin parol, server — hammasi):
+**Eng qulay yo'l — BITTA fayl, butun loyiha** (backend + frontend birga, venv, migratsiya,
+seed, admin parol, ikkala server — hammasi bitta buyruq bilan):
 
 ```powershell
 # Windows — ikki marta bosing yoki terminalda:
-scripts\start-backend.bat
+scripts\start.bat
 #   yoki to'g'ridan-to'g'ri:
-powershell -ExecutionPolicy Bypass -File scripts\dev-backend.ps1
+powershell -ExecutionPolicy Bypass -File scripts\start.ps1
 
 #   flaglar:
-scripts\dev-backend.ps1 -Fresh          # demo ma'lumotni qayta yaratadi
-scripts\dev-backend.ps1 -Port 8001      # boshqa port
-scripts\dev-backend.ps1 -SkipInstall    # pip install'ni o'tkazib yuboradi (tezroq)
+scripts\start.ps1 -Fresh                  # demo ma'lumotni qayta yaratadi
+scripts\start.ps1 -Port 8001 -FrontendPort 5174
+scripts\start.ps1 -SkipInstall -SkipFrontendInstall   # ikkala install'ni o'tkazib yuboradi (tezroq)
 ```
 
-Skript `.venv` bo'lmasa yaratadi, `requirements/dev.txt` o'rnatadi, migratsiya qiladi, baza bo'sh
-bo'lsa `seed_demo` chaqiradi, SUPER_ADMIN parolini `Hasanali.0220` ga keltiradi va `runserver`ni
-ko'taradi. To'xtatish: `Ctrl+C`.
+Skript backendni (`.venv`, `requirements/dev.txt`, migratsiya, bo'sh bazada `seed_demo`,
+SUPER_ADMIN parolini `Hasanali.0220` ga keltirish) tayyorlab, alohida konsol oynasida
+`runserver`ni ko'taradi, so'ng frontendni (`npm install` kerak bo'lsa, `.env` nusxasi) shu
+oynada `npm run dev` bilan ishga tushiradi. **To'xtatish: shu oynada `Ctrl+C`** — ikkalasi
+ham to'xtaydi.
+
+**Faqat backend kerak bo'lsa** — eski bitta skript hali ham ishlaydi:
+
+```powershell
+scripts\start-backend.bat
+#   yoki: powershell -ExecutionPolicy Bypass -File scripts\dev-backend.ps1
+```
 
 **Qo'lda (bosqichma-bosqich):**
 ```bash
