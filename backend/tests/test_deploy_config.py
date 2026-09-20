@@ -7,6 +7,7 @@ manage.py`) `config.settings.dev` ga ishora qilardi — natijada ishlab chiqaris
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -73,6 +74,35 @@ def _load_prod_settings(
         "CSRF_TRUSTED_ORIGINS": "https://meyfu.example.com",
         "DATABASE_URL": "sqlite:///deploy-check.sqlite3",
         "REDIS_URL": "redis://localhost:6379/0",
+        "TELEGRAM_CREDENTIAL_KEY_VERSION": "v1",
+        "TELEGRAM_CREDENTIAL_KEYS": json.dumps({
+            "v1": "strong-dedicated-telegram-credential-key",
+        }),
+    }
+    for key, value in env_overrides.items():
+        if value is None:
+            env.pop(key, None)
+        else:
+            env[key] = value
+    return subprocess.run(
+        [sys.executable, "-c", "import django; django.setup(); " + script],
+        env=env, cwd=str(BACKEND_DIR), capture_output=True, text=True,
+    )
+
+
+def _load_replit_settings(
+    script: str, *, debug: bool, **env_overrides: str | None
+) -> subprocess.CompletedProcess:
+    env = {
+        **os.environ,
+        "DJANGO_SETTINGS_MODULE": "config.settings.replit",
+        "DEBUG": str(debug),
+        "SESSION_SECRET": _STRONG_KEY,
+        "DATABASE_URL": "sqlite:///deploy-check.sqlite3",
+        "TELEGRAM_CREDENTIAL_KEY_VERSION": "v1",
+        "TELEGRAM_CREDENTIAL_KEYS": json.dumps({
+            "v1": "strong-dedicated-telegram-credential-key",
+        }),
     }
     for key, value in env_overrides.items():
         if value is None:
@@ -99,6 +129,50 @@ def test_prod_settings_are_hardened() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "ok" in result.stdout
+
+
+def test_replit_production_enables_https_protection() -> None:
+    result = _load_replit_settings(
+        "from django.conf import settings as s;"
+        "assert s.SECURE_PROXY_SSL_HEADER == ('HTTP_X_FORWARDED_PROTO', 'https');"
+        "assert s.SECURE_SSL_REDIRECT is True;"
+        "assert r'^api/v1/health/$' in s.SECURE_REDIRECT_EXEMPT;"
+        "assert s.SECURE_HSTS_SECONDS == 3600;"
+        "assert s.SECURE_HSTS_INCLUDE_SUBDOMAINS is False;"
+        "assert s.SECURE_HSTS_PRELOAD is False;"
+        "assert s.SESSION_COOKIE_SECURE is True;"
+        "assert s.CSRF_COOKIE_SECURE is True;"
+        "print('ok')",
+        debug=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "ok" in result.stdout
+
+
+def test_replit_preview_does_not_force_https_or_hsts() -> None:
+    result = _load_replit_settings(
+        "from django.conf import settings as s;"
+        "assert s.SECURE_SSL_REDIRECT is False;"
+        "assert s.SECURE_HSTS_SECONDS == 0;"
+        "assert s.SESSION_COOKIE_SECURE is False;"
+        "assert s.CSRF_COOKIE_SECURE is False;"
+        "print('ok')",
+        debug=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "ok" in result.stdout
+
+
+def test_replit_production_deploy_check_has_no_https_warnings() -> None:
+    result = _load_replit_settings(
+        "from django.core.management import call_command;"
+        "call_command('check', '--deploy')",
+        debug=False,
+    )
+    assert result.returncode == 0, result.stderr
+    output = result.stdout + result.stderr
+    assert "security.W004" not in output
+    assert "security.W008" not in output
 
 
 @pytest.mark.parametrize(
@@ -147,3 +221,33 @@ def test_prod_ok_without_bot() -> None:
         TELEGRAM_WEBHOOK_SECRET=None,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "credential_keys",
+    [
+        None,
+        "{}",
+        '{"v1":"short"}',
+        '{"v1":"insecure-dev-telegram-key-change-me"}',
+    ],
+)
+def test_prod_rejects_unsafe_telegram_credential_keys(
+    credential_keys: str | None,
+) -> None:
+    result = _load_prod_settings(
+        "print('loaded')",
+        TELEGRAM_CREDENTIAL_KEYS=credential_keys,
+    )
+    assert result.returncode != 0
+    assert "TELEGRAM_CREDENTIAL_KEYS" in result.stderr
+
+
+def test_replit_accepts_plain_telegram_credential_key() -> None:
+    result = _load_prod_settings(
+        "from django.conf import settings; "
+        "print(settings.TELEGRAM_CREDENTIAL_KEYS['v1'])",
+        TELEGRAM_CREDENTIAL_KEYS="strong-plain-telegram-credential-key-123456",
+    )
+    assert result.returncode == 0
+    assert "strong-plain-telegram-credential-key-123456" in result.stdout

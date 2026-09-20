@@ -1,8 +1,10 @@
 """Umumiy sozlamalar — barcha muhitlar uchun asos."""
+import json
 from datetime import timedelta
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -39,6 +41,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "drf_spectacular",
     "corsheaders",
@@ -216,11 +219,16 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env("JWT_ACCESS_TOKEN_LIFETIME_MIN")),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env("JWT_REFRESH_TOKEN_LIFETIME_DAYS")),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+WS_TICKET_TTL_SECONDS = 30
+# Legacy query-string JWTs are allowed only in DEBUG/test environments during
+# migration; production clients must use one-time tickets.
+WS_LEGACY_QUERY_TOKEN_ENABLED = DEBUG
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Distribution & Sales Management System API",
@@ -267,6 +275,45 @@ BUSINESS_DAY_START_HOUR = env("BUSINESS_DAY_START_HOUR")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_BOT_USERNAME = env("TELEGRAM_BOT_USERNAME", default="MeyFuBot")
 TELEGRAM_WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET", default="dev-webhook-secret")
+TELEGRAM_CREDENTIAL_KEY_VERSION = env(
+    "TELEGRAM_CREDENTIAL_KEY_VERSION", default="v1"
+)
+_telegram_credential_keys_raw = env(
+    "TELEGRAM_CREDENTIAL_KEYS",
+    default=json.dumps(
+        {
+            TELEGRAM_CREDENTIAL_KEY_VERSION: (
+                "insecure-dev-telegram-key-change-me"
+            ),
+        }
+    ),
+)
+try:
+    _telegram_credential_keys_parsed = json.loads(_telegram_credential_keys_raw)
+except json.JSONDecodeError:
+    _telegram_credential_keys_parsed = _telegram_credential_keys_raw
+
+TELEGRAM_CREDENTIAL_KEYS = (
+    _telegram_credential_keys_parsed
+    if isinstance(_telegram_credential_keys_parsed, dict)
+    else {TELEGRAM_CREDENTIAL_KEY_VERSION: str(_telegram_credential_keys_parsed)}
+)
+
+
+def validate_telegram_credential_keys() -> None:
+    version = TELEGRAM_CREDENTIAL_KEY_VERSION
+    key = TELEGRAM_CREDENTIAL_KEYS.get(version, "")
+    if (
+        not key
+        or len(key) < 32
+        or key == "insecure-dev-telegram-key-change-me"
+        or key.startswith(("insecure-", "change-me"))
+    ):
+        raise ImproperlyConfigured(
+            "TELEGRAM_CREDENTIAL_KEYS faol versiya uchun kamida 32 belgili "
+            "alohida maxfiy kalitni o'z ichiga olishi kerak."
+        )
+
 
 # --- Naklit OCR (CLAUDE.md 9) ---
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
@@ -280,8 +327,8 @@ OCR_FUZZY_THRESHOLD = env.int("OCR_FUZZY_THRESHOLD", default=85)
 
 # --- Static / media ---
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "media/"
+STATIC_ROOT = Path(env("STATIC_ROOT", default=str(BASE_DIR / "staticfiles")))
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # --- Backup (CLAUDE.md 16) — tizim salomatligi sahifasi shu papkani kuzatadi ---

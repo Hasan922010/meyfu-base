@@ -2,7 +2,7 @@
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
-from .base import env
+from .base import env, validate_telegram_credential_keys
 
 DEBUG = False
 
@@ -27,6 +27,8 @@ if len(SECRET_KEY) < 50:
     raise ImproperlyConfigured(
         f"SECRET_KEY juda qisqa ({len(SECRET_KEY)} belgi) — kamida 50 belgi bo'lsin."
     )
+
+validate_telegram_credential_keys()
 
 ADMINS = [
     ("Operator", email.strip())

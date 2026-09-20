@@ -90,13 +90,17 @@ def test_nightly_task_writes_auditlog_and_notifies(walleted, admin_user):
 #  Endpointlar
 # --------------------------------------------------------------------------- #
 @pytest.mark.django_db
-def test_health_endpoint_public(api, auth_api):
+def test_health_endpoint_public(api, auth_api, manager_api):
     # anonim — ochiq, lekin minimal (SEC-005)
     anon = api.get("/api/v1/health/")
     assert anon.status_code == 200
     assert "data" not in anon.data
-    # autentifikatsiyalangan — to'liq tafsilot
-    resp = auth_api.get("/api/v1/health/")
+    # oddiy autentifikatsiyalangan foydalanuvchi ham infra tafsilotini ko'rmaydi
+    regular = auth_api.get("/api/v1/health/")
+    assert regular.status_code == 200
+    assert "data" not in regular.data
+    # faqat boshqaruv roli to'liq tafsilotni ko'radi
+    resp = manager_api.get("/api/v1/health/")
     assert resp.data["data"]["checks"]["db"] is True
     assert "disk" in resp.data["data"]["checks"]
 

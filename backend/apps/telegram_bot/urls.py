@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    TelegramBotConfigView,
     TelegramLinkView,
     TelegramStatusView,
     TelegramUnlinkView,
@@ -8,9 +9,13 @@ from .views import (
 )
 
 urlpatterns = [
-    path("telegram/webhook/<str:secret>/", TelegramWebhookView.as_view(),
+    path("telegram/webhook/", TelegramWebhookView.as_view(),
          name="telegram-webhook"),
+    path("telegram/webhook/<str:secret>/", TelegramWebhookView.as_view(),
+         name="telegram-webhook-legacy"),
     path("telegram/link/", TelegramLinkView.as_view(), name="telegram-link"),
     path("telegram/status/", TelegramStatusView.as_view(), name="telegram-status"),
+    path("telegram/bot-config/", TelegramBotConfigView.as_view(),
+         name="telegram-bot-config"),
     path("telegram/unlink/", TelegramUnlinkView.as_view(), name="telegram-unlink"),
 ]

@@ -1,7 +1,17 @@
 """10-bosqich: Telegram bot — bog'lash, webhook, tugmalar, xulosa."""
-import pytest
+import base64
+import hashlib
 
-from apps.telegram_bot.models import TelegramLinkCode, TelegramMessageLog
+import pytest
+from cryptography.fernet import Fernet
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+
+from apps.telegram_bot.models import (
+    TelegramBotCredential,
+    TelegramLinkCode,
+    TelegramMessageLog,
+)
 from apps.telegram_bot.services.webhook import handle_update
 
 WEBHOOK_SECRET = "test-secret-key-not-for-production-0123456789abcdef"  # noqa: S105
@@ -78,9 +88,10 @@ def test_webhook_wrong_secret(api):
 @pytest.mark.django_db
 def test_webhook_right_secret(api, settings):
     resp = api.post(
-        f"/api/v1/telegram/webhook/{settings.TELEGRAM_WEBHOOK_SECRET}/",
+        "/api/v1/telegram/webhook/",
         _msg(1, "/help"),
         format="json",
+        HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN=settings.TELEGRAM_WEBHOOK_SECRET,
     )
     assert resp.status_code == 200
 
@@ -96,6 +107,16 @@ def test_webhook_accepts_header_secret(api, settings):
         HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN="s3cret-value-0123456789",
     )
     assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_webhook_rejects_path_secret_without_header(api, settings):
+    resp = api.post(
+        f"/api/v1/telegram/webhook/{settings.TELEGRAM_WEBHOOK_SECRET}/",
+        _msg(1, "/help"),
+        format="json",
+    )
+    assert resp.status_code == 403
 
 
 @pytest.mark.django_db
@@ -118,6 +139,23 @@ def test_webhook_non_ascii_secret_is_403_not_500(api, settings):
     assert resp.status_code in (403, 404)  # muhimi: 500 emas
 
 
+@pytest.mark.django_db
+def test_webhook_returns_503_for_transient_processing_error(api, settings, monkeypatch):
+    monkeypatch.setattr(
+        "apps.telegram_bot.views.handle_update",
+        lambda _data: (_ for _ in ()).throw(RuntimeError("temporary failure")),
+    )
+    resp = api.post(
+        "/api/v1/telegram/webhook/",
+        _msg(2, "/help"),
+        format="json",
+        HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN=settings.TELEGRAM_WEBHOOK_SECRET,
+    )
+    assert resp.status_code == 503
+    assert resp.data == {"ok": False}
+
+
+@pytest.mark.django_db
 def test_set_webhook_sends_secret_token(monkeypatch, settings):
     """SEC-004 — setWebhook chaqiruvi `secret_token` ni yuboradi."""
     settings.TELEGRAM_BOT_TOKEN = "123:abc"
@@ -127,10 +165,163 @@ def test_set_webhook_sends_secret_token(monkeypatch, settings):
     from apps.telegram_bot import client
 
     monkeypatch.setattr(
-        client, "_call", lambda method, payload: captured.update(payload) or {"ok": 1}
+        client, "_call",
+        lambda method, payload, **_kwargs: captured.update(payload) or {"ok": 1},
     )
     assert client.set_webhook("https://x.example.com/hook/")
     assert captured["secret_token"] == "webhook-secret-0123456789"
+
+
+@pytest.mark.django_db
+def test_super_admin_can_save_bot_token_without_exposing_it(
+    api, admin_user, monkeypatch,
+):
+    token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdef"
+    api.force_authenticate(admin_user)
+    monkeypatch.setattr(
+        "apps.telegram_bot.views.get_me",
+        lambda candidate: {"username": "MeyFuTestBot"} if candidate == token else None,
+    )
+    monkeypatch.setattr(
+        "apps.telegram_bot.views.set_webhook",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        "apps.telegram_bot.views.delete_webhook",
+        lambda *_args, **_kwargs: True,
+    )
+
+    resp = api.post("/api/v1/telegram/bot-config/", {"token": token}, format="json")
+
+    assert resp.status_code == 200
+    assert resp.data["data"]["configured"] is True
+    assert resp.data["data"]["bot_username"] == "MeyFuTestBot"
+    assert token not in str(resp.data)
+    credential = TelegramBotCredential.current()
+    assert credential is not None
+    assert token not in credential.encrypted_token
+    assert credential.get_token() == token
+    assert credential.get_webhook_secret()
+    assert credential.get_webhook_secret() not in str(resp.data)
+
+
+@pytest.mark.django_db
+def test_non_super_admin_cannot_manage_bot_token(auth_api):
+    resp = auth_api.post(
+        "/api/v1/telegram/bot-config/",
+        {"token": "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdef"},
+        format="json",
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_invalid_bot_token_does_not_replace_existing(
+    api, admin_user, monkeypatch,
+):
+    credential = TelegramBotCredential(bot_username="OldBot", created_by=admin_user)
+    credential.set_token("123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_old")
+    credential.save()
+    api.force_authenticate(admin_user)
+    monkeypatch.setattr("apps.telegram_bot.views.get_me", lambda _token: None)
+
+    resp = api.post(
+        "/api/v1/telegram/bot-config/",
+        {"token": "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_new"},
+        format="json",
+    )
+
+    assert resp.status_code == 400
+    credential.refresh_from_db()
+    assert credential.get_token() == "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_old"
+
+
+@pytest.mark.django_db
+def test_credential_key_rotation_preserves_saved_secrets(settings):
+    settings.SECRET_KEY = "django-key-before-rotation"
+    settings.TELEGRAM_CREDENTIAL_KEY_VERSION = "v1"
+    settings.TELEGRAM_CREDENTIAL_KEYS = {"v1": "telegram-key-one"}
+    credential = TelegramBotCredential(bot_username="RotationBot")
+    credential.set_token("123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_rotate")
+    credential.set_webhook_secret("webhook-secret-before-rotation")
+    credential.save()
+    old_ciphertext = credential.encrypted_token
+
+    settings.SECRET_KEY = "django-key-after-rotation"
+    settings.TELEGRAM_CREDENTIAL_KEY_VERSION = "v2"
+    settings.TELEGRAM_CREDENTIAL_KEYS = {
+        "v2": "telegram-key-two",
+        "v1": "telegram-key-one",
+    }
+
+    assert credential.get_token() == "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_rotate"
+    assert credential.get_webhook_secret() == "webhook-secret-before-rotation"
+    credential.refresh_from_db()
+    assert credential.encryption_key_version == "v2"
+    assert credential.encrypted_token != old_ciphertext
+
+
+@pytest.mark.django_db
+def test_legacy_secret_key_ciphertext_is_migrated_on_read(settings):
+    old_django_key = "old-django-secret-key"
+    legacy_cipher = Fernet(
+        base64.urlsafe_b64encode(hashlib.sha256(old_django_key.encode()).digest())
+    )
+    credential = TelegramBotCredential.objects.create(
+        bot_username="LegacyBot",
+        encrypted_token=legacy_cipher.encrypt(b"123456789:legacy-token").decode(),
+        encrypted_webhook_secret=legacy_cipher.encrypt(b"legacy-webhook").decode(),
+    )
+
+    settings.SECRET_KEY = "new-django-secret-key"
+    settings.TELEGRAM_CREDENTIAL_KEY_VERSION = "v1"
+    settings.TELEGRAM_CREDENTIAL_KEYS = {
+        "v1": "dedicated-telegram-key",
+        "legacy": old_django_key,
+    }
+
+    assert credential.get_token() == "123456789:legacy-token"
+    credential.refresh_from_db()
+    assert credential.encryption_key_version == "v1"
+    assert credential.get_webhook_secret() == "legacy-webhook"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_schema_migration_reencrypts_legacy_credentials_before_key_rotation(settings):
+    old_django_key = "django-key-used-before-schema-migration"
+    legacy_cipher = Fernet(
+        base64.urlsafe_b64encode(hashlib.sha256(old_django_key.encode()).digest())
+    )
+    settings.SECRET_KEY = old_django_key
+    settings.TELEGRAM_CREDENTIAL_KEY_VERSION = "v1"
+    settings.TELEGRAM_CREDENTIAL_KEYS = {
+        "v1": "dedicated-telegram-key-used-by-migration",
+    }
+
+    executor = MigrationExecutor(connection)
+    old_target = [("telegram_bot", "0003_telegrambotcredential_encrypted_webhook_secret")]
+    executor.migrate(old_target)
+    old_apps = executor.loader.project_state(old_target).apps
+    old_credential_model = old_apps.get_model(
+        "telegram_bot", "TelegramBotCredential"
+    )
+    credential = old_credential_model.objects.create(
+        bot_username="MigrationBot",
+        encrypted_token=legacy_cipher.encrypt(b"123456789:migration-token").decode(),
+        encrypted_webhook_secret=legacy_cipher.encrypt(b"migration-webhook").decode(),
+    )
+
+    new_target = [
+        ("telegram_bot", "0004_telegrambotcredential_encryption_key_version")
+    ]
+    executor = MigrationExecutor(connection)
+    executor.migrate(new_target)
+
+    settings.SECRET_KEY = "django-key-rotated-after-schema-migration"
+    migrated = TelegramBotCredential.objects.get(pk=credential.pk)
+    assert migrated.encryption_key_version == "v1"
+    assert migrated.get_token() == "123456789:migration-token"
+    assert migrated.get_webhook_secret() == "migration-webhook"
 
 
 @pytest.mark.django_db
