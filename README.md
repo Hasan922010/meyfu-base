@@ -292,4 +292,17 @@ frontend/src/
 
 ## Deploy
 
-Ishlab chiqarishga chiqarish qo'llanmasi: [`docs/deploy.md`](./docs/deploy.md).
+**Asosiy (production) yo'l: Replit Autoscale.** Loyiha `.replit` orqali Replit'ning
+Autoscale deploy maqsadiga sozlangan — `artifacts/meyfu-app` (frontend) va
+`artifacts/api-server` alohida Replit artifact sifatida serve qilinadi,
+`backend/config/settings/replit.py` esa production sozlamalarini (SECRET_KEY,
+CSRF/CORS ishonchli manbalar, S3, xavfsiz cookie) belgilaydi.
+
+**Docker Compose (`docker-compose.yml`, quyidagi "Variant A") — zaxira/legacy yo'l.**
+Replit sinxronizatsiyasidan oldin qattiqlashtirilgan (audit CFG-001/SEC-003) va hali
+ham ishlaydi, lekin frontend'ni (`artifacts/meyfu-app`) build/serve qilmaydi — nginx
+`location /` to'g'ridan-to'g'ri Django'ga proxy qiladi. Faqat backend-only lokal sinov
+yoki kelajakda self-hosted'ga o'tish kerak bo'lsa ishlatiladi; joriy production
+maqsadlari uchun tavsiya etilmaydi.
+
+To'liq qo'llanma (ikkala yo'l uchun ham): [`docs/deploy.md`](./docs/deploy.md).

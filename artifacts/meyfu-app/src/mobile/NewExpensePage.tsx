@@ -104,7 +104,7 @@ export function NewExpensePage(): ReactElement {
                   : 'bg-white shadow-sm dark:bg-gray-900'
               }`}
             >
-              <span className="text-2xl">{c.icon || ''}</span>
+              <span className="text-2xl">{c.icon || '💸'}</span>
               {c.name}
             </button>
           ))}
@@ -170,7 +170,8 @@ export function NewExpensePage(): ReactElement {
 
       {selectedCat?.requires_receipt && (
         <p className="rounded-lg bg-pending/10 px-3 py-2 text-xs text-pending">
-          Bu kategoriya uchun chek rasmi kerak — keyinroq admin panelda qo'shing.
+          Bu kategoriya uchun chek rasmi kerak — hozir yoki keyinroq shu yerdan
+          qo'shing.
         </p>
       )}
 

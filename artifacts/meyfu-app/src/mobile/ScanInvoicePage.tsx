@@ -40,7 +40,14 @@ export function ScanInvoicePage(): ReactElement {
           {s.status === 'FAILED' ? 'O‘qib bo‘lmadi' : 'Naklit yuklandi'}
         </h1>
         {s.status === 'FAILED' ? (
-          <p className="text-sm text-gray-500">{s.error_message}</p>
+          <div className="space-y-1">
+            <p className="text-sm text-gray-500">
+              Rasmni aniqlab bo'lmadi — qayta suratga oling yoki qo'lda kiriting.
+            </p>
+            {s.error_message && (
+              <p className="text-xs text-gray-400">{s.error_message}</p>
+            )}
+          </div>
         ) : (
           <p className="text-sm text-gray-500">
             {s.line_count} ta qator aniqlandi. Ombor menejeri tekshirib

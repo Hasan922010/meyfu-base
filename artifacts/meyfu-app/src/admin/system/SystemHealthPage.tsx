@@ -244,7 +244,7 @@ export function SystemHealthPage(): ReactElement {
 
               {check.data?.ok || (check.isSuccess && liveMismatches.length === 0) ? (
                 <p className="mt-3 text-sm text-success">
-                   Barcha balans jurnal yig'indisiga mos.
+                  ✓ Barcha balans jurnal yig'indisiga mos.
                 </p>
               ) : liveMismatches.length > 0 ? (
                 <MismatchTable rows={liveMismatches} />

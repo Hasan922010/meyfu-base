@@ -59,7 +59,7 @@ export function TelegramConnect(): ReactElement {
       <div className="font-medium">Telegram bot</div>
       {!status.data?.enabled && (
         <p className="text-xs text-pending">
-          Bot server tomonida sozlanmagan (TELEGRAM_BOT_TOKEN).
+          Bot hali ulanmagan. Administrator bilan bog'laning.
         </p>
       )}
 

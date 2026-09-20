@@ -11,7 +11,7 @@ import { DataState } from '@/shared/components/DataState';
 import { PeriodSwitcher } from '@/shared/components/PeriodSwitcher';
 import { money } from '@/shared/lib/format';
 
-const MEDAL: Record<number, string> = { 1: '', 2: '', 3: '' };
+const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 export function DistributorsPage(): ReactElement {
   const [preset, setPreset] = useState<PeriodPreset>('month');

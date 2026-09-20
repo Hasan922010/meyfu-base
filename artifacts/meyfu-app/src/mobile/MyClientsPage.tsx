@@ -51,7 +51,12 @@ export function MyClientsPage(): ReactElement {
                 </div>
                 <div className="text-right text-xs">
                   {c.is_blocked && (
-                    <div className="font-medium text-danger">Bloklangan</div>
+                    <div
+                      className="font-medium text-danger"
+                      title="Faqat naqd sotish mumkin — qarzga berish yopiq"
+                    >
+                      Bloklangan (faqat naqd)
+                    </div>
                   )}
                   {Number(c.current_debt) > 0 && (
                     <div className="text-danger">Qarz: {money(c.current_debt)}</div>

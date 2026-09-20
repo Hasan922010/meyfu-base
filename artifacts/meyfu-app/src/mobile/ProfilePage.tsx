@@ -32,7 +32,7 @@ export function ProfilePage(): ReactElement {
       <LanguageSwitch />
 
       <Link to="/m/help" className="btn flex w-full items-center justify-center gap-2">
-         Foydalanish yo'riqnomasi
+        📖 Foydalanish yo'riqnomasi
       </Link>
 
       {isAdmin && (
@@ -43,7 +43,7 @@ export function ProfilePage(): ReactElement {
             window.location.href = '/admin';
           }}
         >
-           To'liq (desktop) versiyaga o'tish
+          🖥 To'liq (desktop) versiyaga o'tish
         </button>
       )}
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { LanguageSwitch } from '@/shared/components/LanguageSwitch';
 import { TelegramConnect } from '@/shared/components/TelegramConnect';
+import { ROLE_LABEL } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 
 import { CompanySettingsForm } from './CompanySettingsForm';
@@ -26,7 +27,7 @@ export function SettingsPage(): ReactElement {
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Rol</span>
-          <span>{user?.role}</span>
+          <span>{user ? ROLE_LABEL[user.role] : ''}</span>
         </div>
       </div>
 
@@ -38,7 +39,7 @@ export function SettingsPage(): ReactElement {
           to="/admin/help"
           className="block rounded-xl bg-white p-4 text-sm font-medium shadow-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
         >
-           Foydalanish yo'riqnomasi — rol bo'yicha
+          📖 Foydalanish yo'riqnomasi — rol bo'yicha
         </Link>
       </div>
 

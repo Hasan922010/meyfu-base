@@ -26,6 +26,11 @@ import {
 import { DataState } from '@/shared/components/DataState';
 import { PeriodSwitcher } from '@/shared/components/PeriodSwitcher';
 import { dateShort, money } from '@/shared/lib/format';
+import {
+  DAYCLOSE_STATUS_LABEL,
+  PAYMENT_TYPE_LABEL,
+  PAYROLL_STATUS_LABEL,
+} from '@/shared/lib/labels';
 
 type Tab =
   | 'overview'
@@ -38,12 +43,12 @@ type Tab =
 
 const TABS: Array<{ id: Tab; l: string }> = [
   { id: 'overview', l: 'Umumiy' },
-  { id: 'money', l: ' Pul harakati' },
-  { id: 'expenses', l: ' Xarajatlar' },
-  { id: 'clients', l: ' Mijozlar' },
-  { id: 'products', l: ' Mahsulotlar' },
-  { id: 'debts', l: ' Qarzdorlik' },
-  { id: 'payroll', l: ' Maosh' },
+  { id: 'money', l: '💰 Pul harakati' },
+  { id: 'expenses', l: '💸 Xarajatlar' },
+  { id: 'clients', l: '🏪 Mijozlar' },
+  { id: 'products', l: '📦 Mahsulotlar' },
+  { id: 'debts', l: '💳 Qarzdorlik' },
+  { id: 'payroll', l: '💵 Maosh' },
 ];
 
 const PIE_COLORS = ['#6366f1', '#22c55e', '#f97316', '#ef4444', '#a855f7'];
@@ -158,7 +163,7 @@ function Delta({ value }: { value: number | null | undefined }): ReactElement | 
   const up = value >= 0;
   return (
     <span className={`text-xs ${up ? 'text-success' : 'text-danger'}`}>
-      {up ? '' : ''} {Math.abs(value)}%
+      {up ? '▲' : '▼'} {Math.abs(value)}%
     </span>
   );
 }
@@ -210,7 +215,7 @@ function KpiGrid({ d }: { d: DistributorFull }): ReactElement {
       />
       <Kpi label="Topshirildi" value={money(d.money.handed_to_cashier)} />
       <Kpi
-        label=" Qo'lida qolgan"
+        label="👛 Qo'lida qolgan"
         value={money(d.money.wallet_balance)}
         accent={Number(d.money.wallet_balance) < 0 ? 'text-danger' : ''}
       />
@@ -268,7 +273,7 @@ function OverviewTab({ d }: { d: DistributorFull }): ReactElement {
     Xarajat: nfmt(r.expense),
   }));
   const mix = d.charts.payment_mix.map((r) => ({
-    name: r.type,
+    name: PAYMENT_TYPE_LABEL[r.type] ?? r.type,
     value: nfmt(r.amount),
   }));
   const hourly = d.charts.hourly_activity.map((r) => ({
@@ -389,7 +394,9 @@ function MoneyTab({ d }: { d: DistributorFull }): ReactElement {
                 >
                   {money(r.difference)}
                 </td>
-                <td className="p-2 text-xs text-gray-500">{r.status}</td>
+                <td className="p-2 text-xs text-gray-500">
+                  {DAYCLOSE_STATUS_LABEL[r.status] ?? r.status}
+                </td>
               </tr>
             ))}
             {d.timeline.length === 0 && (
@@ -527,7 +534,7 @@ function PayrollTab({ d }: { d: DistributorFull }): ReactElement {
   return (
     <Card
       title={`Maosh · ${p.period.slice(0, 7)} · ${
-        p.status === 'ESTIMATE' ? 'taxminiy' : p.status
+        PAYROLL_STATUS_LABEL[p.status] ?? p.status
       }`}
     >
       <div className="space-y-1 text-sm">

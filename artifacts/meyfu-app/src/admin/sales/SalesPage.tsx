@@ -9,6 +9,7 @@ import { useState, type ReactElement } from 'react';
 
 import { reportsApi, salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
+import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 
@@ -37,6 +38,8 @@ export function SalesPage(): ReactElement {
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState<string>('');
 
   const query = useQuery({
     queryKey: ['admin-sales', { status, search, page }],
@@ -52,8 +55,13 @@ export function SalesPage(): ReactElement {
   });
 
   const cancel = useMutation({
-    mutationFn: (id: string) => salesApi.cancel(id, 'Admin bekor qildi'),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin-sales'] }),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      salesApi.cancel(id, reason || 'Admin bekor qildi'),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-sales'] });
+      setCancelId(null);
+      setCancelReason('');
+    },
   });
   const resolve = useMutation({
     mutationFn: ({ id, accept }: { id: string; accept: boolean }) =>
@@ -165,7 +173,7 @@ export function SalesPage(): ReactElement {
                         <button
                           className="text-danger hover:underline"
                           disabled={cancel.isPending}
-                          onClick={() => cancel.mutate(s.id)}
+                          onClick={() => setCancelId(s.id)}
                         >
                           Bekor qilish
                         </button>
@@ -185,6 +193,7 @@ export function SalesPage(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -195,11 +204,40 @@ export function SalesPage(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="Keyingi sahifa"
           >
             ›
           </button>
         </div>
       )}
+
+      <Modal
+        open={cancelId !== null}
+        title="Sotuvni bekor qilish"
+        onClose={() => setCancelId(null)}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">
+            Bu amal tovar qoldig'i, hamyon va qarz balansini avtomatik qaytaradi. Davom
+            etasizmi?
+          </p>
+          <textarea
+            className="field min-h-[80px] py-2"
+            placeholder="Bekor qilish sababi (ixtiyoriy)"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+          />
+          <button
+            className="btn-brand w-full"
+            disabled={cancel.isPending}
+            onClick={() => {
+              if (cancelId) cancel.mutate({ id: cancelId, reason: cancelReason });
+            }}
+          >
+            Ha, bekor qilish
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

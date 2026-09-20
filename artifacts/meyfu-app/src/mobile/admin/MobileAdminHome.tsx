@@ -89,7 +89,7 @@ export function MobileAdminHome(): ReactElement {
           to="/m/a/sales"
           className="block rounded-xl bg-pending/10 p-3 text-sm text-pending"
         >
-           {k?.flagged_sales} ta belgilangan sotuv — ko'rib chiqing
+          ⚠️ {k?.flagged_sales} ta belgilangan sotuv — ko'rib chiqing
         </Link>
       )}
 

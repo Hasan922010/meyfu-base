@@ -86,9 +86,33 @@ export function MyPayrollPage(): ReactElement {
                     value={`+${money(p.reimbursement_expense)}`}
                   />
                 )}
+                {Number(p.deduction_shortage) > 0 && (
+                  <Line
+                    label="↳ Kamomad"
+                    value={`−${money(p.deduction_shortage)}`}
+                    danger
+                  />
+                )}
+                {Number(p.deduction_cash_diff) > 0 && (
+                  <Line
+                    label="↳ Kassa farqi"
+                    value={`−${money(p.deduction_cash_diff)}`}
+                    danger
+                  />
+                )}
+                {Number(p.deduction_expense) > 0 && (
+                  <Line
+                    label="↳ Xarajat ushlanmasi"
+                    value={`−${money(p.deduction_expense)}`}
+                    danger
+                  />
+                )}
+                {Number(p.advance) > 0 && (
+                  <Line label="↳ Avans" value={`−${money(p.advance)}`} danger />
+                )}
                 {Number(p.total_deductions) > 0 && (
                   <Line
-                    label="Ushlanmalar"
+                    label="Ushlanmalar (jami)"
                     value={`−${money(p.total_deductions)}`}
                     danger
                   />

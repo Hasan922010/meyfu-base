@@ -8,6 +8,7 @@ import { debtsApi } from '@/shared/api/debts';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { PAYMENT_TYPE_LABEL } from '@/shared/lib/labels';
 import type { Debt } from '@/shared/types/sales';
 
 export function DebtCollectPage(): ReactElement {
@@ -130,7 +131,7 @@ export function DebtCollectPage(): ReactElement {
                     type === tp ? 'bg-brand text-brand-fg' : 'bg-gray-100 dark:bg-gray-800'
                   }`}
                 >
-                  {tp}
+                  {PAYMENT_TYPE_LABEL[tp] ?? tp}
                 </button>
               ))}
             </div>

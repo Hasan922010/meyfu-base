@@ -25,7 +25,7 @@ export function MyVanStockPage(): ReactElement {
     <div className="space-y-3">
       <h1 className="text-xl font-bold">Mashina qoldig‘i</h1>
       <p className="text-xs text-gray-400">
-        Lokal hisob — sotuvdan keyin darhol yangilanadi (CLAUDE.md 4.3)
+        Lokal hisob — sotuvdan keyin darhol yangilanadi
       </p>
       <input
         className="field"

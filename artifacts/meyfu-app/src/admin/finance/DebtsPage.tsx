@@ -180,6 +180,7 @@ export function DebtsPage(): ReactElement {
               className="btn px-3"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
+              aria-label="Oldingi sahifa"
             >
               ‹
             </button>
@@ -190,6 +191,7 @@ export function DebtsPage(): ReactElement {
               className="btn px-3"
               disabled={page >= list.data.pages}
               onClick={() => setPage((p) => p + 1)}
+              aria-label="Keyingi sahifa"
             >
               ›
             </button>

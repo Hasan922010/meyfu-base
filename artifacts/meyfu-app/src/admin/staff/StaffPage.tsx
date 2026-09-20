@@ -10,18 +10,11 @@ import { extractApiError } from '@/shared/api/client';
 import { staffApi } from '@/shared/api/users';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
+import { ROLE_LABEL } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role, User } from '@/shared/types/api';
 
 import { StaffForm } from './StaffForm';
-
-const ROLE_LABEL: Record<Role, string> = {
-  SUPER_ADMIN: 'Super admin',
-  MANAGER: 'Menejer',
-  WAREHOUSE: 'Omborchi',
-  DISTRIBUTOR: 'Tarqatuvchi',
-  ACCOUNTANT: 'Buxgalter',
-};
 
 export function StaffPage(): ReactElement {
   const qc = useQueryClient();
@@ -190,6 +183,7 @@ export function StaffPage(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
+            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -200,6 +194,7 @@ export function StaffPage(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
+            aria-label="Keyingi sahifa"
           >
             ›
           </button>

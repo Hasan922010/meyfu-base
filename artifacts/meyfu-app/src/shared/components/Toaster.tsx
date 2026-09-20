@@ -23,16 +23,21 @@ export function ToastProvider({ children }: PropsWithChildren): ReactElement {
   return (
     <ToastContext.Provider value={{ push }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 top-3 z-[100] mx-auto flex max-w-sm flex-col gap-2 px-3">
+      <div
+        className="pointer-events-none fixed inset-x-0 top-3 z-[100] mx-auto flex max-w-sm flex-col gap-2 px-3"
+        role="status"
+        aria-live="polite"
+      >
         {toasts.map((t) => (
-          <div
+          <button
             key={t.id}
-            className={`pointer-events-auto rounded-xl border-l-4 p-3 text-sm shadow-lg ${KIND_CLASS[t.kind]}`}
+            type="button"
+            className={`pointer-events-auto rounded-xl border-l-4 p-3 text-left text-sm shadow-lg ${KIND_CLASS[t.kind]}`}
             onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
           >
             <div className="font-semibold">{t.title}</div>
             {t.body && <div className="mt-0.5 text-gray-500">{t.body}</div>}
-          </div>
+          </button>
         ))}
       </div>
     </ToastContext.Provider>

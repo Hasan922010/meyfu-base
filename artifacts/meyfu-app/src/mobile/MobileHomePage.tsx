@@ -115,7 +115,9 @@ export function MobileHomePage(): ReactElement {
             </Link>
           ))
         ) : (
-          <p className="text-sm text-gray-400">Marshrut biriktirilmagan.</p>
+          <p className="text-sm text-gray-400">
+            Marshrut biriktirilmagan — adminga murojaat qiling.
+          </p>
         )}
       </section>
     </div>

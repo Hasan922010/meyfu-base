@@ -111,7 +111,9 @@ export function CompanySettingsForm(): ReactElement {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Kompaniya rekvizitlari</h2>
         {!canEdit && (
-          <span className="text-xs text-gray-400">faqat ko‘rish (SUPER_ADMIN)</span>
+          <span className="text-xs text-gray-400">
+            faqat ko‘rish (faqat bosh administrator tahrirlaydi)
+          </span>
         )}
       </div>
       <p className="text-xs text-gray-400">
