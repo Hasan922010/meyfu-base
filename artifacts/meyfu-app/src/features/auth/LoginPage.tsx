@@ -54,7 +54,7 @@ export function LoginPage(): ReactElement {
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-900"
       >
         <div className="flex justify-end">
-          <LanguageSwitch />
+          <LanguageSwitch compact />
         </div>
 
         <div className="text-center">
