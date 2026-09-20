@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -30,19 +31,28 @@ api_v1 = [
     path("", include("apps.payroll.urls")),
 ]
 
+def _docs_view(view_class, **kwargs):
+    view = view_class.as_view(**kwargs)
+    # Evaluate DEBUG per request so preview/test overrides are honored even
+    # when URLConf was imported before the setting was changed.
+    return login_required(
+        user_passes_test(lambda user: settings.DEBUG or user.is_staff)(view)
+    )
+
+
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("api/v1/", include((api_v1, "v1"))),
     # Swagger / OpenAPI
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/schema/", _docs_view(SpectacularAPIView), name="schema"),
     path(
         "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
+        _docs_view(SpectacularSwaggerView, url_name="schema"),
         name="swagger-ui",
     ),
     path(
         "api/redoc/",
-        SpectacularRedocView.as_view(url_name="schema"),
+        _docs_view(SpectacularRedocView, url_name="schema"),
         name="redoc",
     ),
 ]

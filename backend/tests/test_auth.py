@@ -1,4 +1,9 @@
 import pytest
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @pytest.mark.django_db
@@ -57,3 +62,29 @@ def test_me_returns_current_user(auth_api):
 @pytest.mark.django_db
 def test_phone_normalized_on_create(distributor):
     assert distributor.phone.startswith("+")
+
+
+@pytest.mark.django_db
+def test_logout_blacklists_supplied_refresh_token(auth_api, distributor):
+    refresh_token = str(RefreshToken.for_user(distributor))
+    response = auth_api.post(
+        "/api/v1/auth/logout/",
+        {"refresh": refresh_token},
+        format="json",
+    )
+    assert response.status_code == 200
+    outstanding = OutstandingToken.objects.get(
+        token=refresh_token
+    )
+    assert BlacklistedToken.objects.filter(token=outstanding).exists()
+
+
+@pytest.mark.django_db
+def test_websocket_ticket_requires_auth_and_has_short_expiry(auth_api):
+    response = auth_api.post("/api/v1/auth/ws-ticket/", {}, format="json")
+    assert response.status_code == 200
+    assert len(response.data["data"]["ticket"]) >= 32
+    assert response.data["data"]["expires_in"] == 30
+
+    unauthenticated = auth_api.__class__()
+    assert unauthenticated.post("/api/v1/auth/ws-ticket/").status_code == 401

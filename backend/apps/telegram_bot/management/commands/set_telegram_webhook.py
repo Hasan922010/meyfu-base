@@ -21,7 +21,7 @@ class Command(BaseCommand):
         if not is_enabled():
             raise CommandError("TELEGRAM_BOT_TOKEN o'rnatilmagan.")
         base = options["base_url"].rstrip("/")
-        url = f"{base}/api/v1/telegram/webhook/{settings.TELEGRAM_WEBHOOK_SECRET}/"
+        url = f"{base}/api/v1/telegram/webhook/"
         if set_webhook(url):
             self.stdout.write(self.style.SUCCESS(f"Webhook o'rnatildi: {url}"))
         else:

@@ -12,6 +12,7 @@ MEDIA_ROOT = tempfile.mkdtemp(prefix="meyfu-test-media-")
 
 DEBUG = False
 ALLOWED_HOSTS = ["*"]  # WebSocket AllowedHostsOriginValidator testlarda
+WS_LEGACY_QUERY_TOKEN_ENABLED = True
 
 # Testlarda tezlik cheklovi (throttling) o'chirilgan
 REST_FRAMEWORK = {
@@ -22,6 +23,10 @@ REST_FRAMEWORK = {
     },
 }
 SECRET_KEY = "test-secret-key-not-for-production-0123456789abcdef"  # noqa: S105
+TELEGRAM_CREDENTIAL_KEY_VERSION = "v1"
+TELEGRAM_CREDENTIAL_KEYS = {
+    "v1": "test-telegram-credential-key-not-for-production",
+}
 
 DATABASES = {
     "default": {

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
+import hashlib
+import secrets
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -12,6 +17,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.models import AuditLog
 from apps.core.response import ok
@@ -24,6 +31,7 @@ from .serializers import (
     UserSerializer,
     UserWriteSerializer,
 )
+from .models import WebSocketTicket
 
 User = get_user_model()
 
@@ -55,10 +63,38 @@ class RefreshView(TokenRefreshView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(summary="Chiqish", request=None, responses={200: dict})
+    @extend_schema(
+        summary="Chiqish",
+        request={"type": "object", "properties": {"refresh": {"type": "string"}}},
+        responses={200: dict},
+    )
     def post(self, request: Request) -> Response:
-        # SimpleJWT stateless — mijoz tokenni o'chiradi.
+        refresh = request.data.get("refresh")
+        if refresh:
+            try:
+                RefreshToken(str(refresh)).blacklist()
+            except (TokenError, ValueError, TypeError):
+                # Logout is idempotent: an expired/already-revoked token still
+                # means the client should clear its local session.
+                pass
         return ok({"detail": "Tizimdan chiqildi."})
+
+
+class WebSocketTicketView(APIView):
+    """Issue a short-lived, one-time credential for the event WebSocket."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(summary="WebSocket ticket", request=None, responses={200: dict})
+    def post(self, request: Request) -> Response:
+        raw_ticket = secrets.token_urlsafe(32)
+        WebSocketTicket.objects.create(
+            user=request.user,
+            token_hash=hashlib.sha256(raw_ticket.encode()).hexdigest(),
+            expires_at=timezone.now()
+            + timedelta(seconds=settings.WS_TICKET_TTL_SECONDS),
+        )
+        return ok({"ticket": raw_ticket, "expires_in": settings.WS_TICKET_TTL_SECONDS})
 
 
 class MeView(APIView):

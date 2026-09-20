@@ -13,6 +13,7 @@ from decimal import Decimal
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .constants import ExpensesCoveredBy, Role
@@ -83,6 +84,22 @@ class User(AbstractUser):
             self.phone = self.normalize_phone(self.phone)
         super().save(*args, **kwargs)
 
+
+class WebSocketTicket(models.Model):
+    """One-time short-lived credential for opening the event WebSocket."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ws_tickets")
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("user", "expires_at"))]
+
+    @property
+    def is_usable(self) -> bool:
+        return self.used_at is None and self.expires_at > timezone.now()
 
 class DistributorProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
