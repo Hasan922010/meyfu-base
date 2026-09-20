@@ -1,6 +1,8 @@
 """/health/ va tizim salomatligi endpointlari (CLAUDE.md 16, 15)."""
 from __future__ import annotations
 
+import hmac
+
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -46,14 +48,32 @@ class HealthView(APIView):
         from django.conf import settings
 
         deep = request.query_params.get("deep") in ("1", "true", "yes")
+        token = settings.HEALTH_DETAIL_TOKEN
+        is_admin = bool(
+            request.user
+            and request.user.is_authenticated
+            and (
+                request.user.is_staff
+                or request.user.is_superuser
+                or getattr(request.user, "role", None) in _ADMIN_ROLES
+            )
+        )
+        detailed = bool(
+            is_admin
+            or (
+                token
+                and hmac.compare_digest(
+                    str(request.headers.get("X-Health-Token", "")), str(token)
+                )
+            )
+        )
+        if deep and not detailed:
+            return Response(
+                {"success": False, "error": {"code": "HEALTH_DETAIL_FORBIDDEN"}},
+                status=403,
+            )
         data = health_checks(deep=deep)
         status_code = 200 if data["healthy"] else 503
-
-        token = settings.HEALTH_DETAIL_TOKEN
-        detailed = bool(
-            (request.user and request.user.is_authenticated)
-            or (token and request.headers.get("X-Health-Token") == token)
-        )
         body = {"success": data["healthy"]}
         if detailed:
             body["data"] = data
