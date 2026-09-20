@@ -2,6 +2,9 @@ import os
 
 from django.core.asgi import get_asgi_application
 
+from env_bootstrap import apply_settings_module
+
+apply_settings_module()
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.prod")
 
 # HTTP ilovasini avval yuklab olamiz (app registry tayyor bo'lishi uchun)
