@@ -10,7 +10,10 @@
     "password": "Parol",
     "signIn": "Tizimga kirish",
     "signingIn": "Kirilmoqda...",
-    "wrongCredentials": "Telefon yoki parol noto'g'ri"
+    "wrongCredentials": "Telefon yoki parol noto'g'ri",
+    "showPassword": "Parolni ko'rsatish",
+    "hidePassword": "Parolni yashirish",
+    "contactAdmin": "Kira olmayapsizmi? Administratoringizga murojaat qiling."
   },
   "nav": {
     "dashboard": "Boshqaruv paneli",

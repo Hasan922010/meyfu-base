@@ -38,6 +38,21 @@ def test_throttle_scopes_configured():
     assert {"anon", "user", "login", "ocr"} <= set(rates)
 
 
+def test_throttled_login_message_is_localized():
+    """Login `10/min` limitiga tegilganda DRF standart inglizcha xabari
+    o'rniga o'zbekcha, kutish vaqti bilan xabar qaytishi kerak (CLAUDE.md 20)."""
+    from apps.core.exceptions import api_exception_handler
+    from rest_framework.exceptions import Throttled
+
+    response = api_exception_handler(Throttled(wait=42), {})
+
+    assert response.status_code == 429
+    assert response.data["success"] is False
+    assert response.data["error"]["code"] == "THROTTLED"
+    assert "42" in response.data["error"]["message"]
+    assert "throttled" not in response.data["error"]["message"].lower()
+
+
 @pytest.mark.django_db
 def test_report_index_present_on_sale():
     from apps.sales.models import Sale
