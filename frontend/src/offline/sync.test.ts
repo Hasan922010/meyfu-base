@@ -1,15 +1,39 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { post } = vi.hoisted(() => ({ post: vi.fn() }));
+const { post, myVanStock } = vi.hoisted(() => ({ post: vi.fn(), myVanStock: vi.fn() }));
 vi.mock('@/shared/api/client', () => ({ api: { post } }));
+vi.mock('@/shared/api/warehouse', () => ({ warehouseApi: { myVanStock } }));
 
 import { db } from './db';
 import { enqueue, listOutbox, markSending } from './outbox';
-import { pushOutbox } from './sync';
+import { pullVanStock, pushOutbox } from './sync';
 
 beforeEach(async () => {
   await db.outbox.clear();
+  await db.van_stock.clear();
   post.mockReset();
+  myVanStock.mockReset();
+});
+
+describe('pullVanStock — UX M1', () => {
+  it('lokal mashina qoldig‘ini serverdagisi bilan almashtiradi', async () => {
+    // Arrange: lokalda eski qoldiq, serverda yangi yuklama tushgan
+    await db.van_stock.put({
+      product: 'old', product_name: 'Eski', product_sku: 'OLD', unit: 'dona', quantity: 3,
+    });
+    myVanStock.mockResolvedValue([
+      { product: 'gel', product_name: 'Yuvish geli 1L', product_sku: 'GEL-1L', unit: 'dona', quantity: '40.000' },
+    ]);
+
+    // Act
+    await pullVanStock();
+
+    // Assert
+    const rows = await db.van_stock.toArray();
+    expect(rows).toEqual([
+      { product: 'gel', product_name: 'Yuvish geli 1L', product_sku: 'GEL-1L', unit: 'dona', quantity: 40 },
+    ]);
+  });
 });
 
 describe('pushOutbox — UX B1', () => {
