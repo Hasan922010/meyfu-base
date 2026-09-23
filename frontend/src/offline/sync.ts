@@ -14,7 +14,7 @@ import { assertApiShape } from '@/shared/lib/validate';
 import type { ApiSuccess } from '@/shared/types/api';
 
 import { db, getMeta, setMeta } from './db';
-import { applyResult, dueOps, markSending } from './outbox';
+import { applyResult, dueOps, markSending, recoverOrphanedSending } from './outbox';
 
 interface BulkSyncResult {
   results: Array<{
@@ -124,6 +124,8 @@ export async function pushOutbox(): Promise<{ sent: number; failed: number }> {
   if (syncing || !navigator.onLine) return { sent: 0, failed: 0 };
   syncing = true;
   try {
+    // Bu tabda yuborish ketmayapti — demak qolgan SENDING'lar oldingi sessiyadan yetim
+    await recoverOrphanedSending();
     const ops = await dueOps();
     if (ops.length === 0) return { sent: 0, failed: 0 };
 
