@@ -32,6 +32,7 @@
     "ocr": "Invoice scan",
     "system": "System health",
     "refdata": "Reference data",
+    "openingBalances": "Opening balances",
     "help": "Guide"
   },
   "dashboard": {

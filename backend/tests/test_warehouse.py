@@ -62,6 +62,46 @@ def test_product_create_without_initial_stock_has_no_movement(manager_api, catal
 
 
 @pytest.mark.django_db
+def test_stock_opening_balance_for_existing_product(manager_api, catalog, warehouse):
+    """CLAUDE.md 6 — Boshlang'ich qoldiqlar: mavjud mahsulot uchun ham (yaratish
+    oqimidan mustaqil) boshlang'ich qoldiq kiritish mumkin."""
+    wh, prod = warehouse["warehouse"], catalog["product"]
+    resp = manager_api.post(
+        "/api/v1/stock/opening-balance/",
+        {"product": str(prod.id), "warehouse": str(wh.id), "quantity": "40"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    stock = Stock.objects.get(warehouse=wh, product=prod)
+    assert stock.quantity == Decimal("40")
+    assert stock_matches_journal(wh, prod)
+
+
+@pytest.mark.django_db
+def test_supplier_opening_balance_super_admin_only(admin_api, manager_api, warehouse):
+    from apps.warehouse.models import Supplier
+    from apps.warehouse.services import supplier_balance_matches_ledger
+
+    supplier = warehouse["supplier"]
+    resp = manager_api.post(
+        "/api/v1/suppliers/opening-balance/",
+        {"supplier": str(supplier.id), "amount": "-1500000", "note": "Boshlang'ich qarz"},
+        format="json",
+    )
+    assert resp.status_code == 403
+
+    ok_resp = admin_api.post(
+        "/api/v1/suppliers/opening-balance/",
+        {"supplier": str(supplier.id), "amount": "-1500000", "note": "Boshlang'ich qarz"},
+        format="json",
+    )
+    assert ok_resp.status_code == 201, ok_resp.data
+    supplier = Supplier.objects.get(pk=supplier.pk)
+    assert supplier.balance == Decimal("-1500000.00")
+    assert supplier_balance_matches_ledger(supplier) is True
+
+
+@pytest.mark.django_db
 def test_purchase_without_invoice_number(manager_api, catalog, warehouse):
     """Nakladnoy raqamisiz ham qabul yaratiladi (ixtiyoriy maydon)."""
     wh, sup, prod = warehouse["warehouse"], warehouse["supplier"], catalog["product"]

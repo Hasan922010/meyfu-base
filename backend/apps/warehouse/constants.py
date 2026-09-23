@@ -29,3 +29,14 @@ class LoadingStatus(models.TextChoices):
     SENT = "SENT", _("Yuborilgan")
     CONFIRMED = "CONFIRMED", _("Tasdiqlangan")
     CLOSED = "CLOSED", _("Yopilgan")
+
+
+class SupplierTxType(models.TextChoices):
+    """Ta'minotchi balansi jurnali (CLAUDE.md 6 — Boshlang'ich qoldiqlar).
+
+    Hozircha faqat boshlang'ich holatni kiritish uchun — xaridlar/to'lovlar
+    bu balansga avtomatik ta'sir qilmaydi (kelajakda kengaytiriladi).
+    """
+
+    OPENING_BALANCE = "OPENING_BALANCE", _("Boshlang'ich qoldiq (±)")
+    CORRECTION = "CORRECTION", _("Tuzatuvchi yozuv (±)")

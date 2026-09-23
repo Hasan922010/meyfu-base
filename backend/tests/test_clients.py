@@ -18,6 +18,41 @@ def test_users_list_forbidden_for_distributor(auth_api):
 
 
 @pytest.mark.django_db
+def test_client_opening_debt_without_sale(manager_api, routed_clients):
+    """CLAUDE.md 6 — Boshlang'ich qoldiqlar: mijozning boshlang'ich qarzini
+    sotuvsiz kiritish (Debt.sale=None), current_debt yangilanadi."""
+    from apps.sales.models import Debt
+
+    client = routed_clients["my_client"]
+    assert client.current_debt == "0.00" or float(client.current_debt) == 0
+
+    resp = manager_api.post(
+        "/api/v1/clients/opening-balance/",
+        {"client": str(client.id), "amount": "150000", "note": "Eski qarz"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["data"]["sale"] is None
+
+    client.refresh_from_db()
+    assert float(client.current_debt) == 150000.0
+    debt = Debt.objects.get(client=client)
+    assert debt.sale is None
+    assert debt.remaining == 150000
+    assert debt.status == "ACTIVE"
+
+
+@pytest.mark.django_db
+def test_client_opening_debt_rejects_non_positive(manager_api, routed_clients):
+    resp = manager_api.post(
+        "/api/v1/clients/opening-balance/",
+        {"client": str(routed_clients["my_client"].id), "amount": "0"},
+        format="json",
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
 def test_manager_creates_route_and_client(manager_api, distributor):
     r = manager_api.post(
         "/api/v1/routes/",

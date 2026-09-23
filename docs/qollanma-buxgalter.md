@@ -24,8 +24,9 @@ o'chirib bo'lmaydi; kerak bo'lsa tuzatuvchi harakat qo'shiladi (sabab bilan).
 Tarqatuvchi kunni yopib naqd pulni topshirganda, u kassaga kirim sifatida tushadi.
 Topshirilgan summa "kutilgan naqd" bilan solishtiriladi — farq (kamomad) belgilanadi.
 
-> **Boshlang'ich qoldiq** tugmasi faqat **SUPER_ADMIN**ga ko'rinadi — tizim birinchi
-> marta sozlanganda kassadagi mavjud summani kiritish uchun.
+> Kassa **boshlang'ich qoldig'i** — «Boshlang'ich qoldiqlar» bo'limidan kiritiladi
+> (faqat **SUPER_ADMIN**ga ko'rinadi) — tizim birinchi marta sozlanganda kassadagi
+> mavjud summani kiritish uchun.
 
 ### Kompaniya xarajatlari
 Ijara, ish haqi fondi, kommunal va boshqa umumiy xarajatlarni qo'shish.

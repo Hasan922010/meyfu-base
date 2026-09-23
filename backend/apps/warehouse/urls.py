@@ -5,6 +5,7 @@ from .views import (
     PurchaseViewSet,
     StockMovementViewSet,
     StockViewSet,
+    SupplierTransactionViewSet,
     SupplierViewSet,
     VanStockViewSet,
     WarehouseViewSet,
@@ -13,6 +14,9 @@ from .views import (
 router = SimpleRouter()
 router.register("warehouses", WarehouseViewSet, basename="warehouse")
 router.register("suppliers", SupplierViewSet, basename="supplier")
+router.register(
+    "supplier-transactions", SupplierTransactionViewSet, basename="supplier-transaction"
+)
 router.register("purchases", PurchaseViewSet, basename="purchase")
 router.register("stock", StockViewSet, basename="stock")
 router.register("stock-movements", StockMovementViewSet, basename="stock-movement")

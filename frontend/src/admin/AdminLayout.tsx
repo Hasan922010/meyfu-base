@@ -12,6 +12,7 @@ import {
   type LucideIcon,
   Menu,
   Package,
+  PiggyBank,
   Route,
   ScanLine,
   Settings,
@@ -54,6 +55,12 @@ const NAV: { to: string; key: string; end: boolean; Icon: LucideIcon }[] = [
   { to: '/admin/reports', key: 'nav.reports', end: false, Icon: BarChart3 },
   { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity },
   { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library },
+  {
+    to: '/admin/opening-balances',
+    key: 'nav.openingBalances',
+    end: false,
+    Icon: PiggyBank,
+  },
   { to: '/admin/settings', key: 'nav.settings', end: false, Icon: Settings },
   { to: '/admin/help', key: 'nav.help', end: false, Icon: BookOpen },
 ];

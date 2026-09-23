@@ -9,6 +9,11 @@ import type {
 export const walletApi = {
   my: () => retrieve<Wallet>('/wallet/my/'),
   myTransactions: () => retrieve<WalletTransaction[]>('/wallet/my/transactions/'),
+  /** Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun). */
+  openingBalance: (body: { distributor: string; amount: string; note?: string }) =>
+    postAction<WalletTransaction>('/wallet/opening-balance/', body),
+  transactions: (params?: QueryParams) =>
+    listPage<WalletTransaction>('/wallet-transactions/', params),
 };
 
 export const expensesApi = {

@@ -14,6 +14,36 @@ export interface Supplier {
   address: string;
   note: string;
   is_active: boolean;
+  /** Faqat boshlang'ich qoldiq uchun — xaridlar avtomatik qo'shilmaydi. */
+  balance: string;
+  created_at: string;
+}
+
+export interface SupplierTransaction {
+  id: string;
+  date: string;
+  transaction_type: 'OPENING_BALANCE' | 'CORRECTION';
+  amount: string;
+  balance_after: string;
+  note: string;
+  created_at: string;
+}
+
+export interface StockMovement {
+  id: string;
+  movement_type: string;
+  movement_type_display: string;
+  warehouse: string;
+  product: string;
+  product_sku: string;
+  quantity: string;
+  balance_after: string;
+  from_location: string;
+  to_location: string;
+  reference_type: string;
+  reference_id: string;
+  user: string | null;
+  note: string;
   created_at: string;
 }
 

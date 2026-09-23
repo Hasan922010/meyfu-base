@@ -13,12 +13,14 @@ from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
 
+from .constants import MovementType, SupplierTxType
 from .models import (
     Loading,
     Purchase,
     Stock,
     StockMovement,
     Supplier,
+    SupplierTransaction,
     VanStock,
     Warehouse,
 )
@@ -28,11 +30,15 @@ from .serializers import (
     PurchasePaymentSerializer,
     PurchaseSerializer,
     StockMovementSerializer,
+    StockOpeningBalanceSerializer,
     StockSerializer,
+    SupplierOpeningBalanceSerializer,
     SupplierSerializer,
+    SupplierTransactionSerializer,
     VanStockSerializer,
     WarehouseSerializer,
 )
+from .services import apply_movement, supplier_apply
 from .services.loading import cancel_loading, confirm_loading, send_loading
 from .services.purchase import confirm_purchase
 
@@ -67,6 +73,26 @@ class SupplierViewSet(BaseModelViewSet):
     serializer_class = SupplierSerializer
     write_roles = _WH_WRITE
     search_fields = ("name", "phone", "inn")
+    action_roles = {"opening_balance": (Role.SUPER_ADMIN,)}
+
+    @extend_schema(
+        summary="Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)",
+        request=SupplierOpeningBalanceSerializer,
+        responses=SupplierTransactionSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance")
+    def opening_balance(self, request: Request) -> Response:
+        s = SupplierOpeningBalanceSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        tx = supplier_apply(
+            supplier=data["supplier"],
+            transaction_type=SupplierTxType.OPENING_BALANCE,
+            amount=data["amount"],
+            note=data.get("note", ""),
+            user=request.user,
+        )
+        return ok(SupplierTransactionSerializer(tx).data, status_code=201)
 
 
 class StockViewSet(BaseReadOnlyViewSet):
@@ -76,6 +102,7 @@ class StockViewSet(BaseReadOnlyViewSet):
     filterset_fields = ("warehouse", "product")
     search_fields = ("product__name", "product__sku")
     ordering_fields = ("quantity", "updated_at")
+    action_roles = {"opening_balance": (Role.MANAGER, Role.SUPER_ADMIN)}
 
     @extend_schema(summary="Kam qolgan tovarlar (min_stock_alert dan past)")
     @action(detail=False, methods=["get"], url_path="low")
@@ -87,12 +114,40 @@ class StockViewSet(BaseReadOnlyViewSet):
         )
         return ok(self.get_serializer(qs, many=True).data)
 
+    @extend_schema(
+        summary="Mavjud mahsulot uchun boshlang'ich qoldiq",
+        request=StockOpeningBalanceSerializer, responses=StockMovementSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance")
+    def opening_balance(self, request: Request) -> Response:
+        s = StockOpeningBalanceSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        movement = apply_movement(
+            warehouse=data["warehouse"],
+            product=data["product"],
+            quantity=data["quantity"],
+            movement_type=MovementType.OPENING_BALANCE,
+            user=request.user,
+            note=data.get("note", ""),
+        )
+        return ok(StockMovementSerializer(movement).data, status_code=201)
+
 
 class StockMovementViewSet(BaseReadOnlyViewSet):
     queryset = StockMovement.objects.select_related("warehouse", "product", "user")
     serializer_class = StockMovementSerializer
     read_roles = _WH_READ
     filterset_fields = ("warehouse", "product", "movement_type", "reference_type")
+    ordering_fields = ("created_at",)
+    ordering = ("-created_at",)
+
+
+class SupplierTransactionViewSet(BaseReadOnlyViewSet):
+    queryset = SupplierTransaction.objects.select_related("supplier")
+    serializer_class = SupplierTransactionSerializer
+    read_roles = _WH_READ
+    filterset_fields = ("supplier", "transaction_type")
     ordering_fields = ("created_at",)
     ordering = ("-created_at",)
 

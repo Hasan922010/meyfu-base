@@ -18,7 +18,8 @@ Tizimni **birinchi marta** sozlashda shu tartibda yuring:
 3. **Mahsulotlar** — har bir tovar: nom, kategoriya, narxlar, rasm.
 4. **Xodimlar** — tarqatuvchi, omborchi, menejer, buxgalter qo'shish.
 5. **Marshrutlar** — har tarqatuvchiga marshrut, unga mijozlar biriktirish.
-6. **Ombor → Kirim** — boshlang'ich tovar qoldig'ini kiritish.
+6. **Boshlang'ich qoldiqlar** (bo'lim 13) — tovar, kassa, ta'minotchi, mijoz, xodim
+   boshlang'ich holatini kiriting.
 
 Shundan keyin kundalik ish boshlanadi.
 
@@ -42,10 +43,8 @@ farqi, kam qolgan tovar — bosib tafsilotga o'ting.
   «Asosiy qilish» / «O'chirish» / tartibni ‹ › bilan o'zgartirish. Tarqatuvchi telefonida
   tovarni rasmi bilan ko'radi — adashmaydi.
 - `min_stock_alert` — shu miqdordan kamaysa "kam qoldi" ogohlantirishi chiqadi.
-- **Boshlang'ich qoldiq** — yangi mahsulot qo'shishda (faqat yaratishda, tahrirlashda yo'q)
-  ombor va miqdorni ixtiyoriy ravishda kiritsangiz, tovar shu ombordagi qoldiqqa darhol
-  qo'shiladi (append-only jurnalga `OPENING_BALANCE` turi bilan yoziladi). Ombor
-  tanlanmasa — hech narsa yozilmaydi, keyin «Ombor → Kirim» orqali kiritishingiz mumkin.
+- **Boshlang'ich qoldiq** — mahsulotni saqlagandan keyin **«Boshlang'ich qoldiqlar»**
+  bo'limidan (bo'lim 13) kiritasiz.
 
 > Narx va foizni faqat **SUPER_ADMIN** o'zgartiradi.
 
@@ -94,6 +93,8 @@ Omborchi yuklagan naklit rasmlari shu yerga tushadi:
   - **O'chirish** — mijozlar ro'yxatidagi «O'chirish» tugmasi (tasdiq so'raladi).
     Yumshoq o'chirish — mijoz ro'yxatdan yo'qoladi, lekin oldingi sotuv/qarz tarixi
     saqlanadi (CLAUDE.md 5 — ma'lumot yo'qolmaydi). MANAGER va SUPER_ADMIN uchun.
+  - **Boshlang'ich qarz** (mavjud mijoz uchun, sotuvsiz) — **«Boshlang'ich qoldiqlar»**
+    bo'limidan (bo'lim 13) kiritiladi.
 - **Marshrutlar:** nom, biriktirilgan tarqatuvchi, ish kunlari. Mijozlarni marshrutga
   biriktiring — tarqatuvchi shu ro'yxatni telefonida ko'radi.
 - Mijoz kartasida: sotuvlar tarixi, qarzlari, tashriflar.
@@ -149,12 +150,9 @@ tovar farqi    = yuklangan − sotilgan − qaytarilgan
 ## 11. Moliya
 
 - **Umumiy:** kassa balansi, tushum, yalpi foyda, tarqatuvchi xarajatlari, kompaniya xarajatlari.
-- **Kassa:** barcha kirim/chiqim harakatlari (append-only jurnal).
-- **Boshlang'ich qoldiq** («Kassa» tabida, faqat **SUPER_ADMIN**) — tizimni birinchi marta
-  sozlaganda kassada mavjud naqd summani (yoki, agar kamomad bilan boshlansa, manfiy
-  qiymatni) kiritasiz. «Kassada bor (+)» / «Kamomad (−)» tugmasi bilan yo'nalishni tanlang,
-  keyin summani kiriting. Bir martalik yozuv sifatida saqlanadi, istalgancha qayta
-  kiritish mumkin (masalan yangi kassa ochilganda).
+- **Kassa:** barcha kirim/chiqim harakatlari (append-only jurnal). Kassa boshlang'ich
+  qoldig'i endi **«Boshlang'ich qoldiqlar»** bo'limidan (bo'lim 13, faqat SUPER_ADMIN)
+  kiritiladi.
 - **Kompaniya xarajatlari:** ijara, ish haqi fondi va h.k. qo'shish.
 
 ## 12. Xodimlar
@@ -162,10 +160,12 @@ tovar farqi    = yuklangan − sotilgan − qaytarilgan
 - **Qo'shish:** telefon (login), F.I.SH., rol, parol, passport, ishga kirgan sana.
 - **Xodim profili (maosh)** — **barcha rol turlari uchun** (tarqatuvchi, omborchi, menejer,
   buxgalter, super admin):
-  - **Asosiy maosh** — oylik maosh hisoblashda (bo'lim 14) ishlatiladi.
-  - **Boshlang'ich balans** (faqat xodim yaratilganda, ixtiyoriy) — dastlabki hisob-kitobni
-    kiritish: «Xodimga berilgan (avans)» yoki «Xodimning qarzi» tugmasi bilan yo'nalishni
-    tanlang, so'ng summani kiriting. Xodimning hamyoniga bir martalik yozuv sifatida tushadi.
+  - **Asosiy maosh** — oylik maosh hisoblashda (bo'lim 15) ishlatiladi.
+  - **Boshlang'ich balans** — xodim yaratishda shu yerdan (ixtiyoriy) kiritish mumkin,
+    yoki **mavjud** xodim uchun keyinroq **«Boshlang'ich qoldiqlar»** bo'limidan
+    (bo'lim 13). Ikkalasida ham: «Xodimga berilgan (avans)» yoki «Xodimning qarzi»
+    tugmasi bilan yo'nalishni tanlang, so'ng summani kiriting — xodimning hamyoniga
+    bir martalik yozuv sifatida tushadi.
   - Faqat **DISTRIBUTOR** rolida qo'shimcha sozlamalar ochiladi: **Zakaz olgani uchun %**
     va **Yetkazib bergani uchun %** (ikki bosqichli komissiya), "Komissiya %" (eski —
     yuqoridagi ikkitasi 0 bo'lsagina ishlatiladi), oylik reja, qarz limiti, kunlik xarajat
@@ -180,7 +180,25 @@ tovar farqi    = yuklangan − sotilgan − qaytarilgan
 
 > Xodim yaratish/bloklash/o'chirish/parol — faqat **SUPER_ADMIN**.
 
-## 13. Tarqatuvchilar — 360° karta
+## 13. Boshlang'ich qoldiqlar
+
+Tizimni birinchi marta sozlashda (yoki mavjud yozuvlarga tuzatish kiritishda) barcha
+"boshlang'ich holat"larni **bitta bo'limda**, alohida-alohida sahifada (tab) kiritasiz:
+
+- **Tovarlar** — mahsulot + ombor tanlang, miqdorni kiriting. Mavjud mahsulotlar uchun
+  ham ishlaydi (yaratish paytida kiritishga majbur emassiz).
+- **Kassa** — «Kassada bor (+)» / «Kamomad (−)» + summa. Faqat **SUPER_ADMIN**.
+- **Ta'minotchilar** — ta'minotchi tanlang, «Biz qarzdormiz (+)» / «U qarzdor (−)» +
+  summa. Faqat **SUPER_ADMIN**. **Diqqat:** bu faqat boshlang'ich holat uchun — keyingi
+  xaridlar va to'lovlar bu balansga avtomatik qo'shilmaydi.
+- **Mijozlar** — mijoz tanlang, boshlang'ich qarz summasini kiriting. Mijozning
+  qarzdorligiga (bo'lim 5, 10) darhol qo'shiladi.
+- **Xodimlar** — xodim tanlang, «Xodimga berilgan (avans)» / «Xodimning qarzi» + summa.
+  Faqat **SUPER_ADMIN**.
+
+Har bir tabda pastda oxirgi kiritilgan yozuvlar ro'yxati ko'rinadi.
+
+## 14. Tarqatuvchilar — 360° karta
 
 Har tarqatuvchi uchun to'liq ko'rinish. Yuqorida davr tanlagich (Bugun / Hafta / Oy / ...).
 
@@ -191,7 +209,7 @@ Har tarqatuvchi uchun to'liq ko'rinish. Yuqorida davr tanlagich (Bugun / Hafta /
 - **Eksport:** butun karta yoki tab → Excel / PDF.
 - **Solishtirish:** bir nechta xodimni yonma-yon + reyting.
 
-## 14. Maosh
+## 15. Maosh
 
 ### Hisoblash
 Davr va xodim tanlang → «Hisoblash». **Barcha rol turlari** uchun ishlaydi — nafaqat
@@ -210,14 +228,14 @@ Tarqatuvchiga berilgan avanslar — keyingi maoshdan ushlanadi.
 
 > Maoshni tasdiqlash / to'langan deb belgilash — **SUPER_ADMIN** yoki **BUXGALTER**.
 
-## 15. Hisobotlar
+## 16. Hisobotlar
 
 - **Konstruktor:** o'lchov (kun / tarqatuvchi / mahsulot / mijoz) + filtr → jadval.
 - **ABC tahlil:** Pareto — qaysi mahsulot/mijoz aylanmaning 80% ini beradi.
 - **Foyda-zarar:** davr bo'yicha P&L.
 - Har birini Excel / PDF ga yuklab olish mumkin.
 
-## 16. Tizim salomatligi
+## 17. Tizim salomatligi
 
 - Xizmatlar holati (baza, kesh, disk, fon vazifalar).
 - **Butunlik tekshiruvi:** hamyon/ombor balansi jurnal yig'indisiga mos keladimi.
@@ -226,7 +244,7 @@ Tarqatuvchiga berilgan avanslar — keyingi maoshdan ushlanadi.
 - Backup holati (oxirgi nusxa yoshi va hajmi).
 - Sinxronizatsiya ziddiyatlari, OCR navbati.
 
-## 17. Sozlamalar
+## 18. Sozlamalar
 
 - Til (o'zbek / rus / ingliz), tema (yorug' / qorong'i).
 - **Telegram** — hisobingizni bir martalik kod bilan ulash (kunlik xulosa va ogohlantirishlar keladi).

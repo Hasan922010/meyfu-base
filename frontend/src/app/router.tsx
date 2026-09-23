@@ -26,6 +26,10 @@ function lz(load: () => Promise<Record<string, unknown>>, name: string) {
 const DebtsPage = lz(() => import('@/admin/finance/DebtsPage'), 'DebtsPage');
 const FinancePage = lz(() => import('@/admin/finance/FinancePage'), 'FinancePage');
 const OcrPage = lz(() => import('@/admin/ocr/OcrPage'), 'OcrPage');
+const OpeningBalancesPage = lz(
+  () => import('@/admin/opening-balances/OpeningBalancesPage'),
+  'OpeningBalancesPage',
+);
 const PayrollPage = lz(() => import('@/admin/payroll/PayrollPage'), 'PayrollPage');
 const RefDataPage = lz(() => import('@/admin/refdata/RefDataPage'), 'RefDataPage');
 const ReportsPage = lz(() => import('@/admin/reports/ReportsPage'), 'ReportsPage');
@@ -133,6 +137,14 @@ const router = createBrowserRouter([
       { path: 'debts', element: <Lazy><DebtsPage /></Lazy> },
       { path: 'finance', element: <Lazy><FinancePage /></Lazy> },
       { path: 'staff', element: <StaffPage /> },
+      {
+        path: 'opening-balances',
+        element: (
+          <Lazy>
+            <OpeningBalancesPage />
+          </Lazy>
+        ),
+      },
       { path: 'distributors', element: <DistributorsPage /> },
       {
         path: 'distributors/:id',

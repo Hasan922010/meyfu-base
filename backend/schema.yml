@@ -177,6 +177,17 @@ paths:
       summary: Chiqish
       tags:
       - auth
+      requestBody:
+        content:
+          type:
+            schema:
+              type: object
+              additionalProperties: {}
+              description: Unspecified request body
+          properties:
+            schema:
+              refresh:
+                type: string
       security:
       - jwtAuth: []
       responses:
@@ -228,6 +239,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/ws-ticket/:
+    post:
+      operationId: auth_ws_ticket_create
+      description: Issue a short-lived, one-time credential for the event WebSocket.
+      summary: WebSocket ticket
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/brands/:
     get:
@@ -554,6 +582,7 @@ paths:
           - COMPANY_EXPENSE
           - CORRECTION
           - HANDOVER_IN
+          - OPENING_BALANCE
           - OTHER_IN
           - OTHER_OUT
           - SUPPLIER_PAYMENT
@@ -565,6 +594,7 @@ paths:
           * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
           * `OTHER_OUT` - Boshqa chiqim (−)
           * `CORRECTION` - Tuzatuvchi yozuv (±)
+          * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
       tags:
       - cash-transactions
       security:
@@ -644,6 +674,38 @@ paths:
       summary: Kassa balansi
       tags:
       - cash-transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CashTransaction'
+          description: ''
+  /api/v1/cash-transactions/opening-balance/:
+    post:
+      operationId: cash_transactions_opening_balance_create
+      description: |-
+        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+
+        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      summary: Kassa boshlang'ich qoldig'ini kiritish (faqat SUPER_ADMIN)
+      tags:
+      - cash-transactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashOpeningBalanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CashOpeningBalanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CashOpeningBalanceRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -1200,6 +1262,37 @@ paths:
         required: true
       tags:
       - clients
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+          description: ''
+  /api/v1/clients/opening-balance/:
+    post:
+      operationId: clients_opening_balance_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mijoz boshlang'ich qarzi (sotuvsiz)
+      tags:
+      - clients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientOpeningDebtRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientOpeningDebtRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientOpeningDebtRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -5965,6 +6058,7 @@ paths:
           - CORRECTION
           - IN_PURCHASE
           - IN_RETURN
+          - OPENING_BALANCE
           - OUT_LOADING
           - OUT_SALE
           - TRANSFER
@@ -5978,6 +6072,7 @@ paths:
           * `WRITE_OFF` - Hisobdan chiqarish (brak)
           * `TRANSFER` - Ko'chirish
           * `CORRECTION` - Xatoni tuzatuvchi yozuv
+          * `OPENING_BALANCE` - Boshlang'ich qoldiq
       - name: ordering
         required: false
         in: query
@@ -6100,6 +6195,125 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Stock'
+          description: ''
+  /api/v1/stock/opening-balance/:
+    post:
+      operationId: stock_opening_balance_create
+      description: |-
+        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+
+        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      summary: Mavjud mahsulot uchun boshlang'ich qoldiq
+      tags:
+      - stock
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockOpeningBalanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StockOpeningBalanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StockOpeningBalanceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovement'
+          description: ''
+  /api/v1/supplier-transactions/:
+    get:
+      operationId: supplier_transactions_list
+      description: |-
+        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+
+        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: transaction_type
+        schema:
+          type: string
+          title: Turi
+          enum:
+          - CORRECTION
+          - OPENING_BALANCE
+        description: |-
+          * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+          * `CORRECTION` - Tuzatuvchi yozuv (±)
+      tags:
+      - supplier-transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplierTransactionList'
+          description: ''
+  /api/v1/supplier-transactions/{id}/:
+    get:
+      operationId: supplier_transactions_retrieve
+      description: |-
+        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+
+        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ta'minotchi tranzaksiyasi.
+        required: true
+      tags:
+      - supplier-transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierTransaction'
           description: ''
   /api/v1/suppliers/:
     get:
@@ -6293,6 +6507,37 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/suppliers/opening-balance/:
+    post:
+      operationId: suppliers_opening_balance_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)
+      tags:
+      - suppliers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierOpeningBalanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupplierOpeningBalanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupplierOpeningBalanceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierTransaction'
+          description: ''
   /api/v1/sync/catalog/:
     get:
       operationId: sync_catalog_list
@@ -6385,6 +6630,52 @@ paths:
       summary: Tizim holati — salomatlik, butunlik, backup, sinxronizatsiya, OCR
       tags:
       - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/telegram/bot-config/:
+    get:
+      operationId: telegram_bot_config_retrieve
+      summary: Telegram bot sozlamasi
+      tags:
+      - telegram
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: telegram_bot_config_create
+      summary: Telegram bot tokenini ulash
+      tags:
+      - telegram
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    put:
+      operationId: telegram_bot_config_update
+      summary: Telegram bot tokenini ulash
+      tags:
+      - telegram
       security:
       - jwtAuth: []
       responses:
@@ -6639,11 +6930,13 @@ paths:
     get:
       operationId: users_list
       description: |-
-        Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+        Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
 
         O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-        Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-        O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+        Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+        O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+        (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+        vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
       parameters:
       - in: query
         name: is_active
@@ -6704,11 +6997,13 @@ paths:
     post:
       operationId: users_create
       description: |-
-        Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+        Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
 
         O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-        Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-        O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+        Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+        O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+        (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+        vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
       tags:
       - users
       requestBody:
@@ -6736,11 +7031,13 @@ paths:
     get:
       operationId: users_retrieve
       description: |-
-        Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+        Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
 
         O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-        Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-        O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+        Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+        O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+        (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+        vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
       parameters:
       - in: path
         name: id
@@ -6763,11 +7060,13 @@ paths:
     patch:
       operationId: users_partial_update
       description: |-
-        Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+        Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
 
         O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-        Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-        O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+        Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+        O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+        (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+        vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
       parameters:
       - in: path
         name: id
@@ -6798,15 +7097,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserWrite'
           description: ''
+    delete:
+      operationId: users_destroy
+      description: |-
+        Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
+
+        O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
+        Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+        O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+        (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+        vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this foydalanuvchi.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/users/{id}/toggle_active/:
     post:
       operationId: users_toggle_active_create
       description: |-
-        Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+        Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
 
         O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-        Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-        O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+        Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+        O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+        (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+        vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
       summary: Xodimni bloklash / blokdan chiqarish
       parameters:
       - in: path
@@ -7026,6 +7352,7 @@ paths:
           - DEBT_COLLECTED
           - EXPENSE
           - HANDOVER
+          - OPENING_BALANCE
           - SALE_CASH
         description: |-
           * `SALE_CASH` - Naqd sotuv (+)
@@ -7034,6 +7361,7 @@ paths:
           * `HANDOVER` - Kassaga topshirildi (−)
           * `ADVANCE` - Avans (+)
           * `CORRECTION` - Tuzatuvchi yozuv (±)
+          * `OPENING_BALANCE` - Boshlang'ich balans (±)
       - in: query
         name: wallet
         schema:
@@ -7143,6 +7471,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Wallet'
+          description: ''
+  /api/v1/wallet/opening-balance/:
+    post:
+      operationId: wallet_opening_balance_create
+      description: |-
+        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+
+        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      summary: Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun)
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletOpeningBalanceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WalletOpeningBalanceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WalletOpeningBalanceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletTransaction'
           description: ''
   /api/v1/warehouses/:
     get:
@@ -7529,6 +7889,23 @@ components:
       - distributor
       - id
       - received_by
+    CashOpeningBalanceRequest:
+      type: object
+      description: Kassa boshlang'ich qoldig'i — ishorali (musbat/manfiy) bo'lishi
+        mumkin.
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+          default: ''
+      required:
+      - amount
     CashTransaction:
       type: object
       properties:
@@ -7636,6 +8013,7 @@ components:
       - COMPANY_EXPENSE
       - OTHER_OUT
       - CORRECTION
+      - OPENING_BALANCE
       type: string
       description: |-
         * `HANDOVER_IN` - Tarqatuvchidan naqd (+)
@@ -7645,6 +8023,7 @@ components:
         * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
         * `OTHER_OUT` - Boshqa chiqim (−)
         * `CORRECTION` - Tuzatuvchi yozuv (±)
+        * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
     Category:
       type: object
       properties:
@@ -7919,6 +8298,23 @@ components:
       - phone
       - route
       - updated_at
+    ClientOpeningDebtRequest:
+      type: object
+      description: Mijoz boshlang'ich qarzi (CLAUDE.md 6 — Boshlang'ich qoldiqlar).
+      properties:
+        client:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+      required:
+      - amount
+      - client
     ClientRequest:
       type: object
       properties:
@@ -9962,6 +10358,7 @@ components:
       - WRITE_OFF
       - TRANSFER
       - CORRECTION
+      - OPENING_BALANCE
       type: string
       description: |-
         * `IN_PURCHASE` - Kirim — xarid
@@ -9972,6 +10369,7 @@ components:
         * `WRITE_OFF` - Hisobdan chiqarish (brak)
         * `TRANSFER` - Ko'chirish
         * `CORRECTION` - Xatoni tuzatuvchi yozuv
+        * `OPENING_BALANCE` - Boshlang'ich qoldiq
     Notification:
       type: object
       properties:
@@ -11027,6 +11425,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Supplier'
+    PaginatedSupplierTransactionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierTransaction'
     PaginatedUnitList:
       type: object
       required:
@@ -11545,6 +11966,17 @@ components:
         is_active:
           type: boolean
           title: Faol
+        initial_stock_warehouse:
+          type: string
+          format: uuid
+          writeOnly: true
+          nullable: true
+        initial_stock_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          writeOnly: true
+          nullable: true
     PatchedPurchaseRequest:
       type: object
       properties:
@@ -11641,7 +12073,13 @@ components:
           maxLength: 16
     PatchedUserWriteRequest:
       type: object
-      description: Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6.
+      description: |-
+        Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+
+        `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+        (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+        musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+        uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
       properties:
         phone:
           type: string
@@ -11681,6 +12119,12 @@ components:
           minLength: 8
         distributor_profile:
           $ref: '#/components/schemas/DistributorProfileRequest'
+        opening_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          writeOnly: true
+          nullable: true
     PatchedWarehouseRequest:
       type: object
       properties:
@@ -12576,6 +13020,17 @@ components:
         is_active:
           type: boolean
           title: Faol
+        initial_stock_warehouse:
+          type: string
+          format: uuid
+          writeOnly: true
+          nullable: true
+        initial_stock_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          writeOnly: true
+          nullable: true
       required:
       - category
       - name
@@ -13600,6 +14055,27 @@ components:
       - to_location
       - user
       - warehouse
+    StockOpeningBalanceRequest:
+      type: object
+      description: Mavjud mahsulot uchun boshlang'ich qoldiq (CLAUDE.md 6 — Ombor).
+      properties:
+        product:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        note:
+          type: string
+          default: ''
+      required:
+      - product
+      - quantity
+      - warehouse
     Supplier:
       type: object
       properties:
@@ -13630,15 +14106,39 @@ components:
         is_active:
           type: boolean
           title: Faol
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Balans
         created_at:
           type: string
           format: date-time
           readOnly: true
           title: Yaratilgan vaqti
       required:
+      - balance
       - created_at
       - id
       - name
+    SupplierOpeningBalanceRequest:
+      type: object
+      description: Ta'minotchi boshlang'ich qoldig'i — ishorali (musbat/manfiy).
+      properties:
+        supplier:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+      required:
+      - amount
+      - supplier
     SupplierRequest:
       type: object
       properties:
@@ -13668,6 +14168,45 @@ components:
           title: Faol
       required:
       - name
+    SupplierTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        date:
+          type: string
+          format: date
+          readOnly: true
+        transaction_type:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        balance_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - balance_after
+      - created_at
+      - date
+      - id
+      - note
+      - transaction_type
     TokenRefresh:
       type: object
       properties:
@@ -13793,7 +14332,13 @@ components:
       - role
     UserWrite:
       type: object
-      description: Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6.
+      description: |-
+        Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+
+        `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+        (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+        musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+        uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
       properties:
         id:
           type: string
@@ -13837,7 +14382,13 @@ components:
       - phone
     UserWriteRequest:
       type: object
-      description: Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6.
+      description: |-
+        Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+
+        `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+        (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+        musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+        uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
       properties:
         phone:
           type: string
@@ -13877,6 +14428,12 @@ components:
           minLength: 8
         distributor_profile:
           $ref: '#/components/schemas/DistributorProfileRequest'
+        opening_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          writeOnly: true
+          nullable: true
       required:
       - full_name
       - phone
@@ -13980,6 +14537,25 @@ components:
       - live_balance
       - pending_expense_amount
       - updated_at
+    WalletOpeningBalanceRequest:
+      type: object
+      description: |-
+        Xodim boshlang'ich balansi — ishorali (CLAUDE.md 6 — Boshlang'ich
+        qoldiqlar). Mavjud xodimlar uchun (yaratish oqimidan mustaqil).
+      properties:
+        distributor:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+      required:
+      - amount
+      - distributor
     WalletTransaction:
       type: object
       properties:
@@ -14048,6 +14624,7 @@ components:
       - HANDOVER
       - ADVANCE
       - CORRECTION
+      - OPENING_BALANCE
       type: string
       description: |-
         * `SALE_CASH` - Naqd sotuv (+)
@@ -14056,6 +14633,7 @@ components:
         * `HANDOVER` - Kassaga topshirildi (−)
         * `ADVANCE` - Avans (+)
         * `CORRECTION` - Tuzatuvchi yozuv (±)
+        * `OPENING_BALANCE` - Boshlang'ich balans (±)
     Warehouse:
       type: object
       properties:

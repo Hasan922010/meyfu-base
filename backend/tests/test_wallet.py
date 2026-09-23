@@ -40,6 +40,28 @@ def test_card_sale_does_not_credit_wallet(auth_api, van_stocked):
 
 
 @pytest.mark.django_db
+def test_wallet_opening_balance_for_existing_staff(admin_api, manager_api, distributor):
+    """CLAUDE.md 6 — Boshlang'ich qoldiqlar: mavjud xodim uchun ham (yaratish
+    oqimidan mustaqil) boshlang'ich balans kiritish mumkin."""
+    resp = manager_api.post(
+        "/api/v1/wallet/opening-balance/",
+        {"distributor": str(distributor.id), "amount": "-80000", "note": "Qarzi bor"},
+        format="json",
+    )
+    assert resp.status_code == 403
+
+    ok_resp = admin_api.post(
+        "/api/v1/wallet/opening-balance/",
+        {"distributor": str(distributor.id), "amount": "-80000", "note": "Qarzi bor"},
+        format="json",
+    )
+    assert ok_resp.status_code == 201, ok_resp.data
+    wallet = DistributorWallet.objects.get(distributor=distributor)
+    assert wallet.balance == Decimal("-80000.00")
+    assert wallet_matches_ledger(distributor) is True
+
+
+@pytest.mark.django_db
 def test_cash_debt_payment_credits_wallet(auth_api, van_stocked):
     client, product = van_stocked["client"], van_stocked["product"]
     distributor = van_stocked["distributor"]

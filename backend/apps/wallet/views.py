@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.db.models import QuerySet, Sum
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -12,9 +13,16 @@ from apps.core.response import ok
 from apps.core.viewsets import BaseReadOnlyViewSet
 from apps.users.constants import Role
 
+from .constants import TransactionType
 from .models import DistributorWallet, WalletTransaction
-from .serializers import WalletSerializer, WalletTransactionSerializer
-from .services import get_or_create_wallet
+from .serializers import (
+    WalletOpeningBalanceSerializer,
+    WalletSerializer,
+    WalletTransactionSerializer,
+)
+from .services import get_or_create_wallet, wallet_apply
+
+User = get_user_model()
 
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
 _ZERO = Decimal("0")
@@ -41,12 +49,33 @@ class WalletViewSet(BaseReadOnlyViewSet):
     queryset = DistributorWallet.objects.select_related("distributor")
     read_roles = _READ
     filterset_fields = ("distributor",)
+    action_roles = {"opening_balance": (Role.SUPER_ADMIN,)}
 
     def get_queryset(self) -> QuerySet[DistributorWallet]:
         qs = super().get_queryset()
         if _is_distributor(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
+
+    @extend_schema(
+        summary="Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun)",
+        request=WalletOpeningBalanceSerializer,
+        responses=WalletTransactionSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance")
+    def opening_balance(self, request: Request) -> Response:
+        s = WalletOpeningBalanceSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        distributor = User.objects.get(pk=data["distributor"])
+        tx = wallet_apply(
+            distributor=distributor,
+            transaction_type=TransactionType.OPENING_BALANCE,
+            amount=data["amount"],
+            note=data.get("note", ""),
+            user=request.user,
+        )
+        return ok(WalletTransactionSerializer(tx).data, status_code=201)
 
     @extend_schema(summary="Mening hamyonim (jonli balans bilan)")
     @action(detail=False, methods=["get"], url_path="my")
