@@ -207,7 +207,7 @@ export function ExpensesPage(): ReactElement {
       >
         <div className="space-y-3">
           <p className="text-sm text-gray-500">
-            Sabab tarqatuvchiga ko'rsatiladi (CLAUDE.md §8 — ayblovsiz).
+            Sabab tarqatuvchiga ko'rsatiladi — ayblovsiz yozing.
           </p>
           <textarea
             className="field min-h-[80px] py-2"
