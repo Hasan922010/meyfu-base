@@ -45,7 +45,8 @@ export function NotificationBell(): ReactElement {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-80 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900">
+          {/* Telefonda qo'ng'iroq o'rtaroqda — w-80 chapga chiqib ketardi (UX m1): chetlardan 16px */}
+          <div className="fixed inset-x-4 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 dark:border-gray-800 dark:bg-gray-900">
             <div className="flex items-center justify-between border-b border-gray-100 p-3 dark:border-gray-800">
               <span className="text-sm font-semibold">Bildirishnomalar</span>
               <button
