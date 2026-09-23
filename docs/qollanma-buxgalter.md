@@ -24,6 +24,9 @@ o'chirib bo'lmaydi; kerak bo'lsa tuzatuvchi harakat qo'shiladi (sabab bilan).
 Tarqatuvchi kunni yopib naqd pulni topshirganda, u kassaga kirim sifatida tushadi.
 Topshirilgan summa "kutilgan naqd" bilan solishtiriladi — farq (kamomad) belgilanadi.
 
+> **Boshlang'ich qoldiq** tugmasi faqat **SUPER_ADMIN**ga ko'rinadi — tizim birinchi
+> marta sozlanganda kassadagi mavjud summani kiritish uchun.
+
 ### Kompaniya xarajatlari
 Ijara, ish haqi fondi, kommunal va boshqa umumiy xarajatlarni qo'shish.
 
@@ -50,9 +53,13 @@ Ijara, ish haqi fondi, kommunal va boshqa umumiy xarajatlarni qo'shish.
 ## 4. Maosh
 
 `/admin/payroll`:
-1. **Davr tanlang → «Hisoblash»** — har tarqatuvchi uchun avtomatik hisoblanadi:
-   - sotuvdan foiz (zakaz olgani + yetkazgani uchun alohida),
-   - bonus,
+1. **Davr va xodim tanlang → «Hisoblash»** — endi **barcha xodim turlari** uchun
+   ishlatiladi (tarqatuvchi, omborchi, menejer va h.k.), nafaqat tarqatuvchi:
+   - tarqatuvchi uchun — sotuvdan foiz (zakaz olgani + yetkazgani uchun alohida) +
+     asosiy maosh,
+   - qolgan rollar uchun — faqat asosiy maosh (super admin xodim kartasida kiritgan),
+     komissiya har doim 0,
+   - hamma uchun: bonus,
    - ushlanmalar: kamomad, kassa farqi, avans,
    - xarajat qaytarimi,
    - **yakuniy summa**.

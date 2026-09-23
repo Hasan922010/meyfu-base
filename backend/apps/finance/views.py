@@ -17,6 +17,7 @@ from .constants import CashTxType
 from .models import CashTransaction, CompanyExpense
 from .serializers import (
     CashAccountSerializer,
+    CashOpeningBalanceSerializer,
     CashTransactionCreateSerializer,
     CashTransactionSerializer,
     CompanyExpenseSerializer,
@@ -38,6 +39,7 @@ class CashTransactionViewSet(
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _FINANCE
     write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT)
+    action_roles = {"opening_balance": (Role.SUPER_ADMIN,)}
     filterset_fields = ("transaction_type", "date")
     ordering = ("-created_at",)
 
@@ -45,6 +47,25 @@ class CashTransactionViewSet(
     @action(detail=False, methods=["get"])
     def account(self, request: Request) -> Response:
         return ok(CashAccountSerializer(get_account()).data)
+
+    @extend_schema(
+        summary="Kassa boshlang'ich qoldig'ini kiritish (faqat SUPER_ADMIN)",
+        request=CashOpeningBalanceSerializer, responses=CashTransactionSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance")
+    def opening_balance(self, request: Request) -> Response:
+        s = CashOpeningBalanceSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        tx = cash_apply(
+            transaction_type=CashTxType.OPENING_BALANCE,
+            amount=data["amount"],
+            date=data.get("date"),
+            reference_type="opening_balance",
+            note=data.get("note", ""),
+            user=request.user,
+        )
+        return ok(CashTransactionSerializer(tx).data, status_code=201)
 
     @extend_schema(request=CashTransactionCreateSerializer,
                    responses=CashTransactionSerializer)

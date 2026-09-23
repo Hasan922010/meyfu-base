@@ -11,6 +11,7 @@ class MovementType(models.TextChoices):
     WRITE_OFF = "WRITE_OFF", _("Hisobdan chiqarish (brak)")
     TRANSFER = "TRANSFER", _("Ko'chirish")
     CORRECTION = "CORRECTION", _("Xatoni tuzatuvchi yozuv")
+    OPENING_BALANCE = "OPENING_BALANCE", _("Boshlang'ich qoldiq")
 
 
 class PurchaseStatus(models.TextChoices):

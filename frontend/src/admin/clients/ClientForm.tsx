@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import type { Client, ClientInput } from '@/shared/types/clients';
 
@@ -30,6 +31,7 @@ export function ClientForm({
 
   const {
     register,
+    control,
     handleSubmit,
     setError,
     formState: { errors },
@@ -122,11 +124,16 @@ export function ClientForm({
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Qarz limiti</span>
-          <input
-            className="field"
-            type="number"
-            step="0.01"
-            {...register('debt_limit')}
+          <Controller
+            name="debt_limit"
+            control={control}
+            render={({ field }) => (
+              <AmountInput
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                showWords={false}
+              />
+            )}
           />
         </label>
         <label className="block space-y-1">

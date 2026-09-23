@@ -10,6 +10,7 @@ class CashTxType(models.TextChoices):
     COMPANY_EXPENSE = "COMPANY_EXPENSE", _("Kompaniya xarajati (−)")
     OTHER_OUT = "OTHER_OUT", _("Boshqa chiqim (−)")
     CORRECTION = "CORRECTION", _("Tuzatuvchi yozuv (±)")
+    OPENING_BALANCE = "OPENING_BALANCE", _("Boshlang'ich qoldiq (±)")
 
 
 POSITIVE_CASH_TYPES = {CashTxType.HANDOVER_IN, CashTxType.OTHER_IN}

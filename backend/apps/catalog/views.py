@@ -13,6 +13,8 @@ from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.constants import Role
+from apps.warehouse.constants import MovementType
+from apps.warehouse.services import apply_movement
 
 from .filters import ProductFilter
 from .models import Brand, Category, Product, ProductImage, Unit
@@ -73,6 +75,20 @@ class ProductViewSet(BaseModelViewSet):
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
     }
+
+    def perform_create(self, serializer: ProductSerializer) -> None:
+        stock_warehouse = serializer.validated_data.pop("initial_stock_warehouse", None)
+        stock_quantity = serializer.validated_data.pop("initial_stock_quantity", None)
+        product = serializer.save(created_by=self.request.user)
+        if stock_warehouse and stock_quantity:
+            apply_movement(
+                warehouse=stock_warehouse,
+                product=product,
+                quantity=stock_quantity,
+                movement_type=MovementType.OPENING_BALANCE,
+                user=self.request.user,
+                note="Mahsulot yaratilganda boshlang'ich qoldiq",
+            )
 
     @extend_schema(summary="Mahsulot rasmlari (galereya) — yuklash",
                    request=ProductImageUploadSerializer,

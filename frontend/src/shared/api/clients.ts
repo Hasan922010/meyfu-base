@@ -2,6 +2,7 @@ import {
   create,
   listPage,
   patch,
+  remove,
   retrieve,
   type QueryParams,
 } from '@/shared/api/crud';
@@ -23,6 +24,7 @@ export const clientsApi = {
   create: (body: ClientInput) => create<Client, ClientInput>('/clients/', body),
   update: (id: string, body: Partial<ClientInput>) =>
     patch<Client, ClientInput>(`/clients/${id}/`, body),
+  remove: (id: string) => remove(`/clients/${id}/`),
   history: (id: string) => retrieve<ClientHistory>(`/clients/${id}/history/`),
 
   routes: (params?: QueryParams) => listPage<Route>('/routes/', params),

@@ -132,6 +132,26 @@ def test_calculate_basic_commission_and_formula(paid_distributor, van_stocked):
 
 
 @pytest.mark.django_db
+def test_calculate_payroll_for_non_distributor_staff(admin_api, manager):
+    """CLAUDE.md 6 — Maosh: barcha xodim turlari (masalan menejer) uchun ham
+    asosiy maosh bo'yicha oylik maosh hisoblanadi, sotuv/komissiya bo'lmasa ham."""
+    from apps.users.models import DistributorProfile
+
+    DistributorProfile.objects.create(user=manager, base_salary=Decimal("4000000"))
+
+    resp = admin_api.post(
+        "/api/v1/payrolls/calculate/",
+        {"distributor": str(manager.id), "period": str(PERIOD)},
+        format="json",
+    )
+    assert resp.status_code == 200, resp.data
+    data = resp.data["data"]
+    assert data["base_salary"] == "4000000.00"
+    assert data["commission_amount"] == "0.00"
+    assert data["final_amount"] == "4000000.00"
+
+
+@pytest.mark.django_db
 def test_calculate_is_idempotent(paid_distributor, van_stocked):
     _make_sale(paid_distributor, van_stocked["client"], van_stocked["product"])
     p1 = calculate_payroll(distributor=paid_distributor, period=PERIOD)

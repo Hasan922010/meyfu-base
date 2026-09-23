@@ -1,6 +1,12 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
+import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
@@ -11,8 +17,14 @@ import type { Client } from '@/shared/types/clients';
 import { ClientForm } from './ClientForm';
 
 export function ClientsPage(): ReactElement {
+  const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
   const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
+
+  const del = useMutation({
+    mutationFn: (id: string) => clientsApi.remove(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['clients'] }),
+  });
 
   const [search, setSearch] = useState<string>('');
   const [blocked, setBlocked] = useState<'' | 'true' | 'false'>('');
@@ -92,6 +104,12 @@ export function ClientsPage(): ReactElement {
         </select>
       </div>
 
+      {del.isError && (
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          {extractApiError(del.error)}
+        </p>
+      )}
+
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
         <DataState
           isLoading={query.isLoading}
@@ -136,12 +154,25 @@ export function ClientsPage(): ReactElement {
                   </td>
                   {canWrite && (
                     <td className="p-3 text-right">
-                      <button
-                        className="text-brand hover:underline"
-                        onClick={() => setEditing(c)}
-                      >
-                        Tahrirlash
-                      </button>
+                      <span className="flex justify-end gap-3">
+                        <button
+                          className="text-brand hover:underline"
+                          onClick={() => setEditing(c)}
+                        >
+                          Tahrirlash
+                        </button>
+                        <button
+                          className="text-danger hover:underline"
+                          disabled={del.isPending}
+                          onClick={() => {
+                            if (window.confirm(`"${c.name}" mijozini o'chirasizmi?`)) {
+                              del.mutate(c.id);
+                            }
+                          }}
+                        >
+                          O'chirish
+                        </button>
+                      </span>
                     </td>
                   )}
                 </tr>

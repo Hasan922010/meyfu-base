@@ -64,7 +64,21 @@ Har bir sotuv, xarajat, tovar harakati, pul harakati **doimiy** saqlanadi. Xato 
 yozuvni o'chirib bo'lmaydi — **tuzatuvchi yozuv** qo'shiladi (kim, qachon, nima sababdan).
 Barcha muhim o'zgarishlar audit jurnaliga tushadi.
 
-### 5. Chiqish
+### 5. Formalar: xatolik xabarlari va pul kiritish
+
+- **Xatolik xabarlari — to'liq o'zbekcha.** Majburiy maydon bo'sh qolsa, noto'g'ri
+  formatda ma'lumot kiritilsa yoki qiymat chegaradan oshsa — xabar aniq va ayblovsiz
+  o'zbek tilida chiqadi (masalan: "Bu maydon to'ldirilishi shart.",
+  "Bu qiymat 3 ta belgidan oshmasligi kerak.").
+- **Pul mablag'i maydonlari** (narx, maosh, qarz limiti, kassa summasi va h.k.) —
+  yozayotganingizda raqamlar avtomatik minglik guruhlarga bo'linib ko'rsatiladi
+  (masalan `1 000 000`), pastida summa so'z bilan ham yoziladi. Faqat raqam kiriting —
+  bo'sh joy va boshqa belgilarni tizim o'zi qo'yadi.
+- Boshlang'ich qoldiq/balans kabi **ishorali** (musbat/manfiy) summalarda — bare "−"
+  belgisi o'rniga aniq tugmalar bilan yo'nalish tanlanadi (masalan "Kassada bor (+)" /
+  "Kamomad (−)").
+
+### 6. Chiqish
 
 Har bir ilovada profil / sozlamalar bo'limida **"Chiqish"** tugmasi bor. Umumiy
 kompyuterda ishlaganingizda har safar chiqib qo'ying.

@@ -127,6 +127,52 @@ def test_cannot_block_self(admin_api, admin_user):
 
 
 @pytest.mark.django_db
-def test_delete_not_allowed(admin_api, distributor):
+def test_delete_is_soft_and_excluded_from_list(admin_api, distributor):
     resp = admin_api.delete(f"/api/v1/users/{distributor.id}/")
-    assert resp.status_code == 405
+    assert resp.status_code == 204, getattr(resp, "data", None)
+
+    distributor.refresh_from_db()
+    assert distributor.is_deleted is True
+    assert distributor.is_active is False  # login ham to'xtaydi
+
+    listed = admin_api.get("/api/v1/users/")
+    ids = [row["id"] for row in listed.data["data"]["results"]]
+    assert str(distributor.id) not in ids
+
+    from apps.core.models import AuditLog
+    assert AuditLog.objects.filter(
+        action="user.delete", object_id=str(distributor.id)
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_cannot_delete_self(admin_api, admin_user):
+    resp = admin_api.delete(f"/api/v1/users/{admin_user.id}/")
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_non_distributor_staff_can_have_base_salary_and_opening_balance(admin_api):
+    """CLAUDE.md 6 — Maosh: barcha xodim turlari uchun asosiy maosh va
+    boshlang'ich balans (qarz/avans) kiritish mumkin, nafaqat tarqatuvchi."""
+    resp = admin_api.post(
+        "/api/v1/users/",
+        {
+            "phone": "998907009988",
+            "full_name": "Omborchi Aziz",
+            "role": "WAREHOUSE",
+            "password": "startpass123",
+            "distributor_profile": {"base_salary": "3000000"},
+            "opening_balance": "-150000",
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    user = User.objects.get(phone="+998907009988")
+    assert user.distributor_profile.base_salary == 3000000
+
+    from apps.wallet.services import get_or_create_wallet
+
+    wallet = get_or_create_wallet(user)
+    assert wallet.balance == -150000
+    assert wallet.transactions.get().transaction_type == "OPENING_BALANCE"

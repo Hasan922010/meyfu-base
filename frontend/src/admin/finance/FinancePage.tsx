@@ -3,9 +3,12 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { financeApi } from '@/shared/api/finance2';
+import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
+import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { dateShort, money } from '@/shared/lib/format';
+import { useAuthStore } from '@/shared/store/authStore';
 
 const CATEGORIES = [
   { v: 'RENT', l: 'Ijara' },
@@ -26,9 +29,12 @@ const CASH_TYPES = [
 
 export function FinancePage(): ReactElement {
   const qc = useQueryClient();
+  const role = useAuthStore((s) => s.user?.role);
+  const isSuperAdmin = role === 'SUPER_ADMIN';
   const [tab, setTab] = useState<'overview' | 'cash' | 'company'>('overview');
   const [expModal, setExpModal] = useState<boolean>(false);
   const [cashModal, setCashModal] = useState<boolean>(false);
+  const [openingModal, setOpeningModal] = useState<boolean>(false);
 
   const profit = useQuery({ queryKey: ['profit'], queryFn: () => financeApi.profit() });
   const account = useQuery({
@@ -114,9 +120,16 @@ export function FinancePage(): ReactElement {
               {money(account.data?.balance ?? '0')}
             </span>
           </div>
-          <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
-            + Kassa yozuvi
-          </button>
+          <div className="flex gap-2">
+            <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
+              + Kassa yozuvi
+            </button>
+            {isSuperAdmin && (
+              <button className="btn px-4" onClick={() => setOpeningModal(true)}>
+                Boshlang'ich qoldiq
+              </button>
+            )}
+          </div>
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
             <DataState
               isLoading={cashTx.isLoading}
@@ -227,6 +240,16 @@ export function FinancePage(): ReactElement {
           setCashModal(false);
         }}
       />
+      <CashOpeningBalanceModal
+        open={openingModal}
+        onClose={() => setOpeningModal(false)}
+        onDone={() => {
+          void qc.invalidateQueries({ queryKey: ['cash-tx'] });
+          void qc.invalidateQueries({ queryKey: ['cash-account'] });
+          void qc.invalidateQueries({ queryKey: ['profit'] });
+          setOpeningModal(false);
+        }}
+      />
     </div>
   );
 }
@@ -287,13 +310,7 @@ function CompanyExpenseModal({
             </option>
           ))}
         </select>
-        <input
-          className="field"
-          type="number"
-          placeholder="Summa"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+        <AmountInput value={amount} onChange={setAmount} showWords={false} />
         <input
           className="field"
           placeholder="Izoh"
@@ -316,6 +333,55 @@ function CompanyExpenseModal({
         <button
           className="btn-brand w-full"
           disabled={Number(amount) <= 0 || mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          Saqlash
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function CashOpeningBalanceModal({
+  open,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}): ReactElement {
+  const [amount, setAmount] = useState<string>('');
+  const [note, setNote] = useState<string>('');
+
+  const mutation = useMutation({
+    mutationFn: () => financeApi.openingBalance({ amount, note }),
+    onSuccess: onDone,
+  });
+
+  return (
+    <Modal open={open} title="Kassa boshlang'ich qoldig'i" onClose={onClose}>
+      <div className="space-y-3">
+        <SignedAmountInput
+          value={amount}
+          onChange={setAmount}
+          positiveLabel="Kassada bor (+)"
+          negativeLabel="Kamomad (−)"
+        />
+        <input
+          className="field"
+          placeholder="Izoh (ixtiyoriy)"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+        {mutation.isError && (
+          <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+            {extractApiError(mutation.error)}
+          </p>
+        )}
+        <button
+          className="btn-brand w-full"
+          disabled={!amount || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
           Saqlash
@@ -358,13 +424,7 @@ function CashTxModal({
             </option>
           ))}
         </select>
-        <input
-          className="field"
-          type="number"
-          placeholder="Summa"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+        <AmountInput value={amount} onChange={setAmount} showWords={false} />
         <input
           className="field"
           placeholder="Kontragent (ixtiyoriy)"

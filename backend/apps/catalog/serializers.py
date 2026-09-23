@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from apps.users.constants import Role
+from apps.warehouse.models import Warehouse
 
 from .models import Brand, Category, Product, ProductImage, ProductPrice, Unit
 
@@ -80,6 +83,18 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     image_thumb = serializers.SerializerMethodField()
 
+    # Faqat yaratishda: boshlang'ich qoldiqni shu yerdan kiritish mumkin
+    # (CLAUDE.md 6 — Ombor). ProductViewSet.perform_create'da ishlatiladi,
+    # Product modelida saqlanmaydi.
+    initial_stock_warehouse = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.filter(is_active=True),
+        write_only=True, required=False, allow_null=True,
+    )
+    initial_stock_quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=3, write_only=True,
+        required=False, allow_null=True, min_value=Decimal("0"),
+    )
+
     class Meta:
         model = Product
         fields = (
@@ -89,6 +104,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "cost_price", "wholesale_price", "retail_price", "min_price",
             "pack_quantity", "commission_percent", "min_stock_alert",
             "is_active", "created_at", "updated_at",
+            "initial_stock_warehouse", "initial_stock_quantity",
         )
         read_only_fields = ("id", "created_at", "updated_at")
 
@@ -96,6 +112,13 @@ class ProductSerializer(serializers.ModelSerializer):
         return _primary_thumb_url(obj, self.context)
 
     def validate(self, attrs: dict) -> dict:
+        if (
+            attrs.get("initial_stock_quantity")
+            and not attrs.get("initial_stock_warehouse")
+        ):
+            raise serializers.ValidationError(
+                {"initial_stock_warehouse": "Boshlang'ich qoldiq uchun ombor tanlang."}
+            )
         # CLAUDE.md 2: MANAGER narx/foizni o'zgartirmaydi — faqat SUPER_ADMIN
         request = self.context.get("request")
         if request is None or self.instance is None:

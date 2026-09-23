@@ -53,6 +53,11 @@ export function StaffPage(): ReactElement {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
   });
 
+  const del = useMutation({
+    mutationFn: (id: string) => staffApi.remove(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
+  });
+
   const rows = query.data?.results ?? [];
 
   return (
@@ -116,6 +121,11 @@ export function StaffPage(): ReactElement {
           {extractApiError(toggle.error)}
         </p>
       )}
+      {del.isError && (
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          {extractApiError(del.error)}
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
         <DataState
@@ -162,17 +172,34 @@ export function StaffPage(): ReactElement {
                           Tahrir
                         </button>
                         {u.id !== me?.id && (
-                          <button
-                            className={
-                              u.is_active
-                                ? 'text-danger hover:underline'
-                                : 'text-success hover:underline'
-                            }
-                            disabled={toggle.isPending}
-                            onClick={() => toggle.mutate(u.id)}
-                          >
-                            {u.is_active ? 'Bloklash' : 'Faollashtirish'}
-                          </button>
+                          <>
+                            <button
+                              className={
+                                u.is_active
+                                  ? 'text-danger hover:underline'
+                                  : 'text-success hover:underline'
+                              }
+                              disabled={toggle.isPending}
+                              onClick={() => toggle.mutate(u.id)}
+                            >
+                              {u.is_active ? 'Bloklash' : 'Faollashtirish'}
+                            </button>
+                            <button
+                              className="text-danger hover:underline"
+                              disabled={del.isPending}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `"${u.full_name}" xodimini o'chirasizmi?`,
+                                  )
+                                ) {
+                                  del.mutate(u.id);
+                                }
+                              }}
+                            >
+                              O'chirish
+                            </button>
+                          </>
                         )}
                       </span>
                     </td>

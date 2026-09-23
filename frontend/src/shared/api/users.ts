@@ -1,4 +1,11 @@
-import { create, listPage, patch, postAction, type QueryParams } from '@/shared/api/crud';
+import {
+  create,
+  listPage,
+  patch,
+  postAction,
+  remove,
+  type QueryParams,
+} from '@/shared/api/crud';
 import type { DistributorProfile, User } from '@/shared/types/api';
 
 export const authApi = {
@@ -21,6 +28,9 @@ export interface StaffInput {
   address?: string;
   hire_date?: string | null;
   distributor_profile?: Partial<DistributorProfile>;
+  /** Faqat yaratishda: dastlabki hisob-kitob (musbat — xodimga berilgan avans,
+   * manfiy — xodimning qarzi). CLAUDE.md 5. */
+  opening_balance?: string;
 }
 
 export const staffApi = {
@@ -28,5 +38,6 @@ export const staffApi = {
   create: (body: StaffInput) => create<User, StaffInput>('/users/', body),
   update: (id: string, body: Partial<StaffInput>) =>
     patch<User, StaffInput>(`/users/${id}/`, body),
+  remove: (id: string) => remove(`/users/${id}/`),
   toggleActive: (id: string) => postAction<User>(`/users/${id}/toggle_active/`),
 };

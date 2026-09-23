@@ -20,6 +20,38 @@ def _sale(api, client, product, qty="10", price="27000", payment="NAQD", **extra
 # ---------- Kassa ----------
 
 @pytest.mark.django_db
+def test_cash_opening_balance_super_admin_only(admin_api, manager_api):
+    resp = manager_api.post(
+        "/api/v1/cash-transactions/opening-balance/",
+        {"amount": "5000000", "note": "Boshlang'ich qoldiq"},
+        format="json",
+    )
+    assert resp.status_code == 403
+
+    ok_resp = admin_api.post(
+        "/api/v1/cash-transactions/opening-balance/",
+        {"amount": "5000000", "note": "Boshlang'ich qoldiq"},
+        format="json",
+    )
+    assert ok_resp.status_code == 201, ok_resp.data
+    assert ok_resp.data["data"]["transaction_type"] == "OPENING_BALANCE"
+    assert ok_resp.data["data"]["balance_after"] == "5000000.00"
+    assert cash_matches_ledger()
+
+
+@pytest.mark.django_db
+def test_cash_opening_balance_allows_negative_amount(admin_api):
+    resp = admin_api.post(
+        "/api/v1/cash-transactions/opening-balance/",
+        {"amount": "-120000", "note": "Kassa kamomadi bilan boshlandi"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["data"]["balance_after"] == "-120000.00"
+    assert cash_matches_ledger()
+
+
+@pytest.mark.django_db
 def test_dayclose_feeds_company_cash(auth_api, admin_api, van_stocked):
     client, product = van_stocked["client"], van_stocked["product"]
     _sale(auth_api, client, product, "10", price="27000")  # 270000 naqd

@@ -42,6 +42,10 @@ farqi, kam qolgan tovar — bosib tafsilotga o'ting.
   «Asosiy qilish» / «O'chirish» / tartibni ‹ › bilan o'zgartirish. Tarqatuvchi telefonida
   tovarni rasmi bilan ko'radi — adashmaydi.
 - `min_stock_alert` — shu miqdordan kamaysa "kam qoldi" ogohlantirishi chiqadi.
+- **Boshlang'ich qoldiq** — yangi mahsulot qo'shishda (faqat yaratishda, tahrirlashda yo'q)
+  ombor va miqdorni ixtiyoriy ravishda kiritsangiz, tovar shu ombordagi qoldiqqa darhol
+  qo'shiladi (append-only jurnalga `OPENING_BALANCE` turi bilan yoziladi). Ombor
+  tanlanmasa — hech narsa yozilmaydi, keyin «Ombor → Kirim» orqali kiritishingiz mumkin.
 
 > Narx va foizni faqat **SUPER_ADMIN** o'zgartiradi.
 
@@ -87,6 +91,9 @@ Omborchi yuklagan naklit rasmlari shu yerga tushadi:
 - **Mijozlar:** nom, egasi, telefon, manzil, joylashuv (xarita), tur, **qarz limiti**,
   STIR, "bloklangan" belgisi, izoh.
   - Bloklangan mijozga faqat **naqd** sotiladi.
+  - **O'chirish** — mijozlar ro'yxatidagi «O'chirish» tugmasi (tasdiq so'raladi).
+    Yumshoq o'chirish — mijoz ro'yxatdan yo'qoladi, lekin oldingi sotuv/qarz tarixi
+    saqlanadi (CLAUDE.md 5 — ma'lumot yo'qolmaydi). MANAGER va SUPER_ADMIN uchun.
 - **Marshrutlar:** nom, biriktirilgan tarqatuvchi, ish kunlari. Mijozlarni marshrutga
   biriktiring — tarqatuvchi shu ro'yxatni telefonida ko'radi.
 - Mijoz kartasida: sotuvlar tarixi, qarzlari, tashriflar.
@@ -143,20 +150,35 @@ tovar farqi    = yuklangan − sotilgan − qaytarilgan
 
 - **Umumiy:** kassa balansi, tushum, yalpi foyda, tarqatuvchi xarajatlari, kompaniya xarajatlari.
 - **Kassa:** barcha kirim/chiqim harakatlari (append-only jurnal).
+- **Boshlang'ich qoldiq** («Kassa» tabida, faqat **SUPER_ADMIN**) — tizimni birinchi marta
+  sozlaganda kassada mavjud naqd summani (yoki, agar kamomad bilan boshlansa, manfiy
+  qiymatni) kiritasiz. «Kassada bor (+)» / «Kamomad (−)» tugmasi bilan yo'nalishni tanlang,
+  keyin summani kiriting. Bir martalik yozuv sifatida saqlanadi, istalgancha qayta
+  kiritish mumkin (masalan yangi kassa ochilganda).
 - **Kompaniya xarajatlari:** ijara, ish haqi fondi va h.k. qo'shish.
 
 ## 12. Xodimlar
 
 - **Qo'shish:** telefon (login), F.I.SH., rol, parol, passport, ishga kirgan sana.
-- **Tarqatuvchi profili** (rol = DISTRIBUTOR bo'lganda):
-  - **Zakaz olgani uchun %** va **Yetkazib bergani uchun %** — ikki bosqichli komissiya.
-  - "Komissiya %" (eski) — yuqoridagi ikkitasi 0 bo'lsagina ishlatiladi.
-  - Asosiy maosh, oylik reja, qarz limiti, kunlik xarajat limiti, mashina raqami.
-  - "Minimal narxdan past sotishga ruxsat" belgisi.
-- **Bloklash / Faollashtirish** — bloklangan xodim tizimga kira olmaydi (audit jurnaliga tushadi).
+- **Xodim profili (maosh)** — **barcha rol turlari uchun** (tarqatuvchi, omborchi, menejer,
+  buxgalter, super admin):
+  - **Asosiy maosh** — oylik maosh hisoblashda (bo'lim 14) ishlatiladi.
+  - **Boshlang'ich balans** (faqat xodim yaratilganda, ixtiyoriy) — dastlabki hisob-kitobni
+    kiritish: «Xodimga berilgan (avans)» yoki «Xodimning qarzi» tugmasi bilan yo'nalishni
+    tanlang, so'ng summani kiriting. Xodimning hamyoniga bir martalik yozuv sifatida tushadi.
+  - Faqat **DISTRIBUTOR** rolida qo'shimcha sozlamalar ochiladi: **Zakaz olgani uchun %**
+    va **Yetkazib bergani uchun %** (ikki bosqichli komissiya), "Komissiya %" (eski —
+    yuqoridagi ikkitasi 0 bo'lsagina ishlatiladi), oylik reja, qarz limiti, kunlik xarajat
+    limiti, mashina raqami, "Minimal narxdan past sotishga ruxsat" belgisi.
+- **Bloklash / Faollashtirish** — bloklangan xodim tizimga **vaqtincha** kira olmaydi
+  (audit jurnaliga tushadi), lekin ro'yxatda ko'rinishda qoladi.
+- **O'chirish** — xodimlar ro'yxatidagi «O'chirish» tugmasi (tasdiq so'raladi). Bloklashdan
+  farqli — xodim ro'yxatdan butunlay yo'qoladi va tizimga kira olmaydi, lekin oldingi
+  sotuv/maosh/hamyon tarixi saqlanadi (yumshoq o'chirish — CLAUDE.md 5). O'zingizni
+  o'chira olmaysiz.
 - **Parol o'rnatish** — tahrirlashda yangi parol kiriting (bo'sh qoldirsangiz o'zgarmaydi).
 
-> Xodim yaratish/bloklash/parol — faqat **SUPER_ADMIN**.
+> Xodim yaratish/bloklash/o'chirish/parol — faqat **SUPER_ADMIN**.
 
 ## 13. Tarqatuvchilar — 360° karta
 
@@ -172,8 +194,11 @@ Har tarqatuvchi uchun to'liq ko'rinish. Yuqorida davr tanlagich (Bugun / Hafta /
 ## 14. Maosh
 
 ### Hisoblash
-Davr tanlang → «Hisoblash». Har tarqatuvchi uchun: sotuvdan foiz (zakaz + yetkazish
-alohida ko'rsatiladi), bonus, ushlanmalar (kamomad, kassa farqi, avans), xarajat qaytarimi,
+Davr va xodim tanlang → «Hisoblash». **Barcha rol turlari** uchun ishlaydi — nafaqat
+tarqatuvchi: tarqatuvchi uchun asosiy maosh + sotuvdan foiz (zakaz + yetkazish alohida
+ko'rsatiladi); omborchi/menejer/buxgalter/super admin uchun — asosiy maosh (bo'lim 12'da
+kiritilgan), komissiya har doim 0 bo'ladi (ular sotuv qilmaydi). Qolgan komponentlar
+hammaga baravar: bonus, ushlanmalar (kamomad, kassa farqi, avans), xarajat qaytarimi,
 yakuniy summa. Holat: qoralama → **tasdiqlangan** → to'langan.
 
 ### Komissiya qoidalari
