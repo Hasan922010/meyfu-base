@@ -13,10 +13,11 @@ import {
 import { useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { saveSaleLocal, type LocalSaleLine } from '@/offline/actions';
+import { saveSaleLocal } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { getCurrentCoords } from '@/mobile/geo';
+import { addToCart, remainingFor, type CartLine } from '@/mobile/lib/cart';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { AmountInput } from '@/shared/components/AmountInput';
@@ -38,10 +39,6 @@ function plusDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
-}
-
-interface CartLine extends LocalSaleLine {
-  max: number;
 }
 
 const QUICK = [1, 3, 5, 10, 12, 20];
@@ -67,6 +64,7 @@ export function NewSalePage(): ReactElement {
   const [payMode, setPayMode] = useState<PayMode>('choose');
   const [dueDate, setDueDate] = useState<string>(plusDays(14));
   const [cashPart, setCashPart] = useState<string>('');
+  const [notice, setNotice] = useState<string>('');
 
   const client = clients.find((c) => c.id === clientId);
   const total = useMemo(
@@ -94,23 +92,25 @@ export function NewSalePage(): ReactElement {
     return p?.wholesale_price ?? '';
   }
 
-  function addToCart(): void {
-    const vs = van.find((v) => v.product === picked);
+  const pickedStock = van.find((v) => v.product === picked);
+  const pickedRemaining = pickedStock ? remainingFor(pickedStock.quantity, cart, picked) : 0;
+  const pickedInCart = cart.find((l) => l.product === picked)?.quantity ?? 0;
+
+  function handleAdd(): void {
+    const vs = pickedStock;
     const price = Number(pickedPrice || suggestedPrice(picked));
     if (!vs || qty <= 0 || price <= 0) return;
-    setCart((prev) => {
-      const rest = prev.filter((l) => l.product !== picked);
-      return [
-        ...rest,
-        {
-          product: vs.product,
-          product_name: vs.product_name,
-          quantity: Math.min(vs.quantity, qty),
-          price,
-          max: vs.quantity,
-        },
-      ];
-    });
+    const res = addToCart(
+      cart,
+      { product: vs.product, product_name: vs.product_name, quantity: qty, price },
+      vs.quantity,
+    );
+    setCart(res.cart);
+    setNotice(
+      res.clampedTo != null
+        ? `Mashinada faqat ${res.clampedTo} ${vs.unit} bor — savatga ${res.clampedTo} ${vs.unit} qo'yildi`
+        : '',
+    );
     setPicked('');
     setPickedPrice('');
     setQty(1);
@@ -183,6 +183,7 @@ export function NewSalePage(): ReactElement {
     setStep('client');
     setClientId('');
     setCart([]);
+    setNotice('');
     setClientSearch('');
     setReceipt(null);
   }
@@ -312,8 +313,9 @@ export function NewSalePage(): ReactElement {
                 </button>
                 <span className="w-16 text-center text-2xl font-bold">{qty}</span>
                 <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-                  onClick={() => setQty((q) => q + 1)}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 disabled:opacity-40 dark:bg-gray-800"
+                  onClick={() => setQty((q) => Math.min(pickedRemaining, q + 1))}
+                  disabled={qty >= pickedRemaining}
                   aria-label="Ko'paytirish"
                 >
                   <Plus size={22} aria-hidden />
@@ -323,13 +325,23 @@ export function NewSalePage(): ReactElement {
                 {QUICK.map((n) => (
                   <button
                     key={n}
-                    className="min-w-[44px] rounded-lg bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-800"
+                    className="min-w-[44px] rounded-lg bg-gray-100 px-3 py-1.5 text-sm disabled:opacity-40 dark:bg-gray-800"
                     onClick={() => setQty(n)}
+                    disabled={n > pickedRemaining}
                   >
                     {n}
                   </button>
                 ))}
               </div>
+              <p className="text-center text-xs text-gray-500" aria-live="polite">
+                {pickedRemaining === 0
+                  ? `Mashinadagi hammasi (${pickedStock?.quantity ?? 0} ${pickedStock?.unit ?? ''}) savatda`
+                  : qty >= pickedRemaining
+                    ? `Mashinada faqat ${pickedRemaining} ${pickedStock?.unit ?? ''} bor`
+                    : pickedInCart > 0
+                      ? `Savatda ${pickedInCart} ${pickedStock?.unit ?? ''} bor — ustiga qo'shiladi`
+                      : `Mashinada ${pickedRemaining} ${pickedStock?.unit ?? ''}`}
+              </p>
               <input
                 className="field"
                 type="number"
@@ -340,12 +352,20 @@ export function NewSalePage(): ReactElement {
               />
               <button
                 className="btn-brand w-full"
-                disabled={Number(pickedPrice || suggestedPrice(picked)) <= 0}
-                onClick={addToCart}
+                disabled={
+                  pickedRemaining === 0 || Number(pickedPrice || suggestedPrice(picked)) <= 0
+                }
+                onClick={handleAdd}
               >
                 Savatga qo'shish
               </button>
             </div>
+          )}
+
+          {notice && (
+            <p role="status" className="rounded-lg bg-pending/10 px-3 py-2 text-sm text-pending">
+              {notice}
+            </p>
           )}
 
           {cart.length > 0 && (
