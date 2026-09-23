@@ -247,6 +247,11 @@ export function DayCloseWizard(): ReactElement {
             <div className="my-1 border-t border-gray-200 dark:border-gray-700" />
             <Line label="Kutilgan naqd" value={money(data?.cash_expected ?? '0')} bold />
           </div>
+          {/* Bosh sahifadagi "Qo'limdagi pul" oldingi kunlarni ham qamraydi (UX m6) */}
+          <p className="text-xs text-gray-500">
+            Faqat bugungi naqd sotuv va undirilgan qarz. Hamyondagi umumiy balans oldingi
+            kunlarni ham o'z ichiga oladi, shuning uchun farq qilishi mumkin.
+          </p>
           <label className="block space-y-1">
             <span className="text-sm font-medium">Topshirilayotgan naqd</span>
             <input
