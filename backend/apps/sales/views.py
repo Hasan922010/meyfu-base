@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.catalog.models import Product
 from apps.clients.models import Client
+from apps.core.formatting import fmt_money
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
@@ -163,15 +164,16 @@ class SaleViewSet(BaseModelViewSet):
     def receipt(self, request: Request, pk: str | None = None) -> Response:
         sale = self.get_object()
         lines = [
-            f"{i.product.name} — {i.quantity} × {i.price} = {i.amount}"
+            f"{i.product.name} — {i.quantity} × {fmt_money(i.price)}"
+            f" = {fmt_money(i.amount)}"
             for i in sale.items.select_related("product")
         ]
         text = (
             f"{sale.number}\n{sale.client.name}\n{sale.date:%d.%m.%Y}\n"
             + "\n".join(lines)
-            + f"\n\nJami: {sale.total_amount} so'm"
-            + (f"\nTo'landi: {sale.paid_amount}" if sale.paid_amount else "")
-            + (f"\nQarz: {sale.debt_amount}" if sale.debt_amount else "")
+            + f"\n\nJami: {fmt_money(sale.total_amount)}"
+            + (f"\nTo'landi: {fmt_money(sale.paid_amount)}" if sale.paid_amount else "")
+            + (f"\nQarz: {fmt_money(sale.debt_amount)}" if sale.debt_amount else "")
         )
         return ok({"text": text, "sale": SaleSerializer(sale).data})
 
