@@ -295,8 +295,13 @@ export function NewSalePage(): ReactElement {
                       <div className="h-9 w-9 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
                     )}
                     <span className="flex-1">{p.product_name}</span>
-                    <span className="text-gray-400">
-                      {p.quantity} {p.unit}
+                    <span className="text-right text-gray-400">
+                      {remainingFor(p.quantity, cart, p.product)} {p.unit}
+                      {cart.some((l) => l.product === p.product) && (
+                        <span className="block text-xs">
+                          ({cart.find((l) => l.product === p.product)?.quantity} savatda)
+                        </span>
+                      )}
                     </span>
                   </button>
                 </li>
