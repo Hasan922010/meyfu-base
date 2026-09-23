@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 
 import { clientsApi } from '@/shared/api/clients';
 import { dayCloseApi } from '@/shared/api/reports';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 
@@ -47,6 +48,12 @@ export function MobileHomePage(): ReactElement {
     queryKey: ['day-close', 'my-today'],
     queryFn: () => dayCloseApi.myToday(),
   });
+  // MyLoadingPage bilan bir xil kalit — tasdiqlangach karta o'zi yo'qoladi (UX M7)
+  const loadings = useQuery({
+    queryKey: ['loadings', 'my-today'],
+    queryFn: () => warehouseApi.myTodayLoadings(),
+  });
+  const awaitingLoadings = (loadings.data ?? []).filter((l) => l.status === 'SENT');
 
   return (
     <div className="space-y-4">
@@ -72,6 +79,24 @@ export function MobileHomePage(): ReactElement {
             <div className="font-semibold">{today.data.visits_count ?? 0}</div>
           </div>
         </div>
+      )}
+
+      {awaitingLoadings.length > 0 && (
+        <Link
+          to="/m/loading"
+          className="flex items-center gap-3 rounded-xl border border-brand/30 bg-brand/10 p-3 text-sm"
+        >
+          <PackageOpen size={28} className="shrink-0 text-brand" aria-hidden />
+          <span className="flex-1">
+            <span className="block font-semibold">Yuklama tasdiqlanishini kutmoqda</span>
+            <span className="text-gray-600 dark:text-gray-300">
+              {awaitingLoadings.map((l) => l.number).join(', ')} · tovarni sanab, qabul qiling
+            </span>
+          </span>
+          <span aria-hidden className="text-brand">
+            →
+          </span>
+        </Link>
       )}
 
       <div className="grid grid-cols-2 gap-3">
