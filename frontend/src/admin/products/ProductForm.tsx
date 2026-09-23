@@ -4,7 +4,6 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
-import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -42,11 +41,6 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
     queryKey: ['brands'],
     queryFn: () => catalogApi.brands({ page_size: 200 }),
   });
-  const warehouses = useQuery({
-    queryKey: ['warehouses'],
-    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
-    enabled: !product,
-  });
 
   const { register, control, handleSubmit, setError, formState } = useForm<ProductInput>({
     defaultValues: product
@@ -74,10 +68,6 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       const body: ProductInput = { ...values, brand: values.brand || null };
       if (product && !canEditPrice) {
         for (const k of PRICE_KEYS) delete body[k];
-      }
-      if (!body.initial_stock_warehouse || !body.initial_stock_quantity) {
-        delete body.initial_stock_warehouse;
-        delete body.initial_stock_quantity;
       }
       // Ixtiyoriy raqamli maydon — bo'sh qoldirilsa backendga umuman yubormaymiz
       // (bo'sh satr "" "raqam emas" xatosiga sabab bo'ladi, chunki bu register()
@@ -228,37 +218,10 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       </fieldset>
 
       {!product && (
-        <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-          <legend className="px-1 text-xs text-gray-500">
-            Boshlang'ich qoldiq (ixtiyoriy)
-          </legend>
-          <label className="block space-y-1">
-            <span className="text-sm">Ombor</span>
-            <select className="field" {...register('initial_stock_warehouse')}>
-              <option value="">— kiritilmaydi —</option>
-              {warehouses.data?.results.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm">Miqdor</span>
-            <Controller
-              name="initial_stock_quantity"
-              control={control}
-              render={({ field }) => (
-                <AmountInput
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  showWords={false}
-                  suffix=""
-                />
-              )}
-            />
-          </label>
-        </fieldset>
+        <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800">
+          Boshlang'ich qoldiqni saqlangandan keyin «Boshlang'ich qoldiqlar»
+          bo'limidan kiritasiz.
+        </p>
       )}
 
       <div className="grid grid-cols-3 gap-3">

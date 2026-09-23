@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from .constants import WEEKDAYS
@@ -48,6 +50,18 @@ class ClientSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         )
         read_only_fields = ("id", "current_debt", "created_at", "updated_at")
+
+
+class ClientOpeningDebtSerializer(serializers.Serializer):
+    """Mijoz boshlang'ich qarzi (CLAUDE.md 6 — Boshlang'ich qoldiqlar)."""
+
+    client = serializers.PrimaryKeyRelatedField(
+        queryset=Client.objects.filter(is_blocked=False)
+    )
+    amount = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0.01")
+    )
+    note = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class ClientLiteSerializer(serializers.ModelSerializer):

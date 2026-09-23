@@ -2,6 +2,7 @@ import {
   create,
   listPage,
   patch,
+  postAction,
   remove,
   retrieve,
   type QueryParams,
@@ -14,6 +15,7 @@ import type {
   Route,
   RouteInput,
 } from '@/shared/types/clients';
+import type { Debt } from '@/shared/types/sales';
 
 interface ClientHistory {
   visits: ClientVisit[];
@@ -26,6 +28,9 @@ export const clientsApi = {
     patch<Client, ClientInput>(`/clients/${id}/`, body),
   remove: (id: string) => remove(`/clients/${id}/`),
   history: (id: string) => retrieve<ClientHistory>(`/clients/${id}/history/`),
+  /** Mijoz boshlang'ich qarzi — sotuvsiz. */
+  openingBalance: (body: { client: string; amount: string; note?: string }) =>
+    postAction<Debt>('/clients/opening-balance/', body),
 
   routes: (params?: QueryParams) => listPage<Route>('/routes/', params),
   myRoutes: () => retrieve<Route[]>('/routes/my/'),

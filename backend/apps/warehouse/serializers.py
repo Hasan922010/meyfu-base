@@ -5,6 +5,8 @@ from decimal import Decimal
 from django.db import transaction
 from rest_framework import serializers
 
+from apps.catalog.models import Product
+
 from .models import (
     Loading,
     LoadingItem,
@@ -32,9 +34,51 @@ class SupplierSerializer(serializers.ModelSerializer):
         model = Supplier
         fields = (
             "id", "name", "phone", "inn", "address", "note",
-            "is_active", "created_at",
+            "is_active", "balance", "created_at",
         )
-        read_only_fields = ("id", "created_at")
+        read_only_fields = ("id", "balance", "created_at")
+
+
+class SupplierOpeningBalanceSerializer(serializers.Serializer):
+    """Ta'minotchi boshlang'ich qoldig'i — ishorali (musbat/manfiy)."""
+
+    supplier = serializers.PrimaryKeyRelatedField(
+        queryset=Supplier.objects.filter(is_active=True)
+    )
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_amount(self, value: Decimal) -> Decimal:
+        if value == Decimal("0"):
+            raise serializers.ValidationError("Summa 0 bo'lishi mumkin emas.")
+        return value
+
+
+class SupplierTransactionSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    date = serializers.DateField(read_only=True)
+    transaction_type = serializers.CharField(read_only=True)
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
+    balance_after = serializers.DecimalField(
+        max_digits=14, decimal_places=2, read_only=True
+    )
+    note = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+
+class StockOpeningBalanceSerializer(serializers.Serializer):
+    """Mavjud mahsulot uchun boshlang'ich qoldiq (CLAUDE.md 6 — Ombor)."""
+
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.filter(is_active=True)
+    )
+    warehouse = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.filter(is_active=True)
+    )
+    quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=3, min_value=Decimal("0.001")
+    )
+    note = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class StockSerializer(serializers.ModelSerializer):

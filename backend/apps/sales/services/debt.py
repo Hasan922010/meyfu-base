@@ -108,3 +108,35 @@ def collect_debt_payment(
         )
 
     return DebtPaymentResult(payment=payment, created=True)
+
+
+@transaction.atomic
+def create_opening_debt(
+    *, client: Client, amount: Decimal, note: str = "", user=None
+) -> Debt:
+    """Mijozning boshlang'ich qarzi — sotuvsiz (CLAUDE.md 6 — Boshlang'ich
+    qoldiqlar). `Debt.sale` shu holat uchun ataylab nullable qilingan."""
+    if amount <= _ZERO:
+        raise BusinessError(
+            message="Boshlang'ich qarz summasi musbat bo'lishi kerak.",
+            code="INVALID_AMOUNT",
+        )
+
+    debt = Debt.objects.create(
+        client=client, sale=None, amount=amount, remaining=amount,
+        created_by=user,
+    )
+    Client.objects.filter(pk=client.pk).update(
+        current_debt=F("current_debt") + amount
+    )
+
+    # Debt'da `note` maydoni yo'q — CLAUDE.md 5.3 "qoldiq tuzatish" majburiy
+    # yozilishi kerak bo'lgan harakatlardan, shu sabab AuditLog'ga yoziladi.
+    from apps.core.models import AuditLog
+
+    AuditLog.objects.create(
+        user=user, action="debt.opening_balance", model_name="Debt",
+        object_id=str(debt.id),
+        changes={"client": str(client.id), "amount": str(amount), "note": note},
+    )
+    return debt

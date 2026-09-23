@@ -139,6 +139,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/ws-ticket/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * WebSocket ticket
+         * @description Issue a short-lived, one-time credential for the event WebSocket.
+         */
+        post: operations["auth_ws_ticket_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/brands/": {
         parameters: {
             query?: never;
@@ -312,6 +332,29 @@ export interface paths {
         get: operations["cash_transactions_account_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kassa boshlang'ich qoldig'ini kiritish (faqat SUPER_ADMIN)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        post: operations["cash_transactions_opening_balance_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -508,6 +551,28 @@ export interface paths {
         get: operations["clients_history_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mijoz boshlang'ich qarzi (sotuvsiz)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["clients_opening_balance_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2873,6 +2938,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stock/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mavjud mahsulot uchun boshlang'ich qoldiq
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        post: operations["stock_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supplier-transactions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        get: operations["supplier_transactions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supplier-transactions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        get: operations["supplier_transactions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/suppliers/": {
         parameters: {
             query?: never;
@@ -2933,6 +3065,28 @@ export interface paths {
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
          */
         patch: operations["suppliers_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/suppliers/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["suppliers_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/sync/catalog/": {
@@ -3016,6 +3170,25 @@ export interface paths {
         get: operations["system_status_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/telegram/bot-config/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Telegram bot sozlamasi */
+        get: operations["telegram_bot_config_retrieve"];
+        /** Telegram bot tokenini ulash */
+        put: operations["telegram_bot_config_update"];
+        /** Telegram bot tokenini ulash */
+        post: operations["telegram_bot_config_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3143,20 +3316,24 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         get: operations["users_list"];
         put?: never;
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         post: operations["users_create"];
         delete?: never;
@@ -3173,24 +3350,37 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         get: operations["users_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
+         *
+         *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
+         */
+        delete: operations["users_destroy"];
         options?: never;
         head?: never;
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         patch: operations["users_partial_update"];
         trace?: never;
@@ -3206,11 +3396,13 @@ export interface paths {
         put?: never;
         /**
          * Xodimni bloklash / blokdan chiqarish
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         post: operations["users_toggle_active_create"];
         delete?: never;
@@ -3420,6 +3612,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallet/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        post: operations["wallet_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/warehouses/": {
         parameters: {
             query?: never;
@@ -3602,6 +3817,15 @@ export interface components {
              */
             readonly created_at: string;
         };
+        /** @description Kassa boshlang'ich qoldig'i — ishorali (musbat/manfiy) bo'lishi mumkin. */
+        CashOpeningBalanceRequest: {
+            /** Format: decimal */
+            amount: string;
+            /** Format: date */
+            date?: string;
+            /** @default  */
+            note: string;
+        };
         CashTransaction: {
             /** Format: uuid */
             readonly id: string;
@@ -3664,9 +3888,10 @@ export interface components {
          *     * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
          *     * `OTHER_OUT` - Boshqa chiqim (−)
          *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+         *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
          * @enum {string}
          */
-        CashTransactionTransactionTypeEnum: "HANDOVER_IN" | "OTHER_IN" | "BANK_DEPOSIT" | "SUPPLIER_PAYMENT" | "COMPANY_EXPENSE" | "OTHER_OUT" | "CORRECTION";
+        CashTransactionTransactionTypeEnum: "HANDOVER_IN" | "OTHER_IN" | "BANK_DEPOSIT" | "SUPPLIER_PAYMENT" | "COMPANY_EXPENSE" | "OTHER_OUT" | "CORRECTION" | "OPENING_BALANCE";
         Category: {
             /** Format: uuid */
             readonly id: string;
@@ -3827,6 +4052,15 @@ export interface components {
              * Format: date-time
              */
             readonly updated_at: string;
+        };
+        /** @description Mijoz boshlang'ich qarzi (CLAUDE.md 6 — Boshlang'ich qoldiqlar). */
+        ClientOpeningDebtRequest: {
+            /** Format: uuid */
+            client: string;
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
         };
         ClientRequest: {
             /** Do'kon nomi */
@@ -5113,9 +5347,10 @@ export interface components {
          *     * `WRITE_OFF` - Hisobdan chiqarish (brak)
          *     * `TRANSFER` - Ko'chirish
          *     * `CORRECTION` - Xatoni tuzatuvchi yozuv
+         *     * `OPENING_BALANCE` - Boshlang'ich qoldiq
          * @enum {string}
          */
-        MovementTypeEnum: "IN_PURCHASE" | "OUT_LOADING" | "IN_RETURN" | "OUT_SALE" | "ADJUSTMENT" | "WRITE_OFF" | "TRANSFER" | "CORRECTION";
+        MovementTypeEnum: "IN_PURCHASE" | "OUT_LOADING" | "IN_RETURN" | "OUT_SALE" | "ADJUSTMENT" | "WRITE_OFF" | "TRANSFER" | "CORRECTION" | "OPENING_BALANCE";
         Notification: {
             /** Format: uuid */
             readonly id: string;
@@ -5760,6 +5995,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Supplier"][];
         };
+        PaginatedSupplierTransactionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SupplierTransaction"][];
+        };
         PaginatedUnitList: {
             /** @example 123 */
             count: number;
@@ -6135,6 +6385,10 @@ export interface components {
             min_stock_alert?: string;
             /** Faol */
             is_active?: boolean;
+            /** Format: uuid */
+            initial_stock_warehouse?: string | null;
+            /** Format: decimal */
+            initial_stock_quantity?: string | null;
         };
         PatchedPurchaseRequest: {
             /**
@@ -6198,7 +6452,14 @@ export interface components {
             /** Qisqa nomi */
             short_name?: string;
         };
-        /** @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6. */
+        /**
+         * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+         *
+         *     `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+         *     (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+         *     musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+         *     uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+         */
         PatchedUserWriteRequest: {
             /** Telefon */
             phone?: string;
@@ -6222,6 +6483,8 @@ export interface components {
             is_active?: boolean;
             password?: string;
             distributor_profile?: components["schemas"]["DistributorProfileRequest"];
+            /** Format: decimal */
+            opening_balance?: string | null;
         };
         PatchedWarehouseRequest: {
             /** Nomi */
@@ -6802,6 +7065,10 @@ export interface components {
             min_stock_alert?: string;
             /** Faol */
             is_active?: boolean;
+            /** Format: uuid */
+            initial_stock_warehouse?: string | null;
+            /** Format: decimal */
+            initial_stock_quantity?: string | null;
         };
         /**
          * @description * `claude` - Claude vision
@@ -7421,6 +7688,17 @@ export interface components {
              */
             readonly created_at: string;
         };
+        /** @description Mavjud mahsulot uchun boshlang'ich qoldiq (CLAUDE.md 6 — Ombor). */
+        StockOpeningBalanceRequest: {
+            /** Format: uuid */
+            product: string;
+            /** Format: uuid */
+            warehouse: string;
+            /** Format: decimal */
+            quantity: string;
+            /** @default  */
+            note: string;
+        };
         Supplier: {
             /** Format: uuid */
             readonly id: string;
@@ -7437,10 +7715,24 @@ export interface components {
             /** Faol */
             is_active?: boolean;
             /**
+             * Balans
+             * Format: decimal
+             */
+            readonly balance: string;
+            /**
              * Yaratilgan vaqti
              * Format: date-time
              */
             readonly created_at: string;
+        };
+        /** @description Ta'minotchi boshlang'ich qoldig'i — ishorali (musbat/manfiy). */
+        SupplierOpeningBalanceRequest: {
+            /** Format: uuid */
+            supplier: string;
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
         };
         SupplierRequest: {
             /** Nomi */
@@ -7455,6 +7747,20 @@ export interface components {
             note?: string;
             /** Faol */
             is_active?: boolean;
+        };
+        SupplierTransaction: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date */
+            readonly date: string;
+            readonly transaction_type: string;
+            /** Format: decimal */
+            readonly amount: string;
+            /** Format: decimal */
+            readonly balance_after: string;
+            readonly note: string;
+            /** Format: date-time */
+            readonly created_at: string;
         };
         TokenRefresh: {
             readonly access: string;
@@ -7518,7 +7824,14 @@ export interface components {
             telegram_chat_id?: string;
             readonly distributor_profile: components["schemas"]["DistributorProfile"];
         };
-        /** @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6. */
+        /**
+         * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+         *
+         *     `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+         *     (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+         *     musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+         *     uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+         */
         UserWrite: {
             /** Format: uuid */
             readonly id: string;
@@ -7544,7 +7857,14 @@ export interface components {
             is_active?: boolean;
             distributor_profile?: components["schemas"]["DistributorProfile"];
         };
-        /** @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6. */
+        /**
+         * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+         *
+         *     `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+         *     (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+         *     musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+         *     uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+         */
         UserWriteRequest: {
             /** Telefon */
             phone: string;
@@ -7568,6 +7888,8 @@ export interface components {
             is_active?: boolean;
             password?: string;
             distributor_profile?: components["schemas"]["DistributorProfileRequest"];
+            /** Format: decimal */
+            opening_balance?: string | null;
         };
         VanStock: {
             /** Format: uuid */
@@ -7623,6 +7945,18 @@ export interface components {
              */
             readonly updated_at: string;
         };
+        /**
+         * @description Xodim boshlang'ich balansi — ishorali (CLAUDE.md 6 — Boshlang'ich
+         *     qoldiqlar). Mavjud xodimlar uchun (yaratish oqimidan mustaqil).
+         */
+        WalletOpeningBalanceRequest: {
+            /** Format: uuid */
+            distributor: string;
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
+        };
         WalletTransaction: {
             /** Format: uuid */
             readonly id: string;
@@ -7663,9 +7997,10 @@ export interface components {
          *     * `HANDOVER` - Kassaga topshirildi (−)
          *     * `ADVANCE` - Avans (+)
          *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+         *     * `OPENING_BALANCE` - Boshlang'ich balans (±)
          * @enum {string}
          */
-        WalletTransactionTransactionTypeEnum: "SALE_CASH" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "ADVANCE" | "CORRECTION";
+        WalletTransactionTransactionTypeEnum: "SALE_CASH" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "ADVANCE" | "CORRECTION" | "OPENING_BALANCE";
         Warehouse: {
             /** Format: uuid */
             readonly id: string;
@@ -7834,7 +8169,14 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                type: {
+                    [key: string]: unknown;
+                };
+                properties: unknown;
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -7888,6 +8230,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenRefresh"];
+                };
+            };
+        };
+    };
+    auth_ws_ticket_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -8117,8 +8480,9 @@ export interface operations {
                  *     * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
                  *     * `OTHER_OUT` - Boshqa chiqim (−)
                  *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
                  */
-                transaction_type?: "BANK_DEPOSIT" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
+                transaction_type?: "BANK_DEPOSIT" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
             };
             header?: never;
             path?: never;
@@ -8191,6 +8555,31 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashTransaction"];
+                };
+            };
+        };
+    };
+    cash_transactions_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CashOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["CashOpeningBalanceRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -8609,6 +8998,31 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
+    clients_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientOpeningDebtRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientOpeningDebtRequest"];
+                "multipart/form-data": components["schemas"]["ClientOpeningDebtRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -12089,8 +12503,9 @@ export interface operations {
                  *     * `WRITE_OFF` - Hisobdan chiqarish (brak)
                  *     * `TRANSFER` - Ko'chirish
                  *     * `CORRECTION` - Xatoni tuzatuvchi yozuv
+                 *     * `OPENING_BALANCE` - Boshlang'ich qoldiq
                  */
-                movement_type?: "ADJUSTMENT" | "CORRECTION" | "IN_PURCHASE" | "IN_RETURN" | "OUT_LOADING" | "OUT_SALE" | "TRANSFER" | "WRITE_OFF";
+                movement_type?: "ADJUSTMENT" | "CORRECTION" | "IN_PURCHASE" | "IN_RETURN" | "OPENING_BALANCE" | "OUT_LOADING" | "OUT_SALE" | "TRANSFER" | "WRITE_OFF";
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -12178,6 +12593,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Stock"];
+                };
+            };
+        };
+    };
+    stock_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StockOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["StockOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockMovement"];
+                };
+            };
+        };
+    };
+    supplier_transactions_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                supplier?: string;
+                /**
+                 * @description * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 */
+                transaction_type?: "CORRECTION" | "OPENING_BALANCE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupplierTransactionList"];
+                };
+            };
+        };
+    };
+    supplier_transactions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ta'minotchi tranzaksiyasi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierTransaction"];
                 };
             };
         };
@@ -12334,6 +12830,31 @@ export interface operations {
             };
         };
     };
+    suppliers_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["SupplierOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierTransaction"];
+                };
+            };
+        };
+    };
     sync_catalog_list: {
         parameters: {
             query?: {
@@ -12419,6 +12940,69 @@ export interface operations {
         };
     };
     system_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    telegram_bot_config_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    telegram_bot_config_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    telegram_bot_config_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -12738,6 +13322,27 @@ export interface operations {
             };
         };
     };
+    users_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this foydalanuvchi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     users_partial_update: {
         parameters: {
             query?: never;
@@ -12907,8 +13512,9 @@ export interface operations {
                  *     * `HANDOVER` - Kassaga topshirildi (−)
                  *     * `ADVANCE` - Avans (+)
                  *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 *     * `OPENING_BALANCE` - Boshlang'ich balans (±)
                  */
-                transaction_type?: "ADVANCE" | "CORRECTION" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "SALE_CASH";
+                transaction_type?: "ADVANCE" | "CORRECTION" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "OPENING_BALANCE" | "SALE_CASH";
                 wallet?: string;
             };
             header?: never;
@@ -13005,6 +13611,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Wallet"];
+                };
+            };
+        };
+    };
+    wallet_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalletOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WalletOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["WalletOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletTransaction"];
                 };
             };
         };

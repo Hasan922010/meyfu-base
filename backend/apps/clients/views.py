@@ -20,6 +20,7 @@ from apps.users.constants import Role
 from .models import Client, ClientVisit, Route
 from .serializers import (
     ClientLiteSerializer,
+    ClientOpeningDebtSerializer,
     ClientSerializer,
     ClientVisitSerializer,
     RouteSerializer,
@@ -66,6 +67,7 @@ class ClientViewSet(BaseModelViewSet):
     filterset_fields = ("route", "client_type", "is_blocked")
     search_fields = ("name", "owner_name", "phone", "phone2", "inn")
     ordering_fields = ("name", "current_debt", "created_at")
+    action_roles = {"opening_balance": _MANAGE}
 
     def get_queryset(self) -> QuerySet[Client]:
         qs = Client.objects.select_related("route")
@@ -97,6 +99,24 @@ class ClientViewSet(BaseModelViewSet):
                 "items": [],  # Debt modeli — 5-bosqich
             }
         )
+
+    @extend_schema(
+        summary="Mijoz boshlang'ich qarzi (sotuvsiz)",
+        request=ClientOpeningDebtSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance")
+    def opening_balance(self, request: Request) -> Response:
+        from apps.sales.serializers import DebtSerializer
+        from apps.sales.services.debt import create_opening_debt
+
+        s = ClientOpeningDebtSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        debt = create_opening_debt(
+            client=data["client"], amount=data["amount"],
+            note=data.get("note", ""), user=request.user,
+        )
+        return ok(DebtSerializer(debt).data, status_code=201)
 
 
 class ClientVisitViewSet(

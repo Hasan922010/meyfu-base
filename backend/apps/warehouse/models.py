@@ -16,6 +16,7 @@ from .constants import (
     MovementType,
     PurchaseSource,
     PurchaseStatus,
+    SupplierTxType,
 )
 
 _ZERO = Decimal("0")
@@ -44,6 +45,10 @@ class Supplier(BaseModel):
     address = models.CharField(_("manzil"), max_length=255, blank=True)
     note = models.CharField(_("izoh"), max_length=255, blank=True)
     is_active = models.BooleanField(_("faol"), default=True)
+    # Denormalized — haqiqat manbai SupplierTransaction (CLAUDE.md 5.2).
+    # Faqat boshlang'ich qoldiq uchun — xaridlar/to'lovlar bu balansga
+    # avtomatik ta'sir qilmaydi (CLAUDE.md — Boshlang'ich qoldiqlar bo'limi).
+    balance = models.DecimalField(_("balans"), **_MONEY, default=_ZERO)
 
     class Meta:
         verbose_name = _("yetkazib beruvchi")
@@ -52,6 +57,33 @@ class Supplier(BaseModel):
 
     def __str__(self) -> str:
         return self.name
+
+
+class SupplierTransaction(AppendOnlyModel):
+    """Ta'minotchi balansi jurnali — append-only (CLAUDE.md 5.1, 5.2).
+
+    `amount` ishorali. balance == SUM(SupplierTransaction.amount) (butunlik).
+    """
+
+    supplier = models.ForeignKey(
+        Supplier, on_delete=models.PROTECT, related_name="transactions",
+        verbose_name=_("yetkazib beruvchi"),
+    )
+    date = models.DateField(_("sana"))
+    transaction_type = models.CharField(
+        _("turi"), max_length=16, choices=SupplierTxType.choices, db_index=True
+    )
+    amount = models.DecimalField(_("summa (ishorali)"), **_MONEY)
+    balance_after = models.DecimalField(_("keyingi balans"), **_MONEY)
+    note = models.CharField(_("izoh"), max_length=255, blank=True)
+
+    class Meta(AppendOnlyModel.Meta):
+        verbose_name = _("ta'minotchi tranzaksiyasi")
+        verbose_name_plural = _("ta'minotchi tranzaksiyalari")
+        indexes = [models.Index(fields=["supplier", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.supplier.name}: {self.amount:+}"
 
 
 class Stock(BaseModel):
