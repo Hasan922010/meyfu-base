@@ -8,7 +8,8 @@ interface AuthState {
   refresh: string | null;
   user: User | null;
   setSession: (payload: { access: string; refresh: string; user: User }) => void;
-  setAccess: (access: string) => void;
+  /** Refresh javobi: backend ROTATE_REFRESH_TOKENS bilan yangi refresh ham qaytaradi. */
+  setAccess: (access: string, refresh?: string) => void;
   setUser: (user: User) => void;
   clear: () => void;
 }
@@ -20,7 +21,7 @@ export const useAuthStore = create<AuthState>()(
       refresh: null,
       user: null,
       setSession: ({ access, refresh, user }) => set({ access, refresh, user }),
-      setAccess: (access) => set({ access }),
+      setAccess: (access, refresh) => set(refresh ? { access, refresh } : { access }),
       setUser: (user) => set({ user }),
       clear: () => set({ access: null, refresh: null, user: null }),
     }),
