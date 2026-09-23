@@ -103,7 +103,8 @@ export function MobileHomePage(): ReactElement {
         <Link to="/m/sale" className="btn-brand">
           + Yangi sotuv
         </Link>
-        <Link to="/m/close" className="btn bg-pending text-white">
+        {/* Ikkinchi darajali: ertalab "Yangi sotuv" bilan teng raqobatlashmasin (UX m7) */}
+        <Link to="/m/close" className="btn border-2 border-pending bg-transparent text-pending">
           {today.data?.submitted ? 'Kun yopilgan' : 'Kunni yopish'}
         </Link>
       </div>
