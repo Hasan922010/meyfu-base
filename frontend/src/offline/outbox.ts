@@ -76,6 +76,15 @@ export async function markSending(uuids: string[]): Promise<void> {
     .modify({ status: 'SENDING', last_attempt_at: now });
 }
 
+/**
+ * Oldingi sessiyada so'rov paytida tab yopilgan bo'lsa, SENDING yozuvlar egasiz qoladi
+ * va dueOps() ularni hech qachon olmaydi (UX audit B1). Ularni PENDING ga qaytaramiz.
+ * Qayta yuborish xavfsiz — server client_uuid bo'yicha dublikatni DUPLICATE qaytaradi.
+ */
+export async function recoverOrphanedSending(): Promise<number> {
+  return db.outbox.where('status').equals('SENDING').modify({ status: 'PENDING' });
+}
+
 export async function applyResult(result: {
   client_uuid: string;
   status: string;

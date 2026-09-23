@@ -12,6 +12,7 @@ import {
   markSending,
   newUuid,
   pendingCount,
+  recoverOrphanedSending,
   retryFailed,
 } from './outbox';
 
@@ -144,5 +145,30 @@ describe('markSending', () => {
     const [row] = await listOutbox();
     expect(row?.status).toBe('SENDING');
     expect(typeof row?.last_attempt_at).toBe('number');
+  });
+});
+
+describe('recoverOrphanedSending (UX B1)', () => {
+  it('yetim SENDING yozuvni PENDING ga qaytaradi, attempts o‘zgarmaydi', async () => {
+    const id = await enqueue('sale', {}, 'x');
+    await markSending([id]);
+
+    const recovered = await recoverOrphanedSending();
+
+    expect(recovered).toBe(1);
+    const [row] = await listOutbox();
+    expect(row?.status).toBe('PENDING');
+    expect(row?.attempts).toBe(0);
+  });
+
+  it('boshqa statuslarga tegmaydi', async () => {
+    const failed = await enqueue('sale', {}, 'f');
+    await failNTimes(failed, 1);
+    const conflict = await enqueue('sale', {}, 'c');
+    await applyResult({ client_uuid: conflict, status: 'CONFLICT' });
+
+    expect(await recoverOrphanedSending()).toBe(0);
+    const statuses = (await listOutbox()).map((o) => o.status).sort();
+    expect(statuses).toEqual(['CONFLICT', 'FAILED']);
   });
 });
