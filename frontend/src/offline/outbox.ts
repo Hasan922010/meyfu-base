@@ -44,6 +44,14 @@ export async function failedCount(): Promise<number> {
     .count();
 }
 
+/**
+ * Serverga hali yetmagan operatsiyalar — bular bor ekan kun yopilmaydi (UX audit M6).
+ * CONFLICT sanalmaydi: server uni qabul qilgan, admin hal qiladi.
+ */
+export async function unsentCount(): Promise<number> {
+  return db.outbox.where('status').anyOf('PENDING', 'SENDING', 'FAILED', 'DEAD').count();
+}
+
 /** 20 urinishdan keyin to'xtatilgan — foydalanuvchi aralashuvi kerak. */
 export async function deadCount(): Promise<number> {
   return db.outbox.where('status').equals('DEAD').count();
