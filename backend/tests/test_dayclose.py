@@ -147,6 +147,31 @@ def test_cash_shortage_flagged(auth_api, van_stocked):
 
 
 @pytest.mark.django_db
+def test_cash_difference_note_is_saved_and_returned(auth_api, van_stocked):
+    """UX m5: kassa farqiga tarqatuvchi izohi saqlanadi va admin ko'radi."""
+    client, product = van_stocked["client"], van_stocked["product"]
+    _sale(auth_api, client, product, "10", price="27000")
+
+    submit = auth_api.post(
+        "/api/v1/day-close/submit/",
+        {
+            "warehouse": str(van_stocked["warehouse"].id),
+            "cash_handed": "255000",
+            "items": [
+                {"product": str(product.id), "quantity": "490", "condition": "GOOD"}
+            ],
+            "note": "Baraka do'koni 15 000 ni ertaga beradi",
+        },
+        format="json",
+    )
+    assert submit.status_code == 201, submit.data
+    dc_id = submit.data["data"]["id"]
+
+    detail = auth_api.get(f"/api/v1/day-close/{dc_id}/")
+    assert detail.data["data"]["note"] == "Baraka do'koni 15 000 ni ertaga beradi"
+
+
+@pytest.mark.django_db
 def test_stock_shortage_detected(auth_api, van_stocked):
     client, product = van_stocked["client"], van_stocked["product"]
     _sale(auth_api, client, product, "100")  # sotildi 100
