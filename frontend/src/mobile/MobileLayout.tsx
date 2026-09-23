@@ -30,7 +30,7 @@ type Tab = { to: string; label: string; Icon: LucideIcon; end: boolean };
 const DISTRIBUTOR_TABS: Tab[] = [
   { to: '/m', label: 'Bosh', Icon: House, end: true },
   { to: '/m/sale', label: 'Sotuv', Icon: Plus, end: false },
-  { to: '/m/orders', label: 'Zakaz', Icon: ClipboardList, end: false },
+  { to: '/m/orders', label: 'Buyurtma', Icon: ClipboardList, end: false },
   { to: '/m/wallet', label: 'Hamyon', Icon: Wallet, end: false },
   { to: '/m/expenses', label: 'Xarajat', Icon: Receipt, end: false },
   { to: '/m/clients', label: 'Mijozlar', Icon: Store, end: false },
