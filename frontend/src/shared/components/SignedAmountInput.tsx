@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { AmountInput } from '@/shared/components/AmountInput';
 
@@ -14,6 +14,10 @@ interface Props {
  * Ishorali summa: yo'nalish (musbat/manfiy) aniq tugmalar bilan tanlanadi,
  * miqdor esa {@link AmountInput} bilan kiritiladi (CLAUDE.md 8 — aniq,
  * ayblovsiz UI: bare minus belgisi o'rniga tushunarli yorliqlar).
+ *
+ * Yo'nalish mustaqil holat sifatida saqlanadi (`value`dan emas) — aks holda
+ * miqdor hali bo'sh bo'lganda "manfiy"ni tanlash iz qoldirmay yo'qolib,
+ * keyin kiritilgan raqam kutilmaganda musbat bo'lib qolar edi.
  */
 export function SignedAmountInput({
   value,
@@ -21,11 +25,11 @@ export function SignedAmountInput({
   positiveLabel,
   negativeLabel,
 }: Props): ReactElement {
-  const isNegative = value.trim().startsWith('-');
+  const [isNegative, setIsNegative] = useState<boolean>(value.trim().startsWith('-'));
   const magnitude = value.replace(/[^0-9]/g, '');
 
-  const setSign = (negative: boolean) => {
-    onChange(negative && magnitude ? `-${magnitude}` : magnitude);
+  const apply = (negative: boolean, digits: string) => {
+    onChange(negative && digits ? `-${digits}` : digits);
   };
 
   return (
@@ -34,21 +38,27 @@ export function SignedAmountInput({
         <button
           type="button"
           className={`btn flex-1 ${!isNegative ? 'btn-brand' : ''}`}
-          onClick={() => setSign(false)}
+          onClick={() => {
+            setIsNegative(false);
+            apply(false, magnitude);
+          }}
         >
           {positiveLabel}
         </button>
         <button
           type="button"
           className={`btn flex-1 ${isNegative ? 'btn-brand' : ''}`}
-          onClick={() => setSign(true)}
+          onClick={() => {
+            setIsNegative(true);
+            apply(true, magnitude);
+          }}
         >
           {negativeLabel}
         </button>
       </div>
       <AmountInput
         value={magnitude}
-        onChange={(digits) => onChange(isNegative && digits ? `-${digits}` : digits)}
+        onChange={(digits) => apply(isNegative, digits)}
         showWords={false}
       />
     </div>

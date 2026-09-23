@@ -79,6 +79,13 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         delete body.initial_stock_warehouse;
         delete body.initial_stock_quantity;
       }
+      // Ixtiyoriy raqamli maydon — bo'sh qoldirilsa backendga umuman yubormaymiz
+      // (bo'sh satr "" "raqam emas" xatosiga sabab bo'ladi, chunki bu register()
+      // orqali ulangan, AmountInput'lardan farqli ravishda ular tegilmasa
+      // `undefined` bo'lib avtomatik tushib qoladi).
+      if (!body.min_stock_alert) {
+        delete body.min_stock_alert;
+      }
       return product
         ? catalogApi.updateProduct(product.id, body)
         : catalogApi.createProduct(body);

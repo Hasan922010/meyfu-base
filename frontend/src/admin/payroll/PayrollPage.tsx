@@ -68,9 +68,9 @@ function PayrollsTab(): ReactElement {
   const [distributor, setDistributor] = useState<string>('');
   const [open, setOpen] = useState<Payroll | null>(null);
 
-  const distributors = useQuery({
-    queryKey: ['distributors'],
-    queryFn: () => authApi.distributors(),
+  const staff = useQuery({
+    queryKey: ['payroll-staff'],
+    queryFn: () => authApi.staff(),
   });
   const list = useQuery({
     queryKey: ['payrolls', { period }],
@@ -100,14 +100,14 @@ function PayrollsTab(): ReactElement {
           />
         </label>
         <label className="space-y-1 text-sm">
-          <span className="block text-gray-500">Tarqatuvchi</span>
+          <span className="block text-gray-500">Xodim</span>
           <select
             className="field min-w-[200px]"
             value={distributor}
             onChange={(e) => setDistributor(e.target.value)}
           >
             <option value="">— tanlang —</option>
-            {distributors.data?.map((d) => (
+            {staff.data?.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.full_name}
               </option>
@@ -139,7 +139,7 @@ function PayrollsTab(): ReactElement {
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
-                <th className="p-3">Tarqatuvchi</th>
+                <th className="p-3">Xodim</th>
                 <th className="p-3 text-right">Sotuv</th>
                 <th className="p-3 text-right">Komissiya</th>
                 <th className="p-3 text-right">Ushlanma</th>

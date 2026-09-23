@@ -17,6 +17,15 @@ export const authApi = {
     });
     return page.results;
   },
+  /** Barcha faol xodimlar (rol cheklovisiz) — maosh barcha xodim turlari
+   * uchun hisoblanadi (CLAUDE.md 6). */
+  staff: async (): Promise<User[]> => {
+    const page = await listPage<User>('/users/', {
+      is_active: true,
+      page_size: 200,
+    });
+    return page.results;
+  },
 };
 
 export interface StaffInput {
