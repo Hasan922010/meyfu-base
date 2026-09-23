@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { extractApiError } from '@/shared/api/client';
 import { staffApi, type StaffInput } from '@/shared/api/users';
+import { AmountInput } from '@/shared/components/AmountInput';
+import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import type { Role, User } from '@/shared/types/api';
 
@@ -16,6 +18,7 @@ const PROFILE_FIELD_MAP: Record<string, string> = {
   'distributor_profile.debt_limit': 'p_debt_limit',
   'distributor_profile.daily_expense_limit': 'p_daily_expense_limit',
   'distributor_profile.vehicle_number': 'p_vehicle_number',
+  opening_balance: 'p_opening_balance',
 };
 
 const ROLES: Array<{ value: Role; label: string }> = [
@@ -36,6 +39,8 @@ interface FormValues extends StaffInput {
   p_daily_expense_limit?: string;
   p_vehicle_number?: string;
   p_can_sell_below_price?: boolean;
+  /** Faqat yaratishda: dastlabki hisob-kitob (ishorali) */
+  p_opening_balance?: string;
 }
 
 export function StaffForm({
@@ -51,6 +56,7 @@ export function StaffForm({
   const [serverError, setServerError] = useState<string>('');
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setError,
@@ -74,7 +80,7 @@ export function StaffForm({
           p_vehicle_number: pr?.vehicle_number ?? '',
           p_can_sell_below_price: pr?.can_sell_below_price ?? false,
         }
-      : { role: 'DISTRIBUTOR' },
+      : { role: 'DISTRIBUTOR', p_base_salary: '0' },
   });
 
   const role = watch('role');
@@ -90,18 +96,25 @@ export function StaffForm({
       };
       if (!staff) body.phone = v.phone;
       if (v.password) body.password = v.password;
-      if (v.role === 'DISTRIBUTOR') {
-        body.distributor_profile = {
-          commission_percent: v.p_commission_percent || '0',
-          order_commission_percent: v.p_order_commission_percent || '0',
-          delivery_commission_percent: v.p_delivery_commission_percent || '0',
-          base_salary: v.p_base_salary || '0',
-          monthly_plan: v.p_monthly_plan || '0',
-          debt_limit: v.p_debt_limit || '0',
-          daily_expense_limit: v.p_daily_expense_limit || '0',
-          vehicle_number: v.p_vehicle_number || '',
-          can_sell_below_price: Boolean(v.p_can_sell_below_price),
-        };
+      // Asosiy maosh — endi barcha rol turlari uchun (CLAUDE.md 6 — Maosh).
+      // Qolgan (komissiya, mashina, qarz limiti) — faqat tarqatuvchiga xos.
+      body.distributor_profile = {
+        base_salary: v.p_base_salary || '0',
+        ...(v.role === 'DISTRIBUTOR'
+          ? {
+              commission_percent: v.p_commission_percent || '0',
+              order_commission_percent: v.p_order_commission_percent || '0',
+              delivery_commission_percent: v.p_delivery_commission_percent || '0',
+              monthly_plan: v.p_monthly_plan || '0',
+              debt_limit: v.p_debt_limit || '0',
+              daily_expense_limit: v.p_daily_expense_limit || '0',
+              vehicle_number: v.p_vehicle_number || '',
+              can_sell_below_price: Boolean(v.p_can_sell_below_price),
+            }
+          : {}),
+      };
+      if (!staff && v.p_opening_balance) {
+        body.opening_balance = v.p_opening_balance;
       }
       return staff
         ? staffApi.update(staff.id, body)
@@ -185,88 +198,131 @@ export function StaffForm({
         </label>
       </div>
 
-      {role === 'DISTRIBUTOR' && (
-        <div className="space-y-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50">
-          <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-            Tarqatuvchi profili
-          </p>
-          <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50">
+        <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">
+          Xodim profili (maosh)
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <span className="text-sm">Asosiy maosh</span>
+            <Controller
+              name="p_base_salary"
+              control={control}
+              render={({ field }) => (
+                <AmountInput
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  showWords={false}
+                />
+              )}
+            />
+          </label>
+          {!staff && (
             <label className="block space-y-1">
-              <span className="text-sm">Zakaz olgani uchun %</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_order_commission_percent')}
+              <span className="text-sm">Boshlang'ich balans (ixtiyoriy)</span>
+              <Controller
+                name="p_opening_balance"
+                control={control}
+                render={({ field }) => (
+                  <SignedAmountInput
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    positiveLabel="Xodimga berilgan (avans)"
+                    negativeLabel="Xodimning qarzi"
+                  />
+                )}
               />
             </label>
-            <label className="block space-y-1">
-              <span className="text-sm">Yetkazib bergani uchun %</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_delivery_commission_percent')}
-              />
-            </label>
-            <label className="col-span-2 block space-y-1">
-              <span className="text-sm text-gray-500">
-                Komissiya % (eski — yuqoridagi ikkitasi 0 bo'lsa ishlatiladi)
-              </span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_commission_percent')}
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-sm">Asosiy maosh</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_base_salary')}
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-sm">Oylik reja</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_monthly_plan')}
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-sm">Qarz limiti</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_debt_limit')}
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-sm">Kunlik xarajat limiti</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_daily_expense_limit')}
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-sm">Mashina raqami</span>
-              <input className="field" {...register('p_vehicle_number')} />
+          )}
+        </div>
+
+        {role === 'DISTRIBUTOR' && (
+          <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+            <p className="text-xs text-gray-500">Tarqatuvchiga xos sozlamalar</p>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block space-y-1">
+                <span className="text-sm">Zakaz olgani uchun %</span>
+                <input
+                  className="field"
+                  type="number"
+                  step="0.01"
+                  {...register('p_order_commission_percent')}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Yetkazib bergani uchun %</span>
+                <input
+                  className="field"
+                  type="number"
+                  step="0.01"
+                  {...register('p_delivery_commission_percent')}
+                />
+              </label>
+              <label className="col-span-2 block space-y-1">
+                <span className="text-sm text-gray-500">
+                  Komissiya % (eski — yuqoridagi ikkitasi 0 bo'lsa ishlatiladi)
+                </span>
+                <input
+                  className="field"
+                  type="number"
+                  step="0.01"
+                  {...register('p_commission_percent')}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Oylik reja</span>
+                <Controller
+                  name="p_monthly_plan"
+                  control={control}
+                  render={({ field }) => (
+                    <AmountInput
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      showWords={false}
+                    />
+                  )}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Qarz limiti</span>
+                <Controller
+                  name="p_debt_limit"
+                  control={control}
+                  render={({ field }) => (
+                    <AmountInput
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      showWords={false}
+                    />
+                  )}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Kunlik xarajat limiti</span>
+                <Controller
+                  name="p_daily_expense_limit"
+                  control={control}
+                  render={({ field }) => (
+                    <AmountInput
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      showWords={false}
+                    />
+                  )}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Mashina raqami</span>
+                <input className="field" {...register('p_vehicle_number')} />
+              </label>
+            </div>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" {...register('p_can_sell_below_price')} />
+              <span className="text-sm">Minimal narxdan past sotishga ruxsat</span>
             </label>
           </div>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" {...register('p_can_sell_below_price')} />
-            <span className="text-sm">Minimal narxdan past sotishga ruxsat</span>
-          </label>
-        </div>
-      )}
+        )}
+      </div>
 
       {mutation.isError && serverError && (
         <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">

@@ -41,6 +41,19 @@ class CashTransactionCreateSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class CashOpeningBalanceSerializer(serializers.Serializer):
+    """Kassa boshlang'ich qoldig'i — ishorali (musbat/manfiy) bo'lishi mumkin."""
+
+    amount = serializers.DecimalField(**_MONEY)
+    date = serializers.DateField(required=False)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_amount(self, value: Decimal) -> Decimal:
+        if value == Decimal("0"):
+            raise serializers.ValidationError("Summa 0 bo'lishi mumkin emas.")
+        return value
+
+
 class CompanyExpenseSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(
         source="get_category_display", read_only=True

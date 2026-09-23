@@ -61,3 +61,49 @@ def test_report_index_present_on_sale():
     fieldsets = [tuple(idx.fields) for idx in Sale._meta.indexes]
     assert ("date", "status") in fieldsets
     assert names  # nomlangan indekslar bor
+
+
+def _raised_validation_response(serializer):
+    """Berilgan serializer `is_valid(raise_exception=True)` chaqirganda
+    ko'tarilgan DRF ValidationError'ni `api_exception_handler` orqali o'tkazadi."""
+    from apps.core.exceptions import api_exception_handler
+    from rest_framework.exceptions import ValidationError as DRFValidationError
+
+    try:
+        serializer.is_valid(raise_exception=True)
+    except DRFValidationError as exc:
+        response = api_exception_handler(exc, {"view": None})
+        assert response is not None
+        return response.data
+    raise AssertionError("serializer noto'g'ri bo'lishi kutilgan edi")
+
+
+def test_drf_required_and_max_length_messages_are_uzbek():
+    """CLAUDE.md 20: barcha forma xatolari o'zbekcha bo'lishi kerak — bu DRF'ning
+    o'z (built-in) 'required'/'max_length' xabarlariga ham tegishli."""
+    from rest_framework import serializers
+
+    class _Probe(serializers.Serializer):
+        name = serializers.CharField(max_length=3, allow_blank=False)
+        age = serializers.IntegerField()
+
+    data = _raised_validation_response(_Probe(data={"name": "toolong"}))
+
+    assert data["success"] is False
+    messages = data["error"]["details"]
+    assert messages["age"][0] == "Ushbu maydon to'ldirilishi shart."
+    assert messages["name"][0] == "Bu maydon 3 ta belgidan oshmasligi kerak."
+
+
+def test_drf_blank_and_choice_messages_are_uzbek():
+    from rest_framework import serializers
+
+    class _Probe(serializers.Serializer):
+        note = serializers.CharField(allow_blank=False, required=False)
+        kind = serializers.ChoiceField(choices=["A", "B"])
+
+    data = _raised_validation_response(_Probe(data={"note": "", "kind": "ZZZ"}))
+    messages = data["error"]["details"]
+
+    assert messages["note"][0] == "Bu maydon bo'sh bo'lishi mumkin emas."
+    assert messages["kind"][0] == '"ZZZ" — yaroqli tanlov emas.'

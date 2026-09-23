@@ -9,6 +9,7 @@ class TransactionType(models.TextChoices):
     HANDOVER = "HANDOVER", _("Kassaga topshirildi (−)")
     ADVANCE = "ADVANCE", _("Avans (+)")
     CORRECTION = "CORRECTION", _("Tuzatuvchi yozuv (±)")
+    OPENING_BALANCE = "OPENING_BALANCE", _("Boshlang'ich balans (±)")
 
 
 # Kutilgan ishora (validatsiya uchun)

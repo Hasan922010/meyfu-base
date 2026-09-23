@@ -23,6 +23,45 @@ def _purchase_payload(warehouse, supplier, product, qty="100", price="20000"):
 
 
 @pytest.mark.django_db
+def test_product_create_with_initial_stock(manager_api, catalog, warehouse):
+    """CLAUDE.md 6 — Ombor: mahsulot yaratishda boshlang'ich qoldiq kiritilsa
+    Stock va (append-only) StockMovement OPENING_BALANCE bilan yoziladi."""
+    wh = warehouse["warehouse"]
+    payload = {
+        "name": "Yangi kukun 5kg", "sku": "PWD-5KG",
+        "category": str(catalog["category"].id), "unit": str(catalog["unit"].id),
+        "cost_price": "30000", "wholesale_price": "35000",
+        "retail_price": "39000", "min_price": "33000",
+        "initial_stock_warehouse": str(wh.id), "initial_stock_quantity": "50",
+    }
+    resp = manager_api.post("/api/v1/products/", payload, format="json")
+    assert resp.status_code == 201, resp.data
+    product_id = resp.data["data"]["id"]
+
+    stock = Stock.objects.get(warehouse=wh, product_id=product_id)
+    assert stock.quantity == Decimal("50")
+    movement = StockMovement.objects.get(
+        warehouse=wh, product_id=product_id, movement_type=MovementType.OPENING_BALANCE
+    )
+    assert movement.quantity == Decimal("50")
+    assert movement.balance_after == Decimal("50")
+
+
+@pytest.mark.django_db
+def test_product_create_without_initial_stock_has_no_movement(manager_api, catalog):
+    """Boshlang'ich qoldiq kiritilmasa hech qanday harakat yozilmaydi."""
+    payload = {
+        "name": "Boshqa mahsulot", "sku": "SKU-XYZ",
+        "category": str(catalog["category"].id), "unit": str(catalog["unit"].id),
+        "cost_price": "1000", "wholesale_price": "1200",
+        "retail_price": "1500", "min_price": "1100",
+    }
+    resp = manager_api.post("/api/v1/products/", payload, format="json")
+    assert resp.status_code == 201, resp.data
+    assert not StockMovement.objects.filter(product_id=resp.data["data"]["id"]).exists()
+
+
+@pytest.mark.django_db
 def test_purchase_without_invoice_number(manager_api, catalog, warehouse):
     """Nakladnoy raqamisiz ham qabul yaratiladi (ixtiyoriy maydon)."""
     wh, sup, prod = warehouse["warehouse"], warehouse["supplier"], catalog["product"]

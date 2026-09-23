@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .constants import Role
 from .models import DistributorProfile
 
 User = get_user_model()
@@ -38,16 +39,27 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserWriteSerializer(serializers.ModelSerializer):
-    """Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6."""
+    """Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+
+    `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+    (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+    musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+    uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+    """
 
     password = serializers.CharField(write_only=True, required=False, min_length=8)
     distributor_profile = DistributorProfileSerializer(required=False)
+    opening_balance = serializers.DecimalField(
+        max_digits=14, decimal_places=2, write_only=True,
+        required=False, allow_null=True,
+    )
 
     class Meta:
         model = User
         fields = (
             "id", "phone", "full_name", "role", "passport_series", "address",
             "hire_date", "is_active", "password", "distributor_profile",
+            "opening_balance",
         )
         read_only_fields = ("id",)
         extra_kwargs = {"phone": {"validators": []}}  # normalizatsiya validate_phone'da
@@ -76,17 +88,30 @@ class UserWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data: dict):
         password = validated_data.pop("password")
         profile_data = validated_data.pop("distributor_profile", None)
+        opening_balance = validated_data.pop("opening_balance", None)
         user = User(**validated_data)
         user.set_password(password)
         user.save()
-        if user.role == Role.DISTRIBUTOR:
-            DistributorProfile.objects.create(user=user, **(profile_data or {}))
+        DistributorProfile.objects.create(user=user, **(profile_data or {}))
+        if opening_balance:
+            from apps.wallet.constants import TransactionType
+            from apps.wallet.services import wallet_apply
+
+            wallet_apply(
+                distributor=user,
+                transaction_type=TransactionType.OPENING_BALANCE,
+                amount=Decimal(opening_balance),
+                note="Xodim yaratilganda boshlang'ich balans",
+                user=self.context.get("request").user
+                if self.context.get("request") else None,
+            )
         return user
 
     @transaction.atomic
     def update(self, instance, validated_data: dict):
         password = validated_data.pop("password", None)
         profile_data = validated_data.pop("distributor_profile", None)
+        validated_data.pop("opening_balance", None)  # faqat yaratishda ishlatiladi
 
         for field, value in validated_data.items():
             setattr(instance, field, value)
@@ -94,16 +119,15 @@ class UserWriteSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
 
-        if instance.role == Role.DISTRIBUTOR:
-            # instance'ga bog'langan (select_related'dan keshlangan) profilni
-            # ishlatamiz — shunda to_representation yangi qiymatlarni ko'radi.
-            profile = getattr(instance, "distributor_profile", None)
-            if profile is None:
-                profile = DistributorProfile.objects.create(user=instance)
-            if profile_data:
-                for field, value in profile_data.items():
-                    setattr(profile, field, value)
-                profile.save()
+        # instance'ga bog'langan (select_related'dan keshlangan) profilni
+        # ishlatamiz — shunda to_representation yangi qiymatlarni ko'radi.
+        profile = getattr(instance, "distributor_profile", None)
+        if profile is None:
+            profile = DistributorProfile.objects.create(user=instance)
+        if profile_data:
+            for field, value in profile_data.items():
+                setattr(profile, field, value)
+            profile.save()
         return instance
 
     def to_representation(self, instance):

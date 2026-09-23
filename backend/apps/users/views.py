@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.db.models import QuerySet
 from django.utils import timezone
 from datetime import timedelta
 import hashlib
@@ -126,11 +127,13 @@ class ChangePasswordView(APIView):
 
 
 class UserViewSet(BaseModelViewSet):
-    """Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+    """Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
 
     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-    Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-    O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+    Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+    O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+    (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+    vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
     """
 
     queryset = (
@@ -140,7 +143,7 @@ class UserViewSet(BaseModelViewSet):
     write_roles = (Role.SUPER_ADMIN,)
     filterset_fields = ("role", "is_active")
     search_fields = ("full_name", "phone")
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
@@ -175,6 +178,20 @@ class UserViewSet(BaseModelViewSet):
             {"is_active": user.is_active},
         )
         return ok(UserSerializer(user).data)
+
+    def get_queryset(self) -> QuerySet:
+        return super().get_queryset().filter(is_deleted=False)
+
+    def perform_destroy(self, instance) -> None:
+        if instance == self.request.user:
+            raise ValidationError("O'zingizni o'chira olmaysiz.")
+        # Qattiq o'chirish emas — FK'lar PROTECT (masalan Payroll.distributor),
+        # va tarix saqlanishi kerak (CLAUDE.md 5). Login ham to'xtaydi
+        # (is_active=False).
+        instance.is_deleted = True
+        instance.is_active = False
+        instance.save(update_fields=["is_deleted", "is_active", "updated_at"])
+        self._audit("user.delete", instance, {"role": instance.role})
 
     def _audit(self, action_name: str, user, changes: dict) -> None:
         AuditLog.objects.create(

@@ -10,6 +10,7 @@ import {
   type Payroll,
 } from '@/shared/api/payroll';
 import { authApi } from '@/shared/api/users';
+import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
@@ -293,12 +294,11 @@ function PayrollDetailModal({
               <div className="space-y-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
                 <div className="text-gray-500">Qo'lda tuzatish</div>
                 <div className="flex gap-2">
-                  <input
-                    className="field"
-                    type="number"
-                    placeholder={`Bonus (${p.bonus})`}
+                  <AmountInput
                     value={bonus}
-                    onChange={(e) => setBonus(e.target.value)}
+                    onChange={setBonus}
+                    showWords={false}
+                    placeholder={`Bonus (${p.bonus})`}
                   />
                   <input
                     className="field"
@@ -586,13 +586,9 @@ function AdvancesTab(): ReactElement {
             </option>
           ))}
         </select>
-        <input
-          className="field w-40"
-          type="number"
-          placeholder="Summa"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
+        <div className="w-40">
+          <AmountInput value={amount} onChange={setAmount} showWords={false} />
+        </div>
         <input
           className="field"
           placeholder="Izoh"

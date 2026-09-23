@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -19,6 +20,118 @@ from rest_framework.exceptions import (
 )
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
+
+# CLAUDE.md 20 / 2-band: DRF va uchinchi tomon paketlarning (simplejwt) standart
+# xabarlari inglizcha keladi, chunki ular Django'ning o'z "uz" katalogida yo'q
+# (Django yadro validatorlari bilan bir xil matn tasodifan mos kelsagina
+# gettext orqali avtomatik tarjima bo'ladi). Shu yerda qolganlarini o'zbekchaga
+# o'giramiz — .po/.mo tuzish (gettext) shart bo'lmasin deb, lug'at + naqsh
+# (pattern) asosida.
+_STATIC_MESSAGES: dict[str, str] = {
+    "This field may not be blank.": "Bu maydon bo'sh bo'lishi mumkin emas.",
+    "This field may not be null.": "Bu maydon bo'sh (null) bo'lishi mumkin emas.",
+    "Not a valid string.": "Yaroqli matn emas.",
+    "Must be a valid UUID.": "UUID formatida bo'lishi kerak.",
+    "Must be a valid boolean.": "Mantiqiy (ha/yo'q) qiymat bo'lishi kerak.",
+    "A valid integer is required.": "Butun son kiritilishi kerak.",
+    "A valid number is required.": "Raqam kiritilishi kerak.",
+    "This field must be unique.": "Bu qiymat band — noyob bo'lishi kerak.",
+    "Invalid value.": "Noto'g'ri qiymat.",
+    "Enter a valid URL.": "To'g'ri URL manzil kiriting.",
+    "This value does not match the required pattern.": (
+        "Qiymat talab qilingan namunaga mos kelmadi."
+    ),
+    "String value too large.": "Matn juda uzun.",
+    "Value must be valid JSON.": "Qiymat yaroqli JSON bo'lishi kerak.",
+    "No file was submitted.": "Fayl yuborilmadi.",
+    "The submitted data was not a file. Check the encoding type on the form.": (
+        "Yuborilgan ma'lumot fayl emas. Forma kodlash turini tekshiring."
+    ),
+    "No active account found with the given credentials": (
+        "Bunday login/parolga ega faol hisob topilmadi."
+    ),
+    "Token is invalid or expired": "Token yaroqsiz yoki muddati tugagan.",
+    "Token is blacklisted": "Token bekor qilingan (qora ro'yxatda).",
+    "Given token not valid for any token type": (
+        "Berilgan token hech qanday token turi uchun yaroqli emas."
+    ),
+    "User not found": "Foydalanuvchi topilmadi.",
+    "User is inactive": "Foydalanuvchi faol emas.",
+    "Authentication credentials were not provided.": (
+        "Tizimga kirish ma'lumotlari yuborilmadi."
+    ),
+    "Method \"{method}\" not allowed.": "«{method}» metodi ruxsat etilmagan.",
+}
+
+_PATTERN_MESSAGES: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r'^"(.*)" is not a valid choice\.$'), '"{0}" — yaroqli tanlov emas.'),
+    (
+        re.compile(r'^Invalid pk "(.*)" - object does not exist\.$'),
+        'ID "{0}" bo\'yicha obyekt topilmadi.',
+    ),
+    (
+        re.compile(r'^Incorrect type\. Expected pk value, received (.+)\.$'),
+        "Noto'g'ri tur. ID qiymati kutilgan edi, {0} qabul qilindi.",
+    ),
+    (
+        re.compile(r'^Ensure this field has no more than (\d+) characters?\.$'),
+        "Bu maydon {0} ta belgidan oshmasligi kerak.",
+    ),
+    (
+        re.compile(r'^Ensure this field has at least (\d+) characters?\.$'),
+        "Bu maydon kamida {0} ta belgidan iborat bo'lishi kerak.",
+    ),
+    (
+        re.compile(r'^Ensure this value is less than or equal to (.+)\.$'),
+        "Bu qiymat {0} dan katta bo'lmasligi kerak.",
+    ),
+    (
+        re.compile(r'^Ensure this value is greater than or equal to (.+)\.$'),
+        "Bu qiymat {0} dan kichik bo'lmasligi kerak.",
+    ),
+    (
+        re.compile(r'^Ensure that there are no more than (\d+) digits in total\.$'),
+        "Jami {0} ta xonadan oshmasligi kerak.",
+    ),
+    (
+        re.compile(r'^Ensure that there are no more than (\d+) decimal places\.$'),
+        "Kasr qismi {0} ta xonadan oshmasligi kerak.",
+    ),
+    (
+        re.compile(
+            r'^Ensure that there are no more than (\d+) digits before the decimal point\.$'
+        ),
+        "Butun qism {0} ta xonadan oshmasligi kerak.",
+    ),
+    (
+        re.compile(r'^This password is too short\. It must contain at least (\d+) character'),
+        "Parol juda qisqa. Kamida {0} ta belgidan iborat bo'lishi kerak.",
+    ),
+    (re.compile(r'^Date has wrong format\.'), "Sana formati noto'g'ri."),
+    (re.compile(r'^Datetime has wrong format\.'), "Sana/vaqt formati noto'g'ri."),
+    (re.compile(r'^Time has wrong format\.'), "Vaqt formati noto'g'ri."),
+)
+
+
+def _translate_message(message: str) -> str:
+    translated = _STATIC_MESSAGES.get(message)
+    if translated is not None:
+        return translated
+    for pattern, template in _PATTERN_MESSAGES:
+        match = pattern.match(message)
+        if match:
+            return template.format(*match.groups())
+    return message
+
+
+def _translate_tree(data: Any) -> Any:
+    if isinstance(data, dict):
+        return {key: _translate_tree(value) for key, value in data.items()}
+    if isinstance(data, list):
+        return [_translate_tree(value) for value in data]
+    if isinstance(data, str):
+        return _translate_message(data)
+    return data
 
 
 class BusinessError(APIException):
@@ -73,7 +186,7 @@ def api_exception_handler(exc: Exception, context: dict) -> Response | None:
     if isinstance(exc, DjangoValidationError):
         return Response(
             _error_body("VALIDATION_ERROR", "Ma'lumot noto'g'ri.",
-                        {"messages": exc.messages}),
+                        {"messages": _translate_tree(exc.messages)}),
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -111,11 +224,11 @@ def api_exception_handler(exc: Exception, context: dict) -> Response | None:
 
     data = response.data
     if isinstance(data, dict) and "detail" in data and len(data) == 1:
-        message = str(data["detail"])
+        message = _translate_message(str(data["detail"]))
         details: Any = {}
     else:
         message = "So'rovda xatolik bor."
-        details = data
+        details = _translate_tree(data)
 
     response.data = _error_body(code, message, details)
     return response

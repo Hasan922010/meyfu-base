@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
+import { warehouseApi } from '@/shared/api/warehouse';
+import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Product, ProductInput } from '@/shared/types/catalog';
@@ -40,8 +42,13 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
     queryKey: ['brands'],
     queryFn: () => catalogApi.brands({ page_size: 200 }),
   });
+  const warehouses = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
+    enabled: !product,
+  });
 
-  const { register, handleSubmit, setError, formState } = useForm<ProductInput>({
+  const { register, control, handleSubmit, setError, formState } = useForm<ProductInput>({
     defaultValues: product
       ? {
           name: product.name,
@@ -67,6 +74,10 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       const body: ProductInput = { ...values, brand: values.brand || null };
       if (product && !canEditPrice) {
         for (const k of PRICE_KEYS) delete body[k];
+      }
+      if (!body.initial_stock_warehouse || !body.initial_stock_quantity) {
+        delete body.initial_stock_warehouse;
+        delete body.initial_stock_quantity;
       }
       return product
         ? catalogApi.updateProduct(product.id, body)
@@ -149,21 +160,99 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         </legend>
         <label className="block space-y-1">
           <span className="text-sm">Tannarx</span>
-          <input className="field" type="number" step="0.01" {...register('cost_price')} />
+          <Controller
+            name="cost_price"
+            control={control}
+            render={({ field }) => (
+              <AmountInput
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                showWords={false}
+                disabled={!canEditPrice}
+              />
+            )}
+          />
         </label>
         <label className="block space-y-1">
           <span className="text-sm">Optom narx</span>
-          <input className="field" type="number" step="0.01" {...register('wholesale_price')} />
+          <Controller
+            name="wholesale_price"
+            control={control}
+            render={({ field }) => (
+              <AmountInput
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                showWords={false}
+                disabled={!canEditPrice}
+              />
+            )}
+          />
         </label>
         <label className="block space-y-1">
           <span className="text-sm">Chakana narx</span>
-          <input className="field" type="number" step="0.01" {...register('retail_price')} />
+          <Controller
+            name="retail_price"
+            control={control}
+            render={({ field }) => (
+              <AmountInput
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                showWords={false}
+                disabled={!canEditPrice}
+              />
+            )}
+          />
         </label>
         <label className="block space-y-1">
           <span className="text-sm">Minimal narx</span>
-          <input className="field" type="number" step="0.01" {...register('min_price')} />
+          <Controller
+            name="min_price"
+            control={control}
+            render={({ field }) => (
+              <AmountInput
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                showWords={false}
+                disabled={!canEditPrice}
+              />
+            )}
+          />
         </label>
       </fieldset>
+
+      {!product && (
+        <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+          <legend className="px-1 text-xs text-gray-500">
+            Boshlang'ich qoldiq (ixtiyoriy)
+          </legend>
+          <label className="block space-y-1">
+            <span className="text-sm">Ombor</span>
+            <select className="field" {...register('initial_stock_warehouse')}>
+              <option value="">— kiritilmaydi —</option>
+              {warehouses.data?.results.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-1">
+            <span className="text-sm">Miqdor</span>
+            <Controller
+              name="initial_stock_quantity"
+              control={control}
+              render={({ field }) => (
+                <AmountInput
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  showWords={false}
+                  suffix=""
+                />
+              )}
+            />
+          </label>
+        </fieldset>
+      )}
 
       <div className="grid grid-cols-3 gap-3">
         <label className="block space-y-1">

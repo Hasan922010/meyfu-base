@@ -74,6 +74,9 @@ export const financeApi = {
     counterparty?: string;
     note?: string;
   }) => postAction<CashTransaction>('/cash-transactions/', body),
+  /** Kassa boshlang'ich qoldig'i (faqat SUPER_ADMIN) — `amount` ishorali. */
+  openingBalance: (body: { amount: string; note?: string }) =>
+    postAction<CashTransaction>('/cash-transactions/opening-balance/', body),
 
   companyExpenses: (params?: QueryParams) =>
     listPage<CompanyExpense>('/company-expenses/', params),
