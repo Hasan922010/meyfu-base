@@ -39,6 +39,7 @@ export function DayCloseWizard(): ReactElement {
 
   const [rows, setRows] = useState<ReturnRow[]>([]);
   const [cashHanded, setCashHanded] = useState<string>('');
+  const [note, setNote] = useState<string>('');
   const [initialised, setInitialised] = useState<boolean>(false);
 
   const data = today.data;
@@ -82,6 +83,7 @@ export function DayCloseWizard(): ReactElement {
       dayCloseApi.submit({
         warehouse: warehouses.data?.results[0]?.id ?? '',
         cash_handed: cashHanded || '0',
+        note: cashDiff !== 0 ? note.trim() : '',
         items: rows
           .filter((r) => Number(r.quantity) > 0)
           .map((r) => ({
@@ -268,6 +270,19 @@ export function DayCloseWizard(): ReactElement {
               ? 'Kassa farqi yo\'q'
               : `Kassa farqi: ${money(cashDiff)}${cashDiff < 0 ? ' (kamomad)' : ''}`}
           </div>
+          {/* Farq bo'lsa — jarima emas, avval izoh (CLAUDE.md §8, UX m5) */}
+          {cashDiff !== 0 && (
+            <label className="block space-y-1">
+              <span className="text-sm font-medium">Izoh (ixtiyoriy)</span>
+              <textarea
+                className="field min-h-[72px]"
+                maxLength={500}
+                placeholder="Masalan: mijoz ertaga to'laydi, qaytim berildi…"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </label>
+          )}
           <div className="flex gap-2">
             <button
               className="btn flex flex-1 items-center justify-center gap-1.5"
@@ -298,6 +313,7 @@ export function DayCloseWizard(): ReactElement {
               value={money(cashDiff)}
               danger={cashDiff < 0}
             />
+            {cashDiff !== 0 && note.trim() && <Line label="Izoh" value={note.trim()} />}
           </div>
           {submit.isError && (
             <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
