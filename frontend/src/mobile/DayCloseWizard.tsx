@@ -52,7 +52,8 @@ export function DayCloseWizard(): ReactElement {
         product_name: v.product_name,
         unit: v.unit,
         suggested: Number(v.quantity),
-        quantity: v.quantity,
+        // "42.000" ru-lokalda "42,000" (42 ming) bo'lib ko'rinardi — ortiqcha nollarsiz (UX M5)
+        quantity: String(Number(v.quantity)),
         condition: 'GOOD',
       })),
     );
@@ -185,7 +186,10 @@ export function DayCloseWizard(): ReactElement {
                 <input
                   className="field w-24"
                   type="number"
-                  step="0.001"
+                  step="any"
+                  min="0"
+                  inputMode="decimal"
+                  aria-label={`${r.product_name} — qaytariladigan miqdor`}
                   value={r.quantity}
                   onChange={(e) =>
                     setRows((prev) =>
