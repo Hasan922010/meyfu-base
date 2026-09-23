@@ -45,7 +45,7 @@ export function MyLoadingPage(): ReactElement {
         isLoading={query.isLoading}
         isError={query.isError}
         isEmpty={!query.isLoading && rows.length === 0}
-        emptyText="Bugun yuklama yo‘q"
+        emptyText="Bugun yuklama yo‘q. Menejer yuklama yuborganda shu yerda chiqadi — tovarni sanab, tasdiqlaysiz."
       >
         <div className="space-y-4">
           {rows.map((l) => (
