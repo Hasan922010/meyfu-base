@@ -16,6 +16,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.core.exceptions import BusinessError
+from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog, DocumentSequence
 from apps.notifications.services import notify
 from apps.sales.services.sale import SaleLine, create_sale
@@ -153,7 +154,7 @@ def approve_order(order: Order, *, user=None) -> Order:
     notify(
         order.taken_by, type="order.approved",
         title="Buyurtma tasdiqlandi",
-        body=f"{order.number} · {order.client.name} · {order.total_amount} so'm",
+        body=f"{order.number} · {order.client.name} · {fmt_money(order.total_amount)}",
         data={"order_id": str(order.id)},
     )
     broadcast("admin_dashboard", "order.approved", {

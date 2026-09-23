@@ -57,7 +57,8 @@ export function DayCloseWizard(): ReactElement {
         condition: 'GOOD',
       })),
     );
-    setCashHanded(data.cash_expected ?? '');
+    // "906000.00" ru-lokalda "906000,00" ko'rinardi — butun so'm (UX m2)
+    setCashHanded(data.cash_expected != null ? String(Number(data.cash_expected)) : '');
     setInitialised(true);
   }, [data, initialised]);
 

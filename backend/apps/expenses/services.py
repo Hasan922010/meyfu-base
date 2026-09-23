@@ -9,6 +9,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apps.core.exceptions import BusinessError
+from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog
 from apps.wallet.constants import TransactionType
 from apps.wallet.services import reverse_reference, wallet_apply
@@ -131,14 +132,14 @@ def create_expense(
             "amount": str(amount), "category": category.name,
         })
         _limit_txt = (
-            f"kategoriya limiti: {category.daily_limit}"
+            f"kategoriya limiti: {fmt_money(category.daily_limit)}"
             if category.daily_limit and category.daily_limit > _ZERO
-            else f"kunlik umumiy limit: {daily_cap}"
+            else f"kunlik umumiy limit: {fmt_money(daily_cap)}"
         )
         notify_admins(
             type="expense.limit_exceeded",
             title="Xarajat limiti oshdi",
-            body=(f"{distributor.full_name} · {category.name} · {amount} so'm "
+            body=(f"{distributor.full_name} · {category.name} · {fmt_money(amount)} "
                   f"({_limit_txt})"),
             data={"expense_id": str(expense.id)},
             tg_buttons=[[
@@ -191,7 +192,7 @@ def approve_expense(expense: DistributorExpense, user=None) -> DistributorExpens
     notify(
         expense.distributor, type="expense.approved",
         title="Xarajat tasdiqlandi",
-        body=f"{expense.category.name} · {expense.amount} so'm",
+        body=f"{expense.category.name} · {fmt_money(expense.amount)}",
         data={"expense_id": str(expense.id)},
     )
     _refresh_dayclose_snapshot(expense, user=user)
@@ -227,7 +228,7 @@ def reject_expense(
     notify(
         expense.distributor, type="expense.rejected",
         title="Xarajat rad etildi",
-        body=f"{expense.category.name} · {expense.amount} so'm. Sabab: {reason}",
+        body=f"{expense.category.name} · {fmt_money(expense.amount)}. Sabab: {reason}",
         data={"expense_id": str(expense.id)},
     )
     _refresh_dayclose_snapshot(expense, user=user)

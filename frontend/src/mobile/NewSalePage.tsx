@@ -346,7 +346,7 @@ export function NewSalePage(): ReactElement {
                 className="field"
                 type="number"
                 inputMode="decimal"
-                placeholder={`Narx (taxminan ${suggestedPrice(picked)})`}
+                placeholder={`Narx (taxminan ${money(suggestedPrice(picked) || 0)})`}
                 value={pickedPrice}
                 onChange={(e) => setPickedPrice(e.target.value)}
               />

@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
+from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog
 from apps.finance.constants import CashTxType
 from apps.wallet.constants import TransactionType
@@ -65,6 +66,6 @@ def create_advance(*, distributor, amount: Decimal, date=None, note: str = "", u
 
     notify(
         distributor, type="advance.created", title="Avans berildi",
-        body=f"{amount} so'm", data={"advance_id": str(advance.id)},
+        body=fmt_money(amount), data={"advance_id": str(advance.id)},
     )
     return advance
