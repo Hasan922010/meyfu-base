@@ -36,11 +36,13 @@ async function refreshAccess(): Promise<string | null> {
     return null;
   }
   try {
-    const resp = await axios.post<{ access: string }>(
+    const resp = await axios.post<{ access: string; refresh?: string }>(
       `${env.apiBaseUrl}/auth/refresh/`,
       { refresh },
     );
-    setAccess(resp.data.access);
+    // Eski refresh serverda qora ro'yxatga tushgan — yangisini saqlamasak
+    // keyingi refresh 401 beradi va foydalanuvchi chiqarib yuboriladi
+    setAccess(resp.data.access, resp.data.refresh);
     return resp.data.access;
   } catch {
     clear();
