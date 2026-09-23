@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, ArrowRight, CircleCheckBig, ClipboardCheck } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
+import { unsentCount } from '@/offline/outbox';
 import { extractApiError } from '@/shared/api/client';
 import { dayCloseApi } from '@/shared/api/reports';
 import { warehouseApi } from '@/shared/api/warehouse';
@@ -71,6 +73,7 @@ export function DayCloseWizard(): ReactElement {
   );
 
   const cashDiff = Number(cashHanded || 0) - Number(data?.cash_expected ?? 0);
+  const unsent = useLiveQuery(() => unsentCount(), [], 0) ?? 0;
 
   const submit = useMutation({
     mutationFn: () =>
@@ -152,6 +155,16 @@ export function DayCloseWizard(): ReactElement {
           </span>
         ))}
       </div>
+
+      {unsent > 0 && (
+        <div role="alert" className="rounded-lg bg-pending/10 px-3 py-2 text-sm text-pending">
+          {unsent} ta operatsiya hali serverga yuborilmagan. Kunni yopishdan oldin ular
+          yuborilishi kerak.{' '}
+          <Link to="/m/sync" className="font-semibold underline">
+            Sinxronizatsiya
+          </Link>
+        </div>
+      )}
 
       {/* STEP 1 — Tovar */}
       {step === 1 && (
@@ -295,7 +308,7 @@ export function DayCloseWizard(): ReactElement {
             </button>
             <button
               className="btn-brand flex-1"
-              disabled={submit.isPending}
+              disabled={submit.isPending || unsent > 0}
               onClick={() => submit.mutate()}
             >
               Kunni yopish
