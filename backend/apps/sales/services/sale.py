@@ -20,6 +20,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.clients.models import Client
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError, InsufficientStock
 from apps.core.models import AuditLog, DocumentSequence
 from apps.wallet.constants import TransactionType
@@ -98,7 +99,7 @@ def create_sale(
     debt_override: bool = False,
     order=None,
 ) -> SaleResult:
-    date = date or timezone.localdate()
+    date = date or business_date()
 
     # 7.9 — idempotentlik
     if client_uuid:

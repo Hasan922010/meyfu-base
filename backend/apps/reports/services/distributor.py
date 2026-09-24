@@ -15,9 +15,9 @@ from decimal import Decimal
 from django.core.cache import cache
 from django.db.models import Count, DecimalField, F, Q, Sum, Value
 from django.db.models.functions import Coalesce, ExtractHour
-from django.utils import timezone
 
 from apps.clients.models import Client, ClientVisit
+from apps.core.business_day import business_date
 from apps.dayclose.models import DayClose
 from apps.expenses.models import DistributorExpense
 from apps.orders.constants import OrderStatus
@@ -67,7 +67,7 @@ def resolve_period(
     date_to: date_cls | None,
 ) -> tuple[date_cls, date_cls, date_cls, date_cls, str]:
     """(start, end, prev_start, prev_end, label) qaytaradi."""
-    today = timezone.localdate()
+    today = business_date()
 
     if preset == "today":
         start = end = today
@@ -263,7 +263,7 @@ def _debts_block(distributor, df, dt) -> dict:
         client__route__distributor=distributor
     ).exclude(status="PAID")
     outstanding = _sum(route_debts, "remaining")
-    today = timezone.localdate()
+    today = business_date()
     overdue = route_debts.filter(due_date__lt=today)
     overdue_amount = _sum(overdue, "remaining")
     overdue_clients = overdue.values("client").distinct().count()

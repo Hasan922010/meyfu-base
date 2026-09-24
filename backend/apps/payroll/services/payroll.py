@@ -16,6 +16,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog, Setting
@@ -286,7 +287,7 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
     expense = create_company_expense(
         category=CompanyExpenseCategory.SALARY,
         amount=payroll.final_amount,
-        date=timezone.localdate(),
+        date=business_date(),
         description=(
             f"{payroll.distributor.full_name} · {payroll.period:%Y-%m}"
         ),

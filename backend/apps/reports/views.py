@@ -3,7 +3,6 @@ from __future__ import annotations
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django.utils.dateparse import parse_date
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.exceptions import PermissionDenied
@@ -12,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.business_day import business_date
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.users.constants import Role
@@ -49,7 +49,7 @@ class _ReportView(APIView):
     write_roles = _REPORT_ROLES
 
     def _range(self, request: Request):
-        today = timezone.localdate()
+        today = business_date()
         df = parse_date(request.query_params.get("date_from", "")) or today.replace(day=1)
         dt = parse_date(request.query_params.get("date_to", "")) or today
         return df, dt
@@ -63,7 +63,7 @@ class DashboardView(_ReportView):
         responses={200: dict},
     )
     def get(self, request: Request) -> Response:
-        day = parse_date(request.query_params.get("date", "")) or timezone.localdate()
+        day = parse_date(request.query_params.get("date", "")) or business_date()
         return ok(dashboard(day=day))
 
 

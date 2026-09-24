@@ -6,9 +6,9 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import F
-from django.utils import timezone
 
 from apps.clients.models import Client
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.wallet.constants import TransactionType
 from apps.wallet.services import wallet_apply
@@ -40,7 +40,7 @@ def collect_debt_payment(
     note: str = "",
     strict: bool = True,
 ) -> DebtPaymentResult:
-    date = date or timezone.localdate()
+    date = date or business_date()
 
     if client_uuid:
         existing = DebtPayment.objects.filter(client_uuid=client_uuid).first()

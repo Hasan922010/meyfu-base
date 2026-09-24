@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from django.db.models import F, QuerySet
 from django.http import HttpResponse
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
@@ -252,7 +252,7 @@ class LoadingViewSet(BaseModelViewSet):
     @extend_schema(summary="Bugungi yuklamam (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my-today")
     def my_today(self, request: Request) -> Response:
-        today = timezone.localdate()
+        today = business_date()
         qs = self.get_queryset().filter(
             distributor=request.user, date=today
         ).exclude(status="DRAFT")

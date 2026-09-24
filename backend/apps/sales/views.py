@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.catalog.models import Product
 from apps.clients.models import Client
+from apps.core.business_day import business_date
 from apps.core.formatting import fmt_money
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
@@ -153,7 +154,7 @@ class SaleViewSet(BaseModelViewSet):
     @extend_schema(summary="Bugungi sotuvlarim")
     @action(detail=False, methods=["get"], url_path="my-today")
     def my_today(self, request: Request) -> Response:
-        today = timezone.localdate()
+        today = business_date()
         qs = self.get_queryset().filter(
             distributor=request.user, date=today
         ).exclude(status="CANCELLED")
