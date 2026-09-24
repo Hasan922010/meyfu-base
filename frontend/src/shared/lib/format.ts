@@ -65,6 +65,15 @@ export function money(value: string | number): string {
   return `${sign}${groupThousands(String(Math.round(Math.abs(n))))} so'm`;
 }
 
+/**
+ * Input maydoni uchun miqdor: "1.000" -> "1", "2.500" -> "2.5". Number input
+ * "1.000" ni lokalga qarab "1,000" ko'rsatadi — bu "ming" deb o'qiladi (audit m4).
+ */
+export function plainQty(value: string): string {
+  const n = Number(value);
+  return value === '' || Number.isNaN(n) ? value : String(n);
+}
+
 /** Miqdor — kasr qism bo'lsa saqlanadi (masalan kg): 3 -> "3", 2.5 -> "2.5". */
 export function qty(value: string | number): string {
   const n = typeof value === 'string' ? Number(value) : value;

@@ -5,6 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { catalogApi } from '@/shared/api/catalog';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
+import { plainQty } from '@/shared/lib/format';
 import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
@@ -100,9 +101,9 @@ function ProductFormFields({
           wholesale_price: product.wholesale_price,
           retail_price: product.retail_price,
           min_price: product.min_price,
-          pack_quantity: product.pack_quantity,
+          pack_quantity: plainQty(product.pack_quantity),
           commission_percent: product.commission_percent,
-          min_stock_alert: product.min_stock_alert,
+          min_stock_alert: plainQty(product.min_stock_alert),
           is_active: product.is_active,
         }
       : { is_active: true, pack_quantity: '1' },
