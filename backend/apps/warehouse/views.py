@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.db.models import F, QuerySet
+from django.db.models import F, Q, QuerySet
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
@@ -249,13 +249,15 @@ class LoadingViewSet(BaseModelViewSet):
         content = loading_to_pdf(loading, with_stamp=_wants_stamp(request))
         return _pdf_response(content, f"yuklama-{loading.number}.pdf")
 
-    @extend_schema(summary="Bugungi yuklamam (tarqatuvchi uchun)")
+    @extend_schema(summary="Bugungi yuklamam + hali tasdiqlanmaganlari (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my-today")
     def my_today(self, request: Request) -> Response:
         today = business_date()
+        # Audit K10: kechagi yuborilgan (SENT) yuklama ham ko'rinsin — aks holda
+        # u hech qachon tasdiqlanmay, tovar "yo'lda" qolib ketadi.
         qs = self.get_queryset().filter(
-            distributor=request.user, date=today
-        ).exclude(status="DRAFT")
+            Q(date=today) | Q(status="SENT"), distributor=request.user,
+        ).exclude(status="DRAFT").order_by("date", "created_at")
         return ok(self.get_serializer(qs, many=True).data)
 
 
