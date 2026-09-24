@@ -96,7 +96,9 @@ class SupplierViewSet(BaseModelViewSet):
 
 
 class StockViewSet(BaseReadOnlyViewSet):
-    queryset = Stock.objects.select_related("warehouse", "product__unit")
+    queryset = Stock.objects.select_related("warehouse", "product__unit").order_by(
+        "warehouse__name", "product__name", "pk"
+    )
     serializer_class = StockSerializer
     read_roles = _WH_READ
     filterset_fields = ("warehouse", "product")

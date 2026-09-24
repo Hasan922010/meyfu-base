@@ -247,3 +247,16 @@ def test_stock_list_includes_unit_and_low_level(manager_api, stocked):
     product.refresh_from_db()
     assert row["product_unit"] == product.unit.short_name
     assert row["min_stock_alert"] is not None
+
+
+@pytest.mark.django_db
+def test_stock_list_has_stable_order(manager_api, stocked):
+    """Tartibsiz sahifalash sahifalar orasida qatorlarni takrorlashi/yo'qotishi mumkin."""
+    import warnings
+
+    from django.core.paginator import UnorderedObjectListWarning
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UnorderedObjectListWarning)
+        resp = manager_api.get("/api/v1/stock/")
+    assert resp.status_code == 200
