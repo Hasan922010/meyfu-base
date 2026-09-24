@@ -2,6 +2,7 @@ import { api } from '@/shared/api/client';
 import {
   create,
   listPage,
+  patch,
   postAction,
   retrieve,
   type QueryParams,
@@ -66,6 +67,9 @@ export const warehouseApi = {
   loadings: (params?: QueryParams) => listPage<Loading>('/loadings/', params),
   createLoading: (body: LoadingInput) =>
     create<Loading, LoadingInput>('/loadings/', body),
+  /** Faqat DRAFT holatida (backend boshqasini rad etadi) */
+  updateLoading: (id: string, body: LoadingInput) =>
+    patch<Loading, LoadingInput>(`/loadings/${id}/`, body),
   sendLoading: (id: string) => postAction<Loading>(`/loadings/${id}/send/`),
   confirmLoading: (id: string) => postAction<Loading>(`/loadings/${id}/confirm/`),
   cancelLoading: (id: string) => postAction<unknown>(`/loadings/${id}/cancel/`),

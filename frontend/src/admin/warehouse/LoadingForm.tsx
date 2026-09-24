@@ -5,6 +5,7 @@ import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
 import { authApi } from '@/shared/api/users';
 import { warehouseApi } from '@/shared/api/warehouse';
+import type { Loading } from '@/shared/types/warehouse';
 
 import { ProductLineEditor, type LineRow } from './ProductLineEditor';
 import { businessDateISO } from '@/shared/lib/businessDay';
@@ -13,7 +14,18 @@ function today(): string {
   return businessDateISO();
 }
 
-export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
+interface Props {
+  /** Berilsa — shu qoralama tahrirlanadi */
+  loading?: Loading | null;
+  onDone: () => void;
+}
+
+/** "5000.000" -> "5000": miqdor maydonida ortiqcha kasr nollari ko'rinmasin */
+function plainQty(q: string): string {
+  return String(Number(q));
+}
+
+export function LoadingForm({ loading = null, onDone }: Props): ReactElement {
   const qc = useQueryClient();
 
   const distributors = useQuery({
@@ -29,10 +41,17 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
     queryFn: () => catalogApi.products({ page_size: 1000, is_active: true }),
   });
 
-  const [distributor, setDistributor] = useState<string>('');
-  const [warehouse, setWarehouse] = useState<string>('');
-  const [date, setDate] = useState<string>(today());
-  const [rows, setRows] = useState<LineRow[]>([]);
+  const [distributor, setDistributor] = useState<string>(loading?.distributor ?? '');
+  const [warehouse, setWarehouse] = useState<string>(loading?.warehouse ?? '');
+  const [date, setDate] = useState<string>(loading?.date ?? today());
+  const [rows, setRows] = useState<LineRow[]>(
+    () =>
+      loading?.items.map((i) => ({
+        product: i.product,
+        quantity: plainQty(i.quantity),
+        price: i.price ?? '',
+      })) ?? [],
+  );
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -43,7 +62,10 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
           quantity: r.quantity,
           ...(r.price ? { price: r.price } : {}),
         }));
-      return warehouseApi.createLoading({ distributor, warehouse, date, items });
+      const body = { distributor, warehouse, date, items };
+      return loading
+        ? warehouseApi.updateLoading(loading.id, body)
+        : warehouseApi.createLoading(body);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['loadings'] });
@@ -128,7 +150,7 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
           disabled={!valid || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
-          Qoralama saqlash
+          {loading ? 'Saqlash' : 'Qoralama saqlash'}
         </button>
       </div>
     </div>
