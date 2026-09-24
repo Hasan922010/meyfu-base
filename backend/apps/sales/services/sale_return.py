@@ -14,6 +14,7 @@ from apps.warehouse.services.van import van_apply
 
 from ..constants import SaleStatus
 from ..models import SaleItem, SaleReturn, SaleReturnItem
+from .sale import _off_route
 
 RETURN_PREFIX = "QYT"
 _ZERO = Decimal("0")
@@ -102,6 +103,17 @@ def create_sale_return(
     if not lines:
         raise BusinessError(message="Qaytarishda kamida bitta qator bo'lishi kerak.",
                             code="EMPTY_RETURN")
+
+    # Marshrut egaligi — tarqatuvchi faqat o'z marshrutidagi mijozdan qaytarish
+    # qabul qiladi. Aks holda begona mijoz savdosi orqali o'z mashina qoldig'ini
+    # "soxta" qaytarish bilan shishira oladi (create_sale / collect_debt_payment
+    # bilan bir xil himoya).
+    if _off_route(distributor, client):
+        raise BusinessError(
+            message=f"«{client.name}» sizning marshrutingizda emas.",
+            code="CLIENT_NOT_ON_ROUTE",
+            details={"client_id": str(client.id)},
+        )
 
     # Har mahsulot uchun qaytariladigan miqdor sotilgandan oshmasin
     # (aks holda mashina qoldig'i "soxta" tovar bilan shishadi).

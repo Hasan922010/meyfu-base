@@ -167,8 +167,12 @@ class OrderViewSet(BaseModelViewSet):
             for row in data["lines"]
             if str(row["item"]) in by_id
         ]
+        # `distributor` override faqat admin/managerga ruxsat etiladi. Tarqatuvchi
+        # o'zgacha `distributor` yuborsa — e'tiborsiz qoldiriladi va o'ziga majburlanadi
+        # (create() dagi `taken_by` bilan bir xil himoya): aks holda bir tarqatuvchi
+        # boshqasining qoldig'i/hamyoni/qarzini manipulyatsiya qila oladi.
         distributor = None
-        if data.get("distributor"):
+        if data.get("distributor") and not _is_distributor(request.user):
             distributor = User.objects.get(pk=data["distributor"])
         elif _is_distributor(request.user):
             distributor = request.user

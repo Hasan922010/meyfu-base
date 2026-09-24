@@ -435,3 +435,25 @@ def test_return_more_than_sold_rejected(auth_api, van_stocked):
     )
     assert resp.status_code == 409
     assert resp.data["error"]["code"] == "RETURN_EXCEEDS_SOLD"
+
+
+@pytest.mark.django_db
+def test_return_other_route_client_rejected(auth_api, van_stocked, routed_clients):
+    """H1 regressiya: tarqatuvchi begona marshrut mijozidan qaytarish qabul
+    qila olmaydi — aks holda o'z mashina qoldig'ini soxta qaytarish bilan
+    shishira olardi (create_sale / debt-payment bilan bir xil himoya)."""
+    resp = auth_api.post(
+        "/api/v1/sale-returns/",
+        {
+            "client": str(routed_clients["other_client"].id),
+            "reason": "MUDDAT",
+            "restock": True,
+            "items": [
+                {"product": str(van_stocked["product"].id),
+                 "quantity": "1", "price": "27000"}
+            ],
+        },
+        format="json",
+    )
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
