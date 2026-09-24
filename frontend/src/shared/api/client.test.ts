@@ -1,4 +1,4 @@
-import { AxiosError, type AxiosResponse } from 'axios';
+import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 import { describe, expect, it } from 'vitest';
 
 import { extractApiError, extractFieldErrors } from '@/shared/api/client';
@@ -40,10 +40,35 @@ describe('extractFieldErrors (UX-001)', () => {
 });
 
 describe('extractApiError (UX-001)', () => {
+  it('ichki maydon nomlari o‘rniga o‘zbekcha nom chiqadi (audit m1)', () => {
+    const err = new AxiosError('Bad Request', 'ERR_BAD_REQUEST', undefined, null, {
+      status: 400,
+      statusText: 'Bad Request',
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: {
+        success: false,
+        error: {
+          message: "So'rovda xatolik bor.",
+          details: {
+            debt_limit: ['Raqam kiritilishi kerak.'],
+            invoice_number: ['Bu yetkazib beruvchida shunday nakladnoy bor.'],
+          },
+        },
+      },
+    });
+
+    const msg = extractApiError(err);
+
+    expect(msg).toContain('Qarz limiti: Raqam kiritilishi kerak.');
+    expect(msg).toContain('Nakladnoy raqami: Bu yetkazib beruvchida shunday nakladnoy bor.');
+    expect(msg).not.toMatch(/debt_limit|invoice_number/);
+  });
+
   it('maydon xatolarini o‘qiladigan matnga aylantiradi (umumiy toast emas)', () => {
     const msg = extractApiError(drfValidation);
     expect(msg).toContain('Telefon: Bu telefon raqami band.');
-    expect(msg).toContain('base_salary: Musbat son kiriting.');
+    expect(msg).toContain('Asosiy maosh: Musbat son kiriting.');
     expect(msg).toContain('Umumiy xato.');
     expect(msg).not.toBe("So'rovda xatolik bor.");
   });
