@@ -8,6 +8,7 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { money } from '@/shared/lib/format';
@@ -24,9 +25,13 @@ export function ClientsPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
   const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
 
+  const [deleting, setDeleting] = useState<Client | null>(null);
   const del = useMutation({
     mutationFn: (id: string) => clientsApi.remove(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['clients'] }),
+    onSuccess: () => {
+      setDeleting(null);
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+    },
   });
 
   // Saralash/qidiruv/filtr serverda — barcha mijozlar ustida
@@ -147,11 +152,7 @@ export function ClientsPage(): ReactElement {
                         <button
                           className="text-danger hover:underline"
                           disabled={del.isPending}
-                          onClick={() => {
-                            if (window.confirm(`"${c.name}" mijozini o'chirasizmi?`)) {
-                              del.mutate(c.id);
-                            }
-                          }}
+                          onClick={() => setDeleting(c)}
                         >
                           O'chirish
                         </button>
@@ -186,6 +187,18 @@ export function ClientsPage(): ReactElement {
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Mijozni o'chirish"
+        confirmLabel="O'chirish"
+        danger
+        isPending={del.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && del.mutate(deleting.id)}
+      >
+        «{deleting?.name}» mijozi ro'yxatdan o'chiriladi. Sotuv va qarz tarixi saqlanib qoladi.
+      </ConfirmDialog>
 
       <Modal
         open={creating || editing !== null}
