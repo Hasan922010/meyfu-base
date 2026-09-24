@@ -119,6 +119,7 @@ class ProductSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"initial_stock_warehouse": "Boshlang'ich qoldiq uchun ombor tanlang."}
             )
+        self._validate_min_not_above_retail(attrs)
         # CLAUDE.md 2: MANAGER narx/foizni o'zgartirmaydi — faqat SUPER_ADMIN
         request = self.context.get("request")
         if request is None or self.instance is None:
@@ -138,6 +139,21 @@ class ProductSerializer(serializers.ModelSerializer):
                 }
             )
         return attrs
+
+    def _validate_min_not_above_retail(self, attrs: dict) -> None:
+        """CLAUDE.md 7.1: chakana narxda sotish min_price qoidasini buzmasligi kerak."""
+        def current(field: str):
+            if field in attrs:
+                return attrs[field]
+            return getattr(self.instance, field, None)
+
+        retail, minimum = current("retail_price"), current("min_price")
+        if retail is None or minimum is None:
+            return
+        if minimum > retail:
+            raise serializers.ValidationError(
+                {"min_price": "Minimal narx chakana narxdan katta bo'lmasligi kerak."}
+            )
 
 
 class ProductLiteSerializer(serializers.ModelSerializer):

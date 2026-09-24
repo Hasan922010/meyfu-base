@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
-import { extractApiError } from '@/shared/api/client';
+import { extractApiError, extractFieldErrors } from '@/shared/api/client';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -22,6 +22,13 @@ const PRICE_KEYS = [
   'retail_price',
   'min_price',
   'commission_percent',
+] as const;
+
+const PRICE_FIELDS = [
+  { name: 'cost_price', label: 'Tannarx' },
+  { name: 'wholesale_price', label: 'Optom narx' },
+  { name: 'retail_price', label: 'Chakana narx' },
+  { name: 'min_price', label: 'Minimal narx' },
 ] as const;
 
 export function ProductForm({ product, onDone }: Props): ReactElement {
@@ -77,6 +84,7 @@ function ProductFormFields({
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
   const canEditPrice = !product || role === 'SUPER_ADMIN';
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   const { register, control, handleSubmit, setError, formState } = useForm<ProductInput>({
     defaultValues: product
@@ -120,7 +128,13 @@ function ProductFormFields({
       void qc.invalidateQueries({ queryKey: ['products'] });
       onDone();
     },
-    onError: (err) => applyServerFieldErrors(err, setError),
+    onMutate: () => setGeneralError(null),
+    onError: (err) => {
+      // Maydonga bog'langan xato o'sha maydon ostida chiqadi; bu yerda faqat qolgani
+      const leftover = applyServerFieldErrors(err, setError);
+      const hasFieldErrors = Object.keys(extractFieldErrors(err)).length > 0;
+      setGeneralError(hasFieldErrors ? leftover.join(' · ') || null : extractApiError(err));
+    },
   });
 
   return (
@@ -203,66 +217,26 @@ function ProductFormFields({
         <legend className="px-1 text-xs text-gray-500">
           Narxlar {canEditPrice ? '' : '(faqat SUPER_ADMIN)'}
         </legend>
-        <label className="block space-y-1">
-          <span className="text-sm">Tannarx</span>
-          <Controller
-            name="cost_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-                disabled={!canEditPrice}
-              />
+        {PRICE_FIELDS.map(({ name, label }) => (
+          <label key={name} className="block space-y-1">
+            <span className="text-sm">{label}</span>
+            <Controller
+              name={name}
+              control={control}
+              render={({ field }) => (
+                <AmountInput
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  showWords={false}
+                  disabled={!canEditPrice}
+                />
+              )}
+            />
+            {formState.errors[name]?.message && (
+              <span className="text-xs text-danger">{formState.errors[name].message}</span>
             )}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Optom narx</span>
-          <Controller
-            name="wholesale_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-                disabled={!canEditPrice}
-              />
-            )}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Chakana narx</span>
-          <Controller
-            name="retail_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-                disabled={!canEditPrice}
-              />
-            )}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Minimal narx</span>
-          <Controller
-            name="min_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-                disabled={!canEditPrice}
-              />
-            )}
-          />
-        </label>
+          </label>
+        ))}
       </fieldset>
 
       {!product && (
@@ -295,9 +269,9 @@ function ProductFormFields({
         </p>
       )}
 
-      {mutation.isError && (
+      {generalError && (
         <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          {extractApiError(mutation.error)}
+          {generalError}
         </p>
       )}
 
