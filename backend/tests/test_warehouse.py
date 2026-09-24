@@ -235,3 +235,15 @@ def test_reserve_error_names_product_and_plain_quantities(stocked):
     assert product.name in message
     assert "999999" in message
     assert ".000" not in message
+
+
+@pytest.mark.django_db
+def test_stock_list_includes_unit_and_low_level(manager_api, stocked):
+    """Audit m9: telefondagi qoldiq ro'yxati birlik va kam qoldiq chegarasini ko'rsata olsin."""
+    resp = manager_api.get("/api/v1/stock/")
+    assert resp.status_code == 200
+    row = resp.data["data"]["results"][0]
+    product = stocked["product"]
+    product.refresh_from_db()
+    assert row["product_unit"] == product.unit.short_name
+    assert row["min_stock_alert"] is not None

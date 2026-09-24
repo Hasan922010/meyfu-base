@@ -54,6 +54,9 @@ export interface Stock {
   product: string;
   product_name: string;
   product_sku: string;
+  product_unit: string;
+  /** Mahsulotning "kam qoldiq" chegarasi (0 — belgilanmagan) */
+  min_stock_alert: string;
   quantity: string;
   reserved_quantity: string;
   available_quantity: string;
