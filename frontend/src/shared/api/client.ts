@@ -38,7 +38,21 @@ function isRefreshRejected(err: unknown): boolean {
   return status === 401 || status === 400;
 }
 
-async function refreshAccess(): Promise<RefreshResult> {
+/**
+ * Boshqa tab refresh tokenni allaqachon almashtirgan bo'lishi mumkin (rotatsiya +
+ * qora ro'yxat) — localStorage'dagi eng yangi holatni olamiz. `failedAccess` bilan
+ * farq qilsa, boshqa tab yangilagan: shu access bilan qayta urinish kifoya.
+ */
+async function newerTokenFromOtherTab(failedAccess: string | null): Promise<string | null> {
+  await useAuthStore.persist.rehydrate();
+  const { access } = useAuthStore.getState();
+  return access && access !== failedAccess ? access : null;
+}
+
+async function refreshAccess(failedAccess: string | null): Promise<RefreshResult> {
+  const fromOtherTab = await newerTokenFromOtherTab(failedAccess);
+  if (fromOtherTab) return { access: fromOtherTab };
+
   const { refresh, setAccess, clear } = useAuthStore.getState();
   if (!refresh) {
     clear();
@@ -57,6 +71,9 @@ async function refreshAccess(): Promise<RefreshResult> {
     // Faqat server rad etsa chiqaramiz. Tarmoq uzilishi yoki 5xx da sessiya qoladi —
     // aks holda beqaror internetda tarqatuvchi tizimdan chiqib ketardi (UX audit N2)
     if (isRefreshRejected(err)) {
+      // Poyga: so'rovimiz ketayotganda boshqa tab rotatsiyani yakunlagan bo'lishi mumkin
+      const raced = await newerTokenFromOtherTab(failedAccess);
+      if (raced) return { access: raced };
       clear();
       return { access: null, sessionEnded: true };
     }
@@ -73,7 +90,9 @@ api.interceptors.response.use(
 
     if (status === 401 && original && !original._retried) {
       original._retried = true;
-      refreshPromise ??= refreshAccess().finally(() => {
+      const failedAccess =
+        String(original.headers.get('Authorization') ?? '').replace(/^Bearer /, '') || null;
+      refreshPromise ??= refreshAccess(failedAccess).finally(() => {
         refreshPromise = null;
       });
       const result = await refreshPromise;
