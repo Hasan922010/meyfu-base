@@ -8,6 +8,7 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { staffApi } from '@/shared/api/users';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { ROLE_LABELS } from '@/shared/lib/labels';
@@ -46,9 +47,13 @@ export function StaffPage(): ReactElement {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
   });
 
+  const [deleting, setDeleting] = useState<User | null>(null);
   const del = useMutation({
     mutationFn: (id: string) => staffApi.remove(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
+    onSuccess: () => {
+      setDeleting(null);
+      void qc.invalidateQueries({ queryKey: ['staff'] });
+    },
   });
 
   const rows = query.data?.results ?? [];
@@ -180,15 +185,7 @@ export function StaffPage(): ReactElement {
                             <button
                               className="text-danger hover:underline"
                               disabled={del.isPending}
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `"${u.full_name}" xodimini o'chirasizmi?`,
-                                  )
-                                ) {
-                                  del.mutate(u.id);
-                                }
-                              }}
+                              onClick={() => setDeleting(u)}
                             >
                               O'chirish
                             </button>
@@ -242,6 +239,17 @@ export function StaffPage(): ReactElement {
           }}
         />
       </Modal>
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Xodimni o'chirish"
+        confirmLabel="O'chirish"
+        danger
+        isPending={del.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && del.mutate(deleting.id)}
+      >
+        «{deleting?.full_name}» xodimi o'chiriladi.
+      </ConfirmDialog>
     </div>
   );
 }

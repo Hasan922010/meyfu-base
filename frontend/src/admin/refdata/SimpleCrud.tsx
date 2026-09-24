@@ -3,6 +3,7 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { refResource, type RefRow } from '@/shared/api/refdata';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 
@@ -42,9 +43,13 @@ export function SimpleCrud({
 
   const query = useQuery({ queryKey: key, queryFn: () => resource.list() });
 
+  const [deleting, setDeleting] = useState<RefRow | null>(null);
   const del = useMutation({
     mutationFn: (id: string) => resource.remove(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: key }),
+    onSuccess: () => {
+      setDeleting(null);
+      void qc.invalidateQueries({ queryKey: key });
+    },
   });
 
   const rows = query.data?.results ?? [];
@@ -113,11 +118,7 @@ export function SimpleCrud({
                         <button
                           className="text-danger hover:underline"
                           disabled={del.isPending}
-                          onClick={() => {
-                            if (window.confirm(`"${r.name ?? r.id}" o'chirilsinmi?`)) {
-                              del.mutate(r.id);
-                            }
-                          }}
+                          onClick={() => setDeleting(r)}
                         >
                           O'chirish
                         </button>
@@ -150,6 +151,17 @@ export function SimpleCrud({
           }}
         />
       </Modal>
+      <ConfirmDialog
+        open={deleting !== null}
+        title="O'chirish"
+        confirmLabel="O'chirish"
+        danger
+        isPending={del.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && del.mutate(deleting.id)}
+      >
+        «{deleting?.name ?? deleting?.id}» o'chiriladi.
+      </ConfirmDialog>
     </div>
   );
 }

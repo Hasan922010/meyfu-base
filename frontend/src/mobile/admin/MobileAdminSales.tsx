@@ -8,8 +8,10 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { salesApi } from '@/shared/api/reports';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money } from '@/shared/lib/format';
+import type { Sale } from '@/shared/types/sales';
 
 const STATUS_CLASS: Record<string, string> = {
   COMPLETED: 'text-success',
@@ -40,9 +42,13 @@ export function MobileAdminSales(): ReactElement {
       salesApi.resolve(id, accept),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin-sales-m'] }),
   });
+  const [cancelling, setCancelling] = useState<Sale | null>(null);
   const cancel = useMutation({
     mutationFn: (id: string) => salesApi.cancel(id, 'Admin bekor qildi'),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin-sales-m'] }),
+    onSuccess: () => {
+      setCancelling(null);
+      void qc.invalidateQueries({ queryKey: ['admin-sales-m'] });
+    },
   });
 
   const rows = query.data?.results ?? [];
@@ -138,11 +144,7 @@ export function MobileAdminSales(): ReactElement {
                 <button
                   className="text-sm text-danger"
                   disabled={cancel.isPending}
-                  onClick={() => {
-                    if (window.confirm(`${s.number} bekor qilinsinmi?`)) {
-                      cancel.mutate(s.id);
-                    }
-                  }}
+                  onClick={() => setCancelling(s)}
                 >
                   Bekor qilish
                 </button>
@@ -173,6 +175,17 @@ export function MobileAdminSales(): ReactElement {
           </button>
         </div>
       )}
+      <ConfirmDialog
+        open={cancelling !== null}
+        title="Sotuvni bekor qilish"
+        confirmLabel="Bekor qilish"
+        danger
+        isPending={cancel.isPending}
+        onCancel={() => setCancelling(null)}
+        onConfirm={() => cancelling && cancel.mutate(cancelling.id)}
+      >
+        {cancelling?.number} sotuvi bekor qilinadi.
+      </ConfirmDialog>
     </div>
   );
 }
