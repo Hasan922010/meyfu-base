@@ -64,9 +64,20 @@ class SaleViewSet(BaseModelViewSet):
         "bulk_sync": (Role.DISTRIBUTOR,),
         "my_today": _READ,
     }
-    filterset_fields = ("distributor", "client", "status", "payment_type", "flagged")
-    search_fields = ("number", "client__name")
-    ordering_fields = ("date", "created_at", "total_amount")
+    filterset_fields = {
+        "distributor": ["exact"],
+        "client": ["exact"],
+        "status": ["exact"],
+        "payment_type": ["exact"],
+        "flagged": ["exact"],
+        "date": ["gte", "lte"],
+    }
+    search_fields = ("number", "client__name", "distributor__full_name")
+    # Admin jadvalidagi har bir ustun (UI: shared/table)
+    ordering_fields = (
+        "number", "date", "created_at", "client__name", "distributor__full_name",
+        "payment_type", "total_amount", "debt_amount", "status",
+    )
 
     def get_queryset(self) -> QuerySet[Sale]:
         qs = Sale.objects.select_related("distributor", "client").prefetch_related(
