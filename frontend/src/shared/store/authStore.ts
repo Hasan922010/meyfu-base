@@ -29,6 +29,14 @@ export const useAuthStore = create<AuthState>()(
   ),
 );
 
+// Boshqa tab tokenni almashtirsa (rotatsiya) yoki chiqsa — bu tab ham darhol biladi.
+// Aks holda bu tab eski, qora ro'yxatdagi refresh bilan urinib, hammani chiqarib yuborardi.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'meyfu-auth') void useAuthStore.persist.rehydrate();
+  });
+}
+
 export const authSelectors = {
   isAuthenticated: (s: AuthState): boolean => Boolean(s.access),
 };

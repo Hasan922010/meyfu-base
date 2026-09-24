@@ -112,6 +112,57 @@ describe('refresh token rotatsiyasi (UX: har ~30 daqiqada logout)', () => {
     });
   });
 
+  describe('Ikki tab — refresh token rotatsiyasi', () => {
+    /** Boshqa tab localStorage'ga yozgandek (zustand persist formati). */
+    function otherTabWrites(access: string, refresh: string): void {
+      const user = useAuthStore.getState().user;
+      localStorage.setItem(
+        'meyfu-auth',
+        JSON.stringify({ state: { access, refresh, user }, version: 0 }),
+      );
+    }
+
+    it('boshqa tab allaqachon yangilagan bo‘lsa, eski tokenni yubormaydi va yangisini ishlatadi', async () => {
+      // Arrange: bu tab xotirasida access-0/refresh-0; boshqa tab 5-juftlikka o'tgan
+      otherTabWrites('access-5', 'refresh-5');
+      api.defaults.adapter = fakeAdapter(() => 'access-5');
+      const post = vi.spyOn(axios, 'post');
+
+      // Act
+      await api.get('/x');
+
+      // Assert: eski (qora ro'yxatdagi) refresh-0 serverga umuman yuborilmadi
+      expect(post).not.toHaveBeenCalled();
+      expect(useAuthStore.getState().refresh).toBe('refresh-5');
+      expect(useAuthStore.getState().access).toBe('access-5');
+    });
+
+    it('refresh 401 bo‘lsa-yu, shu paytda boshqa tab almashtirgan bo‘lsa — sessiya saqlanadi', async () => {
+      api.defaults.adapter = fakeAdapter(() => 'access-7');
+      vi.spyOn(axios, 'post').mockImplementation(() => {
+        // Poyga: bizning so'rovimiz ketayotganda boshqa tab rotatsiyani yakunladi
+        otherTabWrites('access-7', 'refresh-7');
+        const err = new AxiosError('Unauthorized', 'ERR_BAD_REQUEST');
+        err.response = { data: {}, status: 401, statusText: '', headers: {}, config: {} as never };
+        return Promise.reject(err);
+      });
+
+      await api.get('/x');
+
+      expect(useAuthStore.getState().refresh).toBe('refresh-7');
+      expect(useAuthStore.getState().access).toBe('access-7');
+    });
+
+    it('boshqa tab yozganda (storage hodisasi) bu tab xotirasi yangilanadi', async () => {
+      otherTabWrites('access-9', 'refresh-9');
+
+      window.dispatchEvent(new StorageEvent('storage', { key: 'meyfu-auth' }));
+      await Promise.resolve();
+
+      expect(useAuthStore.getState().refresh).toBe('refresh-9');
+    });
+  });
+
   it('javobda refresh bo‘lmasa, eskisini saqlab qoladi', async () => {
     api.defaults.adapter = fakeAdapter(() => 'access-new');
     vi.spyOn(axios, 'post').mockResolvedValue({ data: { access: 'access-new' } });
