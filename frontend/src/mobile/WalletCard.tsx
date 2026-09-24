@@ -14,7 +14,6 @@ export function WalletCard(): ReactElement {
     refetchInterval: 60_000,
   });
 
-  const live = wallet.data?.live_balance ?? '0';
   const pending = Number(wallet.data?.pending_expense_amount ?? 0);
 
   return (
@@ -24,8 +23,20 @@ export function WalletCard(): ReactElement {
     >
       <div className="flex items-center gap-1.5 text-xs opacity-80">
         <Wallet size={14} aria-hidden /> Qo'limdagi pul
+        {wallet.isError && wallet.data && <span>· yangilanmadi</span>}
       </div>
-      <div className="mt-1 text-3xl font-bold">{money(live)}</div>
+      {/* Ma'lumot yo'q paytida "0 so'm" pul yo'qolgandek ko'rinardi (UX audit) */}
+      {wallet.data ? (
+        <div className="mt-1 text-3xl font-bold">{money(wallet.data.live_balance)}</div>
+      ) : wallet.isError ? (
+        <div className="mt-2 text-sm font-medium">
+          Balansni yuklab bo'lmadi — ochish uchun bosing
+        </div>
+      ) : (
+        <div className="mt-1 text-3xl font-bold opacity-60" aria-busy="true">
+          …
+        </div>
+      )}
       {pending > 0 && (
         <div className="mt-1 text-xs opacity-80">
           {money(wallet.data?.pending_expense_amount ?? '0')} tasdiqlanmagan xarajat
