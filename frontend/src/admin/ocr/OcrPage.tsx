@@ -38,6 +38,12 @@ const DECISION: Record<string, { text: string; cls: string; Icon: LucideIcon }> 
   },
 };
 
+/** "0.00000" -> "—", "0.01234" -> "$0.0123" (audit p5) */
+function usd(value: string): string {
+  const n = Number(value);
+  return !n ? '—' : `$${n.toFixed(4)}`;
+}
+
 export function OcrPage(): ReactElement {
   const [tab, setTab] = useState<'queue' | 'metrics'>('queue');
   const [uploadOpen, setUploadOpen] = useState<boolean>(false);
@@ -100,7 +106,7 @@ export function OcrPage(): ReactElement {
                   <th className="p-3">Raqam</th>
                   <th className="p-3">Yetkazuvchi</th>
                   <th className="p-3 text-right">Qatorlar</th>
-                  <th className="p-3 text-right">$</th>
+                  <th className="p-3 text-right">AI narxi</th>
                   <th className="p-3">Holat</th>
                   <th className="p-3" />
                 </tr>
@@ -121,7 +127,7 @@ export function OcrPage(): ReactElement {
                     </td>
                     <td className="p-3 text-right">{s.line_count}</td>
                     <td className="p-3 text-right text-xs text-gray-400">
-                      {s.cost_usd}
+                      {usd(s.cost_usd)}
                     </td>
                     <td className={`p-3 ${STATUS_CLASS[s.status] ?? ''}`}>
                       {s.status_display}
