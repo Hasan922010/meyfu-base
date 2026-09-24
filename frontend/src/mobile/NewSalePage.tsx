@@ -22,13 +22,7 @@ import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
 import { money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
-
-const PAY_LABEL: Record<string, string> = {
-  NAQD: 'Naqd',
-  PLASTIK: 'Plastik',
-  QARZ: 'Qarzga',
-  ARALASH: 'Aralash',
-};
+import { paymentLabel } from '@/shared/lib/labels';
 
 type Step = 'client' | 'items' | 'pay' | 'done';
 type PayType = 'NAQD' | 'PLASTIK' | 'QARZ' | 'ARALASH';
@@ -124,7 +118,7 @@ export function NewSalePage(): ReactElement {
         }),
         distributorName,
         clientName: client.name,
-        paymentLabel: PAY_LABEL[paymentType],
+        paymentLabel: paymentLabel(paymentType),
         lines: cart.map((l) => ({
           name: l.product_name,
           qty: l.quantity,
