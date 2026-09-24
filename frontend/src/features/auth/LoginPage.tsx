@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import { useRef, useState, type FormEvent, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { login } from '@/shared/api/auth';
 import { extractApiError } from '@/shared/api/client';
@@ -134,7 +134,13 @@ export function LoginPage(): ReactElement {
           {mutation.isPending ? t('auth.signingIn') : t('auth.signIn')}
         </button>
 
-        <p className="text-center text-xs text-gray-500">{t('auth.forgotHint')}</p>
+        <Link
+          to="/reset-password"
+          state={{ phone }}
+          className="block text-center text-sm text-brand hover:underline"
+        >
+          {t('auth.forgotLink')}
+        </Link>
 
         <LanguageSwitch compact />
       </form>

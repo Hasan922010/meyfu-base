@@ -14,6 +14,7 @@ import { SalesPage } from '@/admin/sales/SalesPage';
 import { StaffPage } from '@/admin/staff/StaffPage';
 import { WarehousePage } from '@/admin/warehouse/WarehousePage';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 
 // PERF-001: kam ochiladigan / og'ir admin sahifalari — alohida bo'lakda
 function lz(load: () => Promise<Record<string, unknown>>, name: string) {
@@ -109,6 +110,7 @@ function Lazy({ children }: { children: ReactElement }): ReactElement {
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/',
     element: (

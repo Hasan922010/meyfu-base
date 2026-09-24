@@ -15,7 +15,21 @@
     "passwordRequired": "Parolni kiriting",
     "showPassword": "Parolni ko'rsatish",
     "hidePassword": "Parolni yashirish",
-    "forgotHint": "Parolni unutdingizmi? Administratorga murojaat qiling — u yangi parol beradi."
+    "forgotLink": "Parolni unutdingizmi?",
+    "resetTitle": "Parolni tiklash",
+    "resetIntro": "Telefon raqamingizni kiriting — Telegram'ga 6 xonali kod yuboramiz.",
+    "sendCode": "Kod yuborish",
+    "sendingCode": "Yuborilmoqda...",
+    "codeSentHint": "Agar raqam Telegram'ga bog'langan bo'lsa, kod yuborildi. Kod kelmasa — administratorga murojaat qiling.",
+    "code": "Tasdiqlash kodi",
+    "codeInvalid": "6 xonali kodni kiriting",
+    "newPassword": "Yangi parol",
+    "passwordTooShort": "Parol kamida 8 belgidan iborat bo'lsin",
+    "savePassword": "Parolni saqlash",
+    "saving": "Saqlanmoqda...",
+    "resendCode": "Kodni qayta yuborish",
+    "resetDone": "Parol yangilandi. Endi yangi parol bilan kiring.",
+    "backToLogin": "Kirish sahifasiga qaytish"
   },
   "nav": {
     "dashboard": "Boshqaruv paneli",
