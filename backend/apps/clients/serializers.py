@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 
 from rest_framework import serializers
 
+from apps.users.models import User
+
 from .constants import WEEKDAYS
 from .models import Client, ClientVisit, Route
+
+_UZ_PHONE_RE = re.compile(r"\+998\d{9}")
 
 
 class RouteSerializer(serializers.ModelSerializer):
@@ -50,6 +55,24 @@ class ClientSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         )
         read_only_fields = ("id", "current_debt", "created_at", "updated_at")
+
+    def validate_phone(self, value: str) -> str:
+        return _clean_phone(value)
+
+    def validate_phone2(self, value: str) -> str:
+        return _clean_phone(value)
+
+
+def _clean_phone(value: str) -> str:
+    """Audit m2: "123" kabi qiymat saqlanmasin; "90 123-45-67" -> "+998901234567"."""
+    if not value:
+        return value
+    phone = User.normalize_phone(value)
+    if not _UZ_PHONE_RE.fullmatch(phone):
+        raise serializers.ValidationError(
+            "+998XXXXXXXXX ko'rinishida kiriting (masalan +998901234567)."
+        )
+    return phone
 
 
 class ClientOpeningDebtSerializer(serializers.Serializer):
