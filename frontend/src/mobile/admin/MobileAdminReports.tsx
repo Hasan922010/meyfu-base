@@ -5,13 +5,13 @@ import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
 import { reportsApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
 import { money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 function firstOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  return `${businessDateISO().slice(0, 8)}01`;
 }
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function MobileAdminReports(): ReactElement {

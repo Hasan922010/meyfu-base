@@ -10,6 +10,7 @@ import {
 } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
 import { money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 type Tab = 'query' | 'abc' | 'pnl';
 
@@ -44,12 +45,11 @@ const ABC_CLASS_STYLE: Record<string, string> = {
 };
 
 function firstOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  return `${businessDateISO().slice(0, 8)}01`;
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function ReportsPage(): ReactElement {

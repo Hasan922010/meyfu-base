@@ -9,6 +9,7 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { money, numberToWordsUz } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 interface Row {
   product: string;
@@ -19,7 +20,7 @@ interface Row {
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function MobileReceivePage(): ReactElement {

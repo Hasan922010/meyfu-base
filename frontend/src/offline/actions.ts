@@ -1,6 +1,7 @@
 import { db } from './db';
 import { enqueue } from './outbox';
 import { pushOutbox } from './sync';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 export interface LocalSaleLine {
   product: string;
@@ -22,7 +23,7 @@ export interface LocalSaleInput {
 }
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 /**
