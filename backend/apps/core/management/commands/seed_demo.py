@@ -78,9 +78,10 @@ class Command(BaseCommand):
         self._user(User, PHONE_ACCOUNTANT, "Barno Buxgalter", "ACCOUNTANT")
         DistributorProfile.objects.get_or_create(
             user=dist,
-            defaults={"base_salary": "3000000", "commission_percent": "5",
-                      "monthly_plan": "50000000", "debt_limit": "2000000",
-                      "daily_expense_limit": "300000"},
+            # Decimal — xotiradagi profil keyin servislarda solishtiriladi (str > Decimal xatosi)
+            defaults={"base_salary": Decimal("3000000"), "commission_percent": Decimal("5"),
+                      "monthly_plan": Decimal("50000000"), "debt_limit": Decimal("2000000"),
+                      "daily_expense_limit": Decimal("300000")},
         )
 
         # --- katalog ---

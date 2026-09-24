@@ -85,3 +85,16 @@ def test_seed_demo_creates_one_account_per_role(settings):
     assert set(User.objects.values_list("role", flat=True)) >= {
         "SUPER_ADMIN", "MANAGER", "WAREHOUSE", "DISTRIBUTOR", "ACCOUNTANT",
     }
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_demo_expenses(settings):
+    """seed_demo xarajatlarni jimgina o'tkazib yubormasin (str vs Decimal xatosi)."""
+    from apps.expenses.models import DistributorExpense
+
+    settings.DEBUG = True
+    err = StringIO()
+    call_command("seed_demo", stdout=StringIO(), stderr=err)
+
+    assert "o'tkazib yuborildi" not in err.getvalue()
+    assert DistributorExpense.objects.filter(description="Demo xarajat").count() == 3
