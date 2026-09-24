@@ -10,7 +10,26 @@
     "password": "Password",
     "signIn": "Sign in",
     "signingIn": "Signing in...",
-    "wrongCredentials": "Wrong phone or password"
+    "wrongCredentials": "Wrong phone or password",
+    "phoneRequired": "Enter your phone number",
+    "passwordRequired": "Enter your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "forgotLink": "Forgot your password?",
+    "resetTitle": "Reset password",
+    "resetIntro": "Enter your phone number — we'll send a 6-digit code to Telegram.",
+    "sendCode": "Send code",
+    "sendingCode": "Sending...",
+    "codeSentHint": "If this number is linked to Telegram, a code has been sent. No code? Ask your administrator.",
+    "code": "Verification code",
+    "codeInvalid": "Enter the 6-digit code",
+    "newPassword": "New password",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "savePassword": "Save password",
+    "saving": "Saving...",
+    "resendCode": "Resend code",
+    "resetDone": "Password updated. Sign in with your new password.",
+    "backToLogin": "Back to sign in"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -60,5 +79,13 @@
     "body": "An error occurred while loading the page. Please try again.",
     "retry": "Try again",
     "home": "Home"
+  },
+  "table": {
+    "search": "Search…",
+    "all": "All",
+    "clear": "Clear",
+    "sortHint": "Click to sort",
+    "count_one": "{{count}} row",
+    "count_other": "{{count}} rows"
   }
 }

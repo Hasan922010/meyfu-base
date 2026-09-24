@@ -277,9 +277,9 @@ def test_order_create_and_fulfill_via_api(admin_api, auth_api, agent, deliverer,
 @pytest.mark.django_db
 def test_360_card_has_orders_and_commission_split(admin_api, agent, deliverer,
                                                   van_stocked):
-    from django.utils import timezone
+    from apps.core.business_day import business_date
 
-    today = timezone.localdate()
+    today = business_date()
     period_start = today.replace(day=1)
     order = _make_order(van_stocked["client"], agent, van_stocked["product"],
                         qty="10", price="27000", day=today)
@@ -394,3 +394,45 @@ def test_offline_order_create_and_fulfill(auth_api, deliverer, van_stocked):
     assert ff.data["data"]["results"][0]["status"] == "SENT"
     order.refresh_from_db()
     assert order.status == OrderStatus.DELIVERED
+
+
+@pytest.mark.django_db
+def test_fulfill_distributor_override_ignored_for_distributor(
+    admin_api, auth_api, agent, distributor, van_stocked, routed_clients
+):
+    """H2 regressiya: tarqatuvchi `fulfill` da begona `distributor` yuborsa,
+    u e'tiborsiz qoldiriladi va sotuv chaqiruvchining o'ziga bog'lanadi —
+    aks holda boshqa tarqatuvchining qoldig'i/hamyoni manipulyatsiya qilinardi."""
+    from apps.sales.models import Sale
+
+    product = _product(van_stocked["product"])
+    create = auth_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(van_stocked["client"].id),
+            "taken_by": str(agent.id),
+            "items": [{"product": str(product.id), "quantity": "5", "price": "27000"}],
+            "payment_intent": "NAQD",
+        },
+        format="json",
+    )
+    assert create.status_code == 201, create.data
+    order_id = create.data["data"]["id"]
+    admin_api.post(f"/api/v1/orders/{order_id}/approve/")
+
+    order = Order.objects.get(pk=order_id)
+    ff = auth_api.post(
+        f"/api/v1/orders/{order_id}/fulfill/",
+        {
+            "lines": [
+                {"item": str(order.items.first().id), "delivered_quantity": "5"}
+            ],
+            "distributor": str(routed_clients["other_distributor"].id),
+            "payment_type": "NAQD",
+        },
+        format="json",
+    )
+    assert ff.status_code == 201, ff.data
+    sale = Sale.objects.get(order_id=order_id)
+    assert sale.distributor_id == distributor.id
+    assert sale.distributor_id != routed_clients["other_distributor"].id

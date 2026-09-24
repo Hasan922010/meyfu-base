@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CircleCheckBig, Search, X } from 'lucide-react';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { catalogApi } from '@/shared/api/catalog';
@@ -9,17 +9,18 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { money, numberToWordsUz } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
+import { withOnlyOption } from '@/shared/lib/select';
 
-interface Row {
-  product: string;
-  name: string;
-  unit: string;
-  quantity: string;
-  price: string;
-}
+import {
+  clearReceiveDraft,
+  loadReceiveDraft,
+  saveReceiveDraft,
+  type ReceiveDraftRow as Row,
+} from './receiveDraft';
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function MobileReceivePage(): ReactElement {
@@ -39,12 +40,20 @@ export function MobileReceivePage(): ReactElement {
     queryFn: () => catalogApi.products({ page_size: 1000, is_active: true }),
   });
 
-  const [supplier, setSupplier] = useState<string>('');
-  const [warehouse, setWarehouse] = useState<string>('');
-  const [invoice, setInvoice] = useState<string>('');
+  const [draft] = useState(loadReceiveDraft);
+  const [chosenSupplier, setSupplier] = useState<string>(draft?.supplier ?? '');
+  const [chosenWarehouse, setWarehouse] = useState<string>(draft?.warehouse ?? '');
+  const supplier = withOnlyOption(chosenSupplier, suppliers.data?.results);
+  const warehouse = withOnlyOption(chosenWarehouse, warehouses.data?.results);
+  const [invoice, setInvoice] = useState<string>(draft?.invoice ?? '');
   const [search, setSearch] = useState<string>('');
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<Row[]>(draft?.rows ?? []);
   const [done, setDone] = useState<string>('');
+
+  // Kiritilganlar sahifadan chiqib ketganda yo'qolmasin (audit K6)
+  useEffect(() => {
+    if (!done) saveReceiveDraft({ supplier, warehouse, invoice, rows });
+  }, [supplier, warehouse, invoice, rows, done]);
 
   const chosen = useMemo(() => new Set(rows.map((r) => r.product)), [rows]);
   const results = useMemo(() => {
@@ -83,6 +92,7 @@ export function MobileReceivePage(): ReactElement {
       }),
     onSuccess: (p) => {
       void qc.invalidateQueries({ queryKey: ['purchases'] });
+      clearReceiveDraft();
       setDone(p.number);
     },
   });
@@ -128,6 +138,7 @@ export function MobileReceivePage(): ReactElement {
         <div className="space-y-2">
           <select
             className="field"
+            aria-label="Yetkazib beruvchi"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
           >
@@ -140,6 +151,7 @@ export function MobileReceivePage(): ReactElement {
           </select>
           <select
             className="field"
+            aria-label="Ombor"
             value={warehouse}
             onChange={(e) => setWarehouse(e.target.value)}
           >
@@ -294,13 +306,17 @@ export function MobileReceivePage(): ReactElement {
         </p>
       )}
 
-      <button
-        className="btn-brand w-full"
-        disabled={!valid || save.isPending}
-        onClick={() => save.mutate()}
-      >
-        Qabulni saqlash
-      </button>
+      {/* Pastki menyu ustida yopishib turadi — aks holda tugma menyu orqasida qolib,
+          bosish menyuga tushar va kiritilgan qabul yo'qolar edi (audit K6) */}
+      <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-10 -mx-4 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+        <button
+          className="btn-brand w-full"
+          disabled={!valid || save.isPending}
+          onClick={() => save.mutate()}
+        >
+          Qabulni saqlash
+        </button>
+      </div>
     </div>
   );
 }

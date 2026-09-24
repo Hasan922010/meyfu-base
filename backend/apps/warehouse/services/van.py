@@ -11,6 +11,7 @@ from apps.core.exceptions import InsufficientStock
 
 from ..constants import LoadingStatus
 from ..models import LoadingItem, VanStock
+from .stock import _qty
 
 _ZERO = Decimal("0")
 
@@ -28,7 +29,7 @@ def van_apply(*, distributor, product: Product, quantity: Decimal) -> VanStock:
     if new_quantity < _ZERO:
         raise InsufficientStock(
             message=(
-                f"Mashinada «{product.name}» faqat {vs.quantity} "
+                f"Mashinada «{product.name}» faqat {_qty(vs.quantity)} "
                 f"{product.unit.short_name} bor"
             ),
             details={"available": str(vs.quantity), "requested": str(-quantity)},

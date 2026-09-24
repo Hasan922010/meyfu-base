@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 
 interface Props extends PropsWithChildren {
   open: boolean;
@@ -22,6 +22,7 @@ export function Modal({
   children,
   size = 'md',
 }: Props): ReactElement | null {
+  const titleId = useId();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -39,11 +40,16 @@ export function Modal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className={`mt-10 w-full ${WIDTH[size]} rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-900`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 id={titleId} className="text-lg font-semibold">
+            {title}
+          </h2>
           <button
             onClick={onClose}
             className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"

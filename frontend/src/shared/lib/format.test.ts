@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { dateShort, groupThousands, money, numberToWordsUz, qty } from './format';
+import {
+  amountDigits,
+  dateShort,
+  groupThousands,
+  money,
+  numberToWordsUz,
+  plainQty,
+  qty,
+} from './format';
 
 describe('groupThousands', () => {
   it('3 xonadan bo‘sh joy bilan ajratadi', () => {
@@ -66,5 +74,27 @@ describe('dateShort', () => {
 
   it('noto‘g‘ri sanada xom qiymat', () => {
     expect(dateShort('salom')).toBe('salom');
+  });
+});
+
+describe('amountDigits', () => {
+  it('serverdan kelgan decimal summaning kasr qismini tashlaydi (x100 bo‘lib ketmaydi)', () => {
+    expect(amountDigits('30000.00')).toBe('30000');
+    expect(amountDigits('2500000.50')).toBe('2500000');
+  });
+
+  it('foydalanuvchi yozgan guruhlangan raqamdan faqat raqamlarni qoldiradi', () => {
+    expect(amountDigits('1 250 000')).toBe('1250000');
+    expect(amountDigits('-150000')).toBe('150000');
+    expect(amountDigits('')).toBe('');
+  });
+});
+
+describe('plainQty', () => {
+  it('input uchun ortiqcha kasr nollarini oladi', () => {
+    expect(plainQty('1.000')).toBe('1');
+    expect(plainQty('20.000')).toBe('20');
+    expect(plainQty('2.500')).toBe('2.5');
+    expect(plainQty('')).toBe('');
   });
 });

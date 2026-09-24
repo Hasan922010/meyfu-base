@@ -4,8 +4,9 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db import transaction
-from django.utils import timezone
 
+from apps.core.business_day import business_date
+from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog
 from apps.finance.constants import CashTxType
 from apps.wallet.constants import TransactionType
@@ -18,7 +19,7 @@ _ZERO = Decimal("0")
 
 @transaction.atomic
 def create_advance(*, distributor, amount: Decimal, date=None, note: str = "", user=None):
-    date = date or timezone.localdate()
+    date = date or business_date()
     if amount <= _ZERO:
         raise ValueError("amount musbat bo'lishi kerak")
 
@@ -65,6 +66,6 @@ def create_advance(*, distributor, amount: Decimal, date=None, note: str = "", u
 
     notify(
         distributor, type="advance.created", title="Avans berildi",
-        body=f"{amount} so'm", data={"advance_id": str(advance.id)},
+        body=fmt_money(amount), data={"advance_id": str(advance.id)},
     )
     return advance

@@ -217,3 +217,46 @@ def test_purchase_updates_product_cost_and_price_history(manager_api, catalog, w
     prod.refresh_from_db()
     assert prod.cost_price == Decimal("22000.00")
     assert prod.price_history.count() == 1
+
+
+@pytest.mark.django_db
+def test_reserve_error_names_product_and_plain_quantities(stocked):
+    """Audit K5: xabarda mahsulot nomi, miqdorlar ortiqcha kasr nolsiz."""
+    from decimal import Decimal
+
+    from apps.core.exceptions import InsufficientStock
+    from apps.warehouse.services import reserve_stock
+
+    product, warehouse = stocked["product"], stocked["warehouse"]
+    with pytest.raises(InsufficientStock) as exc:
+        reserve_stock(warehouse=warehouse, product=product, quantity=Decimal("999999"))
+
+    message = str(exc.value.detail)
+    assert product.name in message
+    assert "999999" in message
+    assert ".000" not in message
+
+
+@pytest.mark.django_db
+def test_stock_list_includes_unit_and_low_level(manager_api, stocked):
+    """Audit m9: telefondagi qoldiq ro'yxati birlik va kam qoldiq chegarasini ko'rsata olsin."""
+    resp = manager_api.get("/api/v1/stock/")
+    assert resp.status_code == 200
+    row = resp.data["data"]["results"][0]
+    product = stocked["product"]
+    product.refresh_from_db()
+    assert row["product_unit"] == product.unit.short_name
+    assert row["min_stock_alert"] is not None
+
+
+@pytest.mark.django_db
+def test_stock_list_has_stable_order(manager_api, stocked):
+    """Tartibsiz sahifalash sahifalar orasida qatorlarni takrorlashi/yo'qotishi mumkin."""
+    import warnings
+
+    from django.core.paginator import UnorderedObjectListWarning
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UnorderedObjectListWarning)
+        resp = manager_api.get("/api/v1/stock/")
+    assert resp.status_code == 200

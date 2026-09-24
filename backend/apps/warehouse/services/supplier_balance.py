@@ -8,7 +8,8 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Sum
-from django.utils import timezone
+
+from apps.core.business_day import business_date
 
 from ..models import Supplier, SupplierTransaction
 
@@ -36,7 +37,7 @@ def supplier_apply(
 
     return SupplierTransaction.objects.create(
         supplier=supplier,
-        date=date or timezone.localdate(),
+        date=date or business_date(),
         transaction_type=transaction_type,
         amount=amount,
         balance_after=new_balance,

@@ -177,6 +177,7 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 | `seed_demo` — MANAGER | `+998901000000` | `demo12345` |
 | `seed_demo` — WAREHOUSE | `+998902000000` | `demo12345` |
 | `seed_demo` — DISTRIBUTOR | `+998903000000` | `demo12345` |
+| `seed_demo` — ACCOUNTANT | `+998904000000` | `demo12345` |
 
 > ⚠️ Login maydoniga telefonни **probel va tiresiz** kiriting: `+998900000000`.
 > `seed_demo --fresh` demo foydalanuvchilarni qayta yaratadi.
@@ -184,6 +185,17 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 > **Ishlab chiqarishda** standart parol yo'q: `ensure_superuser` faqat `.env` dagi
 > `DJANGO_SUPERUSER_PHONE` + `DJANGO_SUPERUSER_PASSWORD` bo'lsa admin yaratadi
 > (parol Django validatorlaridan o'tishi shart); `seed_demo` `--force` talab qiladi.
+
+### Parolni tiklash
+
+Login sahifasidagi **"Parolni unutdingizmi?"** → `/reset-password`: telefon raqami →
+Telegram'ga 6 xonali kod → kod + yangi parol. Faqat Telegram'ga bog'langan faol xodimlar
+uchun ishlaydi (`TELEGRAM_BOT_TOKEN` sozlangan bo'lishi shart); qolganlar parolni
+administratordan oladi.
+
+- API: `POST /api/v1/auth/password-reset/request/` → `.../confirm/`
+- Kod 10 daqiqa amal qiladi, 5 ta noto'g'ri urinishdan keyin bloklanadi, qayta so'rash — 1 daqiqada bir marta
+- Kod bazada faqat HMAC xesh sifatida saqlanadi; muvaffaqiyatli tiklashda barcha sessiyalar yopiladi va `AuditLog` ga `user.password_reset` yoziladi
 
 ---
 
@@ -252,7 +264,7 @@ docs/                deploy.md, restore.md, security.md, performance.md, pilot.m
 frontend/src/
   app/               router (rol bo'yicha admin / mobil layout), providers
   shared/            api (axios interceptor + crud), store (auth), components, lib, types
-  features/auth/     LoginPage
+  features/auth/     LoginPage, ResetPasswordPage
   admin/             AdminLayout, Dashboard (real-time), products/, warehouse/, clients/,
                      routes/, sales/, orders/, dayclose/, expenses/, finance/, ocr/,
                      payroll/, distributors/ (360° karta), reports/, system/, SettingsPage
@@ -284,7 +296,7 @@ frontend/src/
 
 ## Xavfsizlik
 
-- Rate limiting: `anon 30/min`, `user 1000/min`, `login 10/min`, `ocr 20/min`
+- Rate limiting: `anon 30/min`, `user 1000/min`, `login 10/min`, `password_reset 5/min`, `ocr 20/min`
 - JWT: access 15 min + refresh rotatsiya · prod: HSTS, secure cookie, JSON-only API
 - `python manage.py check --deploy` — 0 ogohlantirish
 - `.env` git'da yo'q · media fayllarga rolli kirish · HTTPS majburiy (prod)

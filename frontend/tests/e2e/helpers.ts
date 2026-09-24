@@ -5,6 +5,7 @@ export const USERS = {
   admin: { phone: '+998900000000', password: 'Hasanali.0220' },
   manager: { phone: '+998901000000', password: 'demo12345' },
   distributor: { phone: '+998903000000', password: 'demo12345' },
+  accountant: { phone: '+998904000000', password: 'demo12345' },
 } as const;
 
 export async function login(

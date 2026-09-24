@@ -3,10 +3,12 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
+import type { Loading } from '@/shared/types/warehouse';
 
 import { LoadingForm } from './LoadingForm';
 import { PdfButtons } from './PdfButtons';
@@ -25,6 +27,9 @@ export function LoadingsTab(): ReactElement {
     role === 'WAREHOUSE' || role === 'MANAGER' || role === 'SUPER_ADMIN';
 
   const [creating, setCreating] = useState<boolean>(false);
+  const [editing, setEditing] = useState<Loading | null>(null);
+  // DRAFT — o'chiriladi; SENT — band qilingan qoldiq bo'shatilib qoralamaga qaytadi
+  const [cancelling, setCancelling] = useState<Loading | null>(null);
 
   const query = useQuery({
     queryKey: ['loadings'],
@@ -39,7 +44,17 @@ export function LoadingsTab(): ReactElement {
     },
   });
 
+  const cancel = useMutation({
+    mutationFn: (id: string) => warehouseApi.cancelLoading(id),
+    onSuccess: () => {
+      setCancelling(null);
+      void qc.invalidateQueries({ queryKey: ['loadings'] });
+      void qc.invalidateQueries({ queryKey: ['stock'] });
+    },
+  });
+
   const rows = query.data?.results ?? [];
+  const isDraftCancel = cancelling?.status === 'DRAFT';
 
   return (
     <div className="space-y-3">
@@ -54,6 +69,11 @@ export function LoadingsTab(): ReactElement {
       {send.isError && (
         <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {extractApiError(send.error)}
+        </p>
+      )}
+      {cancel.isError && (
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          {extractApiError(cancel.error)}
         </p>
       )}
 
@@ -91,18 +111,39 @@ export function LoadingsTab(): ReactElement {
                   <td className="p-3">
                     <div className="flex items-center justify-end gap-2">
                       {canWrite && l.status === 'DRAFT' && (
-                        <button
-                          className="btn-brand px-3 py-1 text-xs"
-                          disabled={send.isPending}
-                          onClick={() => send.mutate(l.id)}
-                        >
-                          Yuborish
-                        </button>
+                        <>
+                          <button className="btn px-3 py-1 text-xs" onClick={() => setEditing(l)}>
+                            Tahrirlash
+                          </button>
+                          <button
+                            className="btn px-3 py-1 text-xs text-danger"
+                            onClick={() => setCancelling(l)}
+                          >
+                            O'chirish
+                          </button>
+                          <button
+                            className="btn-brand px-3 py-1 text-xs"
+                            disabled={send.isPending}
+                            onClick={() => send.mutate(l.id)}
+                          >
+                            Yuborish
+                          </button>
+                        </>
                       )}
                       {l.status === 'SENT' && (
-                        <span className="text-xs text-gray-400">
-                          tasdiqlash kutilmoqda
-                        </span>
+                        <>
+                          <span className="text-xs text-gray-400">
+                            tasdiqlash kutilmoqda
+                          </span>
+                          {canWrite && (
+                            <button
+                              className="btn px-3 py-1 text-xs"
+                              onClick={() => setCancelling(l)}
+                            >
+                              Qaytarib olish
+                            </button>
+                          )}
+                        </>
                       )}
                       <PdfButtons
                         fetchPdf={(stamp) => warehouseApi.loadingPdf(l.id, stamp)}
@@ -124,6 +165,29 @@ export function LoadingsTab(): ReactElement {
       >
         <LoadingForm onDone={() => setCreating(false)} />
       </Modal>
+
+      <Modal
+        open={editing !== null}
+        title={editing ? `Yuklama ${editing.number}` : ''}
+        size="xl"
+        onClose={() => setEditing(null)}
+      >
+        {editing && <LoadingForm loading={editing} onDone={() => setEditing(null)} />}
+      </Modal>
+
+      <ConfirmDialog
+        open={cancelling !== null}
+        title={isDraftCancel ? "Qoralamani o'chirish" : 'Yuklamani qaytarib olish'}
+        confirmLabel={isDraftCancel ? "O'chirish" : 'Qaytarib olish'}
+        danger={isDraftCancel}
+        isPending={cancel.isPending}
+        onCancel={() => setCancelling(null)}
+        onConfirm={() => cancelling && cancel.mutate(cancelling.id)}
+      >
+        {isDraftCancel
+          ? `${cancelling?.number} qoralamasi butunlay o'chiriladi.`
+          : `${cancelling?.number} tarqatuvchidan qaytarib olinadi va qoralamaga aylanadi. Band qilingan qoldiq omborga qaytadi.`}
+      </ConfirmDialog>
     </div>
   );
 }

@@ -8,20 +8,14 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { staffApi } from '@/shared/api/users';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
+import { ROLE_LABELS } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role, User } from '@/shared/types/api';
 
 import { StaffForm } from './StaffForm';
-
-const ROLE_LABEL: Record<Role, string> = {
-  SUPER_ADMIN: 'Super admin',
-  MANAGER: 'Menejer',
-  WAREHOUSE: 'Omborchi',
-  DISTRIBUTOR: 'Tarqatuvchi',
-  ACCOUNTANT: 'Buxgalter',
-};
 
 export function StaffPage(): ReactElement {
   const qc = useQueryClient();
@@ -53,9 +47,13 @@ export function StaffPage(): ReactElement {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
   });
 
+  const [deleting, setDeleting] = useState<User | null>(null);
   const del = useMutation({
     mutationFn: (id: string) => staffApi.remove(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
+    onSuccess: () => {
+      setDeleting(null);
+      void qc.invalidateQueries({ queryKey: ['staff'] });
+    },
   });
 
   const rows = query.data?.results ?? [];
@@ -96,9 +94,9 @@ export function StaffPage(): ReactElement {
           }}
         >
           <option value="">Barcha rollar</option>
-          {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
+          {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
             <option key={r} value={r}>
-              {ROLE_LABEL[r]}
+              {ROLE_LABELS[r]}
             </option>
           ))}
         </select>
@@ -153,7 +151,7 @@ export function StaffPage(): ReactElement {
                 >
                   <td className="p-3 font-medium">{u.full_name}</td>
                   <td className="p-3 font-mono text-xs">{u.phone}</td>
-                  <td className="p-3">{ROLE_LABEL[u.role]}</td>
+                  <td className="p-3">{ROLE_LABELS[u.role]}</td>
                   <td className="p-3">
                     {u.distributor_profile
                       ? `${u.distributor_profile.commission_percent}%`
@@ -187,15 +185,7 @@ export function StaffPage(): ReactElement {
                             <button
                               className="text-danger hover:underline"
                               disabled={del.isPending}
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `"${u.full_name}" xodimini o'chirasizmi?`,
-                                  )
-                                ) {
-                                  del.mutate(u.id);
-                                }
-                              }}
+                              onClick={() => setDeleting(u)}
                             >
                               O'chirish
                             </button>
@@ -249,6 +239,17 @@ export function StaffPage(): ReactElement {
           }}
         />
       </Modal>
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Xodimni o'chirish"
+        confirmLabel="O'chirish"
+        danger
+        isPending={del.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && del.mutate(deleting.id)}
+      >
+        «{deleting?.full_name}» xodimi o'chiriladi.
+      </ConfirmDialog>
     </div>
   );
 }

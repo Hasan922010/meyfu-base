@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 
+from apps.core.business_day import business_date
 from apps.users.constants import Role
 
 from .send import tg_send, tg_send_admins
@@ -18,7 +18,7 @@ def _fmt(n) -> str:
 def build_today_summary(day=None) -> str:
     from apps.reports.services import dashboard
 
-    day = day or timezone.localdate()
+    day = day or business_date()
     d = dashboard(day=day)
     k = d["kpi"]
     lines = [
@@ -92,7 +92,7 @@ def send_morning_loading_reminder() -> int:
     """Ertalab — bugungi tasdiqlangan yuklamasi bor tarqatuvchilarga."""
     from apps.warehouse.models import Loading
 
-    today = timezone.localdate()
+    today = business_date()
     sent = 0
     loadings = Loading.objects.filter(
         date=today, status__in=["CONFIRMED", "SENT"],
@@ -116,7 +116,7 @@ def send_evening_dayclose_reminder() -> int:
     from apps.warehouse.models import Loading
 
     User = get_user_model()
-    today = timezone.localdate()
+    today = business_date()
 
     active_distributor_ids = set(
         Loading.objects.filter(

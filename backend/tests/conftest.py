@@ -146,14 +146,13 @@ def van_stocked(db, stocked, distributor, routed_clients):
     marshrutdagi mijoz."""
     from decimal import Decimal
 
-    from django.utils import timezone
-
+    from apps.core.business_day import business_date
     from apps.warehouse.models import Loading, LoadingItem
     from apps.warehouse.services import confirm_loading, send_loading
     from apps.warehouse.services.loading import assign_number
 
     loading = Loading.objects.create(
-        date=timezone.localdate(),
+        date=business_date(),
         distributor=distributor,
         warehouse=stocked["warehouse"],
     )

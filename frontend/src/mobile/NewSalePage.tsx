@@ -5,46 +5,32 @@ import {
   CalendarClock,
   CircleCheckBig,
   CreditCard,
-  Minus,
-  Plus,
   Split,
-  X,
 } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { saveSaleLocal, type LocalSaleLine } from '@/offline/actions';
+import { saveSaleLocal } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
-import { getCurrentCoords } from '@/mobile/geo';
+import { usePrefetchedCoords } from '@/mobile/geo';
+import type { CartLine } from '@/mobile/lib/cart';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
+import { SaleProductList } from '@/mobile/SaleProductList';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
 import { money } from '@/shared/lib/format';
-
-const PAY_LABEL: Record<string, string> = {
-  NAQD: 'Naqd',
-  PLASTIK: 'Plastik',
-  QARZ: 'Qarzga',
-  ARALASH: 'Aralash',
-};
+import { businessDateISO } from '@/shared/lib/businessDay';
+import { paymentLabel } from '@/shared/lib/labels';
 
 type Step = 'client' | 'items' | 'pay' | 'done';
 type PayType = 'NAQD' | 'PLASTIK' | 'QARZ' | 'ARALASH';
 type PayMode = 'choose' | 'QARZ' | 'ARALASH';
 
 function plusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return businessDateISO(days);
 }
-
-interface CartLine extends LocalSaleLine {
-  max: number;
-}
-
-const QUICK = [1, 3, 5, 10, 12, 20];
 
 export function NewSalePage(): ReactElement {
   const navigate = useNavigate();
@@ -58,15 +44,14 @@ export function NewSalePage(): ReactElement {
 
   const [clientId, setClientId] = useState<string>('');
   const [clientSearch, setClientSearch] = useState<string>('');
-  const [productSearch, setProductSearch] = useState<string>('');
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [qty, setQty] = useState<number>(1);
-  const [picked, setPicked] = useState<string>('');
-  const [pickedPrice, setPickedPrice] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
   const [payMode, setPayMode] = useState<PayMode>('choose');
   const [dueDate, setDueDate] = useState<string>(plusDays(14));
   const [cashPart, setCashPart] = useState<string>('');
+  const [notice, setNotice] = useState<string>('');
+  // Mijoz tanlanganda GPS boshlanadi — saqlash uni uzoq kutmaydi (UX m3)
+  const coordsForSave = usePrefetchedCoords(clientId !== '');
 
   const client = clients.find((c) => c.id === clientId);
   const total = useMemo(
@@ -77,11 +62,7 @@ export function NewSalePage(): ReactElement {
   const filteredClients = clients.filter((c) =>
     c.name.toLowerCase().includes(clientSearch.toLowerCase()),
   );
-  const availableProducts = van.filter(
-    (v) =>
-      v.quantity > 0 &&
-      v.product_name.toLowerCase().includes(productSearch.toLowerCase()),
-  );
+  const itemCount = cart.reduce((s, l) => s + l.quantity, 0);
 
   const products = useLiveQuery(() => db.products.toArray(), [], []);
   const thumbById = useMemo(
@@ -94,29 +75,6 @@ export function NewSalePage(): ReactElement {
     return p?.wholesale_price ?? '';
   }
 
-  function addToCart(): void {
-    const vs = van.find((v) => v.product === picked);
-    const price = Number(pickedPrice || suggestedPrice(picked));
-    if (!vs || qty <= 0 || price <= 0) return;
-    setCart((prev) => {
-      const rest = prev.filter((l) => l.product !== picked);
-      return [
-        ...rest,
-        {
-          product: vs.product,
-          product_name: vs.product_name,
-          quantity: Math.min(vs.quantity, qty),
-          price,
-          max: vs.quantity,
-        },
-      ];
-    });
-    setPicked('');
-    setPickedPrice('');
-    setQty(1);
-    setProductSearch('');
-  }
-
   async function save(
     paymentType: PayType,
     opts?: { paidAmount?: number; dueDate?: string },
@@ -124,7 +82,7 @@ export function NewSalePage(): ReactElement {
     if (!client || cart.length === 0) return;
     setSaving(true);
     try {
-      const coords = await getCurrentCoords();
+      const coords = await coordsForSave();
       const needsDue = paymentType === 'QARZ' || paymentType === 'ARALASH';
       const due = needsDue ? (opts?.dueDate ?? dueDate) : null;
       const uuid = await saveSaleLocal({
@@ -160,7 +118,7 @@ export function NewSalePage(): ReactElement {
         }),
         distributorName,
         clientName: client.name,
-        paymentLabel: PAY_LABEL[paymentType],
+        paymentLabel: paymentLabel(paymentType),
         lines: cart.map((l) => ({
           name: l.product_name,
           qty: l.quantity,
@@ -183,6 +141,7 @@ export function NewSalePage(): ReactElement {
     setStep('client');
     setClientId('');
     setCart([]);
+    setNotice('');
     setClientSearch('');
     setReceipt(null);
   }
@@ -259,128 +218,59 @@ export function NewSalePage(): ReactElement {
         </div>
       )}
 
-      {/* STEP: items */}
+      {/* STEP: items — UX M4: tovarlar darhol, qatorga bosish = +1, Naqd pastda */}
       {step === 'items' && (
         <div className="space-y-3">
-          <div className="text-sm text-gray-500">Mijoz: {client?.name}</div>
-
-          <input
-            className="field"
-            placeholder="Tovar qidirish…"
-            value={productSearch}
-            onChange={(e) => setProductSearch(e.target.value)}
-          />
-          {productSearch && !picked && (
-            <ul className="max-h-48 space-y-1 overflow-y-auto">
-              {availableProducts.slice(0, 20).map((p) => (
-                <li key={p.product}>
-                  <button
-                    className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
-                    onClick={() => setPicked(p.product)}
-                  >
-                    {thumbById.get(p.product) ? (
-                      <img
-                        src={thumbById.get(p.product) ?? ''}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
-                    )}
-                    <span className="flex-1">{p.product_name}</span>
-                    <span className="text-gray-400">
-                      {p.quantity} {p.unit}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {picked && (
-            <div className="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
-              <div className="font-medium">
-                {van.find((v) => v.product === picked)?.product_name}
-              </div>
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  aria-label="Kamaytirish"
-                >
-                  <Minus size={22} aria-hidden />
-                </button>
-                <span className="w-16 text-center text-2xl font-bold">{qty}</span>
-                <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-                  onClick={() => setQty((q) => q + 1)}
-                  aria-label="Ko'paytirish"
-                >
-                  <Plus size={22} aria-hidden />
-                </button>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {QUICK.map((n) => (
-                  <button
-                    key={n}
-                    className="min-w-[44px] rounded-lg bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-800"
-                    onClick={() => setQty(n)}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <input
-                className="field"
-                type="number"
-                inputMode="decimal"
-                placeholder={`Narx (taxminan ${suggestedPrice(picked)})`}
-                value={pickedPrice}
-                onChange={(e) => setPickedPrice(e.target.value)}
-              />
-              <button
-                className="btn-brand w-full"
-                disabled={Number(pickedPrice || suggestedPrice(picked)) <= 0}
-                onClick={addToCart}
-              >
-                Savatga qo'shish
-              </button>
-            </div>
-          )}
-
-          {cart.length > 0 && (
-            <ul className="divide-y divide-gray-100 rounded-xl bg-white text-sm shadow-sm dark:divide-gray-800 dark:bg-gray-900">
-              {cart.map((l) => (
-                <li key={l.product} className="flex justify-between p-3">
-                  <span>
-                    {l.product_name} · {l.quantity} × {money(l.price)}
-                  </span>
-                  <button
-                    className="text-danger"
-                    onClick={() =>
-                      setCart((prev) => prev.filter((x) => x.product !== l.product))
-                    }
-                    aria-label="O'chirish"
-                  >
-                    <X size={16} aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">Jami</span>
-            <span className="text-lg font-bold">{money(total)}</span>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">
+              Mijoz: <span className="font-medium text-gray-900 dark:text-gray-100">{client?.name}</span>
+            </span>
+            <button className="text-brand underline" onClick={() => setStep('client')}>
+              Mijozni almashtirish
+            </button>
           </div>
 
-          <button
-            className="btn-brand w-full"
-            disabled={cart.length === 0 || cart.some((l) => l.price <= 0)}
-            onClick={() => setStep('pay')}
-          >
-            To'lovga o'tish
-          </button>
+          <SaleProductList
+            van={van}
+            cart={cart}
+            priceOf={(id) => Number(suggestedPrice(id) || 0)}
+            thumbOf={(id) => thumbById.get(id)}
+            onChange={(next, message) => {
+              setCart(next);
+              setNotice(message);
+            }}
+          />
+
+          {/* Pastdagi panel ro'yxatning oxirini yopmasligi uchun joy */}
+          <div className="h-32" aria-hidden />
+
+          <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md space-y-2 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+            {notice && (
+              <p role="status" className="rounded-lg bg-pending/10 px-3 py-1.5 text-sm text-pending">
+                {notice}
+              </p>
+            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Jami ({itemCount} dona)</span>
+              <span className="text-lg font-bold">{money(total)}</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="btn flex flex-1 items-center justify-center gap-2 bg-success text-white"
+                disabled={saving || cart.length === 0}
+                onClick={() => void save('NAQD')}
+              >
+                <Banknote size={18} aria-hidden /> Naqd · {money(total)}
+              </button>
+              <button
+                className="btn px-3"
+                disabled={saving || cart.length === 0}
+                onClick={() => setStep('pay')}
+              >
+                Boshqa to'lov
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

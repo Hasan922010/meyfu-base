@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
+import { extractApiError } from '@/shared/api/client';
 import { walletApi } from '@/shared/api/finance';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money } from '@/shared/lib/format';
@@ -26,20 +27,43 @@ export function WalletPage(): ReactElement {
       <h1 className="text-xl font-bold">Hamyon</h1>
 
       <div className="rounded-2xl bg-gradient-to-br from-brand to-indigo-700 p-5 text-white">
-        <div className="text-xs opacity-80">Qo'limdagi pul</div>
-        <div className="mt-1 text-3xl font-bold">
-          {money(wallet.data?.live_balance ?? '0')}
+        <div className="text-xs opacity-80">
+          Qo'limdagi pul
+          {wallet.isError && wallet.data && ' · yangilanmadi'}
         </div>
-        <div className="mt-2 space-y-0.5 text-xs opacity-90">
-          <div className="flex justify-between">
-            <span>Rasmiy balans</span>
-            <span>{money(wallet.data?.balance ?? '0')}</span>
+        {/* Ma'lumot yo'q paytida "0 so'm" pul yo'qolgandek ko'rinardi (UX audit) */}
+        {wallet.data ? (
+          <>
+            <div className="mt-1 text-3xl font-bold">{money(wallet.data.live_balance)}</div>
+            <div className="mt-2 space-y-0.5 text-xs opacity-90">
+              <div className="flex justify-between">
+                <span>Rasmiy balans</span>
+                <span>{money(wallet.data.balance)}</span>
+              </div>
+              {Number(wallet.data.pending_expense_amount) > 0 && (
+                <div className="flex justify-between">
+                  <span>Tasdiqlanmagan xarajat</span>
+                  <span>−{money(wallet.data.pending_expense_amount)}</span>
+                </div>
+              )}
+            </div>
+          </>
+        ) : wallet.isError ? (
+          <div className="mt-2 space-y-2 text-sm">
+            <p className="font-medium">Balansni yuklab bo'lmadi.</p>
+            <p className="opacity-90">{extractApiError(wallet.error)}</p>
+            <button
+              className="rounded-lg bg-white/20 px-3 py-1.5 font-medium"
+              onClick={() => void wallet.refetch()}
+            >
+              Qayta urinish
+            </button>
           </div>
-          <div className="flex justify-between">
-            <span>Tasdiqlanmagan xarajat</span>
-            <span>−{money(wallet.data?.pending_expense_amount ?? '0')}</span>
+        ) : (
+          <div className="mt-1 text-3xl font-bold opacity-60" aria-busy="true">
+            …
           </div>
-        </div>
+        )}
       </div>
 
       <p className="text-xs text-gray-400">
@@ -50,6 +74,7 @@ export function WalletPage(): ReactElement {
       <DataState
         isLoading={txs.isLoading}
         isError={txs.isError}
+        error={txs.error}
         isEmpty={!txs.isLoading && (txs.data?.length ?? 0) === 0}
         emptyText="Hali tranzaksiya yo'q"
       >

@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
 import { AmountInput } from '@/shared/components/AmountInput';
-import { applyServerFieldErrors } from '@/shared/lib/formErrors';
-import type { Client, ClientInput } from '@/shared/types/clients';
+import { applyServerErrors } from '@/shared/lib/formErrors';
+import { useToast } from '@/shared/lib/toast';
+import type { Client, ClientInput, Route } from '@/shared/types/clients';
 
 const TYPES: Array<{ value: string; label: string }> = [
   { value: 'SHOP', label: "Do'kon" },
@@ -16,24 +16,42 @@ const TYPES: Array<{ value: string; label: string }> = [
   { value: 'OTHER', label: 'Boshqa' },
 ];
 
-export function ClientForm({
-  client,
-  onDone,
-}: {
+interface Props {
   client: Client | null;
   onDone: () => void;
-}): ReactElement {
-  const qc = useQueryClient();
+}
+
+export function ClientForm({ client, onDone }: Props): ReactElement {
   const routes = useQuery({
     queryKey: ['routes'],
     queryFn: () => clientsApi.routes({ page_size: 200 }),
   });
+  // Forma marshrutlar kelgach mount qilinadi — aks holda tahrirda marshrut
+  // select'i option'siz bo'lib, mijozning marshruti bo'sh ko'rinadi (audit m2, K8 kabi)
+  if (routes.isError) {
+    return (
+      <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+        Marshrutlarni yuklab bo'lmadi. Oynani yopib, qayta oching.
+      </p>
+    );
+  }
+  if (!routes.data) {
+    return <p className="py-6 text-center text-sm text-gray-500">Yuklanmoqda…</p>;
+  }
+  return <ClientFormFields client={client} onDone={onDone} routes={routes.data.results} />;
+}
+
+function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] }): ReactElement {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
   const {
     register,
     control,
     handleSubmit,
     setError,
+    watch,
     formState: { errors },
   } = useForm<ClientInput>({
     defaultValues: client
@@ -56,13 +74,15 @@ export function ClientForm({
   const mutation = useMutation({
     mutationFn: (values: ClientInput) => {
       const body: ClientInput = { ...values, route: values.route || null };
-      return client
-        ? clientsApi.update(client.id, body)
-        : clientsApi.create(body);
+      // Bo'sh limit = "qarzga berilmaydi": serverning standart 0 qiymati qoladi
+      if (!body.debt_limit) delete body.debt_limit;
+      return client ? clientsApi.update(client.id, body) : clientsApi.create(body);
     },
-    onError: (err) => applyServerFieldErrors(err, setError),
+    onMutate: () => setGeneralError(null),
+    onError: (err) => setGeneralError(applyServerErrors(err, setError)),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['clients'] });
+      toast.push({ kind: 'success', title: 'Mijoz saqlandi' });
       onDone();
     },
   });
@@ -77,7 +97,7 @@ export function ClientForm({
       <div className="grid grid-cols-2 gap-3">
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Do'kon nomi *</span>
-          <input className="field" {...register('name', { required: true })} />
+          <input className="field" {...register('name', { required: "Do'kon nomini kiriting" })} />
           {errors.name?.message && (
             <span className="text-xs text-danger">{errors.name.message}</span>
           )}
@@ -106,36 +126,52 @@ export function ClientForm({
         <label className="block space-y-1">
           <span className="text-sm font-medium">Qo'shimcha telefon</span>
           <input className="field" {...register('phone2')} />
+          {errors.phone2?.message && (
+            <span className="text-xs text-danger">{errors.phone2.message}</span>
+          )}
         </label>
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Manzil</span>
           <input className="field" {...register('address')} />
         </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Marshrut</span>
-          <select className="field" {...register('route')}>
-            <option value="">—</option>
-            {routes.data?.results.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Qarz limiti</span>
-          <Controller
-            name="debt_limit"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-              />
-            )}
-          />
-        </label>
+        <div className="space-y-1">
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Marshrut</span>
+            <select className="field" {...register('route')}>
+              <option value="">—</option>
+              {routes.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {!watch('route') && (
+            <p className="text-xs text-pending">
+              Marshrutsiz mijoz hech bir tarqatuvchiga ko‘rinmaydi.
+            </p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Qarz limiti</span>
+            <Controller
+              name="debt_limit"
+              control={control}
+              render={({ field }) => (
+                <AmountInput
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  showWords={false}
+                />
+              )}
+            />
+          </label>
+          <p className="text-xs text-gray-400">Bo'sh yoki 0 — qarzga berilmaydi.</p>
+          {errors.debt_limit?.message && (
+            <p className="text-xs text-danger">{errors.debt_limit.message}</p>
+          )}
+        </div>
         <label className="block space-y-1">
           <span className="text-sm font-medium">INN / STIR</span>
           <input className="field" {...register('inn')} />
@@ -146,9 +182,9 @@ export function ClientForm({
         </label>
       </div>
 
-      {mutation.isError && (
+      {generalError && (
         <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          {extractApiError(mutation.error)}
+          {generalError}
         </p>
       )}
 
@@ -156,11 +192,7 @@ export function ClientForm({
         <button type="button" onClick={onDone} className="btn px-4">
           Bekor
         </button>
-        <button
-          type="submit"
-          className="btn-brand px-6"
-          disabled={mutation.isPending}
-        >
+        <button type="submit" className="btn-brand px-6" disabled={mutation.isPending}>
           Saqlash
         </button>
       </div>

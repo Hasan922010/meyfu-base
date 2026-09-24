@@ -7,6 +7,9 @@ import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
+
+import { CashTxModal } from './CashTxModal';
 
 const CATEGORIES = [
   { v: 'RENT', l: 'Ijara' },
@@ -18,18 +21,13 @@ const CATEGORIES = [
   { v: 'OTHER', l: 'Boshqa' },
 ];
 
-const CASH_TYPES = [
-  { v: 'OTHER_IN', l: 'Kirim (+)' },
-  { v: 'BANK_DEPOSIT', l: 'Bankka topshirish (−)' },
-  { v: 'SUPPLIER_PAYMENT', l: 'Yetkazib beruvchiga (−)' },
-  { v: 'OTHER_OUT', l: 'Chiqim (−)' },
-];
-
 export function FinancePage(): ReactElement {
   const qc = useQueryClient();
   const [tab, setTab] = useState<'overview' | 'cash' | 'company'>('overview');
   const [expModal, setExpModal] = useState<boolean>(false);
   const [cashModal, setCashModal] = useState<boolean>(false);
+  // Kassa va kompaniya xarajatini faqat SUPER_ADMIN/ACCOUNTANT yozadi (audit K3b)
+  const canWrite = useCan('cashWrite');
 
   const profit = useQuery({ queryKey: ['profit'], queryFn: () => financeApi.profit() });
   const account = useQuery({
@@ -115,9 +113,11 @@ export function FinancePage(): ReactElement {
               {money(account.data?.balance ?? '0')}
             </span>
           </div>
-          <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
-            + Kassa yozuvi
-          </button>
+          {canWrite && (
+            <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
+              + Kassa yozuvi
+            </button>
+          )}
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
             <DataState
               isLoading={cashTx.isLoading}
@@ -131,8 +131,10 @@ export function FinancePage(): ReactElement {
                     <th className="p-3">Sana</th>
                     <th className="p-3">Turi</th>
                     <th className="p-3">Kontragent</th>
+                    <th className="p-3">Izoh</th>
                     <th className="p-3 text-right">Summa</th>
                     <th className="p-3 text-right">Balans</th>
+                    <th className="p-3">Kim</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -144,6 +146,7 @@ export function FinancePage(): ReactElement {
                       <td className="p-3">{dateShort(t.date)}</td>
                       <td className="p-3">{t.type_display}</td>
                       <td className="p-3">{t.counterparty || '—'}</td>
+                      <td className="p-3 text-gray-500">{t.note || '—'}</td>
                       <td
                         className={`p-3 text-right font-medium ${
                           Number(t.amount) < 0 ? 'text-danger' : 'text-success'
@@ -155,6 +158,7 @@ export function FinancePage(): ReactElement {
                       <td className="p-3 text-right text-gray-400">
                         {money(t.balance_after)}
                       </td>
+                      <td className="p-3 text-gray-500">{t.created_by_name || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -166,9 +170,11 @@ export function FinancePage(): ReactElement {
 
       {tab === 'company' && (
         <div className="space-y-3">
-          <button className="btn-brand px-4" onClick={() => setExpModal(true)}>
-            + Kompaniya xarajati
-          </button>
+          {canWrite && (
+            <button className="btn-brand px-4" onClick={() => setExpModal(true)}>
+              + Kompaniya xarajati
+            </button>
+          )}
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
             <DataState
               isLoading={companyExp.isLoading}
@@ -220,6 +226,7 @@ export function FinancePage(): ReactElement {
       />
       <CashTxModal
         open={cashModal}
+        balance={account.data?.balance ?? '0'}
         onClose={() => setCashModal(false)}
         onDone={() => {
           void qc.invalidateQueries({ queryKey: ['cash-tx'] });
@@ -303,63 +310,6 @@ function CompanyExpenseModal({
           />
           Kassadan to'lansin
         </label>
-        {mutation.isError && (
-          <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-            {extractApiError(mutation.error)}
-          </p>
-        )}
-        <button
-          className="btn-brand w-full"
-          disabled={Number(amount) <= 0 || mutation.isPending}
-          onClick={() => mutation.mutate()}
-        >
-          Saqlash
-        </button>
-      </div>
-    </Modal>
-  );
-}
-
-function CashTxModal({
-  open,
-  onClose,
-  onDone,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onDone: () => void;
-}): ReactElement {
-  const [type, setType] = useState<string>('OTHER_IN');
-  const [amount, setAmount] = useState<string>('');
-  const [counterparty, setCounterparty] = useState<string>('');
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      financeApi.createCashTransaction({
-        transaction_type: type,
-        amount,
-        counterparty,
-      }),
-    onSuccess: onDone,
-  });
-
-  return (
-    <Modal open={open} title="Kassa yozuvi" onClose={onClose}>
-      <div className="space-y-3">
-        <select className="field" value={type} onChange={(e) => setType(e.target.value)}>
-          {CASH_TYPES.map((c) => (
-            <option key={c.v} value={c.v}>
-              {c.l}
-            </option>
-          ))}
-        </select>
-        <AmountInput value={amount} onChange={setAmount} showWords={false} />
-        <input
-          className="field"
-          placeholder="Kontragent (ixtiyoriy)"
-          value={counterparty}
-          onChange={(e) => setCounterparty(e.target.value)}
-        />
         {mutation.isError && (
           <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
             {extractApiError(mutation.error)}

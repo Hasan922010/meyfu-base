@@ -163,10 +163,11 @@ def _ocr_status() -> dict:
     }
 
 
-def system_status() -> dict:
+def system_status(*, deep: bool = True) -> dict:
+    """`deep=False` — celery ping'siz (u ~1–4 s oladi); sahifa avval shuni chizadi."""
     return {
         "generated_at": timezone.now().isoformat(),
-        "health": health_checks(deep=True),
+        "health": health_checks(deep=deep),
         "integrity": _last_integrity(),
         "backup": _backup_status(),
         "sync": _sync_status(),

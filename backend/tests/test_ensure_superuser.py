@@ -73,3 +73,28 @@ def test_seed_demo_refuses_without_force_when_not_debug(settings):
     with pytest.raises(CommandError, match="--force"):
         call_command("seed_demo")
     assert User.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_one_account_per_role(settings):
+    settings.DEBUG = True
+    call_command("seed_demo", stdout=StringIO())
+    accountant = User.objects.get(phone="+998904000000")
+    assert accountant.role == "ACCOUNTANT"
+    assert accountant.check_password("demo12345")
+    assert set(User.objects.values_list("role", flat=True)) >= {
+        "SUPER_ADMIN", "MANAGER", "WAREHOUSE", "DISTRIBUTOR", "ACCOUNTANT",
+    }
+
+
+@pytest.mark.django_db
+def test_seed_demo_creates_demo_expenses(settings):
+    """seed_demo xarajatlarni jimgina o'tkazib yubormasin (str vs Decimal xatosi)."""
+    from apps.expenses.models import DistributorExpense
+
+    settings.DEBUG = True
+    err = StringIO()
+    call_command("seed_demo", stdout=StringIO(), stderr=err)
+
+    assert "o'tkazib yuborildi" not in err.getvalue()
+    assert DistributorExpense.objects.filter(description="Demo xarajat").count() == 3

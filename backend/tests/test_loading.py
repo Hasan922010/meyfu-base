@@ -24,10 +24,10 @@ def _loading_payload(distributor, warehouse, product, qty="100"):
 
 
 def _make_loading(distributor, warehouse, product, qty="100"):
-    from django.utils import timezone
+    from apps.core.business_day import business_date
 
     loading = Loading.objects.create(
-        date=timezone.localdate(), distributor=distributor, warehouse=warehouse,
+        date=business_date(), distributor=distributor, warehouse=warehouse,
     )
     from apps.warehouse.models import LoadingItem
 
@@ -167,3 +167,32 @@ def test_distributor_sees_only_own_loadings(
 
     resp = auth_api.get("/api/v1/loadings/")
     assert resp.data["data"]["count"] == 1
+
+
+@pytest.mark.django_db
+def test_my_today_includes_unconfirmed_loading_from_earlier_day(auth_api, stocked, distributor):
+    """Audit K10: kecha yuborilgan, hali tasdiqlanmagan yuklama tarqatuvchidan yashirinmasin."""
+    import datetime
+
+    old = _make_loading(distributor, stocked["warehouse"], stocked["product"], qty="5")
+    send_loading(old)
+    Loading.objects.filter(pk=old.pk).update(date=old.date - datetime.timedelta(days=1))
+
+    resp = auth_api.get("/api/v1/loadings/my-today/")
+
+    assert resp.status_code == 200
+    assert old.number in [row["number"] for row in resp.data["data"]]
+
+
+@pytest.mark.django_db
+def test_my_today_hides_old_confirmed_loadings(auth_api, stocked, distributor):
+    import datetime
+
+    old = _make_loading(distributor, stocked["warehouse"], stocked["product"], qty="5")
+    send_loading(old)
+    confirm_loading(old, user=distributor)
+    Loading.objects.filter(pk=old.pk).update(date=old.date - datetime.timedelta(days=1))
+
+    resp = auth_api.get("/api/v1/loadings/my-today/")
+
+    assert old.number not in [row["number"] for row in resp.data["data"]]

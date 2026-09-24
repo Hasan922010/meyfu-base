@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from django.db.models import F, QuerySet
+from django.db.models import F, Q, QuerySet
 from django.http import HttpResponse
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
@@ -96,7 +96,9 @@ class SupplierViewSet(BaseModelViewSet):
 
 
 class StockViewSet(BaseReadOnlyViewSet):
-    queryset = Stock.objects.select_related("warehouse", "product")
+    queryset = Stock.objects.select_related("warehouse", "product__unit").order_by(
+        "warehouse__name", "product__name", "pk"
+    )
     serializer_class = StockSerializer
     read_roles = _WH_READ
     filterset_fields = ("warehouse", "product")
@@ -249,13 +251,15 @@ class LoadingViewSet(BaseModelViewSet):
         content = loading_to_pdf(loading, with_stamp=_wants_stamp(request))
         return _pdf_response(content, f"yuklama-{loading.number}.pdf")
 
-    @extend_schema(summary="Bugungi yuklamam (tarqatuvchi uchun)")
+    @extend_schema(summary="Bugungi yuklamam + hali tasdiqlanmaganlari (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my-today")
     def my_today(self, request: Request) -> Response:
-        today = timezone.localdate()
+        today = business_date()
+        # Audit K10: kechagi yuborilgan (SENT) yuklama ham ko'rinsin — aks holda
+        # u hech qachon tasdiqlanmay, tovar "yo'lda" qolib ketadi.
         qs = self.get_queryset().filter(
-            distributor=request.user, date=today
-        ).exclude(status="DRAFT")
+            Q(date=today) | Q(status="SENT"), distributor=request.user,
+        ).exclude(status="DRAFT").order_by("date", "created_at")
         return ok(self.get_serializer(qs, many=True).data)
 
 

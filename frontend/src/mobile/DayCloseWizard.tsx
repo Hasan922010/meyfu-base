@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, ArrowRight, CircleCheckBig, ClipboardCheck } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
+import { unsentCount } from '@/offline/outbox';
 import { extractApiError } from '@/shared/api/client';
 import { dayCloseApi } from '@/shared/api/reports';
 import { warehouseApi } from '@/shared/api/warehouse';
@@ -37,6 +39,7 @@ export function DayCloseWizard(): ReactElement {
 
   const [rows, setRows] = useState<ReturnRow[]>([]);
   const [cashHanded, setCashHanded] = useState<string>('');
+  const [note, setNote] = useState<string>('');
   const [initialised, setInitialised] = useState<boolean>(false);
 
   const data = today.data;
@@ -50,11 +53,13 @@ export function DayCloseWizard(): ReactElement {
         product_name: v.product_name,
         unit: v.unit,
         suggested: Number(v.quantity),
-        quantity: v.quantity,
+        // "42.000" ru-lokalda "42,000" (42 ming) bo'lib ko'rinardi — ortiqcha nollarsiz (UX M5)
+        quantity: String(Number(v.quantity)),
         condition: 'GOOD',
       })),
     );
-    setCashHanded(data.cash_expected ?? '');
+    // "906000.00" ru-lokalda "906000,00" ko'rinardi — butun so'm (UX m2)
+    setCashHanded(data.cash_expected != null ? String(Number(data.cash_expected)) : '');
     setInitialised(true);
   }, [data, initialised]);
 
@@ -71,12 +76,14 @@ export function DayCloseWizard(): ReactElement {
   );
 
   const cashDiff = Number(cashHanded || 0) - Number(data?.cash_expected ?? 0);
+  const unsent = useLiveQuery(() => unsentCount(), [], 0) ?? 0;
 
   const submit = useMutation({
     mutationFn: () =>
       dayCloseApi.submit({
         warehouse: warehouses.data?.results[0]?.id ?? '',
         cash_handed: cashHanded || '0',
+        note: cashDiff !== 0 ? note.trim() : '',
         items: rows
           .filter((r) => Number(r.quantity) > 0)
           .map((r) => ({
@@ -153,6 +160,16 @@ export function DayCloseWizard(): ReactElement {
         ))}
       </div>
 
+      {unsent > 0 && (
+        <div role="alert" className="rounded-lg bg-pending/10 px-3 py-2 text-sm text-pending">
+          {unsent} ta operatsiya hali serverga yuborilmagan. Kunni yopishdan oldin ular
+          yuborilishi kerak.{' '}
+          <Link to="/m/sync" className="font-semibold underline">
+            Sinxronizatsiya
+          </Link>
+        </div>
+      )}
+
       {/* STEP 1 — Tovar */}
       {step === 1 && (
         <div className="space-y-3">
@@ -172,7 +189,10 @@ export function DayCloseWizard(): ReactElement {
                 <input
                   className="field w-24"
                   type="number"
-                  step="0.001"
+                  step="any"
+                  min="0"
+                  inputMode="decimal"
+                  aria-label={`${r.product_name} — qaytariladigan miqdor`}
                   value={r.quantity}
                   onChange={(e) =>
                     setRows((prev) =>
@@ -227,6 +247,11 @@ export function DayCloseWizard(): ReactElement {
             <div className="my-1 border-t border-gray-200 dark:border-gray-700" />
             <Line label="Kutilgan naqd" value={money(data?.cash_expected ?? '0')} bold />
           </div>
+          {/* Bosh sahifadagi "Qo'limdagi pul" oldingi kunlarni ham qamraydi (UX m6) */}
+          <p className="text-xs text-gray-500">
+            Faqat bugungi naqd sotuv va undirilgan qarz. Hamyondagi umumiy balans oldingi
+            kunlarni ham o'z ichiga oladi, shuning uchun farq qilishi mumkin.
+          </p>
           <label className="block space-y-1">
             <span className="text-sm font-medium">Topshirilayotgan naqd</span>
             <input
@@ -250,6 +275,19 @@ export function DayCloseWizard(): ReactElement {
               ? 'Kassa farqi yo\'q'
               : `Kassa farqi: ${money(cashDiff)}${cashDiff < 0 ? ' (kamomad)' : ''}`}
           </div>
+          {/* Farq bo'lsa — jarima emas, avval izoh (CLAUDE.md §8, UX m5) */}
+          {cashDiff !== 0 && (
+            <label className="block space-y-1">
+              <span className="text-sm font-medium">Izoh (ixtiyoriy)</span>
+              <textarea
+                className="field min-h-[72px]"
+                maxLength={500}
+                placeholder="Masalan: mijoz ertaga to'laydi, qaytim berildi…"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </label>
+          )}
           <div className="flex gap-2">
             <button
               className="btn flex flex-1 items-center justify-center gap-1.5"
@@ -280,6 +318,7 @@ export function DayCloseWizard(): ReactElement {
               value={money(cashDiff)}
               danger={cashDiff < 0}
             />
+            {cashDiff !== 0 && note.trim() && <Line label="Izoh" value={note.trim()} />}
           </div>
           {submit.isError && (
             <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -295,7 +334,7 @@ export function DayCloseWizard(): ReactElement {
             </button>
             <button
               className="btn-brand flex-1"
-              disabled={submit.isPending}
+              disabled={submit.isPending || unsent > 0}
               onClick={() => submit.mutate()}
             >
               Kunni yopish

@@ -70,7 +70,11 @@ class ProductViewSet(BaseModelViewSet):
     write_roles = _CATALOG_WRITE
     filterset_class = ProductFilter
     search_fields = ("name", "sku", "barcode")
-    ordering_fields = ("name", "retail_price", "created_at")
+    # Admin jadvalidagi har bir ustun (UI: shared/table)
+    ordering_fields = (
+        "name", "sku", "category__name", "retail_price", "wholesale_price", "min_price",
+        "is_active", "created_at",
+    )
     action_roles = {
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,

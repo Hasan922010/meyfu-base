@@ -12,6 +12,7 @@ import { useState, type ReactElement } from 'react';
 import { ocrApi } from '@/shared/api/ocr';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
 
 import { OcrUpload } from './OcrUpload';
 import { ScanReview } from './ScanReview';
@@ -38,7 +39,14 @@ const DECISION: Record<string, { text: string; cls: string; Icon: LucideIcon }> 
   },
 };
 
+/** "0.00000" -> "—", "0.01234" -> "$0.0123" (audit p5) */
+function usd(value: string): string {
+  const n = Number(value);
+  return !n ? '—' : `$${n.toFixed(4)}`;
+}
+
 export function OcrPage(): ReactElement {
+  const canUpload = useCan('ocrWrite');
   const [tab, setTab] = useState<'queue' | 'metrics'>('queue');
   const [uploadOpen, setUploadOpen] = useState<boolean>(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
@@ -60,12 +68,14 @@ export function OcrPage(): ReactElement {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kirim / Naklit skanerlash</h1>
-        <button
-          className="btn-brand flex items-center gap-1.5 px-4"
-          onClick={() => setUploadOpen(true)}
-        >
-          <ScanLine size={16} aria-hidden /> Naklit skanerlash
-        </button>
+        {canUpload && (
+          <button
+            className="btn-brand flex items-center gap-1.5 px-4"
+            onClick={() => setUploadOpen(true)}
+          >
+            <ScanLine size={16} aria-hidden /> Naklit skanerlash
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
@@ -100,7 +110,7 @@ export function OcrPage(): ReactElement {
                   <th className="p-3">Raqam</th>
                   <th className="p-3">Yetkazuvchi</th>
                   <th className="p-3 text-right">Qatorlar</th>
-                  <th className="p-3 text-right">$</th>
+                  <th className="p-3 text-right">AI narxi</th>
                   <th className="p-3">Holat</th>
                   <th className="p-3" />
                 </tr>
@@ -121,7 +131,7 @@ export function OcrPage(): ReactElement {
                     </td>
                     <td className="p-3 text-right">{s.line_count}</td>
                     <td className="p-3 text-right text-xs text-gray-400">
-                      {s.cost_usd}
+                      {usd(s.cost_usd)}
                     </td>
                     <td className={`p-3 ${STATUS_CLASS[s.status] ?? ''}`}>
                       {s.status_display}

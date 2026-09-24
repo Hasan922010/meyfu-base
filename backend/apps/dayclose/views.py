@@ -3,7 +3,6 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db.models import Q, QuerySet
-from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
@@ -12,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.catalog.models import Product
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
@@ -69,7 +69,7 @@ class DayCloseViewSet(
     @extend_schema(summary="Bugungi kun holati (jonli hisob)")
     @action(detail=False, methods=["get"], url_path="my-today")
     def my_today(self, request: Request) -> Response:
-        today = timezone.localdate()
+        today = business_date()
         existing = DayClose.objects.filter(
             distributor=request.user, date=today
         ).first()
@@ -136,7 +136,7 @@ class DayCloseViewSet(
         ]
         day_close = submit_day_close(
             distributor=request.user,
-            date=data.get("date") or timezone.localdate(),
+            date=data.get("date") or business_date(),
             warehouse=warehouse,
             return_rows=rows,
             cash_handed=data["cash_handed"],

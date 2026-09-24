@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { createContext, useContext, useState, type ReactElement } from 'react';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
@@ -13,19 +13,30 @@ import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { dateShort, money, qty } from '@/shared/lib/format';
+import { ROLE_LABELS } from '@/shared/lib/labels';
+import { useAuthStore } from '@/shared/store/authStore';
+import type { Role } from '@/shared/types/api';
 
 type TabId = 'products' | 'cash' | 'suppliers' | 'clients' | 'staff';
 
-const TABS: Array<{ id: TabId; label: string }> = [
-  { id: 'products', label: 'Tovarlar' },
-  { id: 'cash', label: 'Kassa' },
-  { id: 'suppliers', label: "Ta'minotchilar" },
-  { id: 'clients', label: 'Mijozlar' },
-  { id: 'staff', label: 'Xodimlar' },
+// Kim kirita oladi — backenddagi `opening_balance` action_roles bilan bir xil
+// (stock, cash-transactions, suppliers, clients, wallet). Qolganlar faqat tarixni ko'radi (audit K3b).
+const TABS: Array<{ id: TabId; label: string; writeRoles: Role[] }> = [
+  { id: 'products', label: 'Tovarlar', writeRoles: ['MANAGER', 'SUPER_ADMIN'] },
+  { id: 'cash', label: 'Kassa', writeRoles: ['SUPER_ADMIN'] },
+  { id: 'suppliers', label: "Ta'minotchilar", writeRoles: ['SUPER_ADMIN'] },
+  { id: 'clients', label: 'Mijozlar', writeRoles: ['MANAGER', 'SUPER_ADMIN'] },
+  { id: 'staff', label: 'Xodimlar', writeRoles: ['SUPER_ADMIN'] },
 ];
+
+/** Joriy tab uchun yozish ruxsati; `null` — ruxsat bor */
+const ReadOnlyContext = createContext<Role[] | null>(null);
 
 export function OpeningBalancesPage(): ReactElement {
   const [tab, setTab] = useState<TabId>('products');
+  const role = useAuthStore((s) => s.user?.role);
+  const writeRoles = TABS.find((t) => t.id === tab)?.writeRoles ?? [];
+  const readOnly = role && writeRoles.includes(role) ? null : writeRoles;
 
   return (
     <div className="space-y-4">
@@ -50,11 +61,13 @@ export function OpeningBalancesPage(): ReactElement {
         ))}
       </div>
 
-      {tab === 'products' && <ProductsTab />}
-      {tab === 'cash' && <CashTab />}
-      {tab === 'suppliers' && <SuppliersTab />}
-      {tab === 'clients' && <ClientsTab />}
-      {tab === 'staff' && <StaffTab />}
+      <ReadOnlyContext.Provider value={readOnly}>
+        {tab === 'products' && <ProductsTab />}
+        {tab === 'cash' && <CashTab />}
+        {tab === 'suppliers' && <SuppliersTab />}
+        {tab === 'clients' && <ClientsTab />}
+        {tab === 'staff' && <StaffTab />}
+      </ReadOnlyContext.Provider>
     </div>
   );
 }
@@ -70,6 +83,15 @@ function FormShell({
   onSubmit: () => void;
   disabled: boolean;
 }): ReactElement {
+  const writeRoles = useContext(ReadOnlyContext);
+  if (writeRoles) {
+    return (
+      <p className="max-w-xl rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+        Faqat ko‘rish: bu bo‘limga yozuvni {writeRoles.map((r) => ROLE_LABELS[r]).join(' yoki ')}{' '}
+        kiritadi. Quyida kiritilganlar tarixi.
+      </p>
+    );
+  }
   return (
     <div className="max-w-xl space-y-3 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
       {children}
@@ -89,7 +111,10 @@ function HistoryTable({
   rows,
   isLoading,
   isError,
+  kind = 'money',
 }: {
+  /** 'qty' — tovar miqdori (dona), aks holda pul (audit m6) */
+  kind?: 'money' | 'qty';
   rows: Array<{
     id: string;
     date: string;
@@ -114,7 +139,7 @@ function HistoryTable({
             <tr>
               <th className="p-3">Sana</th>
               <th className="p-3">Turi</th>
-              <th className="p-3 text-right">Summa</th>
+              <th className="p-3 text-right">{kind === 'qty' ? 'Miqdor' : 'Summa'}</th>
               <th className="p-3">Izoh</th>
             </tr>
           </thead>
@@ -132,7 +157,7 @@ function HistoryTable({
                   }`}
                 >
                   {Number(r.amount) > 0 ? '+' : ''}
-                  {money(r.amount)}
+                  {kind === 'qty' ? qty(r.amount) : money(r.amount)}
                 </td>
                 <td className="p-3 text-gray-500">{r.note || '—'}</td>
               </tr>
@@ -239,6 +264,7 @@ function ProductsTab(): ReactElement {
       </FormShell>
 
       <HistoryTable
+        kind="qty"
         isLoading={history.isLoading}
         isError={history.isError}
         rows={(history.data?.results ?? []).map((m) => ({

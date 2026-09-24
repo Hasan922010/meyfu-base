@@ -7,9 +7,9 @@ from decimal import Decimal
 from django.core.cache import cache
 from django.db.models import Count, DecimalField, Q, Sum, Value
 from django.db.models.functions import Coalesce
-from django.utils import timezone
 
 from apps.clients.models import ClientVisit
+from apps.core.business_day import business_date
 from apps.expenses.models import DistributorExpense
 from apps.finance.models import CompanyExpense
 from apps.finance.services import get_account
@@ -30,7 +30,7 @@ def _qty(value) -> str:
 
 
 def dashboard(*, day: date_cls | None = None, use_cache: bool = True) -> dict:
-    day = day or timezone.localdate()
+    day = day or business_date()
 
     cache_key = f"reports:dashboard:{day}"
     if use_cache:
@@ -170,7 +170,7 @@ def sales_summary(*, date_from, date_to, group_by: str = "day") -> list[dict]:
 
 def debt_aging() -> dict:
     """Qarzdorlik yoshi (CLAUDE.md 10, 13). Muddat bo'yicha guruhlar."""
-    today = timezone.localdate()
+    today = business_date()
     active = Debt.objects.exclude(status="PAID").select_related("client")
 
     buckets = {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { LanguageSwitch } from '@/shared/components/LanguageSwitch';
 import { TelegramConnect } from '@/shared/components/TelegramConnect';
+import { roleLabel } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 
 import { CompanySettingsForm } from './CompanySettingsForm';
@@ -25,7 +26,7 @@ export function SettingsPage(): ReactElement {
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">Rol</span>
-          <span>{user?.role}</span>
+          <span>{roleLabel(user?.role)}</span>
         </div>
       </div>
 

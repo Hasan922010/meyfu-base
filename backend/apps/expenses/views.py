@@ -3,13 +3,13 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db.models import QuerySet, Sum
-from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.business_day import business_date
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.constants import Role
@@ -112,7 +112,7 @@ class DistributorExpenseViewSet(BaseModelViewSet):
     @extend_schema(summary="Mening xarajatlarim (bugungi)")
     @action(detail=False, methods=["get"], url_path="my-today")
     def my_today(self, request: Request) -> Response:
-        today = timezone.localdate()
+        today = business_date()
         qs = self.get_queryset().filter(distributor=request.user, date=today)
         return ok(DistributorExpenseSerializer(qs, many=True).data)
 

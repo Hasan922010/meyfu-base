@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
+import { pullVanStock } from '@/offline/sync';
 import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
@@ -16,9 +17,15 @@ export function MyLoadingPage(): ReactElement {
 
   const confirm = useMutation({
     mutationFn: (id: string) => warehouseApi.confirmLoading(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       void qc.invalidateQueries({ queryKey: ['loadings', 'my-today'] });
       void qc.invalidateQueries({ queryKey: ['van-stock', 'my'] });
+      // Sotuv ekrani lokal van_stock'dan o'qiydi — darhol yangilaymiz (UX M1)
+      try {
+        await pullVanStock();
+      } catch (err) {
+        console.warn('[confirmLoading] van-stock yangilanmadi, keyingi sync tortadi', err);
+      }
     },
   });
 
@@ -38,7 +45,7 @@ export function MyLoadingPage(): ReactElement {
         isLoading={query.isLoading}
         isError={query.isError}
         isEmpty={!query.isLoading && rows.length === 0}
-        emptyText="Bugun yuklama yo‘q"
+        emptyText="Bugun yuklama yo‘q. Menejer yuklama yuborganda shu yerda chiqadi — tovarni sanab, tasdiqlaysiz."
       >
         <div className="space-y-4">
           {rows.map((l) => (

@@ -16,7 +16,9 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
+from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog, Setting
 from apps.dayclose.constants import DayCloseStatus
 from apps.dayclose.models import DayClose
@@ -265,7 +267,7 @@ def approve_payroll(payroll: Payroll, *, user=None) -> Payroll:
     notify(
         payroll.distributor, type="payroll.approved",
         title="Maoshingiz tasdiqlandi",
-        body=f"{payroll.period:%Y-%m} · {payroll.final_amount} so'm",
+        body=f"{payroll.period:%Y-%m} · {fmt_money(payroll.final_amount)}",
         data={"payroll_id": str(payroll.id)},
     )
     return payroll
@@ -285,7 +287,7 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
     expense = create_company_expense(
         category=CompanyExpenseCategory.SALARY,
         amount=payroll.final_amount,
-        date=timezone.localdate(),
+        date=business_date(),
         description=(
             f"{payroll.distributor.full_name} · {payroll.period:%Y-%m}"
         ),
@@ -316,7 +318,7 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
     notify(
         payroll.distributor, type="payroll.paid",
         title="Maosh to'landi",
-        body=f"{payroll.period:%Y-%m} · {payroll.final_amount} so'm",
+        body=f"{payroll.period:%Y-%m} · {fmt_money(payroll.final_amount)}",
         data={"payroll_id": str(payroll.id)},
     )
     return payroll

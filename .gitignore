@@ -44,3 +44,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# graphify (generated; rebuilt by git hooks)
+graphify-out/

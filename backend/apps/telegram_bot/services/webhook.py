@@ -6,6 +6,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from apps.core.formatting import fmt_money
 from apps.users.constants import Role
 
 from ..client import answer_callback_query, edit_message_reply_markup
@@ -149,11 +150,11 @@ def _handle_callback(cq: dict) -> None:
         elif action == "exp_approve":
             approve_expense(expense, user=user)
             answer_callback_query(cq_id, "Tasdiqlandi ✅")
-            tg_send_chat(chat_id, f"✅ Xarajat tasdiqlandi: {expense.amount} so'm")
+            tg_send_chat(chat_id, f"✅ Xarajat tasdiqlandi: {fmt_money(expense.amount)}")
         else:
             reject_expense(expense, user=user, reason="Telegram orqali rad etildi")
             answer_callback_query(cq_id, "Rad etildi ❌")
-            tg_send_chat(chat_id, f"❌ Xarajat rad etildi: {expense.amount} so'm")
+            tg_send_chat(chat_id, f"❌ Xarajat rad etildi: {fmt_money(expense.amount)}")
         if message_id:
             edit_message_reply_markup(chat_id, message_id)
     else:

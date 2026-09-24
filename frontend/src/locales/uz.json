@@ -10,7 +10,26 @@
     "password": "Parol",
     "signIn": "Tizimga kirish",
     "signingIn": "Kirilmoqda...",
-    "wrongCredentials": "Telefon yoki parol noto'g'ri"
+    "wrongCredentials": "Telefon yoki parol noto'g'ri",
+    "phoneRequired": "Telefon raqamini kiriting",
+    "passwordRequired": "Parolni kiriting",
+    "showPassword": "Parolni ko'rsatish",
+    "hidePassword": "Parolni yashirish",
+    "forgotLink": "Parolni unutdingizmi?",
+    "resetTitle": "Parolni tiklash",
+    "resetIntro": "Telefon raqamingizni kiriting — Telegram'ga 6 xonali kod yuboramiz.",
+    "sendCode": "Kod yuborish",
+    "sendingCode": "Yuborilmoqda...",
+    "codeSentHint": "Agar raqam Telegram'ga bog'langan bo'lsa, kod yuborildi. Kod kelmasa — administratorga murojaat qiling.",
+    "code": "Tasdiqlash kodi",
+    "codeInvalid": "6 xonali kodni kiriting",
+    "newPassword": "Yangi parol",
+    "passwordTooShort": "Parol kamida 8 belgidan iborat bo'lsin",
+    "savePassword": "Parolni saqlash",
+    "saving": "Saqlanmoqda...",
+    "resendCode": "Kodni qayta yuborish",
+    "resetDone": "Parol yangilandi. Endi yangi parol bilan kiring.",
+    "backToLogin": "Kirish sahifasiga qaytish"
   },
   "nav": {
     "dashboard": "Boshqaruv paneli",
@@ -60,5 +79,13 @@
     "body": "Sahifani ochishda xatolik yuz berdi. Qayta urinib ko'ring.",
     "retry": "Qayta urinish",
     "home": "Bosh sahifa"
+  },
+  "table": {
+    "search": "Qidirish…",
+    "all": "Barchasi",
+    "clear": "Tozalash",
+    "sortHint": "Saralash uchun bosing",
+    "count_one": "{{count}} ta",
+    "count_other": "{{count}} ta"
   }
 }

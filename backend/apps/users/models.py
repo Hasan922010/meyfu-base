@@ -106,6 +106,35 @@ class WebSocketTicket(models.Model):
     def is_usable(self) -> bool:
         return self.used_at is None and self.expires_at > timezone.now()
 
+
+class PasswordResetCode(models.Model):
+    """Telegram orqali yuborilgan bir martalik parol tiklash kodi.
+
+    Kodning o'zi saqlanmaydi — faqat HMAC xeshi.
+    """
+
+    MAX_ATTEMPTS = 5
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="password_reset_codes"
+    )
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField(db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("user", "-created_at"))]
+
+    @property
+    def is_usable(self) -> bool:
+        return (
+            self.used_at is None
+            and self.attempts < self.MAX_ATTEMPTS
+            and self.expires_at > timezone.now()
+        )
+
 class DistributorProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(

@@ -6,7 +6,7 @@ import { clientsApi } from '@/shared/api/clients';
 import { Modal } from '@/shared/components/Modal';
 import type { Client, VisitResult } from '@/shared/types/clients';
 
-import { getCurrentCoords } from './geo';
+import { usePrefetchedCoords } from './geo';
 
 const RESULTS: Array<{ value: VisitResult; label: string; cls: string }> = [
   { value: 'SOTUV', label: 'Sotuv bo‘ldi', cls: 'bg-success text-white' },
@@ -27,11 +27,13 @@ export function CheckInSheet({
 }): ReactElement {
   const qc = useQueryClient();
   const [note, setNote] = useState<string>('');
+  // Oyna ochilganda GPS boshlanadi — tashrif GPS ni 8 s kutmaydi (UX N4)
+  const coordsForSave = usePrefetchedCoords(client != null);
 
   const mutation = useMutation({
     mutationFn: async (result: VisitResult) => {
       if (!client) throw new Error('Mijoz tanlanmagan');
-      const coords = await getCurrentCoords();
+      const coords = await coordsForSave();
       return clientsApi.checkIn({
         client: client.id,
         result,

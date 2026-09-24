@@ -14,7 +14,7 @@ import { assertApiShape } from '@/shared/lib/validate';
 import type { ApiSuccess } from '@/shared/types/api';
 
 import { db, getMeta, setMeta } from './db';
-import { applyResult, dueOps, markSending } from './outbox';
+import { applyResult, dueOps, markSending, recoverOrphanedSending } from './outbox';
 
 interface BulkSyncResult {
   results: Array<{
@@ -64,18 +64,7 @@ export async function pullReferenceData(): Promise<void> {
     })),
   );
 
-  const van = await warehouseApi.myVanStock();
-  assertApiShape(vanStockListShape, van, 'sync/van-stock');
-  await db.van_stock.clear();
-  await db.van_stock.bulkPut(
-    van.map((v) => ({
-      product: v.product,
-      product_name: v.product_name,
-      product_sku: v.product_sku,
-      unit: v.unit,
-      quantity: Number(v.quantity),
-    })),
-  );
+  await pullVanStock();
 
   // Yetkazish uchun biriktirilgan buyurtmalar (v4 T1) — best-effort
   try {
@@ -119,11 +108,34 @@ export async function pullReferenceData(): Promise<void> {
   if (!since) await setMeta('catalog_since', new Date().toISOString());
 }
 
+/**
+ * Faqat mashina qoldig'ini serverdan tortadi. Yuklama tasdiqlangach chaqiriladi —
+ * aks holda sotuv ekrani (lokal van_stock) yangi tovarni ko'rmaydi (UX audit M1).
+ */
+export async function pullVanStock(): Promise<void> {
+  const van = await warehouseApi.myVanStock();
+  assertApiShape(vanStockListShape, van, 'sync/van-stock');
+  await db.transaction('rw', db.van_stock, async () => {
+    await db.van_stock.clear();
+    await db.van_stock.bulkPut(
+      van.map((v) => ({
+        product: v.product,
+        product_name: v.product_name,
+        product_sku: v.product_sku,
+        unit: v.unit,
+        quantity: Number(v.quantity),
+      })),
+    );
+  });
+}
+
 /** Outbox'ni serverga yuboradi. Onlayn bo'lganda chaqiriladi. */
 export async function pushOutbox(): Promise<{ sent: number; failed: number }> {
   if (syncing || !navigator.onLine) return { sent: 0, failed: 0 };
   syncing = true;
   try {
+    // Bu tabda yuborish ketmayapti — demak qolgan SENDING'lar oldingi sessiyadan yetim
+    await recoverOrphanedSending();
     const ops = await dueOps();
     if (ops.length === 0) return { sent: 0, failed: 0 };
 

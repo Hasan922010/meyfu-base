@@ -137,3 +137,21 @@ def test_integrity_endpoint_get_and_fix(admin_api, manager_api, distributor):
         distributor=distributor
     ).balance == Decimal("50000")
     assert AuditLog.objects.filter(action="integrity.fix").exists()
+
+
+@pytest.mark.django_db
+def test_system_status_fast_mode_skips_celery_ping(manager_api, monkeypatch):
+    """Audit m8: ?deep=0 celery ping'ni kutmaydi (sahifa darhol chiziladi)."""
+    import importlib
+
+    status_mod = importlib.import_module("apps.core.services.system_status")
+
+    def boom():
+        raise AssertionError("celery ping chaqirilmasligi kerak")
+
+    monkeypatch.setattr(status_mod, "_check_celery", boom)
+
+    resp = manager_api.get("/api/v1/system/status/?deep=0")
+
+    assert resp.status_code == 200
+    assert resp.data["data"]["health"]["checks"]["celery"]["ok"] is None

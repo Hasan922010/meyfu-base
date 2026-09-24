@@ -27,24 +27,58 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
   _retried?: boolean;
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+/** access — yangi token; sessionEnded — server refresh'ni rad etdi, qayta kirish kerak. */
+type RefreshResult = { access: string } | { access: null; sessionEnded: boolean };
 
-async function refreshAccess(): Promise<string | null> {
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+/** Server refresh tokenni rad etdimi (muddati o'tgan, qora ro'yxatda, noto'g'ri)? */
+function isRefreshRejected(err: unknown): boolean {
+  const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+  return status === 401 || status === 400;
+}
+
+/**
+ * Boshqa tab refresh tokenni allaqachon almashtirgan bo'lishi mumkin (rotatsiya +
+ * qora ro'yxat) — localStorage'dagi eng yangi holatni olamiz. `failedAccess` bilan
+ * farq qilsa, boshqa tab yangilagan: shu access bilan qayta urinish kifoya.
+ */
+async function newerTokenFromOtherTab(failedAccess: string | null): Promise<string | null> {
+  await useAuthStore.persist.rehydrate();
+  const { access } = useAuthStore.getState();
+  return access && access !== failedAccess ? access : null;
+}
+
+async function refreshAccess(failedAccess: string | null): Promise<RefreshResult> {
+  const fromOtherTab = await newerTokenFromOtherTab(failedAccess);
+  if (fromOtherTab) return { access: fromOtherTab };
+
   const { refresh, setAccess, clear } = useAuthStore.getState();
   if (!refresh) {
     clear();
-    return null;
+    return { access: null, sessionEnded: true };
   }
   try {
-    const resp = await axios.post<{ access: string }>(
+    const resp = await axios.post<{ access: string; refresh?: string }>(
       `${env.apiBaseUrl}/auth/refresh/`,
       { refresh },
     );
-    setAccess(resp.data.access);
-    return resp.data.access;
-  } catch {
-    clear();
-    return null;
+    // Eski refresh serverda qora ro'yxatga tushgan — yangisini saqlamasak
+    // keyingi refresh 401 beradi va foydalanuvchi chiqarib yuboriladi
+    setAccess(resp.data.access, resp.data.refresh);
+    return { access: resp.data.access };
+  } catch (err) {
+    // Faqat server rad etsa chiqaramiz. Tarmoq uzilishi yoki 5xx da sessiya qoladi —
+    // aks holda beqaror internetda tarqatuvchi tizimdan chiqib ketardi (UX audit N2)
+    if (isRefreshRejected(err)) {
+      // Poyga: so'rovimiz ketayotganda boshqa tab rotatsiyani yakunlagan bo'lishi mumkin
+      const raced = await newerTokenFromOtherTab(failedAccess);
+      if (raced) return { access: raced };
+      clear();
+      return { access: null, sessionEnded: true };
+    }
+    console.warn('[refreshAccess] vaqtincha xato, sessiya saqlandi', err);
+    return { access: null, sessionEnded: false };
   }
 }
 
@@ -56,15 +90,21 @@ api.interceptors.response.use(
 
     if (status === 401 && original && !original._retried) {
       original._retried = true;
-      refreshPromise ??= refreshAccess().finally(() => {
+      const failedAccess =
+        String(original.headers.get('Authorization') ?? '').replace(/^Bearer /, '') || null;
+      refreshPromise ??= refreshAccess(failedAccess).finally(() => {
         refreshPromise = null;
       });
-      const newAccess = await refreshPromise;
-      if (newAccess) {
-        original.headers.set('Authorization', `Bearer ${newAccess}`);
+      const result = await refreshPromise;
+      if (result.access !== null) {
+        original.headers.set('Authorization', `Bearer ${result.access}`);
         return api.request(original);
       }
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      if (
+        result.sessionEnded &&
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login'
+      ) {
         window.location.assign('/login');
       }
     }
@@ -74,6 +114,8 @@ api.interceptors.response.use(
 );
 
 const CONN_REFUSED_RE = /ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i;
+
+const FIELD_ERROR_CODES = new Set(['VALIDATION_ERROR', 'INVALID']);
 
 const FIELD_LABELS: Record<string, string> = {
   non_field_errors: '',
@@ -91,6 +133,39 @@ const FIELD_LABELS: Record<string, string> = {
   barcode: 'Shtrix-kod',
   date: 'Sana',
   due_date: 'Muddat',
+  // Audit m1: formalarda ko'p uchraydigan maydonlar
+  note: 'Izoh',
+  reason: 'Sabab',
+  reject_reason: 'Rad etish sababi',
+  description: 'Tavsif',
+  counterparty: 'Kontragent',
+  category: 'Kategoriya',
+  unit: "O'lchov birligi",
+  brand: 'Brend',
+  product: 'Mahsulot',
+  client: 'Mijoz',
+  route: 'Marshrut',
+  warehouse: 'Ombor',
+  supplier: 'Yetkazib beruvchi',
+  distributor: 'Tarqatuvchi',
+  invoice_number: 'Nakladnoy raqami',
+  debt_limit: 'Qarz limiti',
+  inn: 'INN / STIR',
+  address: 'Manzil',
+  owner_name: 'Egasi',
+  cost_price: 'Tannarx',
+  wholesale_price: 'Optom narx',
+  retail_price: 'Chakana narx',
+  min_price: 'Minimal narx',
+  pack_quantity: 'Qadoq soni',
+  min_stock_alert: 'Kam qoldiq',
+  commission_percent: 'Komissiya foizi',
+  base_salary: 'Asosiy maosh',
+  monthly_plan: 'Oylik reja',
+  daily_expense_limit: 'Kunlik xarajat limiti',
+  vehicle_number: 'Mashina raqami',
+  role: 'Rol',
+  items: 'Mahsulotlar',
 };
 
 /**
@@ -100,8 +175,12 @@ const FIELD_LABELS: Record<string, string> = {
 export function extractFieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof AxiosError) || !error.response) return {};
   const body = error.response.data as ApiErrorBody | undefined;
+  // Faqat validatsiya xatolarida details = maydon xatolari. Biznes xatolarida
+  // (INSUFFICIENT_STOCK, DEBT_LIMIT_EXCEEDED...) details texnik ma'lumot —
+  // foydalanuvchiga serverning o'zbekcha `message`i ko'rsatiladi (audit K5).
   const details =
-    body && typeof body === 'object' && body.success === false
+    body && typeof body === 'object' && body.success === false &&
+    FIELD_ERROR_CODES.has(body.error?.code ?? '')
       ? body.error?.details
       : undefined;
   if (!details || typeof details !== 'object' || Array.isArray(details)) return {};

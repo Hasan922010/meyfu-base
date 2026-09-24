@@ -5,12 +5,16 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
 import { reportsApi, salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money } from '@/shared/lib/format';
+import { paymentLabel } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
+import { SortableTh } from '@/shared/table/SortableTh';
+import { TableToolbar, type TableFilter } from '@/shared/table/TableToolbar';
+import { useServerTable } from '@/shared/table/useServerTable';
 
 const STATUS_CLASS: Record<string, string> = {
   COMPLETED: 'text-success',
@@ -18,6 +22,29 @@ const STATUS_CLASS: Record<string, string> = {
   CONFLICT: 'text-danger',
   CANCELLED: 'text-gray-400',
 };
+
+const FILTERS: TableFilter[] = [
+  {
+    key: 'status',
+    label: 'Holat',
+    options: [
+      { value: 'COMPLETED', label: 'Yakunlangan' },
+      { value: 'FLAGGED', label: 'Belgilangan' },
+      { value: 'CONFLICT', label: 'Ziddiyat' },
+      { value: 'CANCELLED', label: 'Bekor qilingan' },
+    ],
+  },
+  {
+    key: 'payment_type',
+    label: "To'lov",
+    options: ['NAQD', 'PLASTIK', 'QARZ', 'ARALASH'].map((v) => ({
+      value: v,
+      label: paymentLabel(v),
+    })),
+  },
+  { key: 'date__gte', label: 'Sanadan', type: 'date' },
+  { key: 'date__lte', label: 'Sanagacha', type: 'date' },
+];
 
 async function downloadExport(): Promise<void> {
   const blob = await reportsApi.exportBlob({ type: 'sales' });
@@ -34,20 +61,14 @@ export function SalesPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
   const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
 
-  const [status, setStatus] = useState<string>('');
-  const [search, setSearch] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
+  // Saralash/qidiruv/filtr serverda — barcha sotuvlar ustida, faqat joriy sahifada emas
+  const table = useServerTable({ initialSort: { key: 'date', dir: 'desc' } });
+  const { page, setPage } = table;
 
   const query = useQuery({
-    queryKey: ['admin-sales', { status, search, page }],
+    queryKey: ['admin-sales', table.params],
     queryFn: () =>
-      salesApi.list({
-        status: status || undefined,
-        search: search || undefined,
-        page,
-        page_size: 25,
-        ordering: '-created_at',
-      }),
+      salesApi.list({ ...table.params, page_size: 25, ordering: table.params.ordering ?? '-created_at' }),
     placeholderData: keepPreviousData,
   });
 
@@ -62,6 +83,7 @@ export function SalesPage(): ReactElement {
   });
 
   const rows = query.data?.results ?? [];
+  const th = { sort: table.sort, onSort: table.onSort };
 
   return (
     <div className="space-y-4">
@@ -75,50 +97,39 @@ export function SalesPage(): ReactElement {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <input
-          className="field max-w-xs"
-          placeholder="Raqam / mijoz"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <select
-          className="field max-w-[180px]"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Barcha holatlar</option>
-          <option value="COMPLETED">Yakunlangan</option>
-          <option value="FLAGGED">Belgilangan</option>
-          <option value="CONFLICT">Ziddiyat</option>
-          <option value="CANCELLED">Bekor qilingan</option>
-        </select>
-      </div>
+      <TableToolbar
+        search={table.search}
+        onSearch={table.setSearch}
+        filters={FILTERS}
+        values={table.filterValues}
+        onFilter={table.setFilter}
+        onReset={table.reset}
+        count={query.data?.count}
+      />
 
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
         <DataState
           isLoading={query.isLoading}
           isError={query.isError}
+          error={query.error}
           isEmpty={!query.isLoading && rows.length === 0}
           emptyText="Sotuv topilmadi"
         >
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
-                <th className="p-3">Raqam</th>
-                <th className="p-3">Sana</th>
-                <th className="p-3">Mijoz</th>
-                <th className="p-3">Tarqatuvchi</th>
-                <th className="p-3">To'lov</th>
-                <th className="p-3 text-right">Jami</th>
-                <th className="p-3 text-right">Qarz</th>
-                <th className="p-3">Holat</th>
+                <SortableTh sortKey="number" {...th}>Raqam</SortableTh>
+                <SortableTh sortKey="date" {...th}>Sana</SortableTh>
+                <SortableTh sortKey="client__name" {...th}>Mijoz</SortableTh>
+                <SortableTh sortKey="distributor__full_name" {...th}>Tarqatuvchi</SortableTh>
+                <SortableTh sortKey="payment_type" {...th}>To'lov</SortableTh>
+                <SortableTh sortKey="total_amount" align="right" className="p-3 text-right" {...th}>
+                  Jami
+                </SortableTh>
+                <SortableTh sortKey="debt_amount" align="right" className="p-3 text-right" {...th}>
+                  Qarz
+                </SortableTh>
+                <SortableTh sortKey="status" {...th}>Holat</SortableTh>
                 {isAdmin && <th className="p-3" />}
               </tr>
             </thead>
@@ -181,11 +192,7 @@ export function SalesPage(): ReactElement {
 
       {query.data && query.data.pages > 1 && (
         <div className="flex items-center gap-2 text-sm">
-          <button
-            className="btn px-3"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
+          <button className="btn px-3" disabled={page <= 1} onClick={() => setPage(page - 1)}>
             ‹
           </button>
           <span>
@@ -194,7 +201,7 @@ export function SalesPage(): ReactElement {
           <button
             className="btn px-3"
             disabled={page >= query.data.pages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage(page + 1)}
           >
             ›
           </button>
