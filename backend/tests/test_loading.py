@@ -24,10 +24,10 @@ def _loading_payload(distributor, warehouse, product, qty="100"):
 
 
 def _make_loading(distributor, warehouse, product, qty="100"):
-    from django.utils import timezone
+    from apps.core.business_day import business_date
 
     loading = Loading.objects.create(
-        date=timezone.localdate(), distributor=distributor, warehouse=warehouse,
+        date=business_date(), distributor=distributor, warehouse=warehouse,
     )
     from apps.warehouse.models import LoadingItem
 

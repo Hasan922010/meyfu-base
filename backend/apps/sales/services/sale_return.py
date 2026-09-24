@@ -6,8 +6,8 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Sum
-from django.utils import timezone
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.models import DocumentSequence
 from apps.warehouse.services.van import van_apply
@@ -92,7 +92,7 @@ def create_sale_return(
     client_uuid: str | None = None,
     device_time=None,
 ) -> SaleReturnResult:
-    date = date or timezone.localdate()
+    date = date or business_date()
 
     if client_uuid:
         existing = SaleReturn.objects.filter(client_uuid=client_uuid).first()

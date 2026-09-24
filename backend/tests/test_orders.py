@@ -277,9 +277,9 @@ def test_order_create_and_fulfill_via_api(admin_api, auth_api, agent, deliverer,
 @pytest.mark.django_db
 def test_360_card_has_orders_and_commission_split(admin_api, agent, deliverer,
                                                   van_stocked):
-    from django.utils import timezone
+    from apps.core.business_day import business_date
 
-    today = timezone.localdate()
+    today = business_date()
     period_start = today.replace(day=1)
     order = _make_order(van_stocked["client"], agent, van_stocked["product"],
                         qty="10", price="27000", day=today)

@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog
@@ -58,7 +59,7 @@ def create_expense(
     client_uuid: str | None = None,
     device_time=None,
 ) -> ExpenseResult:
-    date = date or timezone.localdate()
+    date = date or business_date()
 
     if client_uuid:
         existing = DistributorExpense.objects.filter(client_uuid=client_uuid).first()

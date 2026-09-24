@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from django.db import transaction
 
+from apps.core.business_day import business_date
+
 from ..constants import CashTxType
 from ..models import CompanyExpense
 from .cash import cash_apply
@@ -23,10 +25,9 @@ def create_company_expense(
     receipt_image=None,
     user=None,
 ) -> CompanyExpense:
-    from django.utils import timezone
 
     expense = CompanyExpense.objects.create(
-        category=category, amount=amount, date=date or timezone.localdate(),
+        category=category, amount=amount, date=date or business_date(),
         description=description, paid_from_cash=paid_from_cash,
         receipt_image=receipt_image, created_by=user,
     )

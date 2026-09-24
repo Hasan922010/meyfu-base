@@ -15,6 +15,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog, DocumentSequence
@@ -62,7 +63,7 @@ def create_order(
     place: bool = False,
     user=None,
 ) -> OrderResult:
-    date = date or timezone.localdate()
+    date = date or business_date()
 
     if client_uuid:
         existing = Order.objects.filter(client_uuid=client_uuid).first()
@@ -219,7 +220,7 @@ def build_loading_from_orders(
 
     from apps.warehouse.models import Loading, LoadingItem
 
-    date = date or timezone.localdate()
+    date = date or business_date()
     if not orders:
         raise BusinessError(message="Buyurtma tanlanmadi.", code="NO_ORDERS")
     for order in orders:
@@ -350,7 +351,7 @@ def fulfill_order(
         client=order.client,
         payment_type=payment_type,
         lines=sale_lines,
-        date=timezone.localdate(),
+        date=business_date(),
         paid_amount=paid_amount,
         due_date=due_date or order.desired_date,
         latitude=latitude,
