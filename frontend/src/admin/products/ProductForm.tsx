@@ -3,9 +3,8 @@ import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
-import { extractApiError, extractFieldErrors } from '@/shared/api/client';
 import { AmountInput } from '@/shared/components/AmountInput';
-import { applyServerFieldErrors } from '@/shared/lib/formErrors';
+import { applyServerErrors } from '@/shared/lib/formErrors';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
 
@@ -129,12 +128,7 @@ function ProductFormFields({
       onDone();
     },
     onMutate: () => setGeneralError(null),
-    onError: (err) => {
-      // Maydonga bog'langan xato o'sha maydon ostida chiqadi; bu yerda faqat qolgani
-      const leftover = applyServerFieldErrors(err, setError);
-      const hasFieldErrors = Object.keys(extractFieldErrors(err)).length > 0;
-      setGeneralError(hasFieldErrors ? leftover.join(' · ') || null : extractApiError(err));
-    },
+    onError: (err) => setGeneralError(applyServerErrors(err, setError)),
   });
 
   return (

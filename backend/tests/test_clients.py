@@ -176,3 +176,22 @@ def test_blocked_client_flag(manager_api, routed_clients):
     assert resp.status_code == 200
     routed_clients["my_client"].refresh_from_db()
     assert routed_clients["my_client"].is_blocked is True
+
+
+@pytest.mark.django_db
+def test_client_phone_must_be_uzbek_mobile(manager_api):
+    """Audit m2: "123" telefon sifatida qabul qilinmasin."""
+    resp = manager_api.post(
+        "/api/v1/clients/", {"name": "UX Test", "phone": "123"}, format="json"
+    )
+    assert resp.status_code == 400
+    assert "phone" in resp.data["error"]["details"]
+
+
+@pytest.mark.django_db
+def test_client_local_phone_is_normalized(manager_api):
+    resp = manager_api.post(
+        "/api/v1/clients/", {"name": "UX Test", "phone": "90 123-45-67"}, format="json"
+    )
+    assert resp.status_code == 201, resp.data
+    assert resp.data["data"]["phone"] == "+998901234567"
