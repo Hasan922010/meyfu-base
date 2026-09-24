@@ -14,6 +14,7 @@ import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
+import { paymentLabel } from '@/shared/lib/labels';
 
 type Step = 'client' | 'items' | 'meta' | 'done';
 type Intent = '' | 'NAQD' | 'PLASTIK' | 'OTKAZMA' | 'QARZ' | 'ARALASH';
@@ -21,11 +22,10 @@ type Intent = '' | 'NAQD' | 'PLASTIK' | 'OTKAZMA' | 'QARZ' | 'ARALASH';
 const QUICK = [1, 3, 5, 10, 12, 20];
 const INTENTS: Array<{ v: Intent; l: string }> = [
   { v: '', l: 'Aniqlanmagan' },
-  { v: 'NAQD', l: 'Naqd' },
-  { v: 'PLASTIK', l: 'Plastik' },
-  { v: 'OTKAZMA', l: "O'tkazma" },
-  { v: 'QARZ', l: 'Qarzga' },
-  { v: 'ARALASH', l: 'Aralash' },
+  ...(['NAQD', 'PLASTIK', 'OTKAZMA', 'QARZ', 'ARALASH'] as const).map((v) => ({
+    v,
+    l: paymentLabel(v),
+  })),
 ];
 
 function plusDays(days: number): string {

@@ -10,6 +10,7 @@ import type { ReactElement } from 'react';
 import { reportsApi, salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money } from '@/shared/lib/format';
+import { paymentLabel } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 import { SortableTh } from '@/shared/table/SortableTh';
 import { TableToolbar, type TableFilter } from '@/shared/table/TableToolbar';
@@ -36,12 +37,10 @@ const FILTERS: TableFilter[] = [
   {
     key: 'payment_type',
     label: "To'lov",
-    options: [
-      { value: 'NAQD', label: 'Naqd' },
-      { value: 'PLASTIK', label: 'Plastik' },
-      { value: 'QARZ', label: 'Qarzga' },
-      { value: 'ARALASH', label: 'Aralash' },
-    ],
+    options: ['NAQD', 'PLASTIK', 'QARZ', 'ARALASH'].map((v) => ({
+      value: v,
+      label: paymentLabel(v),
+    })),
   },
   { key: 'date__gte', label: 'Sanadan', type: 'date' },
   { key: 'date__lte', label: 'Sanagacha', type: 'date' },

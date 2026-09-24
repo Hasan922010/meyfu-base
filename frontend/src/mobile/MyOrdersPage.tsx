@@ -9,18 +9,14 @@ import { db, type CachedOrder } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { usePrefetchedCoords } from '@/mobile/geo';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
+import { orderToReceipt } from '@/mobile/lib/orderReceipt';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
-import { ordersApi, type Order } from '@/shared/api/orders';
+import { ordersApi } from '@/shared/api/orders';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
 import { money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
-
-const PAY_LABEL: Record<string, string> = {
-  NAQD: 'Naqd',
-  PLASTIK: 'Plastik',
-  QARZ: 'Qarzga',
-};
+import { paymentLabel } from '@/shared/lib/labels';
 
 type Tab = 'taken' | 'deliver';
 type PayType = 'NAQD' | 'PLASTIK' | 'QARZ';
@@ -124,28 +120,6 @@ function DeliverTab({
       ))}
     </ul>
   );
-}
-
-function orderToReceipt(o: Order): ReceiptDoc {
-  return {
-    kind: 'order',
-    numberOrRef: o.number,
-    synced: true,
-    date: new Date(o.created_at).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }),
-    distributorName: o.taken_by_name,
-    clientName: o.client_name,
-    paymentLabel: o.payment_intent ? PAY_LABEL[o.payment_intent] : undefined,
-    lines: o.items.map((it) => ({
-      name: it.product_name,
-      qty: Number(it.quantity),
-      price: Number(it.price),
-    })),
-    total: Number(o.total_amount),
-  };
 }
 
 function TakenTab(): ReactElement {
@@ -255,7 +229,7 @@ function FulfillScreen({
         }),
         distributorName,
         clientName: order.client_name,
-        paymentLabel: PAY_LABEL[paymentType],
+        paymentLabel: paymentLabel(paymentType),
         lines: lines.map((l) => {
           const it = order.items.find((x) => x.id === l.item);
           return {
