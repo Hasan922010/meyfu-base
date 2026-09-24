@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
@@ -51,6 +51,20 @@ export function LoadingForm({ loading = null, onDone }: Props): ReactElement {
         quantity: plainQty(i.quantity),
         price: i.price ?? '',
       })) ?? [],
+  );
+
+  // Tanlangan ombordagi bo'sh qoldiq — qatorda ko'rinadi, oshsa ogohlantiradi (audit K5)
+  const stock = useQuery({
+    queryKey: ['stock', 'by-warehouse', warehouse],
+    queryFn: () => warehouseApi.stock({ warehouse, page_size: 1000 }),
+    enabled: warehouse !== '',
+  });
+  const available = useMemo(
+    () =>
+      stock.data
+        ? new Map(stock.data.results.map((s) => [s.product, Number(s.available_quantity)]))
+        : undefined,
+    [stock.data],
   );
 
   const mutation = useMutation({
@@ -132,6 +146,7 @@ export function LoadingForm({ loading = null, onDone }: Props): ReactElement {
         priceSource="wholesale_price"
         priceLabel="Narx"
         priceHint="optom"
+        available={available}
       />
 
       {mutation.isError && (

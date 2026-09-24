@@ -9,6 +9,7 @@ const warehouseApi = vi.hoisted(() => ({
   updateLoading: vi.fn(),
   createLoading: vi.fn(),
   warehouses: vi.fn(),
+  stock: vi.fn(),
   loadingPdf: vi.fn(),
 }));
 const catalogApi = vi.hoisted(() => ({ products: vi.fn() }));
@@ -60,6 +61,7 @@ beforeEach(() => {
   warehouseApi.cancelLoading.mockResolvedValue({});
   warehouseApi.updateLoading.mockResolvedValue(DRAFT);
   warehouseApi.warehouses.mockResolvedValue(page([{ id: 'w1', name: 'Markaziy ombor' }]));
+  warehouseApi.stock.mockResolvedValue(page([{ product: 'p1', available_quantity: '1320.000' }]));
   catalogApi.products.mockResolvedValue(page([{ id: 'p1', name: 'Bio kukun 3kg', sku: 'BIO-3KG', wholesale_price: '26000.00' }]));
   authApi.distributors.mockResolvedValue([{ id: 'd1', full_name: 'Sardor Tarqatuvchi' }]);
 });
@@ -107,5 +109,15 @@ describe('LoadingsTab — qoralama va yuborilgan yuklama amallari', () => {
         }),
       ),
     );
+  });
+
+  it('qatorda ombordagi qoldiq ko‘rinadi va undan oshsa ogohlantiradi', async () => {
+    renderTab();
+    await screen.findByText('YK-2026-00010');
+
+    fireEvent.click(within(row('YK-2026-00010')).getByRole('button', { name: 'Tahrirlash' }));
+
+    expect(await screen.findByText(/Omborda faqat 1 320 bor/)).toBeInTheDocument();
+    expect(warehouseApi.stock).toHaveBeenCalledWith(expect.objectContaining({ warehouse: 'w1' }));
   });
 });

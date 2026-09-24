@@ -28,7 +28,10 @@ function serverFieldError(field: string, message: string): AxiosError {
     statusText: 'Bad Request',
     headers: {},
     config,
-    data: { success: false, error: { message: 'Xato', details: { [field]: [message] } } },
+    data: {
+      success: false,
+      error: { code: 'INVALID', message: 'Xato', details: { [field]: [message] } },
+    },
   });
 }
 

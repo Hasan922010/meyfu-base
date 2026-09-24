@@ -2,7 +2,7 @@ import { Search, X } from 'lucide-react';
 import { useMemo, useRef, useState, type ReactElement } from 'react';
 
 import { AmountInput } from '@/shared/components/AmountInput';
-import { money, numberToWordsUz } from '@/shared/lib/format';
+import { money, numberToWordsUz, qty } from '@/shared/lib/format';
 import type { Product } from '@/shared/types/catalog';
 
 export interface LineRow {
@@ -19,6 +19,8 @@ interface Props {
   priceSource: 'cost_price' | 'wholesale_price';
   priceLabel: string;
   priceHint?: string;
+  /** Mahsulot ID → ombordagi bo'sh qoldiq. Berilsa qidiruvda va qatorda ko'rsatiladi. */
+  available?: Map<string, number>;
 }
 
 const MAX_RESULTS = 8;
@@ -30,6 +32,7 @@ export function ProductLineEditor({
   priceSource,
   priceLabel,
   priceHint,
+  available,
 }: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -116,6 +119,7 @@ export function ProductLineEditor({
                     <span className="ml-2 text-xs text-gray-400">{p.sku}</span>
                   </span>
                   <span className="shrink-0 text-xs text-gray-400">
+                    {available && `omborda ${qty(available.get(p.id) ?? 0)} · `}
                     {money(p[priceSource])} / {p.unit_name}
                   </span>
                 </button>
@@ -146,6 +150,8 @@ export function ProductLineEditor({
                 const p = byId.get(r.product);
                 const line =
                   (Number(r.quantity) || 0) * (Number(r.price) || 0);
+                const free = available?.get(r.product);
+                const over = free !== undefined && Number(r.quantity) > free;
                 return (
                   <tr
                     key={r.product}
@@ -158,12 +164,21 @@ export function ProductLineEditor({
                           {p.unit_name}
                         </span>
                       )}
+                      {free !== undefined && (
+                        <span
+                          className={`block text-xs ${over ? 'text-danger' : 'text-gray-400'}`}
+                        >
+                          {over ? `Omborda faqat ${qty(free)} bor` : `omborda ${qty(free)}`}
+                        </span>
+                      )}
                     </td>
                     <td className="px-2 py-2">
                       <input
                         className="field h-8 w-20 px-2 py-1"
                         type="number"
                         step="0.001"
+                        aria-label={`${p?.name ?? 'Mahsulot'} — soni`}
+                        aria-invalid={over || undefined}
                         value={r.quantity}
                         onChange={(e) =>
                           patch(idx, { quantity: e.target.value })
