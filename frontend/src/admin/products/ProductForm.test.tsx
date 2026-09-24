@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const catalogApi = vi.hoisted(() => ({
@@ -17,6 +17,7 @@ vi.mock('@/shared/store/authStore', () => ({
     sel({ user: { role: 'SUPER_ADMIN' } }),
 }));
 
+import { ToastContext } from '@/shared/lib/toast';
 import type { Product } from '@/shared/types/catalog';
 
 import { ProductForm } from './ProductForm';
@@ -35,6 +36,7 @@ function serverFieldError(field: string, message: string): AxiosError {
   });
 }
 
+const push = vi.fn();
 const page = <T,>(results: T[]) => ({ count: results.length, next: null, previous: null, results });
 
 const PRODUCT = {
@@ -59,7 +61,9 @@ function renderForm(product: Product | null): void {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <ProductForm product={product} onDone={() => undefined} />
+      <ToastContext.Provider value={{ push }}>
+        <ProductForm product={product} onDone={() => undefined} />
+      </ToastContext.Provider>
     </QueryClientProvider>,
   );
 }
@@ -102,5 +106,18 @@ describe('ProductForm', () => {
 
     expect(await screen.findByText(msg)).toBeInTheDocument();
     expect(screen.queryByText(/min_price/)).not.toBeInTheDocument();
+  });
+
+  it('saqlangach "Mahsulot saqlandi" xabarini ko‘rsatadi', async () => {
+    catalogApi.updateProduct.mockResolvedValue(PRODUCT);
+    renderForm(PRODUCT);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Saqlash' }));
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'success', title: 'Mahsulot saqlandi' }),
+      ),
+    );
   });
 });

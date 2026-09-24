@@ -5,6 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { catalogApi } from '@/shared/api/catalog';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
+import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
 
@@ -81,6 +82,7 @@ function ProductFormFields({
   brands,
 }: FieldsProps): ReactElement {
   const qc = useQueryClient();
+  const toast = useToast();
   const role = useAuthStore((s) => s.user?.role);
   const canEditPrice = !product || role === 'SUPER_ADMIN';
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -125,6 +127,7 @@ function ProductFormFields({
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['products'] });
+      toast.push({ kind: 'success', title: 'Mahsulot saqlandi' });
       onDone();
     },
     onMutate: () => setGeneralError(null),

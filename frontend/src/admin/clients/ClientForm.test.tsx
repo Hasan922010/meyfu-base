@@ -5,17 +5,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const clientsApi = vi.hoisted(() => ({ routes: vi.fn(), create: vi.fn(), update: vi.fn() }));
 vi.mock('@/shared/api/clients', () => ({ clientsApi }));
 
+import { ToastContext } from '@/shared/lib/toast';
 import type { Client } from '@/shared/types/clients';
 
 import { ClientForm } from './ClientForm';
 
+const push = vi.fn();
 const page = <T,>(results: T[]) => ({ count: results.length, next: null, previous: null, results });
 
 function renderForm(client: Client | null = null): void {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   render(
     <QueryClientProvider client={qc}>
-      <ClientForm client={client} onDone={() => undefined} />
+      <ToastContext.Provider value={{ push }}>
+        <ClientForm client={client} onDone={() => undefined} />
+      </ToastContext.Provider>
     </QueryClientProvider>,
   );
 }
@@ -39,6 +43,9 @@ describe('ClientForm (audit m2)', () => {
 
     await waitFor(() => expect(clientsApi.create).toHaveBeenCalled());
     expect(clientsApi.create.mock.calls[0]![0]).not.toHaveProperty('debt_limit');
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' })),
+    );
   });
 
   it('marshrut tanlanmasa ogohlantiradi', async () => {
