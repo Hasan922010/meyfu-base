@@ -88,12 +88,18 @@ class StockSerializer(serializers.ModelSerializer):
     available_quantity = serializers.DecimalField(
         max_digits=14, decimal_places=3, read_only=True
     )
+    # Audit m9: telefondagi ro'yxat birlik va "kam qoldi" belgisini ko'rsatadi
+    product_unit = serializers.CharField(source="product.unit.short_name", read_only=True)
+    min_stock_alert = serializers.DecimalField(
+        source="product.min_stock_alert", max_digits=14, decimal_places=3, read_only=True
+    )
 
     class Meta:
         model = Stock
         fields = (
             "id", "warehouse", "warehouse_name", "product", "product_name",
-            "product_sku", "quantity", "reserved_quantity", "available_quantity",
+            "product_sku", "product_unit", "min_stock_alert",
+            "quantity", "reserved_quantity", "available_quantity",
             "updated_at",
         )
         read_only_fields = fields
