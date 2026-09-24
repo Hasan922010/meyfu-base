@@ -91,7 +91,9 @@ class SystemStatusView(APIView):
         request=None, responses={200: dict},
     )
     def get(self, request: Request) -> Response:
-        return ok(system_status())
+        # ?deep=0 — tezkor javob (celery ping'siz), audit m8
+        deep = request.query_params.get("deep") != "0"
+        return ok(system_status(deep=deep))
 
 
 class IntegrityCheckView(APIView):
