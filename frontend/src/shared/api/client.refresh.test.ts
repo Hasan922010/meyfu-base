@@ -28,7 +28,7 @@ describe('refresh token rotatsiyasi (UX: har ~30 daqiqada logout)', () => {
   });
 
   afterEach(() => {
-    api.defaults.adapter = originalAdapter;
+    if (originalAdapter !== undefined) api.defaults.adapter = originalAdapter;
     vi.restoreAllMocks();
   });
 

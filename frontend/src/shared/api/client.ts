@@ -96,7 +96,7 @@ api.interceptors.response.use(
         refreshPromise = null;
       });
       const result = await refreshPromise;
-      if (result.access) {
+      if (result.access !== null) {
         original.headers.set('Authorization', `Bearer ${result.access}`);
         return api.request(original);
       }

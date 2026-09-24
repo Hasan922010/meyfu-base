@@ -20,7 +20,7 @@ interface Props {
   priceLabel: string;
   priceHint?: string;
   /** Mahsulot ID → ombordagi bo'sh qoldiq. Berilsa qidiruvda va qatorda ko'rsatiladi. */
-  available?: Map<string, number>;
+  available?: Map<string, number> | undefined;
 }
 
 const MAX_RESULTS = 8;

@@ -14,7 +14,7 @@ interface Props {
   onFilter?: (key: string, value: string) => void;
   onReset?: () => void;
   /** Ko'rsatilayotgan yozuvlar soni */
-  count?: number;
+  count?: number | undefined;
 }
 
 /** Jadval tepasidagi panel: qidiruv + asosiy filtrlar + tozalash. */
