@@ -9,7 +9,8 @@ import {
   type ReportDimension,
 } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
-import { money } from '@/shared/lib/format';
+import { money, qty } from '@/shared/lib/format';
+import { paymentLabel } from '@/shared/lib/labels';
 import { businessDateISO } from '@/shared/lib/businessDay';
 
 type Tab = 'query' | 'abc' | 'pnl';
@@ -37,6 +38,15 @@ const ABC_DIMS: Array<{ v: ReportDimension; l: string }> = [
 ];
 
 const PAYMENT_TYPES = ['NAQD', 'PLASTIK', 'OTKAZMA', 'QARZ', 'ARALASH'];
+
+/** Ustun sarlavhasi: server kaliti ("product") emas, o'zbekcha nom (audit m5). */
+function dimLabel(key: string): string {
+  return QUERY_DIMS.find((d) => d.v === key)?.l ?? key;
+}
+
+function cellLabel(key: string, value: unknown): string {
+  return key === 'payment_type' ? paymentLabel(String(value)) : String(value);
+}
 
 const ABC_CLASS_STYLE: Record<string, string> = {
   A: 'bg-success/15 text-success',
@@ -205,7 +215,7 @@ function QueryTab({ range }: { range: Range }): ReactElement {
             <option value="">Barcha to'lovlar</option>
             {PAYMENT_TYPES.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {paymentLabel(p)}
               </option>
             ))}
           </select>
@@ -232,7 +242,7 @@ function QueryTab({ range }: { range: Range }): ReactElement {
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
-                <th className="p-3 capitalize">{keyName}</th>
+                <th className="p-3">{dimLabel(keyName)}</th>
                 <th className="p-3 text-right">Summa</th>
                 <th className="p-3 text-right">Foyda</th>
                 <th className="p-3 text-right">Margin %</th>
@@ -246,11 +256,11 @@ function QueryTab({ range }: { range: Range }): ReactElement {
                   key={i}
                   className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                 >
-                  <td className="p-3">{String(r[keyName])}</td>
+                  <td className="p-3">{cellLabel(keyName, r[keyName])}</td>
                   <td className="p-3 text-right">{money(r.amount)}</td>
                   <td className="p-3 text-right text-success">{money(r.profit)}</td>
                   <td className="p-3 text-right">{r.margin_percent}%</td>
-                  <td className="p-3 text-right">{r.qty}</td>
+                  <td className="p-3 text-right">{qty(r.qty)}</td>
                   <td className="p-3 text-right">{r.count}</td>
                 </tr>
               ))}
@@ -342,7 +352,7 @@ function AbcTab({ range }: { range: Range }): ReactElement {
               <table className="w-full text-sm">
                 <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
                   <tr>
-                    <th className="p-3 capitalize">{keyName}</th>
+                    <th className="p-3">{dimLabel(keyName)}</th>
                     <th className="p-3 text-right">Summa</th>
                     <th className="p-3 text-right">Ulush %</th>
                     <th className="p-3 text-right">Jami %</th>
@@ -355,7 +365,7 @@ function AbcTab({ range }: { range: Range }): ReactElement {
                       key={i}
                       className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                     >
-                      <td className="p-3">{String(r[keyName])}</td>
+                      <td className="p-3">{cellLabel(keyName, r[keyName])}</td>
                       <td className="p-3 text-right">{money(r.amount)}</td>
                       <td className="p-3 text-right">{r.share_percent}%</td>
                       <td className="p-3 text-right text-gray-400">
