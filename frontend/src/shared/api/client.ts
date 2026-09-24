@@ -27,13 +27,22 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
   _retried?: boolean;
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+/** access — yangi token; sessionEnded — server refresh'ni rad etdi, qayta kirish kerak. */
+type RefreshResult = { access: string } | { access: null; sessionEnded: boolean };
 
-async function refreshAccess(): Promise<string | null> {
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+/** Server refresh tokenni rad etdimi (muddati o'tgan, qora ro'yxatda, noto'g'ri)? */
+function isRefreshRejected(err: unknown): boolean {
+  const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+  return status === 401 || status === 400;
+}
+
+async function refreshAccess(): Promise<RefreshResult> {
   const { refresh, setAccess, clear } = useAuthStore.getState();
   if (!refresh) {
     clear();
-    return null;
+    return { access: null, sessionEnded: true };
   }
   try {
     const resp = await axios.post<{ access: string; refresh?: string }>(
@@ -43,10 +52,16 @@ async function refreshAccess(): Promise<string | null> {
     // Eski refresh serverda qora ro'yxatga tushgan — yangisini saqlamasak
     // keyingi refresh 401 beradi va foydalanuvchi chiqarib yuboriladi
     setAccess(resp.data.access, resp.data.refresh);
-    return resp.data.access;
-  } catch {
-    clear();
-    return null;
+    return { access: resp.data.access };
+  } catch (err) {
+    // Faqat server rad etsa chiqaramiz. Tarmoq uzilishi yoki 5xx da sessiya qoladi —
+    // aks holda beqaror internetda tarqatuvchi tizimdan chiqib ketardi (UX audit N2)
+    if (isRefreshRejected(err)) {
+      clear();
+      return { access: null, sessionEnded: true };
+    }
+    console.warn('[refreshAccess] vaqtincha xato, sessiya saqlandi', err);
+    return { access: null, sessionEnded: false };
   }
 }
 
@@ -61,12 +76,16 @@ api.interceptors.response.use(
       refreshPromise ??= refreshAccess().finally(() => {
         refreshPromise = null;
       });
-      const newAccess = await refreshPromise;
-      if (newAccess) {
-        original.headers.set('Authorization', `Bearer ${newAccess}`);
+      const result = await refreshPromise;
+      if (result.access) {
+        original.headers.set('Authorization', `Bearer ${result.access}`);
         return api.request(original);
       }
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      if (
+        result.sessionEnded &&
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login'
+      ) {
         window.location.assign('/login');
       }
     }

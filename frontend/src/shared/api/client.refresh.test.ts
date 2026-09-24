@@ -58,6 +58,60 @@ describe('refresh token rotatsiyasi (UX: har ~30 daqiqada logout)', () => {
     expect(useAuthStore.getState().access).toBe('access-2');
   });
 
+  describe('UX N2 — refresh muvaffaqiyatsiz bo‘lsa', () => {
+    const realLocation = window.location;
+    const assign = vi.fn();
+
+    beforeEach(() => {
+      assign.mockReset();
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...realLocation, pathname: '/m', assign },
+      });
+      api.defaults.adapter = fakeAdapter(() => 'never-valid');
+    });
+
+    afterEach(() => {
+      Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
+    });
+
+    function refreshFailsWith(err: AxiosError): void {
+      vi.spyOn(axios, 'post').mockRejectedValue(err);
+    }
+
+    it('tarmoq xatosida sessiya saqlanadi va login sahifasiga o‘tkazilmaydi', async () => {
+      refreshFailsWith(new AxiosError('Network Error', 'ERR_NETWORK'));
+
+      await expect(api.get('/x')).rejects.toBeInstanceOf(AxiosError);
+
+      expect(useAuthStore.getState().refresh).toBe('refresh-0');
+      expect(useAuthStore.getState().access).toBe('access-0');
+      expect(assign).not.toHaveBeenCalled();
+    });
+
+    it('server 5xx qaytarsa ham sessiya saqlanadi', async () => {
+      const err = new AxiosError('Bad Gateway', 'ERR_BAD_RESPONSE');
+      err.response = { data: {}, status: 502, statusText: '', headers: {}, config: {} as never };
+      refreshFailsWith(err);
+
+      await expect(api.get('/x')).rejects.toBeInstanceOf(AxiosError);
+
+      expect(useAuthStore.getState().refresh).toBe('refresh-0');
+      expect(assign).not.toHaveBeenCalled();
+    });
+
+    it('server refresh tokenni rad etsa (401) sessiya tozalanadi va login sahifasiga o‘tadi', async () => {
+      const err = new AxiosError('Unauthorized', 'ERR_BAD_REQUEST');
+      err.response = { data: {}, status: 401, statusText: '', headers: {}, config: {} as never };
+      refreshFailsWith(err);
+
+      await expect(api.get('/x')).rejects.toBeInstanceOf(AxiosError);
+
+      expect(useAuthStore.getState().refresh).toBeNull();
+      expect(assign).toHaveBeenCalledWith('/login');
+    });
+  });
+
   it('javobda refresh bo‘lmasa, eskisini saqlab qoladi', async () => {
     api.defaults.adapter = fakeAdapter(() => 'access-new');
     vi.spyOn(axios, 'post').mockResolvedValue({ data: { access: 'access-new' } });
