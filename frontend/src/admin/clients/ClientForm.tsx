@@ -5,6 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { clientsApi } from '@/shared/api/clients';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
+import { useToast } from '@/shared/lib/toast';
 import type { Client, ClientInput, Route } from '@/shared/types/clients';
 
 const TYPES: Array<{ value: string; label: string }> = [
@@ -42,6 +43,7 @@ export function ClientForm({ client, onDone }: Props): ReactElement {
 
 function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] }): ReactElement {
   const qc = useQueryClient();
+  const toast = useToast();
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   const {
@@ -80,6 +82,7 @@ function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] 
     onError: (err) => setGeneralError(applyServerErrors(err, setError)),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['clients'] });
+      toast.push({ kind: 'success', title: 'Mijoz saqlandi' });
       onDone();
     },
   });
