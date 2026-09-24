@@ -394,3 +394,45 @@ def test_offline_order_create_and_fulfill(auth_api, deliverer, van_stocked):
     assert ff.data["data"]["results"][0]["status"] == "SENT"
     order.refresh_from_db()
     assert order.status == OrderStatus.DELIVERED
+
+
+@pytest.mark.django_db
+def test_fulfill_distributor_override_ignored_for_distributor(
+    admin_api, auth_api, agent, distributor, van_stocked, routed_clients
+):
+    """H2 regressiya: tarqatuvchi `fulfill` da begona `distributor` yuborsa,
+    u e'tiborsiz qoldiriladi va sotuv chaqiruvchining o'ziga bog'lanadi —
+    aks holda boshqa tarqatuvchining qoldig'i/hamyoni manipulyatsiya qilinardi."""
+    from apps.sales.models import Sale
+
+    product = _product(van_stocked["product"])
+    create = auth_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(van_stocked["client"].id),
+            "taken_by": str(agent.id),
+            "items": [{"product": str(product.id), "quantity": "5", "price": "27000"}],
+            "payment_intent": "NAQD",
+        },
+        format="json",
+    )
+    assert create.status_code == 201, create.data
+    order_id = create.data["data"]["id"]
+    admin_api.post(f"/api/v1/orders/{order_id}/approve/")
+
+    order = Order.objects.get(pk=order_id)
+    ff = auth_api.post(
+        f"/api/v1/orders/{order_id}/fulfill/",
+        {
+            "lines": [
+                {"item": str(order.items.first().id), "delivered_quantity": "5"}
+            ],
+            "distributor": str(routed_clients["other_distributor"].id),
+            "payment_type": "NAQD",
+        },
+        format="json",
+    )
+    assert ff.status_code == 201, ff.data
+    sale = Sale.objects.get(order_id=order_id)
+    assert sale.distributor_id == distributor.id
+    assert sale.distributor_id != routed_clients["other_distributor"].id
