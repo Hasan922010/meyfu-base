@@ -65,5 +65,13 @@
     "body": "An error occurred while loading the page. Please try again.",
     "retry": "Try again",
     "home": "Home"
+  },
+  "table": {
+    "search": "Search…",
+    "all": "All",
+    "clear": "Clear",
+    "sortHint": "Click to sort",
+    "count_one": "{{count}} row",
+    "count_other": "{{count}} rows"
   }
 }

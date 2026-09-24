@@ -65,5 +65,13 @@
     "body": "Sahifani ochishda xatolik yuz berdi. Qayta urinib ko'ring.",
     "retry": "Qayta urinish",
     "home": "Bosh sahifa"
+  },
+  "table": {
+    "search": "Qidirish…",
+    "all": "Barchasi",
+    "clear": "Tozalash",
+    "sortHint": "Saralash uchun bosing",
+    "count_one": "{{count}} ta",
+    "count_other": "{{count}} ta"
   }
 }
