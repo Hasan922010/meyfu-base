@@ -37,8 +37,11 @@ grep -qxF 'graphify-out/' .claudeignore || echo 'graphify-out/' >> .claudeignore
 grep -qxF 'graph.json' .claudeignore || echo 'graph.json' >> .claudeignore
 if [ -d .git ]; then
   touch .gitignore
-  grep -qxF 'graphify-out/cost.json' .gitignore || echo 'graphify-out/cost.json' >> .gitignore
-  grep -qxF 'graphify-out/pilot-setup.log' .gitignore || echo 'graphify-out/pilot-setup.log' >> .gitignore
+  # Skip if the whole output dir is already ignored — the per-file lines would be redundant
+  if ! grep -qxE '/?graphify-out/?' .gitignore; then
+    grep -qxF 'graphify-out/cost.json' .gitignore || echo 'graphify-out/cost.json' >> .gitignore
+    grep -qxF 'graphify-out/pilot-setup.log' .gitignore || echo 'graphify-out/pilot-setup.log' >> .gitignore
+  fi
 fi
 
 # 3) Build graph: code only, local tree-sitter AST, zero LLM tokens
