@@ -54,3 +54,18 @@ def test_clients_sort_by_route_and_owner(manager_api, routed_clients):
     assert _column(by_route, "name") == ["Do'kon A", "Do'kon B"]  # Chilonzor < Yunusobod
     by_route_desc = manager_api.get("/api/v1/clients/?ordering=-route__name")
     assert _column(by_route_desc, "name") == ["Do'kon B", "Do'kon A"]
+
+
+@pytest.mark.django_db
+def test_products_sort_by_sku_and_min_price(manager_api, catalog):
+    from apps.catalog.models import Product
+
+    base = Product.objects.first()
+    Product.objects.create(
+        name="Zzz sovun", sku="AAA-001", unit=base.unit, category=base.category,
+        retail_price="1000", wholesale_price="900", min_price="1", cost_price="500",
+    )
+    by_sku = _column(manager_api.get("/api/v1/products/?ordering=sku"), "sku")
+    assert by_sku[0] == "AAA-001"
+    by_min = _column(manager_api.get("/api/v1/products/?ordering=min_price"), "name")
+    assert by_min[0] == "Zzz sovun"
