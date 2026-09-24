@@ -7,7 +7,7 @@ import { extractApiError } from '@/shared/api/client';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
 import { useAuthStore } from '@/shared/store/authStore';
-import type { Product, ProductInput } from '@/shared/types/catalog';
+import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
 
 import { ProductImages } from './ProductImages';
 
@@ -25,10 +25,6 @@ const PRICE_KEYS = [
 ] as const;
 
 export function ProductForm({ product, onDone }: Props): ReactElement {
-  const qc = useQueryClient();
-  const role = useAuthStore((s) => s.user?.role);
-  const canEditPrice = !product || role === 'SUPER_ADMIN';
-
   const categories = useQuery({
     queryKey: ['categories'],
     queryFn: () => catalogApi.categories({ page_size: 200 }),
@@ -41,6 +37,46 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
     queryKey: ['brands'],
     queryFn: () => catalogApi.brands({ page_size: 200 }),
   });
+
+  // Forma ma'lumotnomalar kelgandan keyin mount qilinadi: aks holda select'da hali
+  // option yo'qligida defaultValue qo'yilmay qoladi va birlik/brend bo'sh ko'rinadi.
+  if (categories.isError || units.isError || brands.isError) {
+    return (
+      <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+        Ma'lumotnomalarni yuklab bo'lmadi. Oynani yopib, qayta oching.
+      </p>
+    );
+  }
+  if (!categories.data || !units.data || !brands.data) {
+    return <p className="py-6 text-center text-sm text-gray-500">Yuklanmoqda…</p>;
+  }
+  return (
+    <ProductFormFields
+      product={product}
+      onDone={onDone}
+      categories={categories.data.results}
+      units={units.data.results}
+      brands={brands.data.results}
+    />
+  );
+}
+
+interface FieldsProps extends Props {
+  categories: Category[];
+  units: Unit[];
+  brands: Brand[];
+}
+
+function ProductFormFields({
+  product,
+  onDone,
+  categories,
+  units,
+  brands,
+}: FieldsProps): ReactElement {
+  const qc = useQueryClient();
+  const role = useAuthStore((s) => s.user?.role);
+  const canEditPrice = !product || role === 'SUPER_ADMIN';
 
   const { register, control, handleSubmit, setError, formState } = useForm<ProductInput>({
     defaultValues: product
@@ -97,14 +133,14 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       <div className="grid grid-cols-2 gap-3">
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Nomi *</span>
-          <input className="field" {...register('name', { required: true })} />
+          <input className="field" {...register('name', { required: 'Nomini kiriting' })} />
           {formState.errors.name?.message && (
             <span className="text-xs text-danger">{formState.errors.name.message}</span>
           )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">SKU *</span>
-          <input className="field" {...register('sku', { required: true })} />
+          <input className="field" {...register('sku', { required: 'SKU kiriting' })} />
           {formState.errors.sku?.message && (
             <span className="text-xs text-danger">{formState.errors.sku.message}</span>
           )}
@@ -115,31 +151,43 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Kategoriya *</span>
-          <select className="field" {...register('category', { required: true })}>
+          <select
+            className="field"
+            {...register('category', { required: 'Kategoriyani tanlang' })}
+          >
             <option value="">—</option>
-            {categories.data?.results.map((c) => (
+            {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
+          {formState.errors.category?.message && (
+            <span className="text-xs text-danger">{formState.errors.category.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">O'lchov birligi *</span>
-          <select className="field" {...register('unit', { required: true })}>
+          <select
+            className="field"
+            {...register('unit', { required: "O'lchov birligini tanlang" })}
+          >
             <option value="">—</option>
-            {units.data?.results.map((u) => (
+            {units.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.short_name}
               </option>
             ))}
           </select>
+          {formState.errors.unit?.message && (
+            <span className="text-xs text-danger">{formState.errors.unit.message}</span>
+          )}
         </label>
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Brend</span>
           <select className="field" {...register('brand')}>
             <option value="">—</option>
-            {brands.data?.results.map((b) => (
+            {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
               </option>
