@@ -107,3 +107,18 @@ def test_drf_blank_and_choice_messages_are_uzbek():
 
     assert messages["note"][0] == "Bu maydon bo'sh bo'lishi mumkin emas."
     assert messages["kind"][0] == '"ZZZ" — yaroqli tanlov emas.'
+
+
+@pytest.mark.django_db
+def test_permission_denied_message_is_uzbek(auth_api, catalog):
+    """Audit K3: rol ruxsat bermaganda inglizcha DRF matni chiqmasin."""
+    resp = auth_api.post(
+        "/api/v1/products/",
+        {"name": "x", "sku": "x", "category": str(catalog["category"].id),
+         "unit": str(catalog["unit"].id)},
+        format="json",
+    )
+    assert resp.status_code == 403
+    message = resp.data["error"]["message"]
+    assert "permission" not in message.lower()
+    assert "rolingiz" in message

@@ -61,6 +61,11 @@ _STATIC_MESSAGES: dict[str, str] = {
         "Tizimga kirish ma'lumotlari yuborilmadi."
     ),
     "Method \"{method}\" not allowed.": "«{method}» metodi ruxsat etilmagan.",
+    # Audit K3: rol ruxsat bermagan amal — ayblovsiz, keyingi qadam bilan
+    "You do not have permission to perform this action.": (
+        "Bu amal sizning rolingiz uchun yopiq. Kerak bo'lsa, administratorga murojaat qiling."
+    ),
+    "Not found.": "Topilmadi.",
 }
 
 _PATTERN_MESSAGES: tuple[tuple[re.Pattern[str], str], ...] = (
