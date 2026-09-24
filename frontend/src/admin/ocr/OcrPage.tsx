@@ -12,6 +12,7 @@ import { useState, type ReactElement } from 'react';
 import { ocrApi } from '@/shared/api/ocr';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
 
 import { OcrUpload } from './OcrUpload';
 import { ScanReview } from './ScanReview';
@@ -45,6 +46,7 @@ function usd(value: string): string {
 }
 
 export function OcrPage(): ReactElement {
+  const canUpload = useCan('ocrWrite');
   const [tab, setTab] = useState<'queue' | 'metrics'>('queue');
   const [uploadOpen, setUploadOpen] = useState<boolean>(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
@@ -66,12 +68,14 @@ export function OcrPage(): ReactElement {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kirim / Naklit skanerlash</h1>
-        <button
-          className="btn-brand flex items-center gap-1.5 px-4"
-          onClick={() => setUploadOpen(true)}
-        >
-          <ScanLine size={16} aria-hidden /> Naklit skanerlash
-        </button>
+        {canUpload && (
+          <button
+            className="btn-brand flex items-center gap-1.5 px-4"
+            onClick={() => setUploadOpen(true)}
+          >
+            <ScanLine size={16} aria-hidden /> Naklit skanerlash
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">

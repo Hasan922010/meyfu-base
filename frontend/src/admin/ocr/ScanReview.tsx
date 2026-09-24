@@ -9,6 +9,7 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { money } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
 
 const MATCH_CLASS: Record<string, string> = {
   EXACT: 'text-success',
@@ -25,6 +26,7 @@ export function ScanReview({
   onClose: () => void;
 }): ReactElement {
   const qc = useQueryClient();
+  const canWrite = useCan('ocrWrite');
   const scan = useQuery({
     queryKey: ['scan', scanId],
     queryFn: () => ocrApi.get(scanId),
@@ -73,7 +75,7 @@ export function ScanReview({
         <DataState isLoading={scan.isLoading} isError={scan.isError}>
           {d && (
             <>
-              {d.status === 'FAILED' && (
+              {d.status === 'FAILED' && canWrite && (
                 <div className="rounded-lg bg-danger/10 p-3 text-sm text-danger">
                   OCR xatosi: {d.error_message}
                   <button
@@ -95,6 +97,8 @@ export function ScanReview({
                 </button>
               )}
 
+              {/* Buxgalter kabi yozish huquqi yo'q rollar faqat ko'radi (audit K3b) */}
+              <fieldset disabled={!canWrite} className="space-y-4">
               {/* sarlavha */}
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <label className="space-y-1">
@@ -161,13 +165,14 @@ export function ScanReview({
                 </table>
               </div>
 
+              </fieldset>
               {confirm.isError && (
                 <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
                   {extractApiError(confirm.error)}
                 </p>
               )}
 
-              {d.status === 'NEEDS_REVIEW' && (
+              {d.status === 'NEEDS_REVIEW' && canWrite && (
                 <div className="flex gap-2">
                   <button
                     className="btn flex-1 text-danger"

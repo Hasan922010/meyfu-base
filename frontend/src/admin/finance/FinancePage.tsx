@@ -7,6 +7,7 @@ import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
 
 import { CashTxModal } from './CashTxModal';
 
@@ -25,6 +26,8 @@ export function FinancePage(): ReactElement {
   const [tab, setTab] = useState<'overview' | 'cash' | 'company'>('overview');
   const [expModal, setExpModal] = useState<boolean>(false);
   const [cashModal, setCashModal] = useState<boolean>(false);
+  // Kassa va kompaniya xarajatini faqat SUPER_ADMIN/ACCOUNTANT yozadi (audit K3b)
+  const canWrite = useCan('cashWrite');
 
   const profit = useQuery({ queryKey: ['profit'], queryFn: () => financeApi.profit() });
   const account = useQuery({
@@ -110,9 +113,11 @@ export function FinancePage(): ReactElement {
               {money(account.data?.balance ?? '0')}
             </span>
           </div>
-          <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
-            + Kassa yozuvi
-          </button>
+          {canWrite && (
+            <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
+              + Kassa yozuvi
+            </button>
+          )}
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
             <DataState
               isLoading={cashTx.isLoading}
@@ -165,9 +170,11 @@ export function FinancePage(): ReactElement {
 
       {tab === 'company' && (
         <div className="space-y-3">
-          <button className="btn-brand px-4" onClick={() => setExpModal(true)}>
-            + Kompaniya xarajati
-          </button>
+          {canWrite && (
+            <button className="btn-brand px-4" onClick={() => setExpModal(true)}>
+              + Kompaniya xarajati
+            </button>
+          )}
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
             <DataState
               isLoading={companyExp.isLoading}

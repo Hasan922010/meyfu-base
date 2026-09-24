@@ -14,6 +14,7 @@ import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
 
 type Tab = 'payrolls' | 'rules' | 'advances';
 
@@ -63,6 +64,7 @@ export function PayrollPage(): ReactElement {
 /* ------------------------------------------------------------------ Maoshlar */
 
 function PayrollsTab(): ReactElement {
+  const canManage = useCan('payrollManage');
   const qc = useQueryClient();
   const [period, setPeriod] = useState<string>(thisMonthStart());
   const [distributor, setDistributor] = useState<string>('');
@@ -114,13 +116,15 @@ function PayrollsTab(): ReactElement {
             ))}
           </select>
         </label>
-        <button
-          className="btn-brand px-4"
-          disabled={!distributor || calc.isPending}
-          onClick={() => calc.mutate()}
-        >
-          {calc.isPending ? 'Hisoblanmoqda…' : 'Hisoblash'}
-        </button>
+        {canManage && (
+          <button
+            className="btn-brand px-4"
+            disabled={!distributor || calc.isPending}
+            onClick={() => calc.mutate()}
+          >
+            {calc.isPending ? 'Hisoblanmoqda…' : 'Hisoblash'}
+          </button>
+        )}
       </div>
 
       {calc.isError && (
@@ -187,6 +191,8 @@ function PayrollDetailModal({
   payrollId: string;
   onClose: () => void;
 }): ReactElement {
+  const canManage = useCan('payrollManage');
+  const canApprove = useCan('payrollApprove');
   const qc = useQueryClient();
   const [bonus, setBonus] = useState<string>('');
   const [note, setNote] = useState<string>('');
@@ -290,7 +296,7 @@ function PayrollDetailModal({
               </p>
             )}
 
-            {p.status === 'DRAFT' && (
+            {p.status === 'DRAFT' && canManage && (
               <div className="space-y-2 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
                 <div className="text-gray-500">Qo'lda tuzatish</div>
                 <div className="flex gap-2">
@@ -318,7 +324,7 @@ function PayrollDetailModal({
             )}
 
             <div className="flex gap-2">
-              {p.status === 'DRAFT' && (
+              {p.status === 'DRAFT' && canApprove && (
                 <button
                   className="btn-brand flex-1"
                   disabled={approve.isPending}
@@ -327,7 +333,7 @@ function PayrollDetailModal({
                   Tasdiqlash
                 </button>
               )}
-              {p.status === 'APPROVED' && (
+              {p.status === 'APPROVED' && canManage && (
                 <button
                   className="btn flex-1 bg-success text-white"
                   disabled={pay.isPending}
@@ -380,6 +386,8 @@ const SCOPE_OPTIONS: Array<{ v: CommissionRule['scope']; l: string }> = [
 ];
 
 function RulesTab(): ReactElement {
+  // Komissiya qoidalarini faqat SUPER_ADMIN yozadi (audit K3b)
+  const canEditRules = useCan('payrollApprove');
   const qc = useQueryClient();
   const [form, setForm] = useState<{
     scope: CommissionRule['scope'];
@@ -424,6 +432,7 @@ function RulesTab(): ReactElement {
 
   return (
     <div className="space-y-3">
+      {canEditRules && (
       <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
         <div className="mb-2 text-sm font-medium">Yangi qoida</div>
         <div className="flex flex-wrap items-end gap-2">
@@ -489,6 +498,7 @@ function RulesTab(): ReactElement {
           keyin ustuvorlik.
         </p>
       </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
         <DataState
@@ -527,6 +537,7 @@ function RulesTab(): ReactElement {
                   <td className="p-3">
                     <button
                       className={r.is_active ? 'text-success' : 'text-gray-400'}
+                      disabled={!canEditRules}
                       onClick={() => toggle.mutate(r)}
                     >
                       {r.is_active ? 'Faol' : 'O‘chirilgan'}
@@ -545,6 +556,7 @@ function RulesTab(): ReactElement {
 /* --------------------------------------------------------------- Avanslar */
 
 function AdvancesTab(): ReactElement {
+  const canManage = useCan('payrollManage');
   const qc = useQueryClient();
   const [distributor, setDistributor] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
@@ -573,6 +585,7 @@ function AdvancesTab(): ReactElement {
 
   return (
     <div className="space-y-3">
+      {canManage && (
       <div className="flex flex-wrap items-end gap-2 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
         <select
           className="field min-w-[180px]"
@@ -603,6 +616,7 @@ function AdvancesTab(): ReactElement {
           Avans berish
         </button>
       </div>
+      )}
 
       {add.isError && (
         <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
