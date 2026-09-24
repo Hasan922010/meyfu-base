@@ -177,6 +177,7 @@ Frontend'ni prod uchun yig'ish: `npm run build` → `frontend/dist/`.
 | `seed_demo` — MANAGER | `+998901000000` | `demo12345` |
 | `seed_demo` — WAREHOUSE | `+998902000000` | `demo12345` |
 | `seed_demo` — DISTRIBUTOR | `+998903000000` | `demo12345` |
+| `seed_demo` — ACCOUNTANT | `+998904000000` | `demo12345` |
 
 > ⚠️ Login maydoniga telefonни **probel va tiresiz** kiriting: `+998900000000`.
 > `seed_demo --fresh` demo foydalanuvchilarni qayta yaratadi.

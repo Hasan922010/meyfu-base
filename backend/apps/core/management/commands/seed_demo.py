@@ -17,6 +17,7 @@ PHONE_ADMIN = "+998900000000"
 PHONE_MANAGER = "+998901000000"
 PHONE_WAREHOUSE = "+998902000000"
 PHONE_DIST = "+998903000000"
+PHONE_ACCOUNTANT = "+998904000000"
 PW = "demo12345"
 ADMIN_PW = "Hasanali.0220"
 
@@ -58,7 +59,7 @@ class Command(BaseCommand):
 
         if options["fresh"]:
             User.objects.filter(phone__in=[
-                PHONE_MANAGER, PHONE_WAREHOUSE, PHONE_DIST
+                PHONE_MANAGER, PHONE_WAREHOUSE, PHONE_DIST, PHONE_ACCOUNTANT
             ]).delete()
 
         # --- foydalanuvchilar ---
@@ -74,6 +75,7 @@ class Command(BaseCommand):
         warehouse_user = self._user(User, PHONE_WAREHOUSE, "Olim Omborchi",
                                     "WAREHOUSE")
         dist = self._user(User, PHONE_DIST, "Sardor Tarqatuvchi", "DISTRIBUTOR")
+        self._user(User, PHONE_ACCOUNTANT, "Barno Buxgalter", "ACCOUNTANT")
         DistributorProfile.objects.get_or_create(
             user=dist,
             defaults={"base_salary": "3000000", "commission_percent": "5",
@@ -189,6 +191,7 @@ class Command(BaseCommand):
             f"  MANAGER     : {PHONE_MANAGER} / {PW}\n"
             f"  WAREHOUSE   : {PHONE_WAREHOUSE} / {PW}\n"
             f"  DISTRIBUTOR : {PHONE_DIST} / {PW}\n"
+            f"  ACCOUNTANT  : {PHONE_ACCOUNTANT} / {PW}\n"
             f"  {len(products)} mahsulot, {len(client_names)} mijoz, "
             f"1 marshrut, tasdiqlangan yuklama {loading.number}\n"
             f"  {sales_made} ta demo sotuv (oxirgi 5 kun) + qarz to'lovi + xarajat\n"
