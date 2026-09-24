@@ -23,6 +23,7 @@ import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
 import { money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 const PAY_LABEL: Record<string, string> = {
   NAQD: 'Naqd',
@@ -36,9 +37,7 @@ type PayType = 'NAQD' | 'PLASTIK' | 'QARZ' | 'ARALASH';
 type PayMode = 'choose' | 'QARZ' | 'ARALASH';
 
 function plusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return businessDateISO(days);
 }
 
 const QUICK = [1, 3, 5, 10, 12, 20];

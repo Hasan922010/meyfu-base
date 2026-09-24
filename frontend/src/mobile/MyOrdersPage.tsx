@@ -14,6 +14,7 @@ import { ordersApi, type Order } from '@/shared/api/orders';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
 import { money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 const PAY_LABEL: Record<string, string> = {
   NAQD: 'Naqd',
@@ -35,9 +36,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 function plusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return businessDateISO(days);
 }
 
 export function MyOrdersPage(): ReactElement {

@@ -13,6 +13,7 @@ import { saveOrderLocal, type LocalOrderLine } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 type Step = 'client' | 'items' | 'meta' | 'done';
 type Intent = '' | 'NAQD' | 'PLASTIK' | 'OTKAZMA' | 'QARZ' | 'ARALASH';
@@ -28,9 +29,7 @@ const INTENTS: Array<{ v: Intent; l: string }> = [
 ];
 
 function plusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return businessDateISO(days);
 }
 
 export function NewOrderPage(): ReactElement {
