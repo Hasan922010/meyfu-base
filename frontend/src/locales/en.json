@@ -10,7 +10,12 @@
     "password": "Password",
     "signIn": "Sign in",
     "signingIn": "Signing in...",
-    "wrongCredentials": "Wrong phone or password"
+    "wrongCredentials": "Wrong phone or password",
+    "phoneRequired": "Enter your phone number",
+    "passwordRequired": "Enter your password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "forgotHint": "Forgot your password? Ask your administrator to set a new one."
   },
   "nav": {
     "dashboard": "Dashboard",
