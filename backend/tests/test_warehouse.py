@@ -217,3 +217,21 @@ def test_purchase_updates_product_cost_and_price_history(manager_api, catalog, w
     prod.refresh_from_db()
     assert prod.cost_price == Decimal("22000.00")
     assert prod.price_history.count() == 1
+
+
+@pytest.mark.django_db
+def test_reserve_error_names_product_and_plain_quantities(stocked):
+    """Audit K5: xabarda mahsulot nomi, miqdorlar ortiqcha kasr nolsiz."""
+    from decimal import Decimal
+
+    from apps.core.exceptions import InsufficientStock
+    from apps.warehouse.services import reserve_stock
+
+    product, warehouse = stocked["product"], stocked["warehouse"]
+    with pytest.raises(InsufficientStock) as exc:
+        reserve_stock(warehouse=warehouse, product=product, quantity=Decimal("999999"))
+
+    message = str(exc.value.detail)
+    assert product.name in message
+    assert "999999" in message
+    assert ".000" not in message

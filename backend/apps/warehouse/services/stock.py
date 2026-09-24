@@ -20,6 +20,11 @@ from ..models import Stock, StockMovement, Warehouse
 _ZERO = Decimal("0")
 
 
+def _qty(value: Decimal) -> str:
+    """Xabar uchun miqdor: 1320.000 -> "1320", 2.500 -> "2.5"."""
+    return format(value.normalize(), "f")
+
+
 @transaction.atomic
 def apply_movement(
     *,
@@ -51,7 +56,7 @@ def apply_movement(
     if new_quantity < _ZERO:
         raise InsufficientStock(
             message=(
-                f"«{product.name}» — omborda faqat {stock.quantity} "
+                f"«{product.name}» — omborda faqat {_qty(stock.quantity)} "
                 f"{product.unit.short_name} bor"
             ),
             details={
@@ -136,8 +141,8 @@ def reserve_stock(
     if stock.available_quantity < quantity:
         raise InsufficientStock(
             message=(
-                f"«{product.name}» — bo'sh qoldiq {stock.available_quantity} "
-                f"{product.unit.short_name}, {quantity} kerak"
+                f"«{product.name}» — omborda {_qty(stock.available_quantity)} "
+                f"{product.unit.short_name} bo'sh, {_qty(quantity)} so'ralgan"
             ),
             details={
                 "available": str(stock.available_quantity),

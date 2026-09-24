@@ -115,6 +115,8 @@ api.interceptors.response.use(
 
 const CONN_REFUSED_RE = /ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|socket hang up/i;
 
+const FIELD_ERROR_CODES = new Set(['VALIDATION_ERROR', 'INVALID']);
+
 const FIELD_LABELS: Record<string, string> = {
   non_field_errors: '',
   detail: '',
@@ -173,8 +175,12 @@ const FIELD_LABELS: Record<string, string> = {
 export function extractFieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof AxiosError) || !error.response) return {};
   const body = error.response.data as ApiErrorBody | undefined;
+  // Faqat validatsiya xatolarida details = maydon xatolari. Biznes xatolarida
+  // (INSUFFICIENT_STOCK, DEBT_LIMIT_EXCEEDED...) details texnik ma'lumot —
+  // foydalanuvchiga serverning o'zbekcha `message`i ko'rsatiladi (audit K5).
   const details =
-    body && typeof body === 'object' && body.success === false
+    body && typeof body === 'object' && body.success === false &&
+    FIELD_ERROR_CODES.has(body.error?.code ?? '')
       ? body.error?.details
       : undefined;
   if (!details || typeof details !== 'object' || Array.isArray(details)) return {};

@@ -22,6 +22,30 @@ const drfValidation = apiError({
   },
 });
 
+const insufficientStock = apiError(
+  {
+    success: false,
+    error: {
+      code: 'INSUFFICIENT_STOCK',
+      message: '«Bio kukun 3kg» — omborda 1320 dona bo‘sh, 5000 so‘ralgan',
+      details: { available: '1320.000', requested: '5000.000' },
+    },
+  },
+  409,
+);
+
+describe('biznes xatosi (audit K5)', () => {
+  it('texnik details emas, serverning o‘zbekcha xabarini ko‘rsatadi', () => {
+    expect(extractApiError(insufficientStock)).toBe(
+      '«Bio kukun 3kg» — omborda 1320 dona bo‘sh, 5000 so‘ralgan',
+    );
+  });
+
+  it('biznes details formaga maydon xatosi sifatida bog‘lanmaydi', () => {
+    expect(extractFieldErrors(insufficientStock)).toEqual({});
+  });
+});
+
 describe('extractFieldErrors (UX-001)', () => {
   it('DRF maydon xatolarini tekis yo‘lga keltiradi', () => {
     expect(extractFieldErrors(drfValidation)).toEqual({
@@ -49,6 +73,7 @@ describe('extractApiError (UX-001)', () => {
       data: {
         success: false,
         error: {
+          code: 'INVALID',
           message: "So'rovda xatolik bor.",
           details: {
             debt_limit: ['Raqam kiritilishi kerak.'],
