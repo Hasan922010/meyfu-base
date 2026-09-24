@@ -68,11 +68,18 @@ export function SystemHealthPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
   const canFix = role === 'SUPER_ADMIN';
 
+  // Celery ping 1–4 s oladi: sahifa avval tezkor holatni chizadi, to'liq javob
+  // (celery bilan) kelganda uni almashtiradi (audit m8)
+  const fast = useQuery({
+    queryKey: ['system-status', 'fast'],
+    queryFn: () => systemApi.status(false),
+  });
   const status = useQuery({
-    queryKey: ['system-status'],
+    queryKey: ['system-status', 'full'],
     queryFn: () => systemApi.status(),
     refetchInterval: 30_000,
   });
+  const celeryPending = !status.data;
 
   const check = useMutation({
     mutationFn: () => systemApi.integrityCheck(),
@@ -86,7 +93,7 @@ export function SystemHealthPage(): ReactElement {
     },
   });
 
-  const s = status.data;
+  const s = status.data ?? fast.data;
   const liveMismatches =
     check.data?.mismatches ?? s?.integrity.mismatches ?? [];
 
@@ -96,13 +103,19 @@ export function SystemHealthPage(): ReactElement {
         <h1 className="text-2xl font-bold">Tizim salomatligi</h1>
         <button
           className="btn flex items-center gap-1.5 px-3"
-          onClick={() => void status.refetch()}
+          onClick={() => {
+            void fast.refetch();
+            void status.refetch();
+          }}
         >
           <RefreshCw size={16} aria-hidden /> Yangilash
         </button>
       </div>
 
-      <DataState isLoading={status.isLoading} isError={status.isError}>
+      <DataState
+        isLoading={!s && (fast.isLoading || status.isLoading)}
+        isError={!s && fast.isError && status.isError}
+      >
         {s && (
           <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -119,7 +132,9 @@ export function SystemHealthPage(): ReactElement {
                   `Baza: ${s.health.checks.db ? 'ishlayapti' : 'javob bermayapti'}`,
                   `Redis: ${s.health.checks.redis ? 'ishlayapti' : 'javob bermayapti'}`,
                   `Celery: ${
-                    s.health.checks.celery.ok == null
+                    celeryPending
+                      ? 'tekshirilmoqda…'
+                      : s.health.checks.celery.ok == null
                       ? 'noma’lum'
                       : s.health.checks.celery.ok
                         ? `${s.health.checks.celery.workers} ishchi`
