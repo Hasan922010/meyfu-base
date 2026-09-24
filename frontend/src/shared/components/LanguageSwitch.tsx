@@ -7,8 +7,29 @@ const LANGS: Array<{ code: string; label: string }> = [
   { code: 'en', label: 'English' },
 ];
 
-export function LanguageSwitch(): ReactElement {
+/** `compact` — login sahifasi uchun: kartasiz, kichik tugmalar. */
+export function LanguageSwitch({ compact = false }: { compact?: boolean }): ReactElement {
   const { i18n } = useTranslation();
+
+  if (compact) {
+    return (
+      <div className="flex justify-center gap-1 text-xs" role="group" aria-label="Til / Язык / Language">
+        {LANGS.map((l) => (
+          <button
+            key={l.code}
+            type="button"
+            onClick={() => void i18n.changeLanguage(l.code)}
+            aria-pressed={i18n.language === l.code}
+            className={`rounded-md px-2 py-1 ${
+              i18n.language === l.code ? 'bg-brand/10 font-semibold text-brand' : 'text-gray-500'
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">

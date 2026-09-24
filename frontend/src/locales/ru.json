@@ -10,7 +10,12 @@
     "password": "Пароль",
     "signIn": "Войти в систему",
     "signingIn": "Вход...",
-    "wrongCredentials": "Неверный телефон или пароль"
+    "wrongCredentials": "Неверный телефон или пароль",
+    "phoneRequired": "Введите номер телефона",
+    "passwordRequired": "Введите пароль",
+    "showPassword": "Показать пароль",
+    "hidePassword": "Скрыть пароль",
+    "forgotHint": "Забыли пароль? Обратитесь к администратору — он выдаст новый."
   },
   "nav": {
     "dashboard": "Панель управления",
