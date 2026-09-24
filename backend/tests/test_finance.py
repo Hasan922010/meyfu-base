@@ -251,3 +251,29 @@ def test_overdue_task_notifies_distributor(auth_api, van_stocked, distributor):
         user=distributor, type="debt.overdue"
     ).exists()
     assert Debt.objects.first().status == "OVERDUE"
+
+
+@pytest.mark.django_db
+def test_other_out_requires_reason(admin_api):
+    resp = admin_api.post(
+        "/api/v1/cash-transactions/",
+        {"transaction_type": "OTHER_OUT", "amount": "50000"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "note" in str(resp.data)
+    assert get_account().balance == Decimal("0")
+
+
+@pytest.mark.django_db
+def test_cash_list_shows_who_entered_it(admin_api, admin_user):
+    resp = admin_api.post(
+        "/api/v1/cash-transactions/",
+        {"transaction_type": "OTHER_OUT", "amount": "50000", "note": "Ofis suvi"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+
+    listing = admin_api.get("/api/v1/cash-transactions/")
+    row = listing.data["data"]["results"][0] if "results" in listing.data["data"] else listing.data["data"][0]
+    assert row["created_by_name"] == admin_user.full_name

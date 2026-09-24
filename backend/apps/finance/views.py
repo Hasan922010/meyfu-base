@@ -35,7 +35,7 @@ class CashTransactionViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = CashTransactionSerializer
-    queryset = CashTransaction.objects.select_related("account")
+    queryset = CashTransaction.objects.select_related("account", "created_by")
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _FINANCE
     write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT)

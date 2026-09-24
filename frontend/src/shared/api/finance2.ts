@@ -47,6 +47,8 @@ export interface CashTransaction {
   balance_after: string;
   counterparty: string;
   note: string;
+  /** Yozuvni kiritgan xodim (tizim yozuvlarida bo'sh) */
+  created_by_name: string;
   created_at: string;
 }
 

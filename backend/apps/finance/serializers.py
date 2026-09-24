@@ -20,13 +20,16 @@ class CashTransactionSerializer(serializers.ModelSerializer):
     type_display = serializers.CharField(
         source="get_transaction_type_display", read_only=True
     )
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True, default=""
+    )
 
     class Meta:
         model = CashTransaction
         fields = (
             "id", "date", "transaction_type", "type_display", "amount",
             "balance_after", "counterparty", "reference_type", "reference_id",
-            "note", "created_at",
+            "note", "created_by_name", "created_at",
         )
         read_only_fields = fields
 
@@ -39,6 +42,12 @@ class CashTransactionCreateSerializer(serializers.Serializer):
     date = serializers.DateField(required=False)
     counterparty = serializers.CharField(required=False, allow_blank=True, default="")
     note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs: dict) -> dict:
+        # "Boshqa chiqim" — append-only jurnalda keyin sababini topib bo'lmaydi (audit K2)
+        if attrs["transaction_type"] == "OTHER_OUT" and not attrs.get("note", "").strip():
+            raise serializers.ValidationError({"note": "Chiqim sababini yozing."})
+        return attrs
 
 
 class CashOpeningBalanceSerializer(serializers.Serializer):
