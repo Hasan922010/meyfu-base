@@ -211,6 +211,7 @@ REST_FRAMEWORK = {
         "anon": "30/min",
         "user": "1000/min",
         "login": "10/min",
+        "password_reset": "5/min",
         "ocr": "20/min",
     },
 }

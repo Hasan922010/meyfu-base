@@ -29,12 +29,20 @@ from apps.users.constants import Role
 from .serializers import (
     ChangePasswordSerializer,
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     UserSerializer,
     UserWriteSerializer,
 )
 from .models import WebSocketTicket
+from .services import password_reset
 
 User = get_user_model()
+
+_RESET_REQUESTED = (
+    "Agar raqam Telegram'ga bog'langan bo'lsa, kod yuborildi. "
+    "Kod kelmasa — administratorga murojaat qiling."
+)
 
 
 class LoginView(APIView):
@@ -124,6 +132,56 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return ok({"detail": "Parol yangilandi."})
+
+
+class PasswordResetRequestView(APIView):
+    """Telegram'ga bog'langan xodimga tiklash kodini yuboradi.
+
+    Javob har doim bir xil — raqam tizimda bor-yo'qligi oshkor qilinmaydi.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset"
+
+    @extend_schema(
+        summary="Parolni tiklash — kod so'rash",
+        request=PasswordResetRequestSerializer,
+        responses={200: dict},
+    )
+    def post(self, request: Request) -> Response:
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        password_reset.request_code(serializer.validated_data["phone"])
+        return ok({"detail": _RESET_REQUESTED})
+
+
+class PasswordResetConfirmView(APIView):
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset"
+
+    @extend_schema(
+        summary="Parolni tiklash — kod va yangi parol",
+        request=PasswordResetConfirmSerializer,
+        responses={200: dict},
+    )
+    def post(self, request: Request) -> Response:
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        changed = password_reset.confirm_code(
+            data["phone"], data["code"], data["new_password"],
+            ip=request.META.get("REMOTE_ADDR"),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        )
+        if not changed:
+            raise ValidationError(
+                {"code": ["Kod noto'g'ri yoki muddati o'tgan. Yangi kod so'rang."]}
+            )
+        return ok({"detail": "Parol yangilandi. Yangi parol bilan kiring."})
 
 
 class UserViewSet(BaseModelViewSet):

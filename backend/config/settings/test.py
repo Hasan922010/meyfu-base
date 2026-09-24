@@ -19,7 +19,7 @@ REST_FRAMEWORK = {
     **REST_FRAMEWORK,
     "DEFAULT_THROTTLE_CLASSES": [],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": None, "user": None, "login": None, "ocr": None,
+        "anon": None, "user": None, "login": None, "ocr": None, "password_reset": None,
     },
 }
 SECRET_KEY = "test-secret-key-not-for-production-0123456789abcdef"  # noqa: S105

@@ -178,3 +178,13 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
         user.save(update_fields=["password", "updated_at"])
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=32)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=32)
+    code = serializers.RegexField(r"^\d{6}$")
+    new_password = serializers.CharField(write_only=True, min_length=8)

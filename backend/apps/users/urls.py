@@ -6,6 +6,8 @@ from .views import (
     LoginView,
     LogoutView,
     MeView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     RefreshView,
     UserViewSet,
     WebSocketTicketView,
@@ -19,6 +21,16 @@ urlpatterns = [
     path("ws-ticket/", WebSocketTicketView.as_view(), name="ws-ticket"),
     path("me/", MeView.as_view(), name="me"),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path(
+        "password-reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
+    ),
 ]
 
 _router = SimpleRouter()

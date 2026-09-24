@@ -87,6 +87,9 @@ describe('LoginPage (login formasi tekshiruvi)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Русский' }));
 
     expect(screen.getByRole('button', { name: 'Войти в систему' })).toBeInTheDocument();
-    expect(screen.getByText(/администратор/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Забыли пароль?' })).toHaveAttribute(
+      'href',
+      '/reset-password',
+    );
   });
 });

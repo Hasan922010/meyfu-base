@@ -15,6 +15,20 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return data.data;
 }
 
+export interface PasswordResetConfirmPayload {
+  phone: string;
+  code: string;
+  new_password: string;
+}
+
+export async function requestPasswordReset(phone: string): Promise<void> {
+  await api.post('/auth/password-reset/request/', { phone });
+}
+
+export async function confirmPasswordReset(payload: PasswordResetConfirmPayload): Promise<void> {
+  await api.post('/auth/password-reset/confirm/', payload);
+}
+
 export async function fetchMe(): Promise<User> {
   const { data } = await api.get<ApiSuccess<User>>('/auth/me/');
   return data.data;
