@@ -19,7 +19,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { SyncBadge } from '@/offline/SyncBadge';
 import { useSync } from '@/offline/useSync';
-import { pullReferenceData } from '@/offline/sync';
+import { fullSync } from '@/offline/sync';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
@@ -65,8 +65,10 @@ export function MobileLayout(): ReactElement {
         ? ADMIN_TABS
         : DISTRIBUTOR_TABS;
 
+  // Ochilishda avval navbatni yuboramiz, keyin tortamiz (UX N3): faqat tortish
+  // navbatni 20 s kechiktirardi va server bilmagan sotuvni lokal qoldiqdan "qaytarardi"
   useEffect(() => {
-    if (navigator.onLine) void pullReferenceData().catch(() => undefined);
+    if (navigator.onLine) void fullSync().catch(() => undefined);
   }, []);
 
   return (
