@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,10 +12,25 @@ const catalogApi = vi.hoisted(() => ({
 }));
 vi.mock('@/shared/api/catalog', () => ({ catalogApi }));
 vi.mock('./ProductImages', () => ({ ProductImages: () => null }));
+vi.mock('@/shared/store/authStore', () => ({
+  useAuthStore: (sel: (s: { user: { role: string } }) => unknown) =>
+    sel({ user: { role: 'SUPER_ADMIN' } }),
+}));
 
 import type { Product } from '@/shared/types/catalog';
 
 import { ProductForm } from './ProductForm';
+
+function serverFieldError(field: string, message: string): AxiosError {
+  const config = { headers: new AxiosHeaders() };
+  return new AxiosError('Bad Request', 'ERR_BAD_REQUEST', config, null, {
+    status: 400,
+    statusText: 'Bad Request',
+    headers: {},
+    config,
+    data: { success: false, error: { message: 'Xato', details: { [field]: [message] } } },
+  });
+}
 
 const page = <T,>(results: T[]) => ({ count: results.length, next: null, previous: null, results });
 
@@ -53,6 +69,7 @@ beforeEach(() => {
     () => new Promise((r) => setTimeout(() => r(page([{ id: 'u1', short_name: 'dona' }])), 30)),
   );
   catalogApi.createProduct.mockReset();
+  catalogApi.updateProduct.mockReset();
 });
 
 describe('ProductForm', () => {
@@ -71,5 +88,16 @@ describe('ProductForm', () => {
     expect(await screen.findByText("O'lchov birligini tanlang")).toBeInTheDocument();
     expect(screen.getByText('Kategoriyani tanlang')).toBeInTheDocument();
     expect(catalogApi.createProduct).not.toHaveBeenCalled();
+  });
+
+  it('server min_price xatosini "Minimal narx" maydoni ostida bir marta ko‘rsatadi', async () => {
+    const msg = "Minimal narx chakana narxdan katta bo'lmasligi kerak.";
+    catalogApi.updateProduct.mockRejectedValue(serverFieldError('min_price', msg));
+    renderForm(PRODUCT);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Saqlash' }));
+
+    expect(await screen.findByText(msg)).toBeInTheDocument();
+    expect(screen.queryByText(/min_price/)).not.toBeInTheDocument();
   });
 });

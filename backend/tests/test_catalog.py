@@ -72,3 +72,32 @@ def test_catalog_sync_delta(manager_api, catalog):
     delta = manager_api.get("/api/v1/sync/catalog/", {"since": since})
     assert delta.status_code == 200, delta.data
     assert delta.data["data"]["count"] == 0
+
+
+@pytest.mark.django_db
+def test_create_rejects_min_price_above_retail(manager_api, catalog):
+    payload = {
+        "name": "Meyfu 300",
+        "sku": "MEY-300",
+        "category": str(catalog["category"].id),
+        "unit": str(catalog["unit"].id),
+        "retail_price": "5000",
+        "min_price": "51000",
+    }
+    resp = manager_api.post("/api/v1/products/", payload, format="json")
+    assert resp.status_code == 400
+    assert "min_price" in str(resp.data)
+    assert not Product.objects.filter(sku="MEY-300").exists()
+
+
+@pytest.mark.django_db
+def test_patch_checks_min_price_against_stored_retail(admin_api, catalog):
+    product = catalog["product"]
+    product.refresh_from_db()
+    too_high = str(product.retail_price + 1)
+    resp = admin_api.patch(
+        f"/api/v1/products/{product.id}/", {"min_price": too_high}, format="json"
+    )
+    assert resp.status_code == 400
+    product.refresh_from_db()
+    assert product.min_price <= product.retail_price
