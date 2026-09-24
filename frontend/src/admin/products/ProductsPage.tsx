@@ -6,6 +6,9 @@ import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { useAuthStore } from '@/shared/store/authStore';
 import { money } from '@/shared/lib/format';
+import { SortableTh } from '@/shared/table/SortableTh';
+import { TableToolbar, type TableFilter } from '@/shared/table/TableToolbar';
+import { useServerTable } from '@/shared/table/useServerTable';
 import type { Product } from '@/shared/types/catalog';
 
 import { ProductForm } from './ProductForm';
@@ -14,19 +17,40 @@ export function ProductsPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
   const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
 
-  const [search, setSearch] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
+  // Saralash/qidiruv/filtr serverda — barcha mahsulotlar ustida
+  const table = useServerTable({ initialSort: { key: 'name', dir: 'asc' } });
+  const { page, setPage } = table;
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
 
+  const categories = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => catalogApi.categories({ page_size: 200 }),
+  });
+
   const query = useQuery({
-    queryKey: ['products', { search, page }],
-    queryFn: () =>
-      catalogApi.products({ search: search || undefined, page, page_size: 20 }),
+    queryKey: ['products', table.params],
+    queryFn: () => catalogApi.products({ ...table.params, page_size: 20 }),
     placeholderData: keepPreviousData,
   });
 
   const rows = query.data?.results ?? [];
+  const th = { sort: table.sort, onSort: table.onSort };
+  const filters: TableFilter[] = [
+    {
+      key: 'category',
+      label: 'Kategoriya',
+      options: (categories.data?.results ?? []).map((c) => ({ value: c.id, label: c.name })),
+    },
+    {
+      key: 'is_active',
+      label: 'Holat',
+      options: [
+        { value: 'true', label: 'Faol' },
+        { value: 'false', label: 'Nofaol' },
+      ],
+    },
+  ];
 
   return (
     <div className="space-y-4">
@@ -39,14 +63,14 @@ export function ProductsPage(): ReactElement {
         )}
       </div>
 
-      <input
-        className="field max-w-sm"
-        placeholder="Nomi / SKU / shtrix-kod bo'yicha qidirish"
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-        }}
+      <TableToolbar
+        search={table.search}
+        onSearch={table.setSearch}
+        filters={filters}
+        values={table.filterValues}
+        onFilter={table.setFilter}
+        onReset={table.reset}
+        count={query.data?.count}
       />
 
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
@@ -61,12 +85,16 @@ export function ProductsPage(): ReactElement {
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
                 <th className="p-3 w-12" />
-                <th className="p-3">Nomi</th>
-                <th className="p-3">SKU</th>
-                <th className="p-3">Kategoriya</th>
-                <th className="p-3 text-right">Chakana</th>
-                <th className="p-3 text-right">Min. narx</th>
-                <th className="p-3">Holat</th>
+                <SortableTh sortKey="name" {...th}>Nomi</SortableTh>
+                <SortableTh sortKey="sku" {...th}>SKU</SortableTh>
+                <SortableTh sortKey="category__name" {...th}>Kategoriya</SortableTh>
+                <SortableTh sortKey="retail_price" align="right" className="p-3 text-right" {...th}>
+                  Chakana
+                </SortableTh>
+                <SortableTh sortKey="min_price" align="right" className="p-3 text-right" {...th}>
+                  Min. narx
+                </SortableTh>
+                <SortableTh sortKey="is_active" {...th}>Holat</SortableTh>
                 {canWrite && <th className="p-3" />}
               </tr>
             </thead>
@@ -121,7 +149,7 @@ export function ProductsPage(): ReactElement {
           <button
             className="btn px-3"
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => setPage(page - 1)}
           >
             ‹
           </button>
@@ -131,7 +159,7 @@ export function ProductsPage(): ReactElement {
           <button
             className="btn px-3"
             disabled={page >= query.data.pages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => setPage(page + 1)}
           >
             ›
           </button>
