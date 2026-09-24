@@ -66,7 +66,11 @@ class ClientViewSet(BaseModelViewSet):
     read_roles = _READ
     filterset_fields = ("route", "client_type", "is_blocked")
     search_fields = ("name", "owner_name", "phone", "phone2", "inn")
-    ordering_fields = ("name", "current_debt", "created_at")
+    # Admin jadvalidagi har bir ustun (UI: shared/table)
+    ordering_fields = (
+        "name", "owner_name", "phone", "route__name", "current_debt", "debt_limit",
+        "is_blocked", "created_at",
+    )
     action_roles = {"opening_balance": _MANAGE}
 
     def get_queryset(self) -> QuerySet[Client]:

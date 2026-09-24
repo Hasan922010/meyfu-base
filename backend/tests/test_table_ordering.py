@@ -46,3 +46,11 @@ def test_sales_sort_by_client_and_number_and_filter_by_date(
 
     in_range = manager_api.get("/api/v1/sales/?date__gte=2026-09-05&date__lte=2026-09-30")
     assert _column(in_range, "client_name") == ["Anor"]
+
+
+@pytest.mark.django_db
+def test_clients_sort_by_route_and_owner(manager_api, routed_clients):
+    by_route = manager_api.get("/api/v1/clients/?ordering=route__name")
+    assert _column(by_route, "name") == ["Do'kon A", "Do'kon B"]  # Chilonzor < Yunusobod
+    by_route_desc = manager_api.get("/api/v1/clients/?ordering=-route__name")
+    assert _column(by_route_desc, "name") == ["Do'kon B", "Do'kon A"]
