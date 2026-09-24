@@ -89,7 +89,10 @@ function HistoryTable({
   rows,
   isLoading,
   isError,
+  kind = 'money',
 }: {
+  /** 'qty' — tovar miqdori (dona), aks holda pul (audit m6) */
+  kind?: 'money' | 'qty';
   rows: Array<{
     id: string;
     date: string;
@@ -114,7 +117,7 @@ function HistoryTable({
             <tr>
               <th className="p-3">Sana</th>
               <th className="p-3">Turi</th>
-              <th className="p-3 text-right">Summa</th>
+              <th className="p-3 text-right">{kind === 'qty' ? 'Miqdor' : 'Summa'}</th>
               <th className="p-3">Izoh</th>
             </tr>
           </thead>
@@ -132,7 +135,7 @@ function HistoryTable({
                   }`}
                 >
                   {Number(r.amount) > 0 ? '+' : ''}
-                  {money(r.amount)}
+                  {kind === 'qty' ? qty(r.amount) : money(r.amount)}
                 </td>
                 <td className="p-3 text-gray-500">{r.note || '—'}</td>
               </tr>
@@ -239,6 +242,7 @@ function ProductsTab(): ReactElement {
       </FormShell>
 
       <HistoryTable
+        kind="qty"
         isLoading={history.isLoading}
         isError={history.isError}
         rows={(history.data?.results ?? []).map((m) => ({
