@@ -9,6 +9,7 @@ import type { Loading } from '@/shared/types/warehouse';
 
 import { ProductLineEditor, type LineRow } from './ProductLineEditor';
 import { businessDateISO } from '@/shared/lib/businessDay';
+import { plainQty } from '@/shared/lib/format';
 
 function today(): string {
   return businessDateISO();
@@ -18,11 +19,6 @@ interface Props {
   /** Berilsa — shu qoralama tahrirlanadi */
   loading?: Loading | null;
   onDone: () => void;
-}
-
-/** "5000.000" -> "5000": miqdor maydonida ortiqcha kasr nollari ko'rinmasin */
-function plainQty(q: string): string {
-  return String(Number(q));
 }
 
 export function LoadingForm({ loading = null, onDone }: Props): ReactElement {

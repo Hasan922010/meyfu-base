@@ -6,6 +6,7 @@ import {
   groupThousands,
   money,
   numberToWordsUz,
+  plainQty,
   qty,
 } from './format';
 
@@ -86,5 +87,14 @@ describe('amountDigits', () => {
     expect(amountDigits('1 250 000')).toBe('1250000');
     expect(amountDigits('-150000')).toBe('150000');
     expect(amountDigits('')).toBe('');
+  });
+});
+
+describe('plainQty', () => {
+  it('input uchun ortiqcha kasr nollarini oladi', () => {
+    expect(plainQty('1.000')).toBe('1');
+    expect(plainQty('20.000')).toBe('20');
+    expect(plainQty('2.500')).toBe('2.5');
+    expect(plainQty('')).toBe('');
   });
 });
