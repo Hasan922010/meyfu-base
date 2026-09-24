@@ -120,4 +120,12 @@ describe('LoadingsTab — qoralama va yuborilgan yuklama amallari', () => {
     expect(await screen.findByText(/Omborda faqat 1 320 bor/)).toBeInTheDocument();
     expect(warehouseApi.stock).toHaveBeenCalledWith(expect.objectContaining({ warehouse: 'w1' }));
   });
+
+  it('yangi yuklamada yagona tarqatuvchi va ombor oldindan tanlangan (audit p3)', async () => {
+    renderTab();
+    fireEvent.click(await screen.findByRole('button', { name: '+ Yuklama' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Tarqatuvchi *')).toHaveValue('d1'));
+    await waitFor(() => expect(screen.getByLabelText('Ombor *')).toHaveValue('w1'));
+  });
 });

@@ -10,6 +10,7 @@ import type { Loading } from '@/shared/types/warehouse';
 import { ProductLineEditor, type LineRow } from './ProductLineEditor';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { plainQty } from '@/shared/lib/format';
+import { withOnlyOption } from '@/shared/lib/select';
 
 function today(): string {
   return businessDateISO();
@@ -37,8 +38,10 @@ export function LoadingForm({ loading = null, onDone }: Props): ReactElement {
     queryFn: () => catalogApi.products({ page_size: 1000, is_active: true }),
   });
 
-  const [distributor, setDistributor] = useState<string>(loading?.distributor ?? '');
-  const [warehouse, setWarehouse] = useState<string>(loading?.warehouse ?? '');
+  const [chosenDistributor, setDistributor] = useState<string>(loading?.distributor ?? '');
+  const [chosenWarehouse, setWarehouse] = useState<string>(loading?.warehouse ?? '');
+  const distributor = withOnlyOption(chosenDistributor, distributors.data);
+  const warehouse = withOnlyOption(chosenWarehouse, warehouses.data?.results);
   const [date, setDate] = useState<string>(loading?.date ?? today());
   const [rows, setRows] = useState<LineRow[]>(
     () =>

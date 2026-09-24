@@ -10,6 +10,7 @@ import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { money, numberToWordsUz } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
+import { withOnlyOption } from '@/shared/lib/select';
 
 import {
   clearReceiveDraft,
@@ -40,8 +41,10 @@ export function MobileReceivePage(): ReactElement {
   });
 
   const [draft] = useState(loadReceiveDraft);
-  const [supplier, setSupplier] = useState<string>(draft?.supplier ?? '');
-  const [warehouse, setWarehouse] = useState<string>(draft?.warehouse ?? '');
+  const [chosenSupplier, setSupplier] = useState<string>(draft?.supplier ?? '');
+  const [chosenWarehouse, setWarehouse] = useState<string>(draft?.warehouse ?? '');
+  const supplier = withOnlyOption(chosenSupplier, suppliers.data?.results);
+  const warehouse = withOnlyOption(chosenWarehouse, warehouses.data?.results);
   const [invoice, setInvoice] = useState<string>(draft?.invoice ?? '');
   const [search, setSearch] = useState<string>('');
   const [rows, setRows] = useState<Row[]>(draft?.rows ?? []);
@@ -135,6 +138,7 @@ export function MobileReceivePage(): ReactElement {
         <div className="space-y-2">
           <select
             className="field"
+            aria-label="Yetkazib beruvchi"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
           >
@@ -147,6 +151,7 @@ export function MobileReceivePage(): ReactElement {
           </select>
           <select
             className="field"
+            aria-label="Ombor"
             value={warehouse}
             onChange={(e) => setWarehouse(e.target.value)}
           >
