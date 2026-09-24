@@ -5,6 +5,14 @@ export function groupThousands(intPart: string): string {
   return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/**
+ * Pul qiymatining butun so'm raqamlari: "30000.00" -> "30000", "1 250 000" -> "1250000".
+ * Kasr qismi avval kesiladi — aks holda nuqta o'chib, summa 100 barobar bo'lib qoladi.
+ */
+export function amountDigits(value: string): string {
+  return value.split('.')[0]!.replace(/\D/g, '');
+}
+
 const _ONES = [
   '', 'bir', 'ikki', 'uch', "to'rt", 'besh', 'olti', 'yetti', 'sakkiz', "to'qqiz",
 ];

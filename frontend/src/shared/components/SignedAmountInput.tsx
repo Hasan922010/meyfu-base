@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 
 import { AmountInput } from '@/shared/components/AmountInput';
+import { amountDigits } from '@/shared/lib/format';
 
 interface Props {
   /** Ishorali xom qiymat, masalan "-150000" yoki "150000" (bo'sh — kiritilmagan) */
@@ -26,7 +27,7 @@ export function SignedAmountInput({
   negativeLabel,
 }: Props): ReactElement {
   const [isNegative, setIsNegative] = useState<boolean>(value.trim().startsWith('-'));
-  const magnitude = value.replace(/[^0-9]/g, '');
+  const magnitude = amountDigits(value);
 
   const apply = (negative: boolean, digits: string) => {
     onChange(negative && digits ? `-${digits}` : digits);
