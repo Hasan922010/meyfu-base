@@ -3,7 +3,7 @@ import { Camera, CircleCheckBig } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { getCurrentCoords } from '@/mobile/geo';
+import { usePrefetchedCoords } from '@/mobile/geo';
 import { saveExpenseLocal } from '@/offline/actions';
 import { expensesApi } from '@/shared/api/finance';
 import { ocrApi } from '@/shared/api/ocr';
@@ -37,6 +37,9 @@ export function NewExpensePage(): ReactElement {
 
   const selectedCat = categories.data?.results.find((c) => c.id === category);
 
+  // Sahifa ochilganda GPS boshlanadi — saqlash uni 8 s kutmaydi (UX N4)
+  const coordsForSave = usePrefetchedCoords(true);
+
   const receipt = useMutation({
     mutationFn: (file: File) => ocrApi.receiptScan(file),
     onSuccess: (r) => {
@@ -47,7 +50,7 @@ export function NewExpensePage(): ReactElement {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const coords = await getCurrentCoords();
+      const coords = await coordsForSave();
       return saveExpenseLocal({
         category,
         category_name: selectedCat?.name ?? '',

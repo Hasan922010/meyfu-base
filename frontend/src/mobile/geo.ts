@@ -1,3 +1,8 @@
+import { useCallback, useEffect, useRef } from 'react';
+
+/** Saqlashda GPS ni shuncha kutamiz — ulgurmasa yozuv koordinatasiz saqlanadi. */
+export const GPS_SAVE_WAIT_MS = 300;
+
 export interface Coords {
   latitude: string;
   longitude: string;
@@ -14,6 +19,24 @@ export function waitAtMost<T>(promise: Promise<T | null>, ms: number): Promise<T
       setTimeout(() => resolve(null), ms);
     }),
   ]);
+}
+
+/**
+ * Ekran ochilganda (`enabled` bo'lganda) GPS o'qishni boshlaydi va saqlash uchun
+ * funksiya qaytaradi: u natijani ko'pi bilan GPS_SAVE_WAIT_MS kutadi (UX audit m3, N4).
+ * GPS faqat shu amal paytida o'qiladi — kun bo'yi kuzatuv emas (CLAUDE.md §8).
+ */
+export function usePrefetchedCoords(enabled: boolean): () => Promise<Coords | null> {
+  const pending = useRef<Promise<Coords | null> | null>(null);
+
+  useEffect(() => {
+    pending.current = enabled ? getCurrentCoords() : null;
+  }, [enabled]);
+
+  return useCallback(
+    () => waitAtMost(pending.current ?? getCurrentCoords(), GPS_SAVE_WAIT_MS),
+    [],
+  );
 }
 
 /** Bir martalik GPS o'qish. Ruxsat berilmasa yoki xato bo'lsa — null (CLAUDE.md 8). */

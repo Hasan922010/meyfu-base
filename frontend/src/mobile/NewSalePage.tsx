@@ -10,13 +10,13 @@ import {
   Split,
   X,
 } from 'lucide-react';
-import { useMemo, useRef, useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { saveSaleLocal } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
-import { getCurrentCoords, waitAtMost, type Coords } from '@/mobile/geo';
+import { usePrefetchedCoords } from '@/mobile/geo';
 import { addToCart, remainingFor, type CartLine } from '@/mobile/lib/cart';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
@@ -41,8 +41,6 @@ function plusDays(days: number): string {
 }
 
 const QUICK = [1, 3, 5, 10, 12, 20];
-/** Saqlashda GPS ni shuncha kutamiz — ulgurmasa sotuv koordinatasiz saqlanadi. */
-const SAVE_GPS_WAIT_MS = 300;
 
 export function NewSalePage(): ReactElement {
   const navigate = useNavigate();
@@ -66,7 +64,8 @@ export function NewSalePage(): ReactElement {
   const [dueDate, setDueDate] = useState<string>(plusDays(14));
   const [cashPart, setCashPart] = useState<string>('');
   const [notice, setNotice] = useState<string>('');
-  const coordsRef = useRef<Promise<Coords | null> | null>(null);
+  // Mijoz tanlanganda GPS boshlanadi — saqlash uni uzoq kutmaydi (UX m3)
+  const coordsForSave = usePrefetchedCoords(clientId !== '');
 
   const client = clients.find((c) => c.id === clientId);
   const total = useMemo(
@@ -126,8 +125,7 @@ export function NewSalePage(): ReactElement {
     if (!client || cart.length === 0) return;
     setSaving(true);
     try {
-      // GPS mijoz tanlanganda boshlangan — saqlash uni uzoq kutmaydi (UX m3)
-      const coords = await waitAtMost(coordsRef.current ?? getCurrentCoords(), SAVE_GPS_WAIT_MS);
+      const coords = await coordsForSave();
       const needsDue = paymentType === 'QARZ' || paymentType === 'ARALASH';
       const due = needsDue ? (opts?.dueDate ?? dueDate) : null;
       const uuid = await saveSaleLocal({
@@ -187,7 +185,6 @@ export function NewSalePage(): ReactElement {
     setClientId('');
     setCart([]);
     setNotice('');
-    coordsRef.current = null;
     setClientSearch('');
     setReceipt(null);
   }
@@ -250,7 +247,6 @@ export function NewSalePage(): ReactElement {
                   className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left shadow-sm dark:bg-gray-900"
                   onClick={() => {
                     setClientId(c.id);
-                    coordsRef.current = getCurrentCoords();
                     setStep('items');
                   }}
                 >

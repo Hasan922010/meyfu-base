@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { fulfillOrderLocal } from '@/offline/actions';
 import { db, type CachedOrder } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
-import { getCurrentCoords } from '@/mobile/geo';
+import { usePrefetchedCoords } from '@/mobile/geo';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { ordersApi, type Order } from '@/shared/api/orders';
@@ -211,6 +211,8 @@ function FulfillScreen({
   );
   const [due, setDue] = useState<string>(plusDays(14));
   const [saving, setSaving] = useState<boolean>(false);
+  // Yetkazish oynasi ochilganda GPS boshlanadi — saqlash uni 8 s kutmaydi (UX N4)
+  const coordsForSave = usePrefetchedCoords(true);
   const [done, setDone] = useState<boolean>(false);
 
   const total = order.items.reduce(
@@ -221,7 +223,7 @@ function FulfillScreen({
   async function save(paymentType: PayType): Promise<void> {
     setSaving(true);
     try {
-      const coords = await getCurrentCoords();
+      const coords = await coordsForSave();
       const lines = order.items
         .map((it) => ({
           item: it.id,
