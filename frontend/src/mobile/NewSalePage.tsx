@@ -5,10 +5,7 @@ import {
   CalendarClock,
   CircleCheckBig,
   CreditCard,
-  Minus,
-  Plus,
   Split,
-  X,
 } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,8 +14,9 @@ import { saveSaleLocal } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { usePrefetchedCoords } from '@/mobile/geo';
-import { addToCart, remainingFor, type CartLine } from '@/mobile/lib/cart';
+import type { CartLine } from '@/mobile/lib/cart';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
+import { SaleProductList } from '@/mobile/SaleProductList';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -40,8 +38,6 @@ function plusDays(days: number): string {
   return businessDateISO(days);
 }
 
-const QUICK = [1, 3, 5, 10, 12, 20];
-
 export function NewSalePage(): ReactElement {
   const navigate = useNavigate();
   const { online, pending } = useSync();
@@ -54,11 +50,7 @@ export function NewSalePage(): ReactElement {
 
   const [clientId, setClientId] = useState<string>('');
   const [clientSearch, setClientSearch] = useState<string>('');
-  const [productSearch, setProductSearch] = useState<string>('');
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [qty, setQty] = useState<number>(1);
-  const [picked, setPicked] = useState<string>('');
-  const [pickedPrice, setPickedPrice] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
   const [payMode, setPayMode] = useState<PayMode>('choose');
   const [dueDate, setDueDate] = useState<string>(plusDays(14));
@@ -76,11 +68,7 @@ export function NewSalePage(): ReactElement {
   const filteredClients = clients.filter((c) =>
     c.name.toLowerCase().includes(clientSearch.toLowerCase()),
   );
-  const availableProducts = van.filter(
-    (v) =>
-      v.quantity > 0 &&
-      v.product_name.toLowerCase().includes(productSearch.toLowerCase()),
-  );
+  const itemCount = cart.reduce((s, l) => s + l.quantity, 0);
 
   const products = useLiveQuery(() => db.products.toArray(), [], []);
   const thumbById = useMemo(
@@ -91,31 +79,6 @@ export function NewSalePage(): ReactElement {
   function suggestedPrice(productId: string): string {
     const p = products.find((x) => x.id === productId);
     return p?.wholesale_price ?? '';
-  }
-
-  const pickedStock = van.find((v) => v.product === picked);
-  const pickedRemaining = pickedStock ? remainingFor(pickedStock.quantity, cart, picked) : 0;
-  const pickedInCart = cart.find((l) => l.product === picked)?.quantity ?? 0;
-
-  function handleAdd(): void {
-    const vs = pickedStock;
-    const price = Number(pickedPrice || suggestedPrice(picked));
-    if (!vs || qty <= 0 || price <= 0) return;
-    const res = addToCart(
-      cart,
-      { product: vs.product, product_name: vs.product_name, quantity: qty, price },
-      vs.quantity,
-    );
-    setCart(res.cart);
-    setNotice(
-      res.clampedTo != null
-        ? `Mashinada faqat ${res.clampedTo} ${vs.unit} bor — savatga ${res.clampedTo} ${vs.unit} qo'yildi`
-        : '',
-    );
-    setPicked('');
-    setPickedPrice('');
-    setQty(1);
-    setProductSearch('');
   }
 
   async function save(
@@ -261,152 +224,59 @@ export function NewSalePage(): ReactElement {
         </div>
       )}
 
-      {/* STEP: items */}
+      {/* STEP: items — UX M4: tovarlar darhol, qatorga bosish = +1, Naqd pastda */}
       {step === 'items' && (
         <div className="space-y-3">
-          <div className="text-sm text-gray-500">Mijoz: {client?.name}</div>
-
-          <input
-            className="field"
-            placeholder="Tovar qidirish…"
-            value={productSearch}
-            onChange={(e) => setProductSearch(e.target.value)}
-          />
-          {productSearch && !picked && (
-            <ul className="max-h-48 space-y-1 overflow-y-auto">
-              {availableProducts.slice(0, 20).map((p) => (
-                <li key={p.product}>
-                  <button
-                    className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
-                    onClick={() => setPicked(p.product)}
-                  >
-                    {thumbById.get(p.product) ? (
-                      <img
-                        src={thumbById.get(p.product) ?? ''}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
-                    )}
-                    <span className="flex-1">{p.product_name}</span>
-                    <span className="text-right text-gray-400">
-                      {remainingFor(p.quantity, cart, p.product)} {p.unit}
-                      {cart.some((l) => l.product === p.product) && (
-                        <span className="block text-xs">
-                          ({cart.find((l) => l.product === p.product)?.quantity} savatda)
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {picked && (
-            <div className="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
-              <div className="font-medium">
-                {van.find((v) => v.product === picked)?.product_name}
-              </div>
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  aria-label="Kamaytirish"
-                >
-                  <Minus size={22} aria-hidden />
-                </button>
-                <span className="w-16 text-center text-2xl font-bold">{qty}</span>
-                <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 disabled:opacity-40 dark:bg-gray-800"
-                  onClick={() => setQty((q) => Math.min(pickedRemaining, q + 1))}
-                  disabled={qty >= pickedRemaining}
-                  aria-label="Ko'paytirish"
-                >
-                  <Plus size={22} aria-hidden />
-                </button>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {QUICK.map((n) => (
-                  <button
-                    key={n}
-                    className="min-w-[44px] rounded-lg bg-gray-100 px-3 py-1.5 text-sm disabled:opacity-40 dark:bg-gray-800"
-                    onClick={() => setQty(n)}
-                    disabled={n > pickedRemaining}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <p className="text-center text-xs text-gray-500" aria-live="polite">
-                {pickedRemaining === 0
-                  ? `Mashinadagi hammasi (${pickedStock?.quantity ?? 0} ${pickedStock?.unit ?? ''}) savatda`
-                  : qty >= pickedRemaining
-                    ? `Mashinada faqat ${pickedRemaining} ${pickedStock?.unit ?? ''} bor`
-                    : pickedInCart > 0
-                      ? `Savatda ${pickedInCart} ${pickedStock?.unit ?? ''} bor — ustiga qo'shiladi`
-                      : `Mashinada ${pickedRemaining} ${pickedStock?.unit ?? ''}`}
-              </p>
-              <input
-                className="field"
-                type="number"
-                inputMode="decimal"
-                placeholder={`Narx (taxminan ${money(suggestedPrice(picked) || 0)})`}
-                value={pickedPrice}
-                onChange={(e) => setPickedPrice(e.target.value)}
-              />
-              <button
-                className="btn-brand w-full"
-                disabled={
-                  pickedRemaining === 0 || Number(pickedPrice || suggestedPrice(picked)) <= 0
-                }
-                onClick={handleAdd}
-              >
-                Savatga qo'shish
-              </button>
-            </div>
-          )}
-
-          {notice && (
-            <p role="status" className="rounded-lg bg-pending/10 px-3 py-2 text-sm text-pending">
-              {notice}
-            </p>
-          )}
-
-          {cart.length > 0 && (
-            <ul className="divide-y divide-gray-100 rounded-xl bg-white text-sm shadow-sm dark:divide-gray-800 dark:bg-gray-900">
-              {cart.map((l) => (
-                <li key={l.product} className="flex justify-between p-3">
-                  <span>
-                    {l.product_name} · {l.quantity} × {money(l.price)}
-                  </span>
-                  <button
-                    className="text-danger"
-                    onClick={() =>
-                      setCart((prev) => prev.filter((x) => x.product !== l.product))
-                    }
-                    aria-label="O'chirish"
-                  >
-                    <X size={16} aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">Jami</span>
-            <span className="text-lg font-bold">{money(total)}</span>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">
+              Mijoz: <span className="font-medium text-gray-900 dark:text-gray-100">{client?.name}</span>
+            </span>
+            <button className="text-brand underline" onClick={() => setStep('client')}>
+              Mijozni almashtirish
+            </button>
           </div>
 
-          <button
-            className="btn-brand w-full"
-            disabled={cart.length === 0 || cart.some((l) => l.price <= 0)}
-            onClick={() => setStep('pay')}
-          >
-            To'lovga o'tish
-          </button>
+          <SaleProductList
+            van={van}
+            cart={cart}
+            priceOf={(id) => Number(suggestedPrice(id) || 0)}
+            thumbOf={(id) => thumbById.get(id)}
+            onChange={(next, message) => {
+              setCart(next);
+              setNotice(message);
+            }}
+          />
+
+          {/* Pastdagi panel ro'yxatning oxirini yopmasligi uchun joy */}
+          <div className="h-32" aria-hidden />
+
+          <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md space-y-2 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+            {notice && (
+              <p role="status" className="rounded-lg bg-pending/10 px-3 py-1.5 text-sm text-pending">
+                {notice}
+              </p>
+            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Jami ({itemCount} dona)</span>
+              <span className="text-lg font-bold">{money(total)}</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="btn flex flex-1 items-center justify-center gap-2 bg-success text-white"
+                disabled={saving || cart.length === 0}
+                onClick={() => void save('NAQD')}
+              >
+                <Banknote size={18} aria-hidden /> Naqd · {money(total)}
+              </button>
+              <button
+                className="btn px-3"
+                disabled={saving || cart.length === 0}
+                onClick={() => setStep('pay')}
+              >
+                Boshqa to'lov
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

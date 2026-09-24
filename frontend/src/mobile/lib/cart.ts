@@ -17,6 +17,35 @@ export function remainingFor(available: number, cart: CartLine[], product: strin
 }
 
 /**
+ * Qator miqdorini yozilgan qiymatga o'rnatadi (qo'shmaydi) — miqdorni klaviaturadan
+ * kiritish va "−" uchun (UX M4). Butun songa keltiriladi; ≤0 yoki NaN — qator olib
+ * tashlanadi; qoldiqdan oshsa kesiladi va bildiriladi.
+ */
+export function setLineQuantity(
+  cart: CartLine[],
+  line: LocalSaleLine,
+  available: number,
+): AddResult {
+  const requested = Math.floor(line.quantity);
+  if (!Number.isFinite(requested) || requested <= 0) {
+    return { cart: cart.filter((l) => l.product !== line.product), clampedTo: null };
+  }
+  const quantity = Math.min(available, requested);
+  const next: CartLine = { ...line, quantity, max: available };
+  const exists = cart.some((l) => l.product === line.product);
+  return {
+    cart: exists ? cart.map((l) => (l.product === line.product ? next : l)) : [...cart, next],
+    clampedTo: requested > available ? available : null,
+  };
+}
+
+/** Bitta qator narxini o'zgartiradi; 0 yoki noto'g'ri narx — savat o'zgarmaydi. */
+export function setLinePrice(cart: CartLine[], product: string, price: number): CartLine[] {
+  if (!Number.isFinite(price) || price <= 0) return cart;
+  return cart.map((l) => (l.product === product ? { ...l, price } : l));
+}
+
+/**
  * Savatga qo'shadi: mahsulot savatda bo'lsa miqdorlar jamlanadi (UX M3),
  * jami qoldiqdan oshsa qoldiqqacha kesiladi va buni qaytaradi (UX M2).
  */
