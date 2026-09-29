@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { logout } from '@/shared/api/auth';
 import { LanguageSwitch } from '@/shared/components/LanguageSwitch';
+import { PinSettings } from '@/mobile/PinSettings';
 import { TelegramConnect } from '@/shared/components/TelegramConnect';
 import { pullReferenceData } from '@/offline/sync';
 import { setDesktopForced } from '@/shared/lib/useIsMobile';
@@ -30,6 +31,7 @@ export function ProfilePage(): ReactElement {
 
       <TelegramConnect />
       <LanguageSwitch />
+      <PinSettings />
 
       <Link to="/m/help" className="btn flex w-full items-center justify-center gap-2">
         📖 Foydalanish yo'riqnomasi

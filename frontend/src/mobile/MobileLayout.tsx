@@ -23,6 +23,7 @@ import { useSync } from '@/offline/useSync';
 import { fullSync } from '@/offline/sync';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
+import { PinLockGate } from '@/shared/components/PinLockGate';
 import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -106,7 +107,7 @@ export function MobileLayout(): ReactElement {
 
       <main className="flex-1 p-4 pb-24">
         <ErrorBoundary key={location.pathname} variant="page">
-          {blocked ? <Navigate to="/m" replace /> : <Outlet />}
+          <PinLockGate>{blocked ? <Navigate to="/m" replace /> : <Outlet />}</PinLockGate>
         </ErrorBoundary>
       </main>
 
