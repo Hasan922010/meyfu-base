@@ -46,3 +46,10 @@ class InventoryStatus(models.TextChoices):
     DRAFT = "DRAFT", _("Qoralama")
     CONFIRMED = "CONFIRMED", _("Tasdiqlangan")
     CANCELLED = "CANCELLED", _("Bekor qilingan")
+
+
+class TransferStatus(models.TextChoices):
+    DRAFT = "DRAFT", _("Qoralama")
+    SENT = "SENT", _("Yo'lda")
+    RECEIVED = "RECEIVED", _("Qabul qilingan")
+    CANCELLED = "CANCELLED", _("Bekor qilingan")

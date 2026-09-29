@@ -2,6 +2,9 @@ from django.urls import path
 
 from .views import (
     AbcAnalysisView,
+    BranchActivityView,
+    BranchCardsView,
+    BranchListView,
     DashboardView,
     DebtAgingView,
     DistributorComparisonView,
@@ -15,6 +18,11 @@ from .views import (
 )
 
 urlpatterns = [
+    path("reports/branches/", BranchListView.as_view(), name="reports-branches"),
+    path("reports/branches/<uuid:pk>/cards/", BranchCardsView.as_view(),
+         name="reports-branch-cards"),
+    path("reports/branches/<uuid:pk>/activity/", BranchActivityView.as_view(),
+         name="reports-branch-activity"),
     path("reports/dashboard/", DashboardView.as_view(), name="reports-dashboard"),
     path("reports/sales-summary/", SalesSummaryView.as_view(),
          name="reports-sales-summary"),

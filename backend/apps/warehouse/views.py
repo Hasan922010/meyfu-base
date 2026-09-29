@@ -5,6 +5,7 @@ from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Query
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -24,6 +25,7 @@ from .models import (
     StockMovement,
     Supplier,
     SupplierTransaction,
+    Transfer,
     VanStock,
     Warehouse,
 )
@@ -42,6 +44,8 @@ from .serializers import (
     SupplierOpeningBalanceSerializer,
     SupplierSerializer,
     SupplierTransactionSerializer,
+    TransferReceiveSerializer,
+    TransferSerializer,
     VanStockSerializer,
     WarehouseSerializer,
 )
@@ -61,6 +65,7 @@ from .services.opening import (
     supplier_opening_sheet,
 )
 from .services.purchase import confirm_purchase
+from .services.transfers import cancel_transfer, receive_transfer, send_transfer
 
 _WH_WRITE = (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN)
 _WH_READ = (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
@@ -69,6 +74,37 @@ _LOADING_READ = (*_WH_READ, Role.DISTRIBUTOR)
 
 def _is_distributor(user) -> bool:
     return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
+
+
+def _own_warehouse_id(user):
+    """Omborga biriktirilgan omborchi faqat o'z ombori bilan ishlaydi.
+
+    `None` — cheklov yo'q (admin rollar yoki omborga biriktirilmagan omborchi).
+    """
+    if getattr(user, "role", None) == Role.WAREHOUSE and not user.is_superuser:
+        return user.warehouse_id
+    return None
+
+
+class _OwnWarehouseMixin:
+    """Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi."""
+
+    own_warehouse_field = "warehouse"
+
+    def scope_to_own(self, qs):
+        own = _own_warehouse_id(self.request.user)
+        return qs.filter(**{self.own_warehouse_field: own}) if own else qs
+
+    def check_own_warehouse(self, warehouse) -> None:
+        own = _own_warehouse_id(self.request.user)
+        if own and warehouse is not None and warehouse.pk != own:
+            raise ValidationError(
+                {"warehouse": "Faqat o'z omboringiz bo'yicha ishlay olasiz."}
+            )
+
+    def perform_create(self, serializer) -> None:
+        self.check_own_warehouse(serializer.validated_data.get(self.own_warehouse_field))
+        super().perform_create(serializer)
 
 
 def _wants_stamp(request: Request) -> bool:
@@ -140,7 +176,7 @@ class SupplierViewSet(BaseModelViewSet):
         return ok(SupplierTransactionSerializer(tx).data, status_code=201)
 
 
-class StockViewSet(BaseReadOnlyViewSet):
+class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
     queryset = Stock.objects.select_related("warehouse", "product__unit").order_by(
         "warehouse__name", "product__name", "pk"
     )
@@ -156,6 +192,9 @@ class StockViewSet(BaseReadOnlyViewSet):
         "opening_balance_bulk": _WH_WRITE,
     }
 
+    def get_queryset(self) -> QuerySet[Stock]:
+        return self.scope_to_own(super().get_queryset())
+
     @extend_schema(
         summary="Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)",
         parameters=[OpenApiParameter("warehouse", str, required=True)],
@@ -165,6 +204,7 @@ class StockViewSet(BaseReadOnlyViewSet):
     def opening_sheet(self, request: Request) -> Response:
         target = OpeningWarehouseSerializer(data=request.query_params)
         target.is_valid(raise_exception=True)
+        self.check_own_warehouse(target.validated_data["warehouse"])
         rows = stock_opening_sheet(target.validated_data["warehouse"])
         return ok(OpeningSheetRowSerializer(rows, many=True).data)
 
@@ -176,6 +216,7 @@ class StockViewSet(BaseReadOnlyViewSet):
     def opening_balance_bulk(self, request: Request) -> Response:
         target = OpeningWarehouseSerializer(data=request.data)
         target.is_valid(raise_exception=True)
+        self.check_own_warehouse(target.validated_data["warehouse"])
         s = OpeningBulkSerializer(data=request.data, context={"non_negative": True})
         s.is_valid(raise_exception=True)
         return ok(stock_opening_bulk(
@@ -203,6 +244,7 @@ class StockViewSet(BaseReadOnlyViewSet):
         s = StockOpeningBalanceSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
+        self.check_own_warehouse(data["warehouse"])
         movement = apply_movement(
             warehouse=data["warehouse"],
             product=data["product"],
@@ -214,13 +256,16 @@ class StockViewSet(BaseReadOnlyViewSet):
         return ok(StockMovementSerializer(movement).data, status_code=201)
 
 
-class StockMovementViewSet(BaseReadOnlyViewSet):
+class StockMovementViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
     queryset = StockMovement.objects.select_related("warehouse", "product", "user")
     serializer_class = StockMovementSerializer
     read_roles = _WH_READ
     filterset_fields = ("warehouse", "product", "movement_type", "reference_type")
     ordering_fields = ("created_at",)
     ordering = ("-created_at",)
+
+    def get_queryset(self) -> QuerySet[StockMovement]:
+        return self.scope_to_own(super().get_queryset())
 
 
 class SupplierTransactionViewSet(BaseReadOnlyViewSet):
@@ -232,7 +277,7 @@ class SupplierTransactionViewSet(BaseReadOnlyViewSet):
     ordering = ("-created_at",)
 
 
-class PurchaseViewSet(BaseModelViewSet):
+class PurchaseViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     queryset = Purchase.objects.select_related("supplier", "warehouse").prefetch_related(
         "items__product"
     )
@@ -242,6 +287,9 @@ class PurchaseViewSet(BaseModelViewSet):
     filterset_fields = ("supplier", "warehouse", "status", "source")
     search_fields = ("number", "invoice_number", "supplier__name")
     ordering_fields = ("date", "created_at", "total_amount")
+
+    def get_queryset(self) -> QuerySet[Purchase]:
+        return self.scope_to_own(super().get_queryset())
 
     @extend_schema(summary="Qabulni tasdiqlash — qoldiqqa kirim qiladi", request=None)
     @action(detail=True, methods=["post"])
@@ -272,7 +320,7 @@ class PurchaseViewSet(BaseModelViewSet):
         return ok(self.get_serializer(purchase).data)
 
 
-class InventoryCountViewSet(BaseModelViewSet):
+class InventoryCountViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     """Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi."""
 
     serializer_class = InventoryCountSerializer
@@ -287,8 +335,10 @@ class InventoryCountViewSet(BaseModelViewSet):
 
     def get_queryset(self) -> QuerySet[InventoryCount]:
         # GROUP BY'da Meta.ordering e'tiborsiz qoladi — sahifalash barqaror bo'lsin
-        qs = InventoryCount.objects.select_related("warehouse").order_by(
-            "-date", "-created_at", "pk"
+        qs = self.scope_to_own(
+            InventoryCount.objects.select_related("warehouse").order_by(
+                "-date", "-created_at", "pk"
+            )
         )
         if self.action == "list":
             counted = Q(items__actual_qty__isnull=False)
@@ -347,7 +397,68 @@ class InventoryCountViewSet(BaseModelViewSet):
         return self._detail(cancel_inventory(self.get_object(), user=request.user))
 
 
-class LoadingViewSet(BaseModelViewSet):
+class TransferViewSet(_OwnWarehouseMixin, BaseModelViewSet):
+    """Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan."""
+
+    serializer_class = TransferSerializer
+    write_roles = _WH_WRITE
+    read_roles = _WH_READ
+    own_warehouse_field = "from_warehouse"
+    http_method_names = ("get", "post", "patch", "head", "options")
+    filterset_fields = ("from_warehouse", "to_warehouse", "status", "date")
+    search_fields = ("number", "note")
+    ordering_fields = ("date", "created_at")
+
+    def get_queryset(self) -> QuerySet[Transfer]:
+        qs = Transfer.objects.select_related(
+            "from_warehouse", "to_warehouse", "sent_by", "received_by"
+        ).prefetch_related("items__product__unit").order_by("-date", "-created_at", "pk")
+        own = _own_warehouse_id(self.request.user)
+        # Filial omborchisi — o'zidan chiqqan va o'ziga kelgan ko'chirishlar
+        return qs.filter(Q(from_warehouse=own) | Q(to_warehouse=own)) if own else qs
+
+    def perform_update(self, serializer) -> None:
+        data = serializer.validated_data
+        self.check_own_warehouse(
+            data.get("from_warehouse", serializer.instance.from_warehouse)
+        )
+        serializer.save()
+
+    def _fresh(self, transfer: Transfer) -> Response:
+        return ok(TransferSerializer(self.get_queryset().get(pk=transfer.pk)).data)
+
+    @extend_schema(summary="Yuborish — manba ombordan chiqim", request=None)
+    @action(detail=True, methods=["post"])
+    def send(self, request: Request, pk: str | None = None) -> Response:
+        transfer = self.get_object()
+        self.check_own_warehouse(transfer.from_warehouse)
+        return self._fresh(send_transfer(transfer, user=request.user))
+
+    @extend_schema(
+        summary="Qabul qilish — qabul qilingan miqdor filialga kirim",
+        request=TransferReceiveSerializer,
+    )
+    @action(detail=True, methods=["post"])
+    def receive(self, request: Request, pk: str | None = None) -> Response:
+        transfer = self.get_object()
+        # Qabulni faqat qabul qiluvchi ombor omborchisi (yoki admin) qiladi
+        self.check_own_warehouse(transfer.to_warehouse)
+        s = TransferReceiveSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        return self._fresh(receive_transfer(
+            transfer, s.validated_data["items"], note=s.validated_data["note"],
+            user=request.user,
+        ))
+
+    @extend_schema(summary="Bekor qilish (yo'ldagi tovar manbaga qaytadi)", request=None)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request: Request, pk: str | None = None) -> Response:
+        transfer = self.get_object()
+        self.check_own_warehouse(transfer.from_warehouse)
+        return self._fresh(cancel_transfer(transfer, user=request.user))
+
+
+class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     serializer_class = LoadingSerializer
     write_roles = _WH_WRITE
     read_roles = _LOADING_READ
@@ -365,7 +476,7 @@ class LoadingViewSet(BaseModelViewSet):
         )
         if _is_distributor(self.request.user):
             return qs.filter(distributor=self.request.user)
-        return qs
+        return self.scope_to_own(qs)
 
     @extend_schema(summary="Yuklamani tarqatuvchiga yuborish (qoldiq band qilinadi)",
                    request=None)

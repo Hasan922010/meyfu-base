@@ -4,13 +4,15 @@ import { InventoryTab } from './InventoryTab';
 import { LoadingsTab } from './LoadingsTab';
 import { PurchasesTab } from './PurchasesTab';
 import { StockTab } from './StockTab';
+import { TransfersTab } from './TransfersTab';
 
-type Tab = 'stock' | 'purchases' | 'loadings' | 'inventory';
+type Tab = 'stock' | 'purchases' | 'loadings' | 'transfers' | 'inventory';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'stock', label: 'Qoldiq' },
   { id: 'purchases', label: 'Tovar qabullari' },
   { id: 'loadings', label: 'Yuklamalar' },
+  { id: 'transfers', label: "Ko'chirishlar (filiallarga)" },
   { id: 'inventory', label: 'Inventarizatsiya' },
 ];
 
@@ -40,6 +42,7 @@ export function WarehousePage(): ReactElement {
       {tab === 'stock' && <StockTab />}
       {tab === 'purchases' && <PurchasesTab />}
       {tab === 'loadings' && <LoadingsTab />}
+      {tab === 'transfers' && <TransfersTab />}
       {tab === 'inventory' && <InventoryTab />}
     </div>
   );

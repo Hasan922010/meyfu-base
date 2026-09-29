@@ -17,6 +17,8 @@ from .models import (
     Stock,
     StockMovement,
     Supplier,
+    Transfer,
+    TransferItem,
     VanStock,
     Warehouse,
 )
@@ -24,13 +26,21 @@ from .services.inventory import assign_number as assign_inventory_number
 from .services.inventory import fill_inventory
 from .services.loading import assign_number as assign_loading_number
 from .services.purchase import assign_number
+from .services.transfers import assign_number as assign_transfer_number
 
 
 class WarehouseSerializer(serializers.ModelSerializer):
+    manager_name = serializers.CharField(
+        source="manager.full_name", read_only=True, default=None
+    )
+
     class Meta:
         model = Warehouse
-        fields = ("id", "name", "address", "is_active", "created_at")
-        read_only_fields = ("id", "created_at")
+        fields = (
+            "id", "name", "address", "phone", "is_active", "is_branch",
+            "manager", "manager_name", "created_at",
+        )
+        read_only_fields = ("id", "created_at", "manager_name")
 
 
 class SupplierSerializer(serializers.ModelSerializer):
@@ -454,3 +464,115 @@ class InventoryItemInputSerializer(serializers.Serializer):
 
 class InventoryItemsUpdateSerializer(serializers.Serializer):
     items = InventoryItemInputSerializer(many=True, allow_empty=False)
+
+
+class TransferItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    product_unit = serializers.CharField(source="product.unit.short_name", read_only=True)
+    difference = serializers.DecimalField(
+        max_digits=14, decimal_places=3, read_only=True, allow_null=True
+    )
+
+    class Meta:
+        model = TransferItem
+        fields = (
+            "id", "product", "product_name", "product_sku", "product_unit",
+            "quantity", "received_quantity", "difference", "cost_price",
+        )
+        read_only_fields = (
+            "id", "product_name", "product_sku", "product_unit",
+            "received_quantity", "difference", "cost_price",
+        )
+
+
+class TransferSerializer(serializers.ModelSerializer):
+    items = TransferItemSerializer(many=True)
+    from_warehouse_name = serializers.CharField(
+        source="from_warehouse.name", read_only=True
+    )
+    to_warehouse_name = serializers.CharField(source="to_warehouse.name", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    sent_by_name = serializers.CharField(
+        source="sent_by.full_name", read_only=True, default=None
+    )
+    received_by_name = serializers.CharField(
+        source="received_by.full_name", read_only=True, default=None
+    )
+
+    class Meta:
+        model = Transfer
+        fields = (
+            "id", "number", "from_warehouse", "from_warehouse_name",
+            "to_warehouse", "to_warehouse_name", "date", "status", "status_display",
+            "note", "receive_note", "sent_at", "sent_by_name",
+            "received_at", "received_by_name", "items", "created_at",
+        )
+        read_only_fields = (
+            "id", "number", "status", "status_display", "receive_note", "sent_at",
+            "sent_by_name", "received_at", "received_by_name", "created_at",
+        )
+        extra_kwargs = {"note": {"required": False, "allow_blank": True}}
+
+    def validate_items(self, items: list[dict]) -> list[dict]:
+        if not items:
+            raise serializers.ValidationError("Kamida bitta tovar qo'shing.")
+        products = [row["product"].pk for row in items]
+        if len(products) != len(set(products)):
+            raise serializers.ValidationError("Bir tovar ikki marta kiritilgan.")
+        return items
+
+    def validate(self, attrs: dict) -> dict:
+        if self.instance and self.instance.status != "DRAFT":
+            raise serializers.ValidationError("Faqat qoralamani tahrirlash mumkin.")
+        current = self.instance
+        source = attrs.get("from_warehouse", getattr(current, "from_warehouse", None))
+        target = attrs.get("to_warehouse", getattr(current, "to_warehouse", None))
+        if source is not None and source == target:
+            raise serializers.ValidationError(
+                {"to_warehouse": "Qayerga — boshqa ombor bo'lishi kerak."}
+            )
+        return attrs
+
+    def _write_items(self, transfer: Transfer, items: list[dict]) -> None:
+        transfer.items.all().delete()
+        TransferItem.objects.bulk_create([
+            TransferItem(
+                transfer=transfer, product=row["product"], quantity=row["quantity"],
+                cost_price=row["product"].cost_price, created_by=transfer.created_by,
+            )
+            for row in items
+        ])
+
+    @transaction.atomic
+    def create(self, validated_data: dict) -> Transfer:
+        items = validated_data.pop("items")
+        transfer = Transfer(**validated_data)
+        assign_transfer_number(transfer)
+        transfer.save()
+        self._write_items(transfer, items)
+        return transfer
+
+    @transaction.atomic
+    def update(self, instance: Transfer, validated_data: dict) -> Transfer:
+        items = validated_data.pop("items", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if items is not None:
+            self._write_items(instance, items)
+        return instance
+
+
+class TransferReceiveRowSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    received_quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=3, min_value=Decimal("0")
+    )
+
+
+class TransferReceiveSerializer(serializers.Serializer):
+    items = TransferReceiveRowSerializer(many=True, required=False, default=list)
+    note = serializers.CharField(
+        required=False, allow_blank=True, default="", max_length=255
+    )

@@ -24,6 +24,12 @@ function lz(load: () => Promise<Record<string, unknown>>, name: string) {
   });
 }
 
+const BranchesPage = lz(() => import('@/admin/branches/BranchesPage'), 'BranchesPage');
+const BranchPage = lz(() => import('@/admin/branches/BranchPage'), 'BranchPage');
+const BranchActivityPage = lz(
+  () => import('@/admin/branches/BranchActivityPage'),
+  'BranchActivityPage',
+);
 const DebtsPage = lz(() => import('@/admin/finance/DebtsPage'), 'DebtsPage');
 const FinancePage = lz(() => import('@/admin/finance/FinancePage'), 'FinancePage');
 const OcrPage = lz(() => import('@/admin/ocr/OcrPage'), 'OcrPage');
@@ -133,6 +139,9 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'products', element: <ProductsPage /> },
       { path: 'warehouse', element: <WarehousePage /> },
+      { path: 'branches', element: <Lazy><BranchesPage /></Lazy> },
+      { path: 'branches/:id', element: <Lazy><BranchPage /></Lazy> },
+      { path: 'branches/:id/:kind', element: <Lazy><BranchActivityPage /></Lazy> },
       { path: 'clients', element: <ClientsPage /> },
       { path: 'routes', element: <RoutesPage /> },
       { path: 'sales', element: <SalesPage /> },

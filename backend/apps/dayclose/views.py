@@ -19,9 +19,10 @@ from apps.core.viewsets import BaseReadOnlyViewSet, EnvelopeResponseMixin
 from apps.users.constants import Role
 from apps.warehouse.models import VanStock, Warehouse
 
-from .models import CashHandover, DayClose
+from .models import CashHandover, DailyReturn, DayClose
 from .serializers import (
     CashHandoverSerializer,
+    DailyReturnSerializer,
     DayCloseSerializer,
     DayCloseSubmitSerializer,
 )
@@ -161,4 +162,25 @@ class CashHandoverViewSet(BaseReadOnlyViewSet):
         qs = super().get_queryset()
         if _is_distributor(self.request.user):
             return qs.filter(distributor=self.request.user)
+        return qs
+
+
+class DailyReturnViewSet(BaseReadOnlyViewSet):
+    """Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun."""
+
+    serializer_class = DailyReturnSerializer
+    queryset = DailyReturn.objects.select_related(
+        "distributor", "warehouse"
+    ).prefetch_related("items__product")
+    read_roles = (*_READ, Role.WAREHOUSE)
+    filterset_fields = ("distributor", "warehouse", "date")
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if _is_distributor(user):
+            return qs.filter(distributor=user)
+        # Filialga biriktirilgan omborchi — faqat o'z omboriga tushgan qaytarishlar
+        if getattr(user, "role", None) == Role.WAREHOUSE and user.warehouse_id:
+            return qs.filter(warehouse_id=user.warehouse_id)
         return qs

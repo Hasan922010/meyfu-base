@@ -1,8 +1,9 @@
 import { useState, type ReactElement } from 'react';
 
+import { staffApi } from '@/shared/api/users';
 import { useAuthStore } from '@/shared/store/authStore';
 
-import { SimpleCrud, type FieldSpec } from './SimpleCrud';
+import { SimpleCrud, type FieldSpec, type SelectOption } from './SimpleCrud';
 
 type TabId =
   | 'warehouses'
@@ -18,6 +19,17 @@ interface TabDef {
   title: string;
   fields: FieldSpec[];
   columns: string[];
+  columnLabels?: Record<string, string>;
+}
+
+const MANAGER_ROLES = new Set(['WAREHOUSE', 'MANAGER', 'SUPER_ADMIN']);
+
+/** Ombor mas'uli bo'la oladigan faol xodimlar */
+async function loadManagers(): Promise<SelectOption[]> {
+  const page = await staffApi.list({ is_active: true, page_size: 200 });
+  return page.results
+    .filter((u) => MANAGER_ROLES.has(u.role))
+    .map((u) => ({ value: u.id, label: u.full_name }));
 }
 
 const TABS: TabDef[] = [
@@ -28,9 +40,18 @@ const TABS: TabDef[] = [
     fields: [
       { name: 'name', label: 'Nomi', required: true },
       { name: 'address', label: 'Manzil' },
+      { name: 'phone', label: 'Telefon', placeholder: '+998 90 123 45 67' },
+      {
+        name: 'manager',
+        label: "Mas'ul xodim",
+        type: 'select',
+        options: { queryKey: ['staff', 'warehouse-managers'], load: loadManagers },
+      },
+      { name: 'is_branch', label: 'Filial (asosiy ombor emas)', type: 'checkbox' },
       { name: 'is_active', label: 'Faol', type: 'checkbox', defaultChecked: true },
     ],
-    columns: ['name', 'address', 'is_active'],
+    columns: ['name', 'address', 'is_branch', 'manager_name', 'is_active'],
+    columnLabels: { is_branch: 'Filial', manager_name: "Mas'ul" },
   },
   {
     id: 'suppliers',
@@ -117,6 +138,7 @@ export function RefDataPage(): ReactElement {
         title={active.title}
         fields={active.fields}
         columns={active.columns}
+        columnLabels={active.columnLabels}
         canWrite={canWrite}
       />
     </div>

@@ -38,6 +38,7 @@
     "orders": "Заказы",
     "clients": "Клиенты",
     "warehouse": "Склад",
+    "branches": "Филиалы",
     "settings": "Настройки",
     "routes": "Маршруты",
     "dayClose": "Дневной расчёт",

@@ -2,7 +2,12 @@ export interface Warehouse {
   id: string;
   name: string;
   address: string;
+  phone?: string;
   is_active: boolean;
+  /** Filial — asosiy ombordan tovar oladigan alohida ombor */
+  is_branch?: boolean;
+  manager?: string | null;
+  manager_name?: string | null;
   created_at: string;
 }
 
@@ -195,4 +200,47 @@ export interface InventoryItemInput {
   id: string;
   actual_qty: string | null;
   note?: string;
+}
+
+export type TransferStatus = 'DRAFT' | 'SENT' | 'RECEIVED' | 'CANCELLED';
+
+export interface TransferItem {
+  id: string;
+  product: string;
+  product_name: string;
+  product_sku: string;
+  product_unit: string;
+  quantity: string;
+  /** `null` — hali qabul qilinmagan */
+  received_quantity: string | null;
+  difference: string | null;
+  cost_price: string;
+}
+
+export interface Transfer {
+  id: string;
+  number: string;
+  from_warehouse: string;
+  from_warehouse_name: string;
+  to_warehouse: string;
+  to_warehouse_name: string;
+  date: string;
+  status: TransferStatus;
+  status_display: string;
+  note: string;
+  receive_note: string;
+  sent_at: string | null;
+  sent_by_name: string | null;
+  received_at: string | null;
+  received_by_name: string | null;
+  items: TransferItem[];
+  created_at: string;
+}
+
+export interface TransferInput {
+  from_warehouse: string;
+  to_warehouse: string;
+  date: string;
+  note?: string;
+  items: Array<{ product: string; quantity: string }>;
 }

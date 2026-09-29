@@ -22,11 +22,14 @@ class DailyReturnItemSerializer(serializers.ModelSerializer):
 
 class DailyReturnSerializer(serializers.ModelSerializer):
     items = DailyReturnItemSerializer(many=True, read_only=True)
+    distributor_name = serializers.CharField(source="distributor.full_name", read_only=True)
+    warehouse_name = serializers.CharField(source="warehouse.name", read_only=True)
 
     class Meta:
         model = DailyReturn
-        fields = ("id", "number", "date", "distributor", "warehouse",
-                  "day_close", "total_amount", "note", "items", "created_at")
+        fields = ("id", "number", "date", "distributor", "distributor_name",
+                  "warehouse", "warehouse_name", "day_close", "total_amount", "note",
+                  "items", "created_at")
         read_only_fields = fields
 
 

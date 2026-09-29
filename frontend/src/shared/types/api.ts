@@ -48,6 +48,9 @@ export interface User {
   hire_date?: string | null;
   telegram_chat_id?: string;
   distributor_profile?: DistributorProfile | null;
+  /** Omborchi biriktirilgan ombor/filial (bo'sh — barcha omborlar) */
+  warehouse?: string | null;
+  warehouse_name?: string | null;
 }
 
 export interface LoginResponse {

@@ -18,6 +18,7 @@ from .constants import (
     PurchaseSource,
     PurchaseStatus,
     SupplierTxType,
+    TransferStatus,
 )
 
 _ZERO = Decimal("0")
@@ -29,6 +30,13 @@ class Warehouse(BaseModel):
     name = models.CharField(_("nomi"), max_length=128)
     address = models.CharField(_("manzil"), max_length=255, blank=True)
     is_active = models.BooleanField(_("faol"), default=True)
+    # Filial — asosiy ombordan tovar oladigan alohida ombor (Filiallar bo'limi)
+    is_branch = models.BooleanField(_("filial"), default=False, db_index=True)
+    manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="managed_warehouses", verbose_name=_("mas'ul"),
+    )
+    phone = models.CharField(_("telefon"), max_length=20, blank=True)
 
     class Meta:
         verbose_name = _("ombor")
@@ -428,3 +436,92 @@ class InventoryCountItem(BaseModel):
         if self.actual_qty is None:
             return None
         return self.actual_qty - self.expected_qty
+
+
+class Transfer(BaseModel):
+    """Omborlar (filiallar) orasida ko'chirish — ikki bosqichli.
+
+    SENT: manba ombordan TRANSFER chiqimi (tovar "yo'lda").
+    RECEIVED: qabul qilingan miqdor qabul qiluvchi omborga TRANSFER kirimi.
+    Jo'natilgan va qabul qilingan farqi hujjatda qoladi (izoh bilan).
+    """
+
+    number = models.CharField(_("raqam"), max_length=32, unique=True, blank=True)
+    from_warehouse = models.ForeignKey(
+        Warehouse, on_delete=models.PROTECT, related_name="transfers_out",
+        verbose_name=_("qayerdan"),
+    )
+    to_warehouse = models.ForeignKey(
+        Warehouse, on_delete=models.PROTECT, related_name="transfers_in",
+        verbose_name=_("qayerga"),
+    )
+    date = models.DateField(_("sana"))
+    status = models.CharField(
+        _("holat"), max_length=10, choices=TransferStatus.choices,
+        default=TransferStatus.DRAFT, db_index=True,
+    )
+    note = models.CharField(_("izoh"), max_length=255, blank=True)
+    receive_note = models.CharField(_("qabul izohi"), max_length=255, blank=True)
+    sent_at = models.DateTimeField(_("yuborilgan vaqti"), null=True, blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="transfers_sent", verbose_name=_("yuborgan"),
+    )
+    received_at = models.DateTimeField(_("qabul vaqti"), null=True, blank=True)
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="transfers_received", verbose_name=_("qabul qilgan"),
+    )
+
+    class Meta:
+        verbose_name = _("ko'chirish")
+        verbose_name_plural = _("ko'chirishlar")
+        ordering = ("-date", "-created_at")
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(from_warehouse=models.F("to_warehouse")),
+                name="transfer_distinct_warehouses",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.number or f"Ko'chirish {self.pk}"
+
+
+class TransferItem(BaseModel):
+    transfer = models.ForeignKey(
+        Transfer, on_delete=models.CASCADE, related_name="items",
+        verbose_name=_("ko'chirish"),
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="transfer_items",
+        verbose_name=_("mahsulot"),
+    )
+    quantity = models.DecimalField(
+        _("jo'natilgan"), **_QTY, validators=[MinValueValidator(Decimal("0.001"))]
+    )
+    received_quantity = models.DecimalField(
+        _("qabul qilingan"), **_QTY, null=True, blank=True,
+        validators=[MinValueValidator(_ZERO)],
+    )
+    # Hisobot summasi uchun jo'natilgan paytdagi tannarx (CLAUDE.md 7.10)
+    cost_price = models.DecimalField(_("tannarx"), **_MONEY, default=_ZERO)
+
+    class Meta:
+        verbose_name = _("ko'chirish qatori")
+        verbose_name_plural = _("ko'chirish qatorlari")
+        ordering = ("created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["transfer", "product"], name="uniq_transfer_item_product"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product.sku} × {self.quantity}"
+
+    @property
+    def difference(self) -> Decimal | None:
+        if self.received_quantity is None:
+            return None
+        return self.received_quantity - self.quantity

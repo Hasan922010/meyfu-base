@@ -1,7 +1,12 @@
 import { api } from '@/shared/api/client';
 import { listPage, postAction, retrieve, type QueryParams } from '@/shared/api/crud';
 import type { ApiSuccess } from '@/shared/types/api';
-import type { DashboardData, DayClose, DayCloseToday } from '@/shared/types/dayclose';
+import type {
+  DailyReturn,
+  DashboardData,
+  DayClose,
+  DayCloseToday,
+} from '@/shared/types/dayclose';
 import type { Debt, Sale } from '@/shared/types/sales';
 
 interface SalesSummary {
@@ -36,6 +41,8 @@ export const dayCloseApi = {
   list: (params?: QueryParams) => listPage<DayClose>('/day-close/', params),
   myToday: () => retrieve<DayCloseToday>('/day-close/my-today/'),
   confirm: (id: string) => postAction<DayClose>(`/day-close/${id}/confirm/`),
+  /** Kechki qaytarish hujjati (faqat o'qish) */
+  dailyReturn: (id: string) => retrieve<DailyReturn>(`/daily-returns/${id}/`),
   submit: (body: {
     warehouse: string;
     cash_handed: string;

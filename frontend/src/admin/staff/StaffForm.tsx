@@ -1,9 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { extractApiError } from '@/shared/api/client';
 import { staffApi, type StaffInput } from '@/shared/api/users';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
@@ -71,6 +72,7 @@ export function StaffForm({
           passport_series: staff.passport_series ?? '',
           address: staff.address ?? '',
           hire_date: staff.hire_date ?? '',
+          warehouse: staff.warehouse ?? '',
           p_commission_percent: pr?.commission_percent ?? '0',
           p_order_commission_percent: pr?.order_commission_percent ?? '0',
           p_delivery_commission_percent: pr?.delivery_commission_percent ?? '0',
@@ -85,6 +87,11 @@ export function StaffForm({
   });
 
   const role = watch('role');
+  const warehouses = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
+    enabled: role === 'WAREHOUSE',
+  });
 
   const mutation = useMutation({
     mutationFn: (v: FormValues) => {
@@ -94,6 +101,8 @@ export function StaffForm({
         passport_series: v.passport_series || '',
         address: v.address || '',
         hire_date: v.hire_date || null,
+        // Omborchi — bitta ombor/filialga biriktiriladi; boshqa rollarda bog'lanish olib tashlanadi
+        warehouse: v.role === 'WAREHOUSE' ? v.warehouse || null : null,
       };
       if (!staff) body.phone = v.phone;
       if (v.password) body.password = v.password;
@@ -238,6 +247,26 @@ export function StaffForm({
             </label>
           )}
         </div>
+
+        {role === 'WAREHOUSE' && (
+          <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+            <label className="block space-y-1">
+              <span className="text-sm">Ombor / filial</span>
+              <select className="field" {...register('warehouse')}>
+                <option value="">— Barcha omborlar (biriktirilmagan)</option>
+                {(warehouses.data?.results ?? []).map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="text-xs text-gray-500">
+              Biriktirilgan omborchi faqat shu ombor/filialning ko'chirishlarini ko'radi va
+              unga kelgan tovarni qabul qiladi.
+            </p>
+          </div>
+        )}
 
         {role === 'ORDER_TAKER' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">

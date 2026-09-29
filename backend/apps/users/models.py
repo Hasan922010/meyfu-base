@@ -44,6 +44,11 @@ class User(AbstractUser):
     )
     address = models.CharField(_("manzil"), max_length=255, blank=True)
     hire_date = models.DateField(_("ishga kirgan sana"), null=True, blank=True)
+    # Omborchi qaysi ombor/filialda ishlaydi — bo'sh bo'lsa barcha omborlar
+    warehouse = models.ForeignKey(
+        "warehouse.Warehouse", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="staff", verbose_name=_("ombor / filial"),
+    )
 
     device_id = models.CharField(_("qurilma ID"), max_length=128, blank=True)
     last_seen_at = models.DateTimeField(_("oxirgi faollik"), null=True, blank=True)

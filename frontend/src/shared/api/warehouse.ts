@@ -18,6 +18,8 @@ import type {
   StockMovement,
   Supplier,
   SupplierTransaction,
+  Transfer,
+  TransferInput,
   VanStock,
   Warehouse,
 } from '@/shared/types/warehouse';
@@ -49,6 +51,7 @@ export const warehouseApi = {
   }) => postAction<StockMovement>('/stock/opening-balance/', body),
 
   purchases: (params?: QueryParams) => listPage<Purchase>('/purchases/', params),
+  purchase: (id: string) => retrieve<Purchase>(`/purchases/${id}/`),
   createPurchase: (body: PurchaseInput) =>
     create<Purchase, PurchaseInput>('/purchases/', body),
   confirmPurchase: (id: string) =>
@@ -67,6 +70,7 @@ export const warehouseApi = {
       .then((r) => r.data as Blob),
 
   loadings: (params?: QueryParams) => listPage<Loading>('/loadings/', params),
+  loading: (id: string) => retrieve<Loading>(`/loadings/${id}/`),
   createLoading: (body: LoadingInput) =>
     create<Loading, LoadingInput>('/loadings/', body),
   /** Faqat DRAFT holatida (backend boshqasini rad etadi) */
@@ -95,6 +99,21 @@ export const warehouseApi = {
     postAction<InventoryCount>(`/inventory-counts/${id}/confirm/`),
   cancelInventoryCount: (id: string) =>
     postAction<InventoryCount>(`/inventory-counts/${id}/cancel/`),
+
+  transfers: (params?: QueryParams) => listPage<Transfer>('/transfers/', params),
+  transfer: (id: string) => retrieve<Transfer>(`/transfers/${id}/`),
+  createTransfer: (body: TransferInput) => create<Transfer, TransferInput>('/transfers/', body),
+  /** Faqat qoralama */
+  updateTransfer: (id: string, body: TransferInput) =>
+    patch<Transfer, TransferInput>(`/transfers/${id}/`, body),
+  /** Manba ombordan chiqim — tovar yo'lda */
+  sendTransfer: (id: string) => postAction<Transfer>(`/transfers/${id}/send/`),
+  /** Farq bo'lsa izoh majburiy (backend tekshiradi) */
+  receiveTransfer: (
+    id: string,
+    body: { items: Array<{ id: string; received_quantity: string }>; note?: string },
+  ) => postAction<Transfer>(`/transfers/${id}/receive/`, body),
+  cancelTransfer: (id: string) => postAction<Transfer>(`/transfers/${id}/cancel/`),
 
   myVanStock: () => retrieve<VanStock[]>('/van-stock/my/'),
   vanStock: (params?: QueryParams) => listPage<VanStock>('/van-stock/', params),

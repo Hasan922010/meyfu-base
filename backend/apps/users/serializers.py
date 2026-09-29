@@ -26,6 +26,9 @@ class DistributorProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     distributor_profile = DistributorProfileSerializer(read_only=True)
+    warehouse_name = serializers.CharField(
+        source="warehouse.name", read_only=True, default=None
+    )
 
     class Meta:
         model = User
@@ -33,9 +36,9 @@ class UserSerializer(serializers.ModelSerializer):
             "id", "phone", "full_name", "role", "avatar",
             "passport_series", "address", "hire_date",
             "is_active", "last_seen_at", "telegram_chat_id",
-            "distributor_profile",
+            "distributor_profile", "warehouse", "warehouse_name",
         )
-        read_only_fields = ("id", "last_seen_at", "role")
+        read_only_fields = ("id", "last_seen_at", "role", "warehouse")
 
 
 class UserWriteSerializer(serializers.ModelSerializer):
@@ -49,6 +52,9 @@ class UserWriteSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, required=False, min_length=8)
     distributor_profile = DistributorProfileSerializer(required=False)
+    warehouse_name = serializers.CharField(
+        source="warehouse.name", read_only=True, default=None
+    )
     opening_balance = serializers.DecimalField(
         max_digits=14, decimal_places=2, write_only=True,
         required=False, allow_null=True,
@@ -59,7 +65,7 @@ class UserWriteSerializer(serializers.ModelSerializer):
         fields = (
             "id", "phone", "full_name", "role", "passport_series", "address",
             "hire_date", "is_active", "password", "distributor_profile",
-            "opening_balance",
+            "opening_balance", "warehouse", "warehouse_name",
         )
         read_only_fields = ("id",)
         extra_kwargs = {"phone": {"validators": []}}  # normalizatsiya validate_phone'da

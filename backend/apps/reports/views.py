@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -36,6 +36,15 @@ from .services import (
     resolve_period,
     sales_rows_for_export,
     sales_summary,
+)
+from .services.branch import (
+    KINDS as BRANCH_KINDS,
+)
+from .services.branch import (
+    branch_activity,
+    branch_activity_rows_for_export,
+    branch_cards,
+    branch_list,
 )
 
 User = get_user_model()
@@ -190,6 +199,68 @@ class DistributorTimelineView(_DistributorScopedView):
         })
 
 
+# Filiallar — admin rollar hammasini, omborchi faqat o'z omborini ko'radi
+_BRANCH_ROLES = (*_REPORT_ROLES, Role.WAREHOUSE)
+
+
+def _branch_queryset(user):
+    from apps.warehouse.models import Warehouse
+
+    qs = Warehouse.objects.filter(is_active=True)
+    if getattr(user, "role", None) == Role.WAREHOUSE and not user.is_superuser:
+        if user.warehouse_id:
+            qs = qs.filter(pk=user.warehouse_id)
+    return qs
+
+
+def _branch(request: Request, pk):
+    return get_object_or_404(_branch_queryset(request.user), pk=pk)
+
+
+class _BranchView(APIView):
+    permission_classes = [IsAuthenticated, RolePermission]
+    read_roles = _BRANCH_ROLES
+
+
+class BranchListView(_BranchView):
+    @extend_schema(summary="Filiallar (omborlar) kartochkalari", request=None,
+                   responses={200: dict})
+    def get(self, request: Request) -> Response:
+        return ok(branch_list(_branch_queryset(request.user), business_date()))
+
+
+class BranchCardsView(_BranchView):
+    @extend_schema(summary="Filial faoliyati — kartalar", parameters=_PERIOD_PARAMS,
+                   request=None, responses={200: dict})
+    def get(self, request: Request, pk: str) -> Response:
+        warehouse = _branch(request, pk)
+        preset, df, dt = _period(request)
+        start, end, prev_start, prev_end, _label = resolve_period(preset, df, dt)
+        return ok(branch_cards(warehouse, start, end, prev_start, prev_end))
+
+
+def _branch_kind(request: Request) -> str:
+    kind = request.query_params.get("kind", "")
+    if kind not in BRANCH_KINDS:
+        raise ValidationError({"kind": f"Noma'lum bo'lim: {kind or '—'}."})
+    return kind
+
+
+class BranchActivityView(_BranchView):
+    @extend_schema(
+        summary="Filial faoliyati — batafsil hisobot (hujjatlar bilan)",
+        parameters=[*_PERIOD_PARAMS, OpenApiParameter("kind", str, required=True,
+                                                      enum=list(BRANCH_KINDS))],
+        request=None, responses={200: dict},
+    )
+    def get(self, request: Request, pk: str) -> Response:
+        warehouse = _branch(request, pk)
+        kind = _branch_kind(request)
+        preset, df, dt = _period(request)
+        start, end, *_ = resolve_period(preset, df, dt)
+        return ok(branch_activity(warehouse, kind, start, end))
+
+
 class DistributorComparisonView(_ReportView):
     @extend_schema(summary="Tarqatuvchilarni solishtirish + reyting",
                    parameters=_PERIOD_PARAMS, request=None, responses={200: dict})
@@ -285,6 +356,14 @@ class ReportExportView(_ReportView):
             rows = distributor_rows_for_export(distributor, start, end)
             base = f"xodim_{distributor.full_name}_{start}_{end}"
             title = f"Xodim kunlik jurnali · {distributor.full_name}"
+        elif report_type == "branch":
+            preset, pdf_, pdt = _period(request)
+            start, end, *_ = resolve_period(preset, pdf_ or df, pdt or dt)
+            warehouse = _branch(request, request.query_params.get("branch", ""))
+            payload = branch_activity(warehouse, _branch_kind(request), start, end)
+            rows = branch_activity_rows_for_export(payload)
+            base = f"filial_{warehouse.name}_{payload['kind']}_{start}_{end}"
+            title = f"{warehouse.name} · {payload['label']} · {start} – {end}"
         elif report_type == "query":
             payload = report_query(
                 dimension=request.query_params.get("dimension", "product"),

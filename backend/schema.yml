@@ -2017,6 +2017,84 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompanyPublic'
           description: ''
+  /api/v1/daily-returns/:
+    get:
+      operationId: daily_returns_list
+      description: Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: distributor
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: warehouse
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - daily-returns
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDailyReturnList'
+          description: ''
+  /api/v1/daily-returns/{id}/:
+    get:
+      operationId: daily_returns_retrieve
+      description: Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this kunlik qaytarish.
+        required: true
+      tags:
+      - daily-returns
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyReturn'
+          description: ''
   /api/v1/day-close/:
     get:
       operationId: day_close_list
@@ -3465,10 +3543,7 @@ paths:
   /api/v1/loadings/:
     get:
       operationId: loadings_list
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: query
         name: date
@@ -3537,10 +3612,7 @@ paths:
           description: ''
     post:
       operationId: loadings_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       tags:
       - loadings
       requestBody:
@@ -3567,10 +3639,7 @@ paths:
   /api/v1/loadings/{id}/:
     get:
       operationId: loadings_retrieve
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -3592,10 +3661,7 @@ paths:
           description: ''
     put:
       operationId: loadings_update
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -3629,10 +3695,7 @@ paths:
           description: ''
     patch:
       operationId: loadings_partial_update
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -3665,10 +3728,7 @@ paths:
           description: ''
     delete:
       operationId: loadings_destroy
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -3687,10 +3747,7 @@ paths:
   /api/v1/loadings/{id}/cancel/:
     post:
       operationId: loadings_cancel_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Yuklamani bekor qilish / qaytarish
       parameters:
       - in: path
@@ -3714,10 +3771,7 @@ paths:
   /api/v1/loadings/{id}/confirm/:
     post:
       operationId: loadings_confirm_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Yuklamani tasdiqlash (VanStock oshadi)
       parameters:
       - in: path
@@ -3741,10 +3795,7 @@ paths:
   /api/v1/loadings/{id}/pdf/:
     get:
       operationId: loadings_pdf_retrieve
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Yuklama varag'i PDF (rasm + rekvizit; ?stamp=1 — muhr bilan)
       parameters:
       - in: path
@@ -3773,10 +3824,7 @@ paths:
   /api/v1/loadings/{id}/send/:
     post:
       operationId: loadings_send_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Yuklamani tarqatuvchiga yuborish (qoldiq band qilinadi)
       parameters:
       - in: path
@@ -3800,10 +3848,7 @@ paths:
   /api/v1/loadings/my-today/:
     get:
       operationId: loadings_my_today_retrieve
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Bugungi yuklamam + hali tasdiqlanmaganlari (tarqatuvchi uchun)
       tags:
       - loadings
@@ -5144,10 +5189,7 @@ paths:
   /api/v1/purchases/:
     get:
       operationId: purchases_list
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - name: ordering
         required: false
@@ -5218,10 +5260,7 @@ paths:
           description: ''
     post:
       operationId: purchases_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       tags:
       - purchases
       requestBody:
@@ -5248,10 +5287,7 @@ paths:
   /api/v1/purchases/{id}/:
     get:
       operationId: purchases_retrieve
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -5273,10 +5309,7 @@ paths:
           description: ''
     put:
       operationId: purchases_update
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -5310,10 +5343,7 @@ paths:
           description: ''
     patch:
       operationId: purchases_partial_update
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -5346,10 +5376,7 @@ paths:
           description: ''
     delete:
       operationId: purchases_destroy
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -5368,10 +5395,7 @@ paths:
   /api/v1/purchases/{id}/confirm/:
     post:
       operationId: purchases_confirm_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Qabulni tasdiqlash — qoldiqqa kirim qiladi
       parameters:
       - in: path
@@ -5395,10 +5419,7 @@ paths:
   /api/v1/purchases/{id}/pay/:
     post:
       operationId: purchases_pay_create
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: To'lovni yangilash
       parameters:
       - in: path
@@ -5434,10 +5455,7 @@ paths:
   /api/v1/purchases/{id}/pdf/:
     get:
       operationId: purchases_pdf_retrieve
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Nakladnoy PDF (rasm + rekvizit; ?stamp=1 — muhr bilan)
       parameters:
       - in: path
@@ -5513,6 +5531,127 @@ paths:
           - category
           - client
           - product
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/branches/:
+    get:
+      operationId: reports_branches_retrieve
+      summary: Filiallar (omborlar) kartochkalari
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/branches/{id}/activity/:
+    get:
+      operationId: reports_branches_activity_retrieve
+      summary: Filial faoliyati — batafsil hisobot (hujjatlar bilan)
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - in_transit
+          - inventory
+          - loadings
+          - opening
+          - other
+          - purchases
+          - returns
+          - stock
+          - transfers_in
+          - transfers_out
+          - write_offs
+        required: true
+      - in: query
+        name: preset
+        schema:
+          type: string
+          enum:
+          - custom
+          - last_month
+          - month
+          - quarter
+          - today
+          - week
+          - year
+          - yesterday
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/branches/{id}/cards/:
+    get:
+      operationId: reports_branches_cards_retrieve
+      summary: Filial faoliyati — kartalar
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: query
+        name: preset
+        schema:
+          type: string
+          enum:
+          - custom
+          - last_month
+          - month
+          - quarter
+          - today
+          - week
+          - year
+          - yesterday
       tags:
       - reports
       security:
@@ -6516,11 +6655,7 @@ paths:
   /api/v1/stock/:
     get:
       operationId: stock_list
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - name: ordering
         required: false
@@ -6570,11 +6705,7 @@ paths:
   /api/v1/stock-movements/:
     get:
       operationId: stock_movements_list
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: query
         name: movement_type
@@ -6653,11 +6784,7 @@ paths:
   /api/v1/stock-movements/{id}/:
     get:
       operationId: stock_movements_retrieve
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -6680,11 +6807,7 @@ paths:
   /api/v1/stock/{id}/:
     get:
       operationId: stock_retrieve
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       parameters:
       - in: path
         name: id
@@ -6707,11 +6830,7 @@ paths:
   /api/v1/stock/low/:
     get:
       operationId: stock_low_retrieve
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Kam qolgan tovarlar (min_stock_alert dan past)
       tags:
       - stock
@@ -6727,11 +6846,7 @@ paths:
   /api/v1/stock/opening-balance/:
     post:
       operationId: stock_opening_balance_create
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Mavjud mahsulot uchun boshlang'ich qoldiq
       tags:
       - stock
@@ -6759,11 +6874,7 @@ paths:
   /api/v1/stock/opening-balance/bulk/:
     post:
       operationId: stock_opening_balance_bulk_create
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Tovar qoldiqlarini ommaviy kiritish (yakuniy miqdor)
       tags:
       - stock
@@ -6791,11 +6902,7 @@ paths:
   /api/v1/stock/opening-sheet/:
     get:
       operationId: stock_opening_sheet_list
-      description: |-
-        Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-
-        Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-        `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
       summary: Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)
       parameters:
       - name: ordering
@@ -7423,6 +7530,248 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
+          description: ''
+  /api/v1/transfers/:
+    get:
+      operationId: transfers_list
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: from_warehouse
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          title: Holat
+          enum:
+          - CANCELLED
+          - DRAFT
+          - RECEIVED
+          - SENT
+        description: |-
+          * `DRAFT` - Qoralama
+          * `SENT` - Yo'lda
+          * `RECEIVED` - Qabul qilingan
+          * `CANCELLED` - Bekor qilingan
+      - in: query
+        name: to_warehouse
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - transfers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransferList'
+          description: ''
+    post:
+      operationId: transfers_create
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      tags:
+      - transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+          description: ''
+  /api/v1/transfers/{id}/:
+    get:
+      operationId: transfers_retrieve
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ko'chirish.
+        required: true
+      tags:
+      - transfers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+          description: ''
+    patch:
+      operationId: transfers_partial_update
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ko'chirish.
+        required: true
+      tags:
+      - transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTransferRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+          description: ''
+  /api/v1/transfers/{id}/cancel/:
+    post:
+      operationId: transfers_cancel_create
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      summary: Bekor qilish (yo'ldagi tovar manbaga qaytadi)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ko'chirish.
+        required: true
+      tags:
+      - transfers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+          description: ''
+  /api/v1/transfers/{id}/receive/:
+    post:
+      operationId: transfers_receive_create
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      summary: Qabul qilish — qabul qilingan miqdor filialga kirim
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ko'chirish.
+        required: true
+      tags:
+      - transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferReceiveRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferReceiveRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferReceiveRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+          description: ''
+  /api/v1/transfers/{id}/send/:
+    post:
+      operationId: transfers_send_create
+      description: 'Ombor/filiallar orasida ko''chirish: qoralama → yo''lda → qabul
+        qilingan.'
+      summary: Yuborish — manba ombordan chiqim
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ko'chirish.
+        required: true
+      tags:
+      - transfers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
           description: ''
   /api/v1/units/:
     get:
@@ -9604,11 +9953,17 @@ components:
           format: uuid
           readOnly: true
           title: Tarqatuvchi
+        distributor_name:
+          type: string
+          readOnly: true
         warehouse:
           type: string
           format: uuid
           readOnly: true
           title: Ombor
+        warehouse_name:
+          type: string
+          readOnly: true
         day_close:
           type: string
           format: uuid
@@ -9640,12 +9995,14 @@ components:
       - date
       - day_close
       - distributor
+      - distributor_name
       - id
       - items
       - note
       - number
       - total_amount
       - warehouse
+      - warehouse_name
     DailyReturnItem:
       type: object
       properties:
@@ -12028,6 +12385,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CompanyExpense'
+    PaginatedDailyReturnList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyReturn'
     PaginatedDayCloseList:
       type: object
       required:
@@ -12557,6 +12937,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SupplierTransaction'
+    PaginatedTransferList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transfer'
     PaginatedUnitList:
       type: object
       required:
@@ -13223,6 +13626,29 @@ components:
         is_active:
           type: boolean
           title: Faol
+    PatchedTransferRequest:
+      type: object
+      properties:
+        from_warehouse:
+          type: string
+          format: uuid
+          title: Qayerdan
+        to_warehouse:
+          type: string
+          format: uuid
+          title: Qayerga
+        date:
+          type: string
+          format: date
+          title: Sana
+        note:
+          type: string
+          title: Izoh
+          maxLength: 255
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferItemRequest'
     PatchedUnitRequest:
       type: object
       properties:
@@ -13290,6 +13716,11 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           writeOnly: true
           nullable: true
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+          title: Ombor / filial
     PatchedWarehouseRequest:
       type: object
       properties:
@@ -13302,9 +13733,21 @@ components:
           type: string
           title: Manzil
           maxLength: 255
+        phone:
+          type: string
+          title: Telefon
+          maxLength: 20
         is_active:
           type: boolean
           title: Faol
+        is_branch:
+          type: boolean
+          title: Filial
+        manager:
+          type: string
+          format: uuid
+          nullable: true
+          title: Mas'ul
     PaymentIntentCc4Enum:
       enum:
       - NAQD
@@ -15427,6 +15870,228 @@ components:
           minLength: 1
       required:
       - refresh
+    Transfer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+          title: Raqam
+        from_warehouse:
+          type: string
+          format: uuid
+          title: Qayerdan
+        from_warehouse_name:
+          type: string
+          readOnly: true
+        to_warehouse:
+          type: string
+          format: uuid
+          title: Qayerga
+        to_warehouse_name:
+          type: string
+          readOnly: true
+        date:
+          type: string
+          format: date
+          title: Sana
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TransferStatusEnum'
+          readOnly: true
+          title: Holat
+        status_display:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          title: Izoh
+          maxLength: 255
+        receive_note:
+          type: string
+          readOnly: true
+          title: Qabul izohi
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Yuborilgan vaqti
+        sent_by_name:
+          type: string
+          readOnly: true
+        received_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Qabul vaqti
+        received_by_name:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferItem'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Yaratilgan vaqti
+      required:
+      - created_at
+      - date
+      - from_warehouse
+      - from_warehouse_name
+      - id
+      - items
+      - number
+      - receive_note
+      - received_at
+      - received_by_name
+      - sent_at
+      - sent_by_name
+      - status
+      - status_display
+      - to_warehouse
+      - to_warehouse_name
+    TransferItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          title: Mahsulot
+        product_name:
+          type: string
+          readOnly: true
+        product_sku:
+          type: string
+          readOnly: true
+        product_unit:
+          type: string
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Jo'natilgan
+        received_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+          title: Qabul qilingan
+        difference:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Tannarx
+      required:
+      - cost_price
+      - difference
+      - id
+      - product
+      - product_name
+      - product_sku
+      - product_unit
+      - quantity
+      - received_quantity
+    TransferItemRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+          title: Mahsulot
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Jo'natilgan
+      required:
+      - product
+      - quantity
+    TransferReceiveRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferReceiveRowRequest'
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+    TransferReceiveRowRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        received_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - id
+      - received_quantity
+    TransferRequest:
+      type: object
+      properties:
+        from_warehouse:
+          type: string
+          format: uuid
+          title: Qayerdan
+        to_warehouse:
+          type: string
+          format: uuid
+          title: Qayerga
+        date:
+          type: string
+          format: date
+          title: Sana
+        note:
+          type: string
+          title: Izoh
+          maxLength: 255
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferItemRequest'
+      required:
+      - date
+      - from_warehouse
+      - items
+      - to_warehouse
+    TransferStatusEnum:
+      enum:
+      - DRAFT
+      - SENT
+      - RECEIVED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Qoralama
+        * `SENT` - Yo'lda
+        * `RECEIVED` - Qabul qilingan
+        * `CANCELLED` - Bekor qilingan
     Unit:
       type: object
       properties:
@@ -15524,6 +16189,15 @@ components:
           allOf:
           - $ref: '#/components/schemas/DistributorProfile'
           readOnly: true
+        warehouse:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Ombor / filial
+        warehouse_name:
+          type: string
+          readOnly: true
       required:
       - distributor_profile
       - full_name
@@ -15531,6 +16205,8 @@ components:
       - last_seen_at
       - phone
       - role
+      - warehouse
+      - warehouse_name
     UserWrite:
       type: object
       description: |-
@@ -15577,10 +16253,19 @@ components:
             this instead of deleting accounts.
         distributor_profile:
           $ref: '#/components/schemas/DistributorProfile'
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+          title: Ombor / filial
+        warehouse_name:
+          type: string
+          readOnly: true
       required:
       - full_name
       - id
       - phone
+      - warehouse_name
     UserWriteRequest:
       type: object
       description: |-
@@ -15635,6 +16320,11 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           writeOnly: true
           nullable: true
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+          title: Ombor / filial
       required:
       - full_name
       - phone
@@ -15850,9 +16540,24 @@ components:
           type: string
           title: Manzil
           maxLength: 255
+        phone:
+          type: string
+          title: Telefon
+          maxLength: 20
         is_active:
           type: boolean
           title: Faol
+        is_branch:
+          type: boolean
+          title: Filial
+        manager:
+          type: string
+          format: uuid
+          nullable: true
+          title: Mas'ul
+        manager_name:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -15861,6 +16566,7 @@ components:
       required:
       - created_at
       - id
+      - manager_name
       - name
     WarehouseRequest:
       type: object
@@ -15874,9 +16580,21 @@ components:
           type: string
           title: Manzil
           maxLength: 255
+        phone:
+          type: string
+          title: Telefon
+          maxLength: 20
         is_active:
           type: boolean
           title: Faol
+        is_branch:
+          type: boolean
+          title: Filial
+        manager:
+          type: string
+          format: uuid
+          nullable: true
+          title: Mas'ul
       required:
       - name
   securitySchemes:

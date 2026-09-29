@@ -46,6 +46,8 @@ export interface StaffInput {
   address?: string;
   hire_date?: string | null;
   distributor_profile?: Partial<DistributorProfile>;
+  /** Omborchi qaysi ombor/filialda ishlaydi */
+  warehouse?: string | null;
   /** Faqat yaratishda: dastlabki hisob-kitob (musbat — xodimga berilgan avans,
    * manfiy — xodimning qarzi). CLAUDE.md 5. */
   opening_balance?: string;

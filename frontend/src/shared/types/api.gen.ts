@@ -848,6 +848,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/daily-returns/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun. */
+        get: operations["daily_returns_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-returns/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun. */
+        get: operations["daily_returns_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/day-close/": {
         parameters: {
             query?: never;
@@ -1608,18 +1642,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["loadings_list"];
         put?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         post: operations["loadings_create"];
         delete?: never;
         options?: never;
@@ -1634,32 +1660,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["loadings_retrieve"];
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         put: operations["loadings_update"];
         post?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         delete: operations["loadings_destroy"];
         options?: never;
         head?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         patch: operations["loadings_partial_update"];
         trace?: never;
     };
@@ -1674,9 +1684,7 @@ export interface paths {
         put?: never;
         /**
          * Yuklamani bekor qilish / qaytarish
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["loadings_cancel_create"];
         delete?: never;
@@ -1696,9 +1704,7 @@ export interface paths {
         put?: never;
         /**
          * Yuklamani tasdiqlash (VanStock oshadi)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["loadings_confirm_create"];
         delete?: never;
@@ -1716,9 +1722,7 @@ export interface paths {
         };
         /**
          * Yuklama varag'i PDF (rasm + rekvizit; ?stamp=1 — muhr bilan)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["loadings_pdf_retrieve"];
         put?: never;
@@ -1740,9 +1744,7 @@ export interface paths {
         put?: never;
         /**
          * Yuklamani tarqatuvchiga yuborish (qoldiq band qilinadi)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["loadings_send_create"];
         delete?: never;
@@ -1760,9 +1762,7 @@ export interface paths {
         };
         /**
          * Bugungi yuklamam + hali tasdiqlanmaganlari (tarqatuvchi uchun)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["loadings_my_today_retrieve"];
         put?: never;
@@ -2453,18 +2453,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["purchases_list"];
         put?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         post: operations["purchases_create"];
         delete?: never;
         options?: never;
@@ -2479,32 +2471,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["purchases_retrieve"];
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         put: operations["purchases_update"];
         post?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         delete: operations["purchases_destroy"];
         options?: never;
         head?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         patch: operations["purchases_partial_update"];
         trace?: never;
     };
@@ -2519,9 +2495,7 @@ export interface paths {
         put?: never;
         /**
          * Qabulni tasdiqlash — qoldiqqa kirim qiladi
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["purchases_confirm_create"];
         delete?: never;
@@ -2541,9 +2515,7 @@ export interface paths {
         put?: never;
         /**
          * To'lovni yangilash
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["purchases_pay_create"];
         delete?: never;
@@ -2561,9 +2533,7 @@ export interface paths {
         };
         /**
          * Nakladnoy PDF (rasm + rekvizit; ?stamp=1 — muhr bilan)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["purchases_pdf_retrieve"];
         put?: never;
@@ -2600,6 +2570,57 @@ export interface paths {
         };
         /** ABC (Pareto) tahlil */
         get: operations["reports_abc_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filiallar (omborlar) kartochkalari */
+        get: operations["reports_branches_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/{id}/activity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filial faoliyati — batafsil hisobot (hujjatlar bilan) */
+        get: operations["reports_branches_activity_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/{id}/cards/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filial faoliyati — kartalar */
+        get: operations["reports_branches_cards_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3079,12 +3100,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_list"];
         put?: never;
         post?: never;
@@ -3101,12 +3117,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_movements_list"];
         put?: never;
         post?: never;
@@ -3123,12 +3134,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_movements_retrieve"];
         put?: never;
         post?: never;
@@ -3145,12 +3151,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_retrieve"];
         put?: never;
         post?: never;
@@ -3169,10 +3170,7 @@ export interface paths {
         };
         /**
          * Kam qolgan tovarlar (min_stock_alert dan past)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["stock_low_retrieve"];
         put?: never;
@@ -3194,10 +3192,7 @@ export interface paths {
         put?: never;
         /**
          * Mavjud mahsulot uchun boshlang'ich qoldiq
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["stock_opening_balance_create"];
         delete?: never;
@@ -3217,10 +3212,7 @@ export interface paths {
         put?: never;
         /**
          * Tovar qoldiqlarini ommaviy kiritish (yakuniy miqdor)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["stock_opening_balance_bulk_create"];
         delete?: never;
@@ -3238,10 +3230,7 @@ export interface paths {
         };
         /**
          * Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["stock_opening_sheet_list"];
         put?: never;
@@ -3575,6 +3564,102 @@ export interface paths {
         put?: never;
         /** Telegram akkauntdan uzish */
         post: operations["telegram_unlink_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        get: operations["transfers_list"];
+        put?: never;
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        post: operations["transfers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        get: operations["transfers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        patch: operations["transfers_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bekor qilish (yo'ldagi tovar manbaga qaytadi)
+         * @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan.
+         */
+        post: operations["transfers_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/receive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qabul qilish — qabul qilingan miqdor filialga kirim
+         * @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan.
+         */
+        post: operations["transfers_receive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/send/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Yuborish — manba ombordan chiqim
+         * @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan.
+         */
+        post: operations["transfers_send_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4798,11 +4883,13 @@ export interface components {
              * Format: uuid
              */
             readonly distributor: string;
+            readonly distributor_name: string;
             /**
              * Ombor
              * Format: uuid
              */
             readonly warehouse: string;
+            readonly warehouse_name: string;
             /**
              * Kun yopish
              * Format: uuid
@@ -6224,6 +6311,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["CompanyExpense"][];
         };
+        PaginatedDailyReturnList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["DailyReturn"][];
+        };
         PaginatedDayCloseList: {
             /** @example 123 */
             count: number;
@@ -6568,6 +6670,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["SupplierTransaction"][];
+        };
+        PaginatedTransferList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Transfer"][];
         };
         PaginatedUnitList: {
             /** @example 123 */
@@ -7036,6 +7153,26 @@ export interface components {
             /** Faol */
             is_active?: boolean;
         };
+        PatchedTransferRequest: {
+            /**
+             * Qayerdan
+             * Format: uuid
+             */
+            from_warehouse?: string;
+            /**
+             * Qayerga
+             * Format: uuid
+             */
+            to_warehouse?: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date?: string;
+            /** Izoh */
+            note?: string;
+            items?: components["schemas"]["TransferItemRequest"][];
+        };
         PatchedUnitRequest: {
             /** Nomi */
             name?: string;
@@ -7075,14 +7212,28 @@ export interface components {
             distributor_profile?: components["schemas"]["DistributorProfileRequest"];
             /** Format: decimal */
             opening_balance?: string | null;
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            warehouse?: string | null;
         };
         PatchedWarehouseRequest: {
             /** Nomi */
             name?: string;
             /** Manzil */
             address?: string;
+            /** Telefon */
+            phone?: string;
             /** Faol */
             is_active?: boolean;
+            /** Filial */
+            is_branch?: boolean;
+            /**
+             * Mas'ul
+             * Format: uuid
+             */
+            manager?: string | null;
         };
         /**
          * @description * `NAQD` - NAQD
@@ -8381,6 +8532,134 @@ export interface components {
         TokenRefreshRequest: {
             refresh: string;
         };
+        Transfer: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Raqam */
+            readonly number: string;
+            /**
+             * Qayerdan
+             * Format: uuid
+             */
+            from_warehouse: string;
+            readonly from_warehouse_name: string;
+            /**
+             * Qayerga
+             * Format: uuid
+             */
+            to_warehouse: string;
+            readonly to_warehouse_name: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Holat */
+            readonly status: components["schemas"]["TransferStatusEnum"];
+            readonly status_display: string;
+            /** Izoh */
+            note?: string;
+            /** Qabul izohi */
+            readonly receive_note: string;
+            /**
+             * Yuborilgan vaqti
+             * Format: date-time
+             */
+            readonly sent_at: string | null;
+            readonly sent_by_name: string;
+            /**
+             * Qabul vaqti
+             * Format: date-time
+             */
+            readonly received_at: string | null;
+            readonly received_by_name: string;
+            items: components["schemas"]["TransferItem"][];
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+        };
+        TransferItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            readonly product_name: string;
+            readonly product_sku: string;
+            readonly product_unit: string;
+            /**
+             * Jo'natilgan
+             * Format: decimal
+             */
+            quantity: string;
+            /**
+             * Qabul qilingan
+             * Format: decimal
+             */
+            readonly received_quantity: string | null;
+            /** Format: decimal */
+            readonly difference: string | null;
+            /**
+             * Tannarx
+             * Format: decimal
+             */
+            readonly cost_price: string;
+        };
+        TransferItemRequest: {
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Jo'natilgan
+             * Format: decimal
+             */
+            quantity: string;
+        };
+        TransferReceiveRequest: {
+            items?: components["schemas"]["TransferReceiveRowRequest"][];
+            /** @default  */
+            note: string;
+        };
+        TransferReceiveRowRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            received_quantity: string;
+        };
+        TransferRequest: {
+            /**
+             * Qayerdan
+             * Format: uuid
+             */
+            from_warehouse: string;
+            /**
+             * Qayerga
+             * Format: uuid
+             */
+            to_warehouse: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Izoh */
+            note?: string;
+            items: components["schemas"]["TransferItemRequest"][];
+        };
+        /**
+         * @description * `DRAFT` - Qoralama
+         *     * `SENT` - Yo'lda
+         *     * `RECEIVED` - Qabul qilingan
+         *     * `CANCELLED` - Bekor qilingan
+         * @enum {string}
+         */
+        TransferStatusEnum: "DRAFT" | "SENT" | "RECEIVED" | "CANCELLED";
         Unit: {
             /** Format: uuid */
             readonly id: string;
@@ -8435,6 +8714,12 @@ export interface components {
             readonly last_seen_at: string | null;
             telegram_chat_id?: string;
             readonly distributor_profile: components["schemas"]["DistributorProfile"];
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            readonly warehouse: string | null;
+            readonly warehouse_name: string;
         };
         /**
          * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
@@ -8468,6 +8753,12 @@ export interface components {
              */
             is_active?: boolean;
             distributor_profile?: components["schemas"]["DistributorProfile"];
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            warehouse?: string | null;
+            readonly warehouse_name: string;
         };
         /**
          * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
@@ -8502,6 +8793,11 @@ export interface components {
             distributor_profile?: components["schemas"]["DistributorProfileRequest"];
             /** Format: decimal */
             opening_balance?: string | null;
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            warehouse?: string | null;
         };
         VanStock: {
             /** Format: uuid */
@@ -8620,8 +8916,18 @@ export interface components {
             name: string;
             /** Manzil */
             address?: string;
+            /** Telefon */
+            phone?: string;
             /** Faol */
             is_active?: boolean;
+            /** Filial */
+            is_branch?: boolean;
+            /**
+             * Mas'ul
+             * Format: uuid
+             */
+            manager?: string | null;
+            readonly manager_name: string;
             /**
              * Yaratilgan vaqti
              * Format: date-time
@@ -8633,8 +8939,17 @@ export interface components {
             name: string;
             /** Manzil */
             address?: string;
+            /** Telefon */
+            phone?: string;
             /** Faol */
             is_active?: boolean;
+            /** Filial */
+            is_branch?: boolean;
+            /**
+             * Mas'ul
+             * Format: uuid
+             */
+            manager?: string | null;
         };
     };
     responses: never;
@@ -10184,6 +10499,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanyPublic"];
+                };
+            };
+        };
+    };
+    daily_returns_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                distributor?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                warehouse?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDailyReturnList"];
+                };
+            };
+        };
+    };
+    daily_returns_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this kunlik qaytarish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyReturn"];
                 };
             };
         };
@@ -12748,6 +13116,82 @@ export interface operations {
             };
         };
     };
+    reports_branches_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_branches_activity_retrieve: {
+        parameters: {
+            query: {
+                date_from?: string;
+                date_to?: string;
+                kind: "in_transit" | "inventory" | "loadings" | "opening" | "other" | "purchases" | "returns" | "stock" | "transfers_in" | "transfers_out" | "write_offs";
+                preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_branches_cards_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     reports_dashboard_retrieve: {
         parameters: {
             query?: {
@@ -14191,6 +14635,191 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    transfers_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                from_warehouse?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `DRAFT` - Qoralama
+                 *     * `SENT` - Yo'lda
+                 *     * `RECEIVED` - Qabul qilingan
+                 *     * `CANCELLED` - Bekor qilingan
+                 */
+                status?: "CANCELLED" | "DRAFT" | "RECEIVED" | "SENT";
+                to_warehouse?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTransferList"];
+                };
+            };
+        };
+    };
+    transfers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferRequest"];
+                "multipart/form-data": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTransferRequest"];
+                "multipart/form-data": components["schemas"]["PatchedTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_receive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TransferReceiveRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferReceiveRequest"];
+                "multipart/form-data": components["schemas"]["TransferReceiveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_send_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
                 };
             };
         };

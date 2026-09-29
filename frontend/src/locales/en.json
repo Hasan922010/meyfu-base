@@ -38,6 +38,7 @@
     "orders": "Orders",
     "clients": "Clients",
     "warehouse": "Warehouse",
+    "branches": "Branches",
     "settings": "Settings",
     "routes": "Routes",
     "dayClose": "Day close",

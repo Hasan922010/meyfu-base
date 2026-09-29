@@ -7,14 +7,21 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
 export interface FieldSpec {
   name: string;
   label: string;
-  type?: 'text' | 'number' | 'checkbox';
+  type?: 'text' | 'number' | 'checkbox' | 'select';
   required?: boolean;
   placeholder?: string;
   /** Yangi yozuv uchun boshlang'ich qiymat (checkbox uchun) */
   defaultChecked?: boolean;
+  /** `select` uchun variantlar manbai; bo'sh tanlov `null` bo'lib yuboriladi */
+  options?: { queryKey: string[]; load: () => Promise<SelectOption[]> };
 }
 
 interface Props {
@@ -22,8 +29,10 @@ interface Props {
   path: string;
   title: string;
   fields: FieldSpec[];
-  /** Jadvalda ko'rsatiladigan ustunlar (fields nomlari) */
+  /** Jadvalda ko'rsatiladigan ustunlar (fields nomlari yoki o'qish uchun maydonlar) */
   columns: string[];
+  /** Field bo'lmagan ustunlar sarlavhasi (masalan `manager_name`) */
+  columnLabels?: Record<string, string>;
   canWrite: boolean;
 }
 
@@ -32,6 +41,7 @@ export function SimpleCrud({
   title,
   fields,
   columns,
+  columnLabels,
   canWrite,
 }: Props): ReactElement {
   const qc = useQueryClient();
@@ -54,7 +64,7 @@ export function SimpleCrud({
 
   const rows = query.data?.results ?? [];
   const labelOf = (n: string): string =>
-    fields.find((f) => f.name === n)?.label ?? n;
+    columnLabels?.[n] ?? fields.find((f) => f.name === n)?.label ?? n;
 
   return (
     <div className="space-y-3">
@@ -193,10 +203,11 @@ function CrudForm({
 
   const mutation = useMutation({
     mutationFn: () => {
-      const body: Record<string, string | boolean | number> = {};
+      const body: Record<string, string | boolean | number | null> = {};
       for (const f of fields) {
         const v = values[f.name] ?? '';
         if (f.type === 'number') body[f.name] = v === '' ? 0 : Number(v);
+        else if (f.type === 'select') body[f.name] = v === '' ? null : v;
         else body[f.name] = v;
       }
       return row ? resource.update(row.id, body) : resource.create(body);
@@ -213,7 +224,14 @@ function CrudForm({
       className="space-y-3"
     >
       {fields.map((f) =>
-        f.type === 'checkbox' ? (
+        f.type === 'select' ? (
+          <SelectField
+            key={f.name}
+            spec={f}
+            value={String(values[f.name] ?? '')}
+            onChange={(v) => setValues((s) => ({ ...s, [f.name]: v }))}
+          />
+        ) : f.type === 'checkbox' ? (
           <label key={f.name} className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -260,5 +278,43 @@ function CrudForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function SelectField({
+  spec,
+  value,
+  onChange,
+}: {
+  spec: FieldSpec;
+  value: string;
+  onChange: (value: string) => void;
+}): ReactElement {
+  const options = useQuery({
+    queryKey: spec.options?.queryKey ?? ['select', spec.name],
+    queryFn: () => spec.options?.load() ?? Promise.resolve([]),
+    enabled: Boolean(spec.options),
+  });
+
+  return (
+    <label className="block space-y-1">
+      <span className="text-sm font-medium">
+        {spec.label}
+        {spec.required && ' *'}
+      </span>
+      <select
+        className="field"
+        required={spec.required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">{options.isLoading ? 'Yuklanmoqda…' : '—'}</option>
+        {(options.data ?? []).map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
