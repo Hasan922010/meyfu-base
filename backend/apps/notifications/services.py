@@ -55,14 +55,17 @@ def notify_admins(
     *, type: str = "general", title: str, body: str = "",
     data: dict[str, Any] | None = None,
     tg_buttons: list | None = None,
+    branch=None,
 ) -> None:
-    """Barcha faol SUPER_ADMIN/MANAGER larga bildirishnoma."""
+    """Barcha faol SUPER_ADMIN/MANAGER larga, `branch` berilsa — shu filial
+    rahbarlariga ham bildirishnoma."""
     from django.db.models import Q
 
     User = get_user_model()
-    admins = User.objects.filter(is_active=True).filter(
-        Q(role__in=_ADMIN_ROLES) | Q(is_superuser=True)
-    )
+    recipients = Q(role__in=_ADMIN_ROLES) | Q(is_superuser=True)
+    if branch is not None:
+        recipients |= Q(role=Role.BRANCH_MANAGER, warehouse=branch)
+    admins = User.objects.filter(is_active=True).filter(recipients)
     for admin in admins:
         notify(admin, type=type, title=title, body=body, data=data,
                tg_buttons=tg_buttons)

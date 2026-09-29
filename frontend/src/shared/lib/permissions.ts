@@ -5,15 +5,20 @@
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role } from '@/shared/types/api';
 
+// BRANCH_MANAGER — backendda MANAGER huquqlarini oladi (core/permissions.py),
+// ma'lumot esa o'z filialiga cheklanadi; markaziy sozlamalar (katalog, lug'atlar,
+// kompaniya sozlamalari) unga yopiq.
 export const PERMISSIONS = {
+  /** users/views.py UserViewSet write_roles */
+  staffWrite: ['SUPER_ADMIN', 'BRANCH_MANAGER'],
   /** finance/views.py CashTransactionViewSet, CompanyExpenseViewSet */
-  cashWrite: ['SUPER_ADMIN', 'ACCOUNTANT'],
+  cashWrite: ['SUPER_ADMIN', 'ACCOUNTANT', 'BRANCH_MANAGER'],
   /** ocr/views.py _OCR */
-  ocrWrite: ['WAREHOUSE', 'MANAGER', 'SUPER_ADMIN'],
+  ocrWrite: ['WAREHOUSE', 'MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
   /** orders/views.py approve/cancel */
-  orderManage: ['MANAGER', 'SUPER_ADMIN'],
+  orderManage: ['MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
   /** orders/views.py for_loading/build_loading */
-  orderBuildLoading: ['WAREHOUSE', 'MANAGER', 'SUPER_ADMIN'],
+  orderBuildLoading: ['WAREHOUSE', 'MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
   /** payroll/views.py calculate/edit/pay, advance create */
   payrollManage: ['SUPER_ADMIN', 'ACCOUNTANT'],
   /** payroll/views.py approve, CommissionRuleViewSet */

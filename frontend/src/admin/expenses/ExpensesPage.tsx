@@ -23,7 +23,7 @@ const STATUS_CLASS: Record<string, string> = {
 export function ExpensesPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [status, setStatus] = useState<string>('PENDING');
   const [page, setPage] = useState<number>(1);

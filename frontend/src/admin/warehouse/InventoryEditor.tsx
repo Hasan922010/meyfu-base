@@ -34,7 +34,7 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
   // Omborchi sanaydi, qoldiqni tuzatishni rahbar tasdiqlaydi (backend bilan bir xil)
-  const canConfirm = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canConfirm = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
   const canWrite = canConfirm || role === 'WAREHOUSE';
 
   const [drafts, setDrafts] = useState<Drafts>({});

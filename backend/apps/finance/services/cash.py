@@ -18,9 +18,16 @@ _ZERO = Decimal("0")
 DEFAULT_ACCOUNT_NAME = "Asosiy kassa"
 
 
-def get_account() -> CashAccount:
+def get_account(branch=None) -> CashAccount:
+    """Markaz kassasi (`branch=None`) yoki filial kassasi (kerak bo'lsa yaratiladi)."""
+    if branch is None:
+        account, _created = CashAccount.objects.get_or_create(
+            name=DEFAULT_ACCOUNT_NAME, branch=None, defaults={"balance": _ZERO}
+        )
+        return account
     account, _created = CashAccount.objects.get_or_create(
-        name=DEFAULT_ACCOUNT_NAME, defaults={"balance": _ZERO}
+        branch=branch,
+        defaults={"name": f"{branch.name} kassasi", "balance": _ZERO},
     )
     return account
 
@@ -36,8 +43,12 @@ def cash_apply(
     reference_id: str = "",
     note: str = "",
     user=None,
+    branch=None,
 ) -> CashTransaction:
-    """Kassa balansini `amount` ga o'zgartiradi (ishorali kiritiladi)."""
+    """Kassa balansini `amount` ga o'zgartiradi (ishorali kiritiladi).
+
+    `branch` — filial kassasi; `None` — markaz kassasi.
+    """
     if amount == _ZERO:
         raise ValueError("amount 0 bo'lishi mumkin emas")
     if transaction_type in POSITIVE_CASH_TYPES and amount < _ZERO:
@@ -45,7 +56,7 @@ def cash_apply(
     if transaction_type in NEGATIVE_CASH_TYPES and amount > _ZERO:
         raise ValueError(f"{transaction_type} uchun amount manfiy bo'lishi kerak")
 
-    account = CashAccount.objects.select_for_update().get(pk=get_account().pk)
+    account = CashAccount.objects.select_for_update().get(pk=get_account(branch).pk)
     new_balance = account.balance + amount
     account.balance = new_balance
     account.save(update_fields=["balance", "updated_at"])
@@ -65,6 +76,10 @@ def cash_apply(
 
 
 def cash_matches_ledger() -> bool:
-    account = get_account()
-    total = account.transactions.aggregate(s=Sum("amount"))["s"] or _ZERO
-    return account.balance == total
+    """Har bir kassa (markaz va filiallar) balansi o'z jurnali yig'indisiga teng."""
+    get_account()  # markaz kassasi har doim mavjud bo'lsin
+    for account in CashAccount.objects.all():
+        total = account.transactions.aggregate(s=Sum("amount"))["s"] or _ZERO
+        if account.balance != total:
+            return False
+    return True

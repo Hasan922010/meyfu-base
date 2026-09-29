@@ -5,6 +5,10 @@ from django.utils.translation import gettext_lazy as _
 class Role(models.TextChoices):
     SUPER_ADMIN = "SUPER_ADMIN", _("Super admin")
     MANAGER = "MANAGER", _("Menejer")
+    # Bitta filialni boshqaradi: o'z xodimlari, mijozlari, savdosi va kassasi.
+    # MANAGER huquqlariga ega, lekin faqat o'z filiali doirasida va markaziy
+    # sozlamalarsiz (katalog, narx, foiz, kompaniya sozlamalari).
+    BRANCH_MANAGER = "BRANCH_MANAGER", _("Filial rahbari")
     WAREHOUSE = "WAREHOUSE", _("Omborchi")
     DISTRIBUTOR = "DISTRIBUTOR", _("Tarqatuvchi")
     ACCOUNTANT = "ACCOUNTANT", _("Buxgalter")

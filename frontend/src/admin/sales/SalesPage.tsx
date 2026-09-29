@@ -59,7 +59,7 @@ async function downloadExport(): Promise<void> {
 export function SalesPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   // Saralash/qidiruv/filtr serverda — barcha sotuvlar ustida, faqat joriy sahifada emas
   const table = useServerTable({ initialSort: { key: 'date', dir: 'desc' } });

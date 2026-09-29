@@ -15,7 +15,8 @@ export function PurchasesTab(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
   const canWrite =
-    role === 'WAREHOUSE' || role === 'MANAGER' || role === 'SUPER_ADMIN';
+    role === 'WAREHOUSE' || role === 'MANAGER' || role === 'BRANCH_MANAGER' ||
+    role === 'SUPER_ADMIN';
 
   const [creating, setCreating] = useState<boolean>(false);
 

@@ -11,7 +11,7 @@ from django.db.models.functions import Coalesce
 from apps.clients.models import ClientVisit
 from apps.core.business_day import business_date
 from apps.expenses.models import DistributorExpense
-from apps.finance.models import CompanyExpense
+from apps.finance.models import CashAccount, CompanyExpense
 from apps.finance.services import get_account
 from apps.sales.models import Debt, DebtPayment, Sale, SaleItem
 
@@ -29,24 +29,37 @@ def _qty(value) -> str:
     return str((value or _ZERO).quantize(Decimal("0.001")))
 
 
-def dashboard(*, day: date_cls | None = None, use_cache: bool = True) -> dict:
+def in_branch(qs, branch, lookup: str):
+    """Hisobotni filialga cheklash; `branch=None` — butun kompaniya (markaz)."""
+    return qs.filter(**{lookup: branch}) if branch is not None else qs
+
+
+def dashboard(
+    *, day: date_cls | None = None, use_cache: bool = True, branch=None
+) -> dict:
     day = day or business_date()
 
-    cache_key = f"reports:dashboard:{day}"
+    cache_key = f"reports:dashboard:{day}:{branch or 'all'}"
     if use_cache:
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
 
-    data = _dashboard_compute(day)
+    data = _dashboard_compute(day, branch)
     if use_cache:
         cache.set(cache_key, data, _DASHBOARD_TTL)
     return data
 
 
-def _dashboard_compute(day: date_cls) -> dict:
-    sales = Sale.objects.filter(date=day, status__in=_ACTIVE)
-    items = SaleItem.objects.filter(sale__date=day, sale__status__in=_ACTIVE)
+def _dashboard_compute(day: date_cls, branch=None) -> dict:
+    sales = in_branch(
+        Sale.objects.filter(date=day, status__in=_ACTIVE), branch,
+        "distributor__warehouse",
+    )
+    items = in_branch(
+        SaleItem.objects.filter(sale__date=day, sale__status__in=_ACTIVE), branch,
+        "sale__distributor__warehouse",
+    )
 
     agg = sales.aggregate(
         total=Coalesce(Sum("total_amount"), Value(_ZERO), output_field=_DEC),
@@ -57,7 +70,9 @@ def _dashboard_compute(day: date_cls) -> dict:
     profit = items.aggregate(
         p=Coalesce(Sum("profit"), Value(_ZERO), output_field=_DEC)
     )["p"]
-    collected = DebtPayment.objects.filter(date=day).aggregate(
+    collected = in_branch(
+        DebtPayment.objects.filter(date=day), branch, "debt__client__branch"
+    ).aggregate(
         s=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC)
     )["s"]
 
@@ -89,12 +104,16 @@ def _dashboard_compute(day: date_cls) -> dict:
             "sales_count": agg["count"],
             "active_distributors": sales.values("distributor").distinct().count(),
             "outstanding_debt": _money(
-                Debt.objects.exclude(status="PAID").aggregate(
+                in_branch(Debt.objects.exclude(status="PAID"), branch, "client__branch")
+                .aggregate(
                     s=Coalesce(Sum("remaining"), Value(_ZERO), output_field=_DEC)
                 )["s"]
             ),
             "flagged_sales": sales.filter(flagged=True).count(),
-            "visits": ClientVisit.objects.filter(checked_in_at__date=day).count(),
+            "visits": in_branch(
+                ClientVisit.objects.filter(checked_in_at__date=day), branch,
+                "distributor__warehouse",
+            ).count(),
         },
         "top_products": [
             {"name": r["product__name"], "quantity": _qty(r["qty"]),
@@ -116,9 +135,12 @@ def _dashboard_compute(day: date_cls) -> dict:
     }
 
 
-def sales_summary(*, date_from, date_to, group_by: str = "day") -> list[dict]:
-    qs = Sale.objects.filter(
-        date__gte=date_from, date__lte=date_to, status__in=_ACTIVE
+def sales_summary(
+    *, date_from, date_to, group_by: str = "day", branch=None
+) -> list[dict]:
+    qs = in_branch(
+        Sale.objects.filter(date__gte=date_from, date__lte=date_to, status__in=_ACTIVE),
+        branch, "distributor__warehouse",
     )
 
     if group_by == "distributor":
@@ -127,9 +149,12 @@ def sales_summary(*, date_from, date_to, group_by: str = "day") -> list[dict]:
         key, label = "client__name", "client"
     elif group_by == "product":
         rows = (
-            SaleItem.objects.filter(
-                sale__date__gte=date_from, sale__date__lte=date_to,
-                sale__status__in=_ACTIVE,
+            in_branch(
+                SaleItem.objects.filter(
+                    sale__date__gte=date_from, sale__date__lte=date_to,
+                    sale__status__in=_ACTIVE,
+                ),
+                branch, "sale__distributor__warehouse",
             )
             .values("product__name")
             .annotate(quantity=Sum("quantity"), amount=Sum("amount"),
@@ -168,10 +193,13 @@ def sales_summary(*, date_from, date_to, group_by: str = "day") -> list[dict]:
     ]
 
 
-def debt_aging() -> dict:
+def debt_aging(*, branch=None) -> dict:
     """Qarzdorlik yoshi (CLAUDE.md 10, 13). Muddat bo'yicha guruhlar."""
     today = business_date()
-    active = Debt.objects.exclude(status="PAID").select_related("client")
+    active = in_branch(
+        Debt.objects.exclude(status="PAID").select_related("client"), branch,
+        "client__branch",
+    )
 
     buckets = {
         "current": _ZERO,       # muddati kelmagan / muddat yo'q
@@ -223,11 +251,14 @@ def debt_aging() -> dict:
     }
 
 
-def profit_and_loss(*, date_from, date_to) -> dict:
-    """Foyda-zarar (CLAUDE.md 13)."""
-    sale_items = SaleItem.objects.filter(
-        sale__date__gte=date_from, sale__date__lte=date_to,
-        sale__status__in=_ACTIVE,
+def profit_and_loss(*, date_from, date_to, branch=None) -> dict:
+    """Foyda-zarar (CLAUDE.md 13). `branch` — faqat shu filial va uning kassasi."""
+    sale_items = in_branch(
+        SaleItem.objects.filter(
+            sale__date__gte=date_from, sale__date__lte=date_to,
+            sale__status__in=_ACTIVE,
+        ),
+        branch, "sale__distributor__warehouse",
     )
     revenue = sale_items.aggregate(
         s=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC)
@@ -236,12 +267,16 @@ def profit_and_loss(*, date_from, date_to) -> dict:
         s=Coalesce(Sum("profit"), Value(_ZERO), output_field=_DEC)
     )["s"]
 
-    distributor_exp = DistributorExpense.objects.filter(
-        date__gte=date_from, date__lte=date_to, status="APPROVED",
+    distributor_exp = in_branch(
+        DistributorExpense.objects.filter(
+            date__gte=date_from, date__lte=date_to, status="APPROVED",
+        ),
+        branch, "distributor__warehouse",
     ).aggregate(s=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC))["s"]
 
-    company_exp_qs = CompanyExpense.objects.filter(
-        date__gte=date_from, date__lte=date_to
+    company_exp_qs = in_branch(
+        CompanyExpense.objects.filter(date__gte=date_from, date__lte=date_to),
+        branch, "branch",
     )
     company_exp = company_exp_qs.aggregate(
         s=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC)
@@ -266,14 +301,22 @@ def profit_and_loss(*, date_from, date_to) -> dict:
             for r in company_by_cat
         ],
         "net_profit": _money(net),
-        "cash_balance": _money(get_account().balance),
+        "cash_balance": _money(_cash_balance(branch)),
     }
 
 
-def expenses_report(*, date_from, date_to) -> dict:
+def _cash_balance(branch) -> Decimal:
+    if branch is None:
+        return get_account().balance
+    account = CashAccount.objects.filter(branch_id=branch).first()
+    return account.balance if account else _ZERO
+
+
+def expenses_report(*, date_from, date_to, branch=None) -> dict:
     """Xarajatlar hisoboti (CLAUDE.md 10)."""
-    dist_qs = DistributorExpense.objects.filter(
-        date__gte=date_from, date__lte=date_to
+    dist_qs = in_branch(
+        DistributorExpense.objects.filter(date__gte=date_from, date__lte=date_to),
+        branch, "distributor__warehouse",
     ).exclude(status="REJECTED")
 
     by_category = list(
@@ -332,13 +375,16 @@ def pnl_rows_for_export(payload: dict) -> list[list]:
     return rows
 
 
-def sales_rows_for_export(*, date_from, date_to) -> list[list]:
+def sales_rows_for_export(*, date_from, date_to, branch=None) -> list[list]:
     """Excel eksporti uchun tekis qatorlar."""
     header = ["Raqam", "Sana", "Tarqatuvchi", "Mijoz", "To'lov", "Jami",
               "To'landi", "Qarz", "Holat"]
     rows = [header]
     qs = (
-        Sale.objects.filter(date__gte=date_from, date__lte=date_to)
+        in_branch(
+            Sale.objects.filter(date__gte=date_from, date__lte=date_to),
+            branch, "distributor__warehouse",
+        )
         .select_related("distributor", "client")
         .order_by("date", "number")
     )

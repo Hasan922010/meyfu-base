@@ -8,10 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.branch import user_branch
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
-from apps.core.viewsets import BaseModelViewSet, EnvelopeResponseMixin
+from apps.core.viewsets import BaseModelViewSet, BranchScopedMixin, EnvelopeResponseMixin
 from apps.users.constants import Role
 
 from .constants import CashTxType
@@ -30,6 +31,7 @@ _FINANCE = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
 
 
 class CashTransactionViewSet(
+    BranchScopedMixin,
     EnvelopeResponseMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -40,7 +42,9 @@ class CashTransactionViewSet(
     queryset = CashTransaction.objects.select_related("account", "created_by")
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _FINANCE
-    write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT)
+    # Filial rahbari — faqat o'z filiali kassasiga (branch_lookup + create)
+    write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER)
+    branch_lookup = "account__branch"
     action_roles = {
         "opening_balance": (Role.SUPER_ADMIN,),
         "opening_sheet": (Role.SUPER_ADMIN,),
@@ -73,7 +77,7 @@ class CashTransactionViewSet(
     @extend_schema(summary="Kassa balansi")
     @action(detail=False, methods=["get"])
     def account(self, request: Request) -> Response:
-        return ok(CashAccountSerializer(get_account()).data)
+        return ok(CashAccountSerializer(get_account(user_branch(request.user))).data)
 
     @extend_schema(
         summary="Kassa boshlang'ich qoldig'ini kiritish (faqat SUPER_ADMIN)",
@@ -113,6 +117,7 @@ class CashTransactionViewSet(
             reference_type="manual",
             note=data.get("note", ""),
             user=request.user,
+            branch=user_branch(request.user),
         )
         return ok(CashTransactionSerializer(tx).data, status_code=201)
 
@@ -122,7 +127,8 @@ class CompanyExpenseViewSet(BaseModelViewSet):
     queryset = CompanyExpense.objects.select_related("cash_transaction")
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     read_roles = _FINANCE
-    write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT)
+    write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER)
+    branch_lookup = "branch"
     filterset_fields = ("category", "date", "paid_from_cash")
     search_fields = ("description",)
     ordering_fields = ("date", "amount", "created_at")
@@ -144,5 +150,6 @@ class CompanyExpenseViewSet(BaseModelViewSet):
             paid_from_cash=d.get("paid_from_cash", True),
             receipt_image=d.get("receipt_image"),
             user=request.user,
+            branch=user_branch(request.user),
         )
         return ok(CompanyExpenseSerializer(expense).data, status_code=201)

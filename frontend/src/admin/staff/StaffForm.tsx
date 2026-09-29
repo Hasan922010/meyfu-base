@@ -8,6 +8,7 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
+import { useAuthStore } from '@/shared/store/authStore';
 import type { Role, User } from '@/shared/types/api';
 
 const PROFILE_FIELD_MAP: Record<string, string> = {
@@ -27,9 +28,15 @@ const ROLES: Array<{ value: Role; label: string }> = [
   { value: 'ORDER_TAKER', label: 'Zakaz oluvchi' },
   { value: 'WAREHOUSE', label: 'Omborchi' },
   { value: 'MANAGER', label: 'Menejer' },
+  { value: 'BRANCH_MANAGER', label: 'Filial rahbari' },
   { value: 'ACCOUNTANT', label: 'Buxgalter' },
   { value: 'SUPER_ADMIN', label: 'Super admin' },
 ];
+
+/** Filial rahbari qo'sha oladigan rollar — backend core/branch.py BRANCH_STAFF_ROLES */
+const BRANCH_STAFF_ROLES: ReadonlySet<Role> = new Set<Role>([
+  'DISTRIBUTOR', 'ORDER_TAKER', 'WAREHOUSE', 'ACCOUNTANT',
+]);
 
 interface FormValues extends StaffInput {
   p_commission_percent?: string;
@@ -87,11 +94,21 @@ export function StaffForm({
   });
 
   const role = watch('role');
+  const creatorRole = useAuthStore((s) => s.user?.role);
+  // Filial rahbari: xodim avtomatik o'z filialiga qo'shiladi (server majburlaydi)
+  const byBranchManager = creatorRole === 'BRANCH_MANAGER';
+  const roleOptions = byBranchManager
+    ? ROLES.filter((r) => BRANCH_STAFF_ROLES.has(r.value) || r.value === staff?.role)
+    : ROLES;
+  const needsBranch = role === 'BRANCH_MANAGER';
   const warehouses = useQuery({
     queryKey: ['warehouses'],
     queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
-    enabled: role === 'WAREHOUSE',
+    enabled: !byBranchManager,
   });
+  const warehouseOptions = (warehouses.data?.results ?? []).filter(
+    (w) => !needsBranch || w.is_branch,
+  );
 
   const mutation = useMutation({
     mutationFn: (v: FormValues) => {
@@ -101,8 +118,8 @@ export function StaffForm({
         passport_series: v.passport_series || '',
         address: v.address || '',
         hire_date: v.hire_date || null,
-        // Omborchi — bitta ombor/filialga biriktiriladi; boshqa rollarda bog'lanish olib tashlanadi
-        warehouse: v.role === 'WAREHOUSE' ? v.warehouse || null : null,
+        // Xodim filiali (bo'sh — markaz). Filial rahbari yuborsa — server o'z filialini qo'yadi
+        ...(byBranchManager ? {} : { warehouse: v.warehouse || null }),
       };
       if (!staff) body.phone = v.phone;
       if (v.password) body.password = v.password;
@@ -175,7 +192,7 @@ export function StaffForm({
         <label className="block space-y-1">
           <span className="text-sm font-medium">Rol *</span>
           <select className="field" {...register('role')}>
-            {ROLES.map((r) => (
+            {roleOptions.map((r) => (
               <option key={r.value} value={r.value}>
                 {r.label}
               </option>
@@ -208,6 +225,35 @@ export function StaffForm({
           <span className="text-sm font-medium">Manzil</span>
           <input className="field" {...register('address')} />
         </label>
+        {!byBranchManager && (
+          <label className="col-span-2 block space-y-1">
+            <span className="text-sm font-medium">
+              {needsBranch ? 'Filial *' : 'Filial / ombor'}
+            </span>
+            <select
+              className="field"
+              {...register('warehouse', { required: needsBranch })}
+            >
+              <option value="">
+                {needsBranch ? '— Filialni tanlang' : '— Markaz (barcha filiallar)'}
+              </option>
+              {warehouseOptions.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            <span className="block text-xs text-gray-500">
+              Filialga biriktirilgan xodim faqat shu filial ma'lumotini ko'radi va
+              o'z login-paroli bilan faqat o'z filialida ishlaydi.
+            </span>
+            {errors.warehouse && (
+              <span className="text-xs text-danger">
+                {errors.warehouse.message || 'Filial rahbariga filial biriktiring.'}
+              </span>
+            )}
+          </label>
+        )}
       </div>
 
       <div className="space-y-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50">
@@ -247,26 +293,6 @@ export function StaffForm({
             </label>
           )}
         </div>
-
-        {role === 'WAREHOUSE' && (
-          <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
-            <label className="block space-y-1">
-              <span className="text-sm">Ombor / filial</span>
-              <select className="field" {...register('warehouse')}>
-                <option value="">— Barcha omborlar (biriktirilmagan)</option>
-                {(warehouses.data?.results ?? []).map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="text-xs text-gray-500">
-              Biriktirilgan omborchi faqat shu ombor/filialning ko'chirishlarini ko'radi va
-              unga kelgan tovarni qabul qiladi.
-            </p>
-          </div>
-        )}
 
         {role === 'ORDER_TAKER' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">

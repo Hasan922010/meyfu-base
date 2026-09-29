@@ -23,7 +23,7 @@ import { ClientForm } from './ClientForm';
 export function ClientsPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canWrite = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [deleting, setDeleting] = useState<Client | null>(null);
   const del = useMutation({

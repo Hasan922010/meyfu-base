@@ -82,7 +82,7 @@ import { isDesktopForced, useIsMobile } from '@/shared/lib/useIsMobile';
 import { useAuthStore } from '@/shared/store/authStore';
 
 const FIELD_ROLES = ['DISTRIBUTOR', 'WAREHOUSE', 'ORDER_TAKER'];
-const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT'];
+const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'BRANCH_MANAGER', 'ACCOUNTANT'];
 
 function HomeRedirect(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
@@ -131,7 +131,9 @@ const router = createBrowserRouter([
   {
     path: '/admin',
     element: (
-      <ProtectedRoute roles={['SUPER_ADMIN', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT']}>
+      <ProtectedRoute
+        roles={['SUPER_ADMIN', 'MANAGER', 'BRANCH_MANAGER', 'WAREHOUSE', 'ACCOUNTANT']}
+      >
         <AdminLayout />
       </ProtectedRoute>
     ),
@@ -182,7 +184,8 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute
         roles={[
-          'DISTRIBUTOR', 'WAREHOUSE', 'ORDER_TAKER', 'SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT',
+          'DISTRIBUTOR', 'WAREHOUSE', 'ORDER_TAKER', 'SUPER_ADMIN', 'MANAGER',
+          'BRANCH_MANAGER', 'ACCOUNTANT',
         ]}
       >
         <MobileLayout />

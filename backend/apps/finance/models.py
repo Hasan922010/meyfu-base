@@ -16,11 +16,15 @@ _MONEY = {"max_digits": 16, "decimal_places": 2}
 
 
 class CashAccount(BaseModel):
-    """Kompaniya kassasi. Odatda bitta ('Asosiy kassa')."""
+    """Kassa: markaz ('Asosiy kassa', branch=None) va har filialga bittadan."""
 
     name = models.CharField(_("nomi"), max_length=128, unique=True)
     balance = models.DecimalField(_("balans"), **_MONEY, default=_ZERO)
     is_active = models.BooleanField(_("faol"), default=True)
+    branch = models.OneToOneField(
+        "warehouse.Warehouse", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="cash_account", verbose_name=_("filial"),
+    )
 
     class Meta:
         verbose_name = _("kassa")
@@ -82,6 +86,11 @@ class CompanyExpense(BaseModel):
     cash_transaction = models.OneToOneField(
         CashTransaction, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="company_expense", verbose_name=_("kassa yozuvi"),
+    )
+    # Qaysi filial xarajati — bo'sh bo'lsa markaz (core.branch)
+    branch = models.ForeignKey(
+        "warehouse.Warehouse", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="company_expenses", verbose_name=_("filial"),
     )
 
     class Meta:

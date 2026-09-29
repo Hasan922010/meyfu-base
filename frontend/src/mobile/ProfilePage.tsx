@@ -9,7 +9,7 @@ import { pullReferenceData } from '@/offline/sync';
 import { setDesktopForced } from '@/shared/lib/useIsMobile';
 import { useAuthStore } from '@/shared/store/authStore';
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT'];
+const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'BRANCH_MANAGER', 'ACCOUNTANT'];
 
 export function ProfilePage(): ReactElement {
   const navigate = useNavigate();

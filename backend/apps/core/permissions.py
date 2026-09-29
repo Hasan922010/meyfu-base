@@ -15,6 +15,11 @@ class RolePermission(BasePermission):
     - `action_roles`   — {action_nomi: (rollar,)} — alohida amallar uchun ustuvor
 
     Hech biri berilmasa — faqat autentifikatsiya talab qilinadi.
+
+    BRANCH_MANAGER — MANAGER ruxsat etilgan joyda ruxsat oladi (ma'lumot
+    `core.branch` orqali o'z filialiga cheklanadi), bundan mustasno:
+    `central_only_write = True` bo'lgan view'da yozish (katalog, narx, lug'atlar)
+    va `central_only_actions` dagi amallar (masalan ommaviy boshlang'ich qoldiq).
     """
 
     def has_permission(self, request, view) -> bool:
@@ -24,12 +29,22 @@ class RolePermission(BasePermission):
         if user.is_superuser or getattr(user, "role", None) == Role.SUPER_ADMIN:
             return True
 
+        is_read = request.method in SAFE_METHODS
+        role = getattr(user, "role", None)
+        if role == Role.BRANCH_MANAGER:
+            if not is_read and getattr(view, "central_only_write", False):
+                return False
+            if getattr(view, "action", None) in getattr(view, "central_only_actions", ()):
+                return False
+            candidates = {Role.BRANCH_MANAGER, Role.MANAGER}
+        else:
+            candidates = {role}
+
         action_roles = getattr(view, "action_roles", None)
         action = getattr(view, "action", None)
         if action_roles and action in action_roles:
-            return getattr(user, "role", None) in action_roles[action]
+            return bool(candidates & set(action_roles[action]))
 
-        is_read = request.method in SAFE_METHODS
         roles = (
             getattr(view, "read_roles", None)
             if is_read
@@ -39,7 +54,7 @@ class RolePermission(BasePermission):
             roles = getattr(view, "allowed_roles", None)
         if roles is None:
             return True
-        return getattr(user, "role", None) in roles
+        return bool(candidates & set(roles))
 
 
 class IsSuperAdmin(BasePermission):

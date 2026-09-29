@@ -42,6 +42,11 @@ class Route(BaseModel):
         _("hafta kunlari"), default=list, blank=True, validators=[_validate_weekdays]
     )
     is_active = models.BooleanField(_("faol"), default=True)
+    # Qaysi filialga tegishli — bo'sh bo'lsa markaz (core.branch)
+    branch = models.ForeignKey(
+        "warehouse.Warehouse", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="routes", verbose_name=_("filial"),
+    )
 
     class Meta:
         verbose_name = _("marshrut")
@@ -81,6 +86,11 @@ class Client(BaseModel):
     photo = models.ImageField(_("rasm"), upload_to="clients/", null=True, blank=True)
     is_blocked = models.BooleanField(_("bloklangan"), default=False, db_index=True)
     note = models.CharField(_("izoh"), max_length=500, blank=True)
+    # Qaysi filialga tegishli — bo'sh bo'lsa markaz (core.branch)
+    branch = models.ForeignKey(
+        "warehouse.Warehouse", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="clients", verbose_name=_("filial"),
+    )
 
     class Meta:
         verbose_name = _("mijoz")

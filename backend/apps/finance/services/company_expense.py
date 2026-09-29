@@ -24,12 +24,13 @@ def create_company_expense(
     paid_from_cash: bool = True,
     receipt_image=None,
     user=None,
+    branch=None,
 ) -> CompanyExpense:
-
+    """`branch` — filial xarajati (filial kassasidan); `None` — markaz."""
     expense = CompanyExpense.objects.create(
         category=category, amount=amount, date=date or business_date(),
         description=description, paid_from_cash=paid_from_cash,
-        receipt_image=receipt_image, created_by=user,
+        receipt_image=receipt_image, created_by=user, branch=branch,
     )
 
     if paid_from_cash:
@@ -41,6 +42,7 @@ def create_company_expense(
             reference_id=expense.id,
             note=f"{expense.get_category_display()}: {description}"[:255],
             user=user,
+            branch=branch,
         )
         expense.cash_transaction = tx
         expense.save(update_fields=["cash_transaction", "updated_at"])

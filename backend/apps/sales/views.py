@@ -55,6 +55,7 @@ def _resolve_products(rows: list[dict]) -> dict[str, Product]:
 
 class SaleViewSet(BaseModelViewSet):
     serializer_class = SaleSerializer
+    branch_lookup = "distributor__warehouse"
     http_method_names = ["get", "post", "head", "options"]
     read_roles = _READ
     write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)
@@ -192,6 +193,7 @@ class SaleViewSet(BaseModelViewSet):
 
 class DebtViewSet(BaseReadOnlyViewSet):
     serializer_class = DebtSerializer
+    branch_lookup = "client__branch"
     read_roles = _READ
     filterset_fields = ("client", "status")
     search_fields = ("client__name", "sale__number")
@@ -219,6 +221,7 @@ class DebtViewSet(BaseReadOnlyViewSet):
 
 class DebtPaymentViewSet(BaseModelViewSet):
     serializer_class = DebtPaymentSerializer
+    branch_lookup = "debt__client__branch"
     http_method_names = ["get", "post", "head", "options"]
     read_roles = _READ
     write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
@@ -255,6 +258,7 @@ class DebtPaymentViewSet(BaseModelViewSet):
 
 class SaleReturnViewSet(BaseModelViewSet):
     serializer_class = SaleReturnSerializer
+    branch_lookup = "distributor__warehouse"
     http_method_names = ["get", "post", "head", "options"]
     read_roles = _READ
     write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)

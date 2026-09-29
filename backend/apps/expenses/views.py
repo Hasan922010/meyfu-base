@@ -36,6 +36,7 @@ def _is_distributor(user) -> bool:
 class ExpenseCategoryViewSet(BaseModelViewSet):
     queryset = ExpenseCategory.objects.all()
     serializer_class = ExpenseCategorySerializer
+    central_only_write = True  # xarajat turlari va limitlari — markaz sozlamasi
     write_roles = _ADMIN
     read_roles = _READ
     search_fields = ("name",)
@@ -43,6 +44,7 @@ class ExpenseCategoryViewSet(BaseModelViewSet):
 
 class DistributorExpenseViewSet(BaseModelViewSet):
     serializer_class = DistributorExpenseSerializer
+    branch_lookup = "distributor__warehouse"
     http_method_names = ["get", "post", "head", "options"]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     read_roles = _READ

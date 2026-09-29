@@ -11,11 +11,18 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.branch import (
+    branch_scope,
+    ensure_same_branch,
+    scope_queryset,
+    staff_branch,
+    user_branch,
+)
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission, is_order_taker
 from apps.core.response import ok
 from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
-from apps.core.viewsets import BaseModelViewSet, EnvelopeResponseMixin
+from apps.core.viewsets import BaseModelViewSet, BranchScopedMixin, EnvelopeResponseMixin
 from apps.users.constants import Role
 
 from .models import Client, ClientVisit, Route
@@ -46,19 +53,43 @@ def _own_routes(user, prefix: str = "") -> Q | None:
     return None
 
 
+def _staff_branch_id(staff):
+    branch = staff_branch(staff)
+    return branch.pk if branch is not None else None
+
+
 class RouteViewSet(BaseModelViewSet):
     serializer_class = RouteSerializer
     write_roles = _MANAGE
     read_roles = _CLIENTS_READ
+    branch_lookup = "branch"
     search_fields = ("name", "distributor__full_name")
     ordering_fields = ("name", "created_at")
 
     def get_queryset(self) -> QuerySet[Route]:
         qs = Route.objects.select_related("distributor", "order_taker").annotate(
             clients_count=Count("clients", distinct=True)
-        )
+        ).order_by("name", "pk")
         own = _own_routes(self.request.user)
         return qs.filter(own) if own is not None else qs
+
+    def _save_in_branch(self, serializer, **extra) -> None:
+        """Filial xodimi — marshrut o'z filialida, xodimlar ham o'z filialidan."""
+        user = self.request.user
+        data = serializer.validated_data
+        if branch_scope(user) is not None:
+            for field in ("distributor", "order_taker"):
+                staff = data.get(field)
+                if staff is not None:
+                    ensure_same_branch(user, _staff_branch_id(staff), field)
+            extra["branch"] = user_branch(user)
+        serializer.save(**extra)
+
+    def perform_create(self, serializer) -> None:
+        self._save_in_branch(serializer, created_by=self.request.user)
+
+    def perform_update(self, serializer) -> None:
+        self._save_in_branch(serializer)
 
     @extend_schema(summary="Mening marshrutlarim (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my")
@@ -88,11 +119,34 @@ class ClientViewSet(BaseModelViewSet):
         "opening_sheet": _MANAGE,
         "opening_balance_bulk": _MANAGE,
     }
+    # Boshlang'ich qarz ro'yxati barcha mijozlar bo'yicha — hozircha faqat markaz
+    central_only_actions = ("opening_balance", "opening_sheet", "opening_balance_bulk")
+    branch_lookup = "branch"
 
     def get_queryset(self) -> QuerySet[Client]:
-        qs = Client.objects.select_related("route")
+        qs = Client.objects.select_related("route", "branch")
         own = _own_routes(self.request.user, prefix="route__")
         return qs.filter(own) if own is not None else qs
+
+    def _save_in_branch(self, serializer, **extra) -> None:
+        """Mijoz filiali = marshrut filiali; filial xodimi uchun — o'z filiali."""
+        user = self.request.user
+        route = serializer.validated_data.get(
+            "route", getattr(serializer.instance, "route", None)
+        )
+        if branch_scope(user) is not None:
+            if route is not None:
+                ensure_same_branch(user, route.branch_id, "route")
+            extra["branch"] = user_branch(user)
+        elif route is not None and "branch" not in serializer.validated_data:
+            extra["branch"] = route.branch
+        serializer.save(**extra)
+
+    def perform_create(self, serializer) -> None:
+        self._save_in_branch(serializer, created_by=self.request.user)
+
+    def perform_update(self, serializer) -> None:
+        self._save_in_branch(serializer)
 
     @extend_schema(summary="Mijoz tarixi — tashriflar (keyinchalik sotuvlar ham)")
     @action(detail=True, methods=["get"])
@@ -166,6 +220,7 @@ class ClientViewSet(BaseModelViewSet):
 
 
 class ClientVisitViewSet(
+    BranchScopedMixin,
     EnvelopeResponseMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
@@ -175,6 +230,7 @@ class ClientVisitViewSet(
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _READ
     write_roles = (Role.DISTRIBUTOR,)
+    branch_lookup = "distributor__warehouse"
     filterset_fields = ("client", "result")
     ordering = ("-checked_in_at",)
 
@@ -215,7 +271,7 @@ class ClientSyncView(APIView):
         responses=ClientLiteSerializer(many=True),
     )
     def get(self, request: Request) -> Response:
-        qs = Client.all_objects.all()
+        qs = scope_queryset(Client.all_objects.all(), request.user, "branch")
         own = _own_routes(request.user, prefix="route__")
         if own is not None:
             qs = qs.filter(own)

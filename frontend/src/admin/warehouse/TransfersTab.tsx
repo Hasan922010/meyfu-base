@@ -28,7 +28,8 @@ type Pending = { kind: 'send' | 'cancel'; transfer: Transfer };
 export function TransfersTab(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === 'WAREHOUSE' || role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canWrite = role === 'WAREHOUSE' || role === 'MANAGER' || role === 'BRANCH_MANAGER' ||
+    role === 'SUPER_ADMIN';
 
   const [creating, setCreating] = useState<boolean>(false);
   const [receiving, setReceiving] = useState<Transfer | null>(null);

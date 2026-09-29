@@ -37,7 +37,14 @@ import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { setDesktopForced } from '@/shared/lib/useIsMobile';
 import { useAuthStore } from '@/shared/store/authStore';
 
-const NAV: { to: string; key: string; end: boolean; Icon: LucideIcon }[] = [
+const NAV: {
+  to: string;
+  key: string;
+  end: boolean;
+  Icon: LucideIcon;
+  /** Markaz sozlamasi — filial rahbariga ko'rsatilmaydi */
+  centralOnly?: boolean;
+}[] = [
   { to: '/admin', key: 'nav.dashboard', end: true, Icon: LayoutDashboard },
   { to: '/admin/products', key: 'nav.products', end: false, Icon: Package },
   { to: '/admin/warehouse', key: 'nav.warehouse', end: false, Icon: Warehouse },
@@ -55,15 +62,21 @@ const NAV: { to: string; key: string; end: boolean; Icon: LucideIcon }[] = [
   { to: '/admin/distributors', key: 'nav.distributors', end: false, Icon: Users },
   { to: '/admin/payroll', key: 'nav.payroll', end: false, Icon: Coins },
   { to: '/admin/reports', key: 'nav.reports', end: false, Icon: BarChart3 },
-  { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity },
-  { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library },
+  { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity, centralOnly: true },
+  { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library, centralOnly: true },
   {
     to: '/admin/opening-balances',
     key: 'nav.openingBalances',
     end: false,
     Icon: PiggyBank,
   },
-  { to: '/admin/settings', key: 'nav.settings', end: false, Icon: Settings },
+  {
+    to: '/admin/settings',
+    key: 'nav.settings',
+    end: false,
+    Icon: Settings,
+    centralOnly: true,
+  },
   { to: '/admin/help', key: 'nav.help', end: false, Icon: BookOpen },
 ];
 
@@ -86,9 +99,12 @@ export function AdminLayout(): ReactElement {
     void navigate('/login', { replace: true });
   }
 
+  const isBranchManager = user?.role === 'BRANCH_MANAGER';
+  const items = NAV.filter((item) => !(isBranchManager && item.centralOnly));
+
   const nav = (
     <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-      {NAV.map((item) => (
+      {items.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}

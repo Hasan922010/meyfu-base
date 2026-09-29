@@ -22,7 +22,7 @@ interface TabDef {
   columnLabels?: Record<string, string>;
 }
 
-const MANAGER_ROLES = new Set(['WAREHOUSE', 'MANAGER', 'SUPER_ADMIN']);
+const MANAGER_ROLES = new Set(['WAREHOUSE', 'MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN']);
 
 /** Ombor mas'uli bo'la oladigan faol xodimlar */
 async function loadManagers(): Promise<SelectOption[]> {

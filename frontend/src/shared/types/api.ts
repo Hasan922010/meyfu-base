@@ -17,6 +17,7 @@ export interface ApiErrorBody {
 export type Role =
   | 'SUPER_ADMIN'
   | 'MANAGER'
+  | 'BRANCH_MANAGER'
   | 'WAREHOUSE'
   | 'DISTRIBUTOR'
   | 'ACCOUNTANT'

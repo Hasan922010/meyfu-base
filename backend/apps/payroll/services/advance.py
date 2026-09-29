@@ -39,6 +39,7 @@ def create_advance(*, distributor, amount: Decimal, date=None, note: str = "", u
         user=user,
     )
 
+    from apps.core.branch import staff_branch
     from apps.finance.services.cash import cash_apply
 
     ctx = cash_apply(
@@ -50,6 +51,7 @@ def create_advance(*, distributor, amount: Decimal, date=None, note: str = "", u
         reference_id=advance.id,
         note=f"Avans: {distributor.full_name}"[:255],
         user=user,
+        branch=staff_branch(distributor),
     )
 
     advance.wallet_transaction_id = wtx.id

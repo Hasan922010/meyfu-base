@@ -749,6 +749,7 @@ def distributor_comparison(
     preset: str | None = None,
     date_from: date_cls | None = None,
     date_to: date_cls | None = None,
+    branch=None,
 ) -> dict:
     from apps.users.constants import Role
 
@@ -757,6 +758,8 @@ def distributor_comparison(
 
     User = get_user_model()
     distributors = User.objects.filter(role=Role.DISTRIBUTOR, is_active=True)
+    if branch is not None:
+        distributors = distributors.filter(warehouse=branch)
 
     rows = []
     for dist in distributors:

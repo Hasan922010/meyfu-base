@@ -12,7 +12,7 @@ import type { DayClose } from '@/shared/types/dayclose';
 export function DayClosePage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [onlyDiff, setOnlyDiff] = useState<boolean>(false);
   const [detail, setDetail] = useState<DayClose | null>(null);

@@ -43,6 +43,7 @@ class CategoryViewSet(BaseModelViewSet):
     queryset = Category.objects.select_related("parent").all()
     serializer_class = CategorySerializer
     write_roles = _CATALOG_WRITE
+    central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
     search_fields = ("name",)
     ordering_fields = ("name", "created_at")
 
@@ -51,6 +52,7 @@ class BrandViewSet(BaseModelViewSet):
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     write_roles = _CATALOG_WRITE
+    central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
     search_fields = ("name",)
     ordering_fields = ("name", "created_at")
 
@@ -59,6 +61,7 @@ class UnitViewSet(BaseModelViewSet):
     queryset = Unit.objects.all()
     serializer_class = UnitSerializer
     write_roles = _CATALOG_WRITE
+    central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
     search_fields = ("name", "short_name")
 
 
@@ -68,6 +71,7 @@ class ProductViewSet(BaseModelViewSet):
     ).prefetch_related("images")
     serializer_class = ProductSerializer
     write_roles = _CATALOG_WRITE
+    central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
     filterset_class = ProductFilter
     search_fields = ("name", "sku", "barcode")
     # Admin jadvalidagi har bir ustun (UI: shared/table)

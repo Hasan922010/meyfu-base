@@ -23,6 +23,7 @@ class RouteSerializer(serializers.ModelSerializer):
     )
     clients_count = serializers.IntegerField(read_only=True)
     days_display = serializers.SerializerMethodField()
+    branch_name = serializers.CharField(source="branch.name", read_only=True, default=None)
 
     class Meta:
         model = Route
@@ -30,7 +31,7 @@ class RouteSerializer(serializers.ModelSerializer):
             "id", "name", "distributor", "distributor_name",
             "order_taker", "order_taker_name",
             "days_of_week", "days_display", "is_active",
-            "clients_count", "created_at",
+            "branch", "branch_name", "clients_count", "created_at",
         )
         read_only_fields = ("id", "created_at", "clients_count")
 
@@ -53,6 +54,7 @@ class ClientSerializer(serializers.ModelSerializer):
     debt_available = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True
     )
+    branch_name = serializers.CharField(source="branch.name", read_only=True, default=None)
 
     class Meta:
         model = Client
@@ -61,7 +63,7 @@ class ClientSerializer(serializers.ModelSerializer):
             "latitude", "longitude", "route", "route_name",
             "client_type", "client_type_display",
             "debt_limit", "current_debt", "debt_available",
-            "inn", "photo", "is_blocked", "note",
+            "inn", "photo", "is_blocked", "note", "branch", "branch_name",
             "created_at", "updated_at",
         )
         read_only_fields = ("id", "current_debt", "created_at", "updated_at")

@@ -9,9 +9,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.branch import ensure_same_branch, staff_branch
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
-from apps.core.viewsets import BaseModelViewSet, EnvelopeResponseMixin
+from apps.core.viewsets import BaseModelViewSet, BranchScopedMixin, EnvelopeResponseMixin
 from apps.users.constants import Role
 
 from .models import Advance, CommissionRule, Payroll
@@ -54,12 +55,14 @@ class CommissionRuleViewSet(BaseModelViewSet):
 
 
 class AdvanceViewSet(
+    BranchScopedMixin,
     EnvelopeResponseMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     serializer_class = AdvanceSerializer
+    branch_lookup = "distributor__warehouse"
     queryset = Advance.objects.select_related("distributor")
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = (*_PAYROLL_READ, Role.DISTRIBUTOR)
@@ -79,6 +82,8 @@ class AdvanceViewSet(
         s.is_valid(raise_exception=True)
         data = s.validated_data
         distributor = User.objects.get(pk=data["distributor"])
+        branch = staff_branch(distributor)
+        ensure_same_branch(request.user, branch.pk if branch else None, "distributor")
         advance = create_advance(
             distributor=distributor,
             amount=data["amount"],
@@ -90,12 +95,14 @@ class AdvanceViewSet(
 
 
 class PayrollViewSet(
+    BranchScopedMixin,
     EnvelopeResponseMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     serializer_class = PayrollSerializer
+    branch_lookup = "distributor__warehouse"
     queryset = Payroll.objects.select_related("distributor", "approved_by")
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _PAYROLL_READ

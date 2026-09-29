@@ -603,6 +603,6 @@ export const GUIDES: RoleGuide[] = [
 
 /** Rol uchun mos yo'riqnoma id'si (admin rollari birlashtirilgan). */
 export function guideIdForRole(role: Role): RoleGuide['id'] {
-  if (role === 'MANAGER') return 'SUPER_ADMIN';
+  if (role === 'MANAGER' || role === 'BRANCH_MANAGER') return 'SUPER_ADMIN';
   return role;
 }

@@ -91,7 +91,8 @@ function Section({ s, open }: { s: GuideSection; open: boolean }): ReactElement 
  */
 export function GuidePage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
-  const isAdminViewer = role === 'SUPER_ADMIN' || role === 'MANAGER';
+  const isAdminViewer =
+    role === 'SUPER_ADMIN' || role === 'MANAGER' || role === 'BRANCH_MANAGER';
 
   const defaultId: RoleGuide['id'] = role != null ? guideIdForRole(role) : 'ALL';
   const [activeId, setActiveId] = useState<RoleGuide['id']>(defaultId);

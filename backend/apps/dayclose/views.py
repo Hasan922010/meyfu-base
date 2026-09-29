@@ -15,7 +15,7 @@ from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
-from apps.core.viewsets import BaseReadOnlyViewSet, EnvelopeResponseMixin
+from apps.core.viewsets import BaseReadOnlyViewSet, BranchScopedMixin, EnvelopeResponseMixin
 from apps.users.constants import Role
 from apps.warehouse.models import VanStock, Warehouse
 
@@ -41,12 +41,14 @@ def _m(value) -> str:
 
 
 class DayCloseViewSet(
+    BranchScopedMixin,
     EnvelopeResponseMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     serializer_class = DayCloseSerializer
+    branch_lookup = "distributor__warehouse"
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _READ
     action_roles = {
@@ -154,6 +156,7 @@ class DayCloseViewSet(
 
 class CashHandoverViewSet(BaseReadOnlyViewSet):
     serializer_class = CashHandoverSerializer
+    branch_lookup = "distributor__warehouse"
     queryset = CashHandover.objects.select_related("distributor", "received_by")
     read_roles = _READ
     filterset_fields = ("distributor", "confirmed", "date")
@@ -169,6 +172,7 @@ class DailyReturnViewSet(BaseReadOnlyViewSet):
     """Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun."""
 
     serializer_class = DailyReturnSerializer
+    branch_lookup = "warehouse"
     queryset = DailyReturn.objects.select_related(
         "distributor", "warehouse"
     ).prefetch_related("items__product")

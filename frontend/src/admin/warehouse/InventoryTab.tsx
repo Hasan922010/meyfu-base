@@ -22,7 +22,8 @@ const STATUS_CLASS: Record<string, string> = {
 export function InventoryTab(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === 'WAREHOUSE' || role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canWrite = role === 'WAREHOUSE' || role === 'MANAGER' || role === 'BRANCH_MANAGER' ||
+    role === 'SUPER_ADMIN';
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState<boolean>(false);

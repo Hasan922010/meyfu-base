@@ -13,7 +13,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
-from apps.core.viewsets import EnvelopeResponseMixin
+from apps.core.viewsets import BranchScopedMixin, EnvelopeResponseMixin
 from apps.users.constants import Role
 from apps.warehouse.models import Supplier, Warehouse
 
@@ -35,6 +35,7 @@ _READ = (*_OCR, Role.ACCOUNTANT)
 
 
 class InvoiceScanViewSet(
+    BranchScopedMixin,
     EnvelopeResponseMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
@@ -42,6 +43,7 @@ class InvoiceScanViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = InvoiceScanSerializer
+    branch_lookup = "warehouse"
     queryset = InvoiceScan.objects.select_related(
         "uploaded_by", "warehouse", "supplier"
     ).prefetch_related("pages", "lines__matched_product", "lines__final_product")

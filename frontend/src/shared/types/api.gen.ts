@@ -12,18 +12,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["advances_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["advances_create"];
         delete?: never;
@@ -40,10 +36,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["advances_retrieve"];
         put?: never;
@@ -268,10 +262,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_handovers_list"];
         put?: never;
@@ -290,10 +282,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_handovers_retrieve"];
         put?: never;
@@ -312,18 +302,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["cash_transactions_create"];
         delete?: never;
@@ -340,10 +326,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_retrieve"];
         put?: never;
@@ -363,10 +347,8 @@ export interface paths {
         };
         /**
          * Kassa balansi
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_account_retrieve"];
         put?: never;
@@ -388,10 +370,8 @@ export interface paths {
         put?: never;
         /**
          * Kassa boshlang'ich qoldig'ini kiritish (faqat SUPER_ADMIN)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["cash_transactions_opening_balance_create"];
         delete?: never;
@@ -411,10 +391,8 @@ export interface paths {
         put?: never;
         /**
          * Kassa balansini ro'yxatdan kiritish (yakuniy qiymat, ±)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["cash_transactions_opening_balance_bulk_create"];
         delete?: never;
@@ -432,10 +410,8 @@ export interface paths {
         };
         /**
          * Boshlang'ich qoldiq uchun kassalar ro'yxati (joriy balans bilan)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_opening_sheet_list"];
         put?: never;
@@ -516,18 +492,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["client_visits_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["client_visits_create"];
         delete?: never;
@@ -890,10 +862,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["day_close_list"];
         put?: never;
@@ -912,10 +882,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["day_close_retrieve"];
         put?: never;
@@ -937,10 +905,8 @@ export interface paths {
         put?: never;
         /**
          * Kun yopishni tasdiqlash (admin)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["day_close_confirm_create"];
         delete?: never;
@@ -958,10 +924,8 @@ export interface paths {
         };
         /**
          * Bugungi kun holati (jonli hisob)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["day_close_my_today_retrieve"];
         put?: never;
@@ -983,10 +947,8 @@ export interface paths {
         put?: never;
         /**
          * Kunni yopish (3 qadam yakuni)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["day_close_submit_create"];
         delete?: never;
@@ -1050,10 +1012,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["debts_list"];
         put?: never;
@@ -1072,10 +1032,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["debts_retrieve"];
         put?: never;
@@ -1095,10 +1053,8 @@ export interface paths {
         };
         /**
          * Marshrutimdagi qarzdorlar
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["debts_my_retrieve"];
         put?: never;
@@ -1455,18 +1411,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["invoice_scans_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_create"];
         delete?: never;
@@ -1483,10 +1435,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["invoice_scans_retrieve"];
         put?: never;
@@ -1508,10 +1458,8 @@ export interface paths {
         put?: never;
         /**
          * Skanni bekor qilish
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_cancel_create"];
         delete?: never;
@@ -1531,10 +1479,8 @@ export interface paths {
         put?: never;
         /**
          * Skanni tasdiqlash — Purchase yaratadi
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_confirm_create"];
         delete?: never;
@@ -1558,10 +1504,8 @@ export interface paths {
         head?: never;
         /**
          * Sarlavha ma'lumotini tuzatish
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         patch: operations["invoice_scans_header_partial_update"];
         trace?: never;
@@ -1581,10 +1525,8 @@ export interface paths {
         head?: never;
         /**
          * Qatorni tahrirlash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         patch: operations["invoice_scans_lines_partial_update"];
         trace?: never;
@@ -1600,10 +1542,8 @@ export interface paths {
         put?: never;
         /**
          * Skanni qayta ishlash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_reprocess_create"];
         delete?: never;
@@ -1621,10 +1561,8 @@ export interface paths {
         };
         /**
          * OCR metrikalari (CLAUDE.md 9)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["invoice_scans_metrics_retrieve"];
         put?: never;
@@ -1781,10 +1719,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["notifications_list"];
         put?: never;
@@ -1803,10 +1739,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["notifications_retrieve"];
         put?: never;
@@ -1828,10 +1762,8 @@ export interface paths {
         put?: never;
         /**
          * Bildirishnomani o'qilgan deb belgilash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["notifications_read_create"];
         delete?: never;
@@ -1851,10 +1783,8 @@ export interface paths {
         put?: never;
         /**
          * Barchasini o'qilgan deb belgilash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["notifications_read_all_create"];
         delete?: never;
@@ -1872,10 +1802,8 @@ export interface paths {
         };
         /**
          * O'qilmagan bildirishnomalar soni
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["notifications_unread_count_retrieve"];
         put?: never;
@@ -2117,10 +2045,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["payrolls_list"];
         put?: never;
@@ -2139,10 +2065,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["payrolls_retrieve"];
         put?: never;
@@ -2164,10 +2088,8 @@ export interface paths {
         put?: never;
         /**
          * Maoshni tasdiqlash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_approve_create"];
         delete?: never;
@@ -2187,10 +2109,8 @@ export interface paths {
         put?: never;
         /**
          * Qo'lda tuzatish (bonus, ushlanma, izoh)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_edit_create"];
         delete?: never;
@@ -2210,10 +2130,8 @@ export interface paths {
         put?: never;
         /**
          * Maoshni to'langan deb belgilash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_pay_create"];
         delete?: never;
@@ -2233,10 +2151,8 @@ export interface paths {
         put?: never;
         /**
          * Maoshni hisoblash (qayta hisoblash — DRAFT bo'lsa)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_calculate_create"];
         delete?: never;
@@ -2254,10 +2170,8 @@ export interface paths {
         };
         /**
          * Mening maoshlarim (tarqatuvchi)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["payrolls_my_list"];
         put?: never;
@@ -3249,10 +3163,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["supplier_transactions_list"];
         put?: never;
@@ -3271,10 +3183,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["supplier_transactions_retrieve"];
         put?: never;
@@ -3839,10 +3749,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["van_stock_list"];
         put?: never;
@@ -3861,10 +3769,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["van_stock_retrieve"];
         put?: never;
@@ -3884,10 +3790,8 @@ export interface paths {
         };
         /**
          * Mening mashina qoldig'im
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["van_stock_my_retrieve"];
         put?: never;
@@ -3906,10 +3810,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_list"];
         put?: never;
@@ -3928,10 +3830,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_transactions_list"];
         put?: never;
@@ -3950,10 +3850,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_transactions_retrieve"];
         put?: never;
@@ -3972,10 +3870,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_retrieve"];
         put?: never;
@@ -3995,10 +3891,8 @@ export interface paths {
         };
         /**
          * Mening hamyonim (jonli balans bilan)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_my_retrieve"];
         put?: never;
@@ -4018,10 +3912,8 @@ export interface paths {
         };
         /**
          * Hamyon tranzaksiyalari
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_my_transactions_retrieve"];
         put?: never;
@@ -4043,10 +3935,8 @@ export interface paths {
         put?: never;
         /**
          * Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["wallet_opening_balance_create"];
         delete?: never;
@@ -4066,10 +3956,8 @@ export interface paths {
         put?: never;
         /**
          * Xodimlar balansini ro'yxatdan kiritish (yakuniy qiymat, ±)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["wallet_opening_balance_bulk_create"];
         delete?: never;
@@ -4087,10 +3975,8 @@ export interface paths {
         };
         /**
          * Boshlang'ich balans uchun xodimlar ro'yxati (hamyon balansi bilan)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_opening_sheet_list"];
         put?: never;
@@ -4461,6 +4347,12 @@ export interface components {
             /** Izoh */
             note?: string;
             /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
+            readonly branch_name: string;
+            /**
              * Yaratilgan vaqti
              * Format: date-time
              */
@@ -4574,6 +4466,11 @@ export interface components {
             is_blocked?: boolean;
             /** Izoh */
             note?: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         /**
          * @description * `SHOP` - Do'kon
@@ -6851,6 +6748,11 @@ export interface components {
             is_blocked?: boolean;
             /** Izoh */
             note?: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         PatchedCommissionRuleRequest: {
             /** Qamrov */
@@ -7138,6 +7040,11 @@ export interface components {
             days_of_week?: unknown;
             /** Faol */
             is_active?: boolean;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         PatchedSupplierRequest: {
             /** Nomi */
@@ -7193,7 +7100,7 @@ export interface components {
             /** F.I.SH. */
             full_name?: string;
             /** Rol */
-            role?: components["schemas"]["RoleD3fEnum"];
+            role?: components["schemas"]["Role347Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -7971,13 +7878,14 @@ export interface components {
         /**
          * @description * `SUPER_ADMIN` - Super admin
          *     * `MANAGER` - Menejer
+         *     * `BRANCH_MANAGER` - Filial rahbari
          *     * `WAREHOUSE` - Omborchi
          *     * `DISTRIBUTOR` - Tarqatuvchi
          *     * `ACCOUNTANT` - Buxgalter
          *     * `ORDER_TAKER` - Zakaz oluvchi
          * @enum {string}
          */
-        RoleD3fEnum: "SUPER_ADMIN" | "MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
+        Role347Enum: "SUPER_ADMIN" | "MANAGER" | "BRANCH_MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
         Route: {
             /** Format: uuid */
             readonly id: string;
@@ -8000,6 +7908,12 @@ export interface components {
             readonly days_display: string[];
             /** Faol */
             is_active?: boolean;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
+            readonly branch_name: string;
             readonly clients_count: number;
             /**
              * Yaratilgan vaqti
@@ -8024,6 +7938,11 @@ export interface components {
             days_of_week?: unknown;
             /** Faol */
             is_active?: boolean;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         Sale: {
             /** Format: uuid */
@@ -8687,7 +8606,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            readonly role: components["schemas"]["RoleD3fEnum"];
+            readonly role: components["schemas"]["Role347Enum"];
             /**
              * Rasm
              * Format: uri
@@ -8737,7 +8656,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["RoleD3fEnum"];
+            role?: components["schemas"]["Role347Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -8774,7 +8693,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["RoleD3fEnum"];
+            role?: components["schemas"]["Role347Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -14989,12 +14908,13 @@ export interface operations {
                 /**
                  * @description * `SUPER_ADMIN` - Super admin
                  *     * `MANAGER` - Menejer
+                 *     * `BRANCH_MANAGER` - Filial rahbari
                  *     * `WAREHOUSE` - Omborchi
                  *     * `DISTRIBUTOR` - Tarqatuvchi
                  *     * `ACCOUNTANT` - Buxgalter
                  *     * `ORDER_TAKER` - Zakaz oluvchi
                  */
-                role?: "ACCOUNTANT" | "DISTRIBUTOR" | "MANAGER" | "ORDER_TAKER" | "SUPER_ADMIN" | "WAREHOUSE";
+                role?: "ACCOUNTANT" | "BRANCH_MANAGER" | "DISTRIBUTOR" | "MANAGER" | "ORDER_TAKER" | "SUPER_ADMIN" | "WAREHOUSE";
                 /** @description A search term. */
                 search?: string;
             };

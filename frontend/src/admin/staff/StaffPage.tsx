@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { ROLE_LABELS } from '@/shared/lib/labels';
+import { can } from '@/shared/lib/permissions';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role, User } from '@/shared/types/api';
 
@@ -20,7 +21,7 @@ import { StaffForm } from './StaffForm';
 export function StaffPage(): ReactElement {
   const qc = useQueryClient();
   const me = useAuthStore((s) => s.user);
-  const canWrite = me?.role === 'SUPER_ADMIN';
+  const canWrite = can(me?.role, 'staffWrite');
 
   const [role, setRole] = useState<string>('');
   const [active, setActive] = useState<string>('');
@@ -71,7 +72,13 @@ export function StaffPage(): ReactElement {
 
       {!canWrite && (
         <p className="text-sm text-gray-500">
-          Xodim qo'shish/tahrirlash faqat Super admin uchun.
+          Xodim qo'shish/tahrirlash — Super admin va filial rahbari uchun.
+        </p>
+      )}
+      {me?.role === 'BRANCH_MANAGER' && (
+        <p className="text-sm text-gray-500">
+          Faqat o'z filialingiz xodimlari ko'rinadi; yangi xodim avtomatik filialingizga
+          qo'shiladi.
         </p>
       )}
 

@@ -8,6 +8,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from .constants import Role
 from .models import DistributorProfile
 
 User = get_user_model()
@@ -87,6 +88,12 @@ class UserWriteSerializer(serializers.ModelSerializer):
         if self.instance is None and not attrs.get("password"):
             raise serializers.ValidationError(
                 {"password": "Yangi xodim uchun parol majburiy."}
+            )
+        role = attrs.get("role", getattr(self.instance, "role", None))
+        warehouse = attrs.get("warehouse", getattr(self.instance, "warehouse", None))
+        if role == Role.BRANCH_MANAGER and (warehouse is None or not warehouse.is_branch):
+            raise serializers.ValidationError(
+                {"warehouse": "Filial rahbariga filial biriktiring."}
             )
         return attrs
 

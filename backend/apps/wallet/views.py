@@ -52,6 +52,7 @@ def _pending_expense_total(distributor) -> Decimal:
 
 class WalletViewSet(BaseReadOnlyViewSet):
     serializer_class = WalletSerializer
+    branch_lookup = "distributor__warehouse"
     queryset = DistributorWallet.objects.select_related("distributor")
     read_roles = _READ
     filterset_fields = ("distributor",)
@@ -129,6 +130,7 @@ class WalletViewSet(BaseReadOnlyViewSet):
 
 class WalletTransactionViewSet(BaseReadOnlyViewSet):
     serializer_class = WalletTransactionSerializer
+    branch_lookup = "wallet__distributor__warehouse"
     queryset = WalletTransaction.objects.select_related("wallet__distributor")
     read_roles = _READ
     filterset_fields = ("wallet", "transaction_type", "date")

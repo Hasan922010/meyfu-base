@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from django.db import transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, QuerySet, Sum
 from django.http import HttpResponse
@@ -9,6 +11,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.branch import NO_BRANCH, branch_scope, ensure_same_branch, staff_branch
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.response import ok
@@ -76,11 +79,19 @@ def _is_distributor(user) -> bool:
     return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
 
 
-def _own_warehouse_id(user):
-    """Omborga biriktirilgan omborchi faqat o'z ombori bilan ishlaydi.
+_NOWHERE = UUID(int=0)  # filialsiz filial rahbari — hech bir omborga mos kelmaydi
 
-    `None` — cheklov yo'q (admin rollar yoki omborga biriktirilmagan omborchi).
+
+def _own_warehouse_id(user):
+    """Omborga biriktirilgan omborchi va filial xodimlari faqat o'z ombori bilan ishlaydi.
+
+    `None` — cheklov yo'q (markaz rollari yoki omborga biriktirilmagan omborchi).
     """
+    scope = branch_scope(user)
+    if scope is NO_BRANCH:
+        return _NOWHERE
+    if scope is not None:
+        return scope
     if getattr(user, "role", None) == Role.WAREHOUSE and not user.is_superuser:
         return user.warehouse_id
     return None
@@ -121,6 +132,7 @@ class WarehouseViewSet(BaseModelViewSet):
     queryset = Warehouse.objects.all()
     serializer_class = WarehouseSerializer
     write_roles = (Role.MANAGER, Role.SUPER_ADMIN)
+    central_only_write = True  # filial ochish/yopish — markaz qarori
     search_fields = ("name", "address")
 
 
@@ -478,6 +490,14 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
             return qs.filter(distributor=self.request.user)
         return self.scope_to_own(qs)
 
+    def perform_create(self, serializer) -> None:
+        # Filial rahbari faqat o'z filiali tarqatuvchisiga yuklama beradi
+        branch = staff_branch(serializer.validated_data.get("distributor"))
+        ensure_same_branch(
+            self.request.user, branch.pk if branch else None, "distributor"
+        )
+        super().perform_create(serializer)
+
     @extend_schema(summary="Yuklamani tarqatuvchiga yuborish (qoldiq band qilinadi)",
                    request=None)
     @action(detail=True, methods=["post"])
@@ -530,6 +550,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
 class VanStockViewSet(BaseReadOnlyViewSet):
     serializer_class = VanStockSerializer
     read_roles = _LOADING_READ
+    branch_lookup = "distributor__warehouse"
     filterset_fields = ("distributor", "product")
     search_fields = ("product__name", "product__sku")
     ordering_fields = ("quantity", "updated_at")

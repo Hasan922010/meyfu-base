@@ -65,7 +65,7 @@ const ADMIN_TABS: Tab[] = [
   { to: '/m/a/reports', label: 'Hisobot', Icon: ChartColumn, end: false },
 ];
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT'];
+const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'BRANCH_MANAGER', 'ACCOUNTANT'];
 
 export function MobileLayout(): ReactElement {
   const user = useAuthStore((s) => s.user);

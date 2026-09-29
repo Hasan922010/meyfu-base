@@ -151,7 +151,7 @@ function RouteForm({
 
 export function RoutesPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canWrite = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [editing, setEditing] = useState<Route | null>(null);
   const [creating, setCreating] = useState<boolean>(false);

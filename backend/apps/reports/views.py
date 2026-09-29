@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -11,6 +13,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.branch import NO_BRANCH, branch_scope, scope_queryset
 from apps.core.business_day import business_date
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
@@ -50,12 +53,22 @@ from .services.branch import (
 User = get_user_model()
 
 _REPORT_ROLES = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
+_NOWHERE = UUID(int=0)  # filialsiz filial rahbari — bo'sh hisobot
+
+
+def report_branch(user):
+    """Hisobot filiali: `None` — butun kompaniya (markaz), aks holda filial ID."""
+    scope = branch_scope(user)
+    return _NOWHERE if scope is NO_BRANCH else scope
 
 
 class _ReportView(APIView):
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _REPORT_ROLES
     write_roles = _REPORT_ROLES
+
+    def _scope(self, request: Request):
+        return report_branch(request.user)
 
     def _range(self, request: Request):
         today = business_date()
@@ -73,7 +86,7 @@ class DashboardView(_ReportView):
     )
     def get(self, request: Request) -> Response:
         day = parse_date(request.query_params.get("date", "")) or business_date()
-        return ok(dashboard(day=day))
+        return ok(dashboard(day=day, branch=self._scope(request)))
 
 
 class SalesSummaryView(_ReportView):
@@ -95,7 +108,8 @@ class SalesSummaryView(_ReportView):
             "group_by": group_by,
             "date_from": str(df),
             "date_to": str(dt),
-            "rows": sales_summary(date_from=df, date_to=dt, group_by=group_by),
+            "rows": sales_summary(date_from=df, date_to=dt, group_by=group_by,
+                                  branch=self._scope(request)),
         })
 
 
@@ -103,7 +117,7 @@ class DebtAgingView(_ReportView):
     @extend_schema(summary="Qarzdorlik yoshi (aging)", request=None,
                    responses={200: dict})
     def get(self, request: Request) -> Response:
-        return ok(debt_aging())
+        return ok(debt_aging(branch=self._scope(request)))
 
 
 class ProfitView(_ReportView):
@@ -117,7 +131,7 @@ class ProfitView(_ReportView):
     )
     def get(self, request: Request) -> Response:
         df, dt = self._range(request)
-        return ok(profit_and_loss(date_from=df, date_to=dt))
+        return ok(profit_and_loss(date_from=df, date_to=dt, branch=self._scope(request)))
 
 
 class ExpensesReportView(_ReportView):
@@ -131,7 +145,7 @@ class ExpensesReportView(_ReportView):
     )
     def get(self, request: Request) -> Response:
         df, dt = self._range(request)
-        return ok(expenses_report(date_from=df, date_to=dt))
+        return ok(expenses_report(date_from=df, date_to=dt, branch=self._scope(request)))
 
 
 _PERIOD_PARAMS = [
@@ -167,11 +181,14 @@ class _DistributorScopedView(APIView):
             if str(pk) != str(user.id):
                 raise PermissionDenied("Boshqa xodim ma'lumotini ko'rish mumkin emas.")
             return user
-        if getattr(user, "role", None) not in (*_REPORT_ROLES, Role.SUPER_ADMIN) and (
-            not user.is_superuser
-        ):
+        allowed = (*_REPORT_ROLES, Role.SUPER_ADMIN, Role.BRANCH_MANAGER)
+        if getattr(user, "role", None) not in allowed and not user.is_superuser:
             raise PermissionDenied("Ruxsat yo'q.")
-        return get_object_or_404(User, pk=pk, role=Role.DISTRIBUTOR)
+        # Filial rahbari — faqat o'z filiali tarqatuvchisi
+        distributors = scope_queryset(
+            User.objects.filter(role=Role.DISTRIBUTOR), user, "warehouse"
+        )
+        return get_object_or_404(distributors, pk=pk)
 
 
 class DistributorFullView(_DistributorScopedView):
@@ -206,7 +223,7 @@ _BRANCH_ROLES = (*_REPORT_ROLES, Role.WAREHOUSE)
 def _branch_queryset(user):
     from apps.warehouse.models import Warehouse
 
-    qs = Warehouse.objects.filter(is_active=True)
+    qs = scope_queryset(Warehouse.objects.filter(is_active=True), user, "pk")
     if getattr(user, "role", None) == Role.WAREHOUSE and not user.is_superuser:
         if user.warehouse_id:
             qs = qs.filter(pk=user.warehouse_id)
@@ -266,7 +283,9 @@ class DistributorComparisonView(_ReportView):
                    parameters=_PERIOD_PARAMS, request=None, responses={200: dict})
     def get(self, request: Request) -> Response:
         preset, df, dt = _period(request)
-        return ok(distributor_comparison(preset=preset, date_from=df, date_to=dt))
+        return ok(distributor_comparison(
+            preset=preset, date_from=df, date_to=dt, branch=self._scope(request)
+        ))
 
 
 _QUERY_FILTERS = ("distributor", "product", "category", "client", "route",
@@ -298,6 +317,7 @@ class ReportQueryView(_ReportView):
         return ok(report_query(
             dimension=request.query_params.get("dimension", "product"),
             date_from=df, date_to=dt, filters=_query_filters(request),
+            branch=self._scope(request),
         ))
 
 
@@ -316,7 +336,7 @@ class AbcAnalysisView(_ReportView):
         df, dt = self._range(request)
         return ok(abc_analysis(
             dimension=request.query_params.get("dimension", "product"),
-            date_from=df, date_to=dt,
+            date_from=df, date_to=dt, branch=self._scope(request),
         ))
 
 
@@ -345,13 +365,16 @@ class ReportExportView(_ReportView):
         df, dt = self._range(request)
         report_type = request.query_params.get("type", "sales")
         fmt = request.query_params.get("fmt", "xlsx")
+        branch = self._scope(request)
 
         if report_type == "distributor":
             preset, pdf_, pdt = _period(request)
             start, end, *_ = resolve_period(preset, pdf_ or df, pdt or dt)
             distributor = get_object_or_404(
-                User, pk=request.query_params.get("distributor", ""),
-                role=Role.DISTRIBUTOR,
+                scope_queryset(
+                    User.objects.filter(role=Role.DISTRIBUTOR), request.user, "warehouse"
+                ),
+                pk=request.query_params.get("distributor", ""),
             )
             rows = distributor_rows_for_export(distributor, start, end)
             base = f"xodim_{distributor.full_name}_{start}_{end}"
@@ -368,6 +391,7 @@ class ReportExportView(_ReportView):
             payload = report_query(
                 dimension=request.query_params.get("dimension", "product"),
                 date_from=df, date_to=dt, filters=_query_filters(request),
+                branch=branch,
             )
             rows = report_query_rows_for_export(payload)
             base = f"hisobot_{payload['dimension']}_{df}_{dt}"
@@ -375,18 +399,18 @@ class ReportExportView(_ReportView):
         elif report_type == "abc":
             payload = abc_analysis(
                 dimension=request.query_params.get("dimension", "product"),
-                date_from=df, date_to=dt,
+                date_from=df, date_to=dt, branch=branch,
             )
             rows = abc_rows_for_export(payload)
             base = f"abc_{payload['dimension']}_{df}_{dt}"
             title = f"ABC tahlil · {payload['key']} · {df} – {dt}"
         elif report_type == "pnl":
-            payload = profit_and_loss(date_from=df, date_to=dt)
+            payload = profit_and_loss(date_from=df, date_to=dt, branch=branch)
             rows = pnl_rows_for_export(payload)
             base = f"foyda_zarar_{df}_{dt}"
             title = f"Foyda-zarar · {df} – {dt}"
         elif report_type == "sales":
-            rows = sales_rows_for_export(date_from=df, date_to=dt)
+            rows = sales_rows_for_export(date_from=df, date_to=dt, branch=branch)
             base = f"sotuvlar_{df}_{dt}"
             title = f"Sotuvlar · {df} – {dt}"
         else:

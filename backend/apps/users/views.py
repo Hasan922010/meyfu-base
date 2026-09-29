@@ -21,6 +21,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.core.branch import BRANCH_STAFF_ROLES, branch_scope, user_branch
 from apps.core.models import AuditLog
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
@@ -198,7 +199,9 @@ class UserViewSet(BaseModelViewSet):
         User.objects.select_related("distributor_profile").order_by("full_name")
     )
     read_roles = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
-    write_roles = (Role.SUPER_ADMIN,)
+    # Filial rahbari — faqat o'z filiali xodimlari, faqat quyi rollar
+    write_roles = (Role.SUPER_ADMIN, Role.BRANCH_MANAGER)
+    branch_lookup = "warehouse"
     filterset_fields = ("role", "is_active")
     search_fields = ("full_name", "phone")
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -208,8 +211,25 @@ class UserViewSet(BaseModelViewSet):
             return UserWriteSerializer
         return UserSerializer
 
+    def _branch_extra(self, serializer) -> dict:
+        """Filial rahbari: xodim faqat o'z filialida va o'zidan quyi rolda."""
+        actor = self.request.user
+        if branch_scope(actor) is None:
+            return {}
+        instance = serializer.instance
+        role = serializer.validated_data.get("role", getattr(instance, "role", None))
+        unchanged_self = instance is not None and instance.pk == actor.pk and (
+            role == instance.role
+        )
+        if role not in BRANCH_STAFF_ROLES and not unchanged_self:
+            raise ValidationError(
+                {"role": "Filial rahbari faqat tarqatuvchi, zakaz oluvchi, omborchi "
+                         "yoki buxgalter qo'sha oladi."}
+            )
+        return {"warehouse": user_branch(actor)}
+
     def perform_create(self, serializer) -> None:
-        user = serializer.save()
+        user = serializer.save(**self._branch_extra(serializer))
         self._audit("user.create", user, {"role": user.role, "phone": user.phone})
 
     def perform_update(self, serializer) -> None:
@@ -217,7 +237,7 @@ class UserViewSet(BaseModelViewSet):
             "role": serializer.instance.role,
             "is_active": serializer.instance.is_active,
         }
-        user = serializer.save()
+        user = serializer.save(**self._branch_extra(serializer))
         after = {"role": user.role, "is_active": user.is_active}
         if before != after:
             self._audit("user.update", user, {"before": before, "after": after})

@@ -32,7 +32,8 @@ def _money(v) -> str:
 
 
 def abc_analysis(
-    *, dimension: str = "product", date_from: date_cls, date_to: date_cls
+    *, dimension: str = "product", date_from: date_cls, date_to: date_cls,
+    branch=None,
 ) -> dict:
     if dimension not in _DIMS:
         raise BusinessError(
@@ -41,11 +42,14 @@ def abc_analysis(
         )
     lookup, key = _DIMS[dimension]
 
+    base = SaleItem.objects.filter(
+        sale__date__gte=date_from, sale__date__lte=date_to,
+        sale__status__in=_ACTIVE,
+    )
+    if branch is not None:
+        base = base.filter(sale__distributor__warehouse=branch)
     rows = list(
-        SaleItem.objects.filter(
-            sale__date__gte=date_from, sale__date__lte=date_to,
-            sale__status__in=_ACTIVE,
-        )
+        base
         .values(lookup)
         .annotate(
             amount=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC),

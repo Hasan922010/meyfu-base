@@ -402,6 +402,7 @@ def _notify_flagged(sale: Sale) -> None:
         {"sale_id": str(sale.id), "number": sale.number,
          "reason": sale.flag_reason, "status": sale.status},
     )
+    from apps.core.branch import staff_branch
     from apps.notifications.services import notify_admins
 
     notify_admins(
@@ -410,4 +411,5 @@ def _notify_flagged(sale: Sale) -> None:
         body=(f"{sale.number} · {sale.client.name} · {sale.distributor.full_name} "
               f"· {sale.flag_reason or sale.status}"),
         data={"sale_id": str(sale.id)},
+        branch=staff_branch(sale.distributor),
     )

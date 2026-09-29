@@ -56,6 +56,7 @@ def _is_field_staff(user) -> bool:
 
 class OrderViewSet(BaseModelViewSet):
     serializer_class = OrderSerializer
+    branch_lookup = "client__branch"
     http_method_names = ["get", "post", "head", "options"]
     read_roles = _READ
     write_roles = _WRITE

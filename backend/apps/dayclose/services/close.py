@@ -82,6 +82,7 @@ def submit_day_close(
 
     _fill_snapshot(day_close, distributor, date, return_rows, cash_handed)
 
+    from apps.core.branch import staff_branch
     from apps.notifications.services import notify_admins
     from realtime.broadcast import broadcast
 
@@ -105,6 +106,7 @@ def submit_day_close(
                   f"{day_close.cash_difference} · tovar farqi "
                   f"{day_close.stock_difference_qty}"),
             data={"day_close_id": str(day_close.id)},
+            branch=staff_branch(distributor),
         )
     else:
         notify_admins(
@@ -112,6 +114,7 @@ def submit_day_close(
             title="Kun yopish yuborildi",
             body=f"{distributor.full_name} · {date} — tasdiqlash kutilmoqda",
             data={"day_close_id": str(day_close.id)},
+            branch=staff_branch(distributor),
         )
     return day_close
 
@@ -210,8 +213,11 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
     ).update(day_close=day_close)
 
     # topshirishlarni tasdiqlash: hamyondan chiqim (HANDOVER) + kassaga kirim
+    from apps.core.branch import staff_branch
     from apps.finance.constants import CashTxType
     from apps.finance.services import cash_apply
+
+    cash_branch = staff_branch(day_close.distributor)
 
     for handover in day_close.cash_handovers.filter(confirmed=False):
         if handover.amount > _ZERO:
@@ -234,6 +240,7 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
                 reference_id=handover.id,
                 note=f"Kun yopish {day_close.date}",
                 user=user,
+                branch=cash_branch,
             )
         handover.confirmed = True
         handover.received_by = user

@@ -24,7 +24,11 @@ type TabId = 'products' | 'cash' | 'suppliers' | 'clients' | 'staff';
 // Kim kirita oladi — backenddagi `opening_balance`/`opening_balance_bulk`
 // action_roles bilan bir xil. Qolganlar faqat tarixni ko'radi (audit K3b).
 const TABS: Array<{ id: TabId; label: string; writeRoles: Role[] }> = [
-  { id: 'products', label: 'Tovarlar', writeRoles: ['WAREHOUSE', 'MANAGER', 'SUPER_ADMIN'] },
+  {
+    id: 'products',
+    label: 'Tovarlar',
+    writeRoles: ['WAREHOUSE', 'MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+  },
   { id: 'cash', label: 'Kassa', writeRoles: ['SUPER_ADMIN'] },
   { id: 'suppliers', label: "Ta'minotchilar", writeRoles: ['SUPER_ADMIN'] },
   { id: 'clients', label: 'Mijozlar', writeRoles: ['MANAGER', 'SUPER_ADMIN'] },

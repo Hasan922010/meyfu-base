@@ -54,6 +54,7 @@ def report_query(
     date_to: date_cls,
     filters: dict | None = None,
     limit: int = 500,
+    branch=None,
 ) -> dict:
     if dimension not in DIMENSIONS:
         raise BusinessError(
@@ -67,6 +68,8 @@ def report_query(
         sale__date__lte=date_to,
         sale__status__in=_ACTIVE,
     )
+    if branch is not None:
+        qs = qs.filter(sale__distributor__warehouse=branch)
     for name, value in (filters or {}).items():
         if value and name in FILTERS:
             qs = qs.filter(**{FILTERS[name]: value})

@@ -125,6 +125,7 @@ def create_expense(
         changes={"amount": str(amount), "category": category.name,
                  "over_limit": over_limit},
     )
+    from apps.core.branch import staff_branch
     from apps.notifications.services import notify_admins
 
     if over_limit:
@@ -143,6 +144,7 @@ def create_expense(
             body=(f"{distributor.full_name} · {category.name} · {fmt_money(amount)} "
                   f"({_limit_txt})"),
             data={"expense_id": str(expense.id)},
+            branch=staff_branch(distributor),
             tg_buttons=[[
                 {"text": "✅ Tasdiqlash",
                  "callback_data": f"exp_approve:{expense.id}"},

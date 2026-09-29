@@ -5,6 +5,7 @@ import type { Role } from '@/shared/types/api';
 export const ROLE_LABELS: Record<Role, string> = {
   SUPER_ADMIN: 'Super admin',
   MANAGER: 'Menejer',
+  BRANCH_MANAGER: 'Filial rahbari',
   WAREHOUSE: 'Omborchi',
   DISTRIBUTOR: 'Tarqatuvchi',
   ACCOUNTANT: 'Buxgalter',

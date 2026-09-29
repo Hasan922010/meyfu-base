@@ -282,6 +282,7 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
             code="INVALID_STATE",
         )
 
+    from apps.core.branch import staff_branch
     from apps.finance.services.company_expense import create_company_expense
 
     expense = create_company_expense(
@@ -293,6 +294,7 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
         ),
         paid_from_cash=paid_from_cash,
         user=user,
+        branch=staff_branch(payroll.distributor),
     )
 
     payroll.status = PayrollStatus.PAID

@@ -7,7 +7,22 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 
+from .branch import scope_queryset
 from .permissions import RolePermission
+
+
+class BranchScopedMixin:
+    """`branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+    filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+    """
+
+    branch_lookup: str | None = None
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        if self.branch_lookup:
+            queryset = scope_queryset(queryset, self.request.user, self.branch_lookup)
+        return queryset
 
 
 class EnvelopeResponseMixin:
@@ -31,7 +46,7 @@ class EnvelopeResponseMixin:
         return response
 
 
-class BaseModelViewSet(EnvelopeResponseMixin, viewsets.ModelViewSet):
+class BaseModelViewSet(BranchScopedMixin, EnvelopeResponseMixin, viewsets.ModelViewSet):
     """`created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
 
     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
@@ -43,5 +58,7 @@ class BaseModelViewSet(EnvelopeResponseMixin, viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
 
-class BaseReadOnlyViewSet(EnvelopeResponseMixin, viewsets.ReadOnlyModelViewSet):
+class BaseReadOnlyViewSet(
+    BranchScopedMixin, EnvelopeResponseMixin, viewsets.ReadOnlyModelViewSet
+):
     permission_classes = [IsAuthenticated, RolePermission]
