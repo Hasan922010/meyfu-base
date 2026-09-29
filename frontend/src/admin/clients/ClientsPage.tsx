@@ -19,6 +19,7 @@ import { useServerTable } from '@/shared/table/useServerTable';
 import type { Client } from '@/shared/types/clients';
 
 import { ClientForm } from './ClientForm';
+import { ClientStatement } from './ClientStatement';
 
 export function ClientsPage(): ReactElement {
   const qc = useQueryClient();
@@ -38,6 +39,7 @@ export function ClientsPage(): ReactElement {
   const table = useServerTable({ initialSort: { key: 'name', dir: 'asc' } });
   const { page, setPage } = table;
   const [editing, setEditing] = useState<Client | null>(null);
+  const [statementOf, setStatementOf] = useState<Client | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
 
   const routes = useQuery({
@@ -114,7 +116,7 @@ export function ClientsPage(): ReactElement {
                   Qarz / limit
                 </SortableTh>
                 <SortableTh sortKey="is_blocked" {...th}>Holat</SortableTh>
-                {canWrite && <th className="p-3" />}
+                <th className="p-3" />
               </tr>
             </thead>
             <tbody>
@@ -140,25 +142,33 @@ export function ClientsPage(): ReactElement {
                       <span className="text-success">Faol</span>
                     )}
                   </td>
-                  {canWrite && (
-                    <td className="p-3 text-right">
-                      <span className="flex justify-end gap-3">
-                        <button
-                          className="text-brand hover:underline"
-                          onClick={() => setEditing(c)}
-                        >
-                          Tahrirlash
-                        </button>
-                        <button
-                          className="text-danger hover:underline"
-                          disabled={del.isPending}
-                          onClick={() => setDeleting(c)}
-                        >
-                          O'chirish
-                        </button>
-                      </span>
-                    </td>
-                  )}
+                  <td className="p-3 text-right">
+                    <span className="flex justify-end gap-3">
+                      <button
+                        className="text-brand hover:underline"
+                        onClick={() => setStatementOf(c)}
+                      >
+                        Akt-sverka
+                      </button>
+                      {canWrite && (
+                        <>
+                          <button
+                            className="text-brand hover:underline"
+                            onClick={() => setEditing(c)}
+                          >
+                            Tahrirlash
+                          </button>
+                          <button
+                            className="text-danger hover:underline"
+                            disabled={del.isPending}
+                            onClick={() => setDeleting(c)}
+                          >
+                            O'chirish
+                          </button>
+                        </>
+                      )}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -215,6 +225,15 @@ export function ClientsPage(): ReactElement {
             setEditing(null);
           }}
         />
+      </Modal>
+
+      <Modal
+        open={statementOf !== null}
+        title={`Akt-sverka — ${statementOf?.name ?? ''}`}
+        size="xl"
+        onClose={() => setStatementOf(null)}
+      >
+        {statementOf && <ClientStatement clientId={statementOf.id} />}
       </Modal>
     </div>
   );

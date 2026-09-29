@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from django.db.models import Count, Q, QuerySet
+from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_date, parse_datetime
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
@@ -19,6 +20,7 @@ from apps.core.branch import (
     staff_branch,
     user_branch,
 )
+from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission, is_order_taker
 from apps.core.response import ok
@@ -27,6 +29,7 @@ from apps.core.viewsets import BaseModelViewSet, BranchScopedMixin, EnvelopeResp
 from apps.users.constants import Role
 
 from .models import Client, ClientVisit, Route
+from .statement import client_statement, statement_pdf
 from .serializers import (
     ClientLiteSerializer,
     ClientOpeningDebtSerializer,
@@ -124,6 +127,7 @@ class ClientViewSet(BaseModelViewSet):
         "opening_balance": _MANAGE,
         "opening_sheet": _MANAGE,
         "opening_balance_bulk": _MANAGE,
+        "statement": _READ,
     }
     branch_lookup = "branch"
 
@@ -163,6 +167,35 @@ class ClientViewSet(BaseModelViewSet):
                 # 5-bosqichda: "sales": [...]
             }
         )
+
+    @extend_schema(
+        summary="Solishtirma dalolatnoma (akt-sverka) — v5: C2",
+        parameters=[
+            OpenApiParameter("date_from", str, required=False),
+            OpenApiParameter("date_to", str, required=False),
+            OpenApiParameter("fmt", str, required=False, enum=["json", "pdf"]),
+        ],
+        responses={200: dict},
+    )
+    @action(detail=True, methods=["get"])
+    def statement(self, request: Request, pk: str | None = None):
+        client = self.get_object()
+        today = business_date()
+        date_from = parse_date(request.query_params.get("date_from", "")) or today.replace(
+            month=1, day=1
+        )
+        date_to = parse_date(request.query_params.get("date_to", "")) or today
+        if date_from > date_to:
+            raise BusinessError(message="Boshlanish sanasi tugashdan keyin bo'lmasin.",
+                                code="INVALID_PERIOD")
+        data = client_statement(client, date_from=date_from, date_to=date_to)
+        if request.query_params.get("fmt") != "pdf":
+            return ok(data)
+        response = HttpResponse(statement_pdf(data), content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'attachment; filename="akt-sverka-{date_from:%Y%m%d}-{date_to:%Y%m%d}.pdf"'
+        )
+        return response
 
     @extend_schema(summary="Mijoz qarzlari")
     @action(detail=True, methods=["get"])
