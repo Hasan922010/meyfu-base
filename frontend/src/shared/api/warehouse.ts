@@ -8,6 +8,8 @@ import {
   type QueryParams,
 } from '@/shared/api/crud';
 import type {
+  InventoryCount,
+  InventoryItemInput,
   Loading,
   LoadingInput,
   Purchase,
@@ -74,6 +76,25 @@ export const warehouseApi = {
   confirmLoading: (id: string) => postAction<Loading>(`/loadings/${id}/confirm/`),
   cancelLoading: (id: string) => postAction<unknown>(`/loadings/${id}/cancel/`),
   myTodayLoadings: () => retrieve<Loading[]>('/loadings/my-today/'),
+
+  inventoryCounts: (params?: QueryParams) =>
+    listPage<InventoryCount>('/inventory-counts/', params),
+  inventoryCount: (id: string) => retrieve<InventoryCount>(`/inventory-counts/${id}/`),
+  /** Yaratilganda ombordagi barcha tovarlar avtomatik to'ldiriladi */
+  createInventoryCount: (body: { warehouse: string; date: string; note?: string }) =>
+    create<InventoryCount, typeof body>('/inventory-counts/', body),
+  /** Hisobdagi qoldiqni yangilaydi — kiritilgan haqiqiy qoldiq saqlanadi */
+  fillInventoryCount: (id: string) =>
+    postAction<InventoryCount>(`/inventory-counts/${id}/fill/`),
+  saveInventoryItems: (id: string, items: InventoryItemInput[]) =>
+    patch<InventoryCount, { items: InventoryItemInput[] }>(
+      `/inventory-counts/${id}/items/`,
+      { items },
+    ),
+  confirmInventoryCount: (id: string) =>
+    postAction<InventoryCount>(`/inventory-counts/${id}/confirm/`),
+  cancelInventoryCount: (id: string) =>
+    postAction<InventoryCount>(`/inventory-counts/${id}/cancel/`),
 
   myVanStock: () => retrieve<VanStock[]>('/van-stock/my/'),
   vanStock: (params?: QueryParams) => listPage<VanStock>('/van-stock/', params),

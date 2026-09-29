@@ -40,3 +40,9 @@ class SupplierTxType(models.TextChoices):
 
     OPENING_BALANCE = "OPENING_BALANCE", _("Boshlang'ich qoldiq (±)")
     CORRECTION = "CORRECTION", _("Tuzatuvchi yozuv (±)")
+
+
+class InventoryStatus(models.TextChoices):
+    DRAFT = "DRAFT", _("Qoralama")
+    CONFIRMED = "CONFIRMED", _("Tasdiqlangan")
+    CANCELLED = "CANCELLED", _("Bekor qilingan")

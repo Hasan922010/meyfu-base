@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
+from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseModelViewSet, EnvelopeResponseMixin
 from apps.users.constants import Role
 
@@ -23,6 +24,7 @@ from .serializers import (
     CompanyExpenseSerializer,
 )
 from .services import cash_apply, create_company_expense, get_account
+from .services.opening import cash_opening_bulk, cash_opening_sheet
 
 _FINANCE = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
 
@@ -39,9 +41,34 @@ class CashTransactionViewSet(
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _FINANCE
     write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT)
-    action_roles = {"opening_balance": (Role.SUPER_ADMIN,)}
+    action_roles = {
+        "opening_balance": (Role.SUPER_ADMIN,),
+        "opening_sheet": (Role.SUPER_ADMIN,),
+        "opening_balance_bulk": (Role.SUPER_ADMIN,),
+    }
     filterset_fields = ("transaction_type", "date")
     ordering = ("-created_at",)
+
+    @extend_schema(
+        summary="Boshlang'ich qoldiq uchun kassalar ro'yxati (joriy balans bilan)",
+        responses=OpeningSheetRowSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], url_path="opening-sheet")
+    def opening_sheet(self, request: Request) -> Response:
+        return ok(OpeningSheetRowSerializer(cash_opening_sheet(), many=True).data)
+
+    @extend_schema(
+        summary="Kassa balansini ro'yxatdan kiritish (yakuniy qiymat, ±)",
+        request=OpeningBulkSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance/bulk")
+    def opening_balance_bulk(self, request: Request) -> Response:
+        s = OpeningBulkSerializer(data=request.data, context={"decimal_places": 2})
+        s.is_valid(raise_exception=True)
+        return ok(cash_opening_bulk(
+            rows=s.validated_data["rows"], note=s.validated_data["note"],
+            user=request.user,
+        ))
 
     @extend_schema(summary="Kassa balansi")
     @action(detail=False, methods=["get"])

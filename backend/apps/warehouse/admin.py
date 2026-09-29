@@ -3,6 +3,8 @@ from django.contrib import admin
 from apps.core.admin import AppendOnlyAdmin
 
 from .models import (
+    InventoryCount,
+    InventoryCountItem,
     Loading,
     LoadingItem,
     Purchase,
@@ -102,3 +104,19 @@ class VanStockAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request) -> bool:
         return False
+
+
+class InventoryCountItemInline(admin.TabularInline):
+    model = InventoryCountItem
+    extra = 0
+    readonly_fields = ("product", "expected_qty", "actual_qty", "cost_price", "note")
+    can_delete = False
+
+
+@admin.register(InventoryCount)
+class InventoryCountAdmin(admin.ModelAdmin):
+    list_display = ("number", "warehouse", "date", "status", "confirmed_at")
+    list_filter = ("status", "warehouse")
+    search_fields = ("number",)
+    readonly_fields = ("number", "status", "confirmed_at", "confirmed_by")
+    inlines = (InventoryCountItemInline,)

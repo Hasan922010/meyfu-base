@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from django.db.models import F, Q, QuerySet
+from django.db import transaction
+from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, QuerySet, Sum
 from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
@@ -10,11 +11,13 @@ from rest_framework.response import Response
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.response import ok
+from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
 
 from .constants import MovementType, SupplierTxType
 from .models import (
+    InventoryCount,
     Loading,
     Purchase,
     Stock,
@@ -26,7 +29,11 @@ from .models import (
 )
 from .pdf import loading_to_pdf, purchase_to_pdf
 from .serializers import (
+    InventoryCountListSerializer,
+    InventoryCountSerializer,
+    InventoryItemsUpdateSerializer,
     LoadingSerializer,
+    OpeningWarehouseSerializer,
     PurchasePaymentSerializer,
     PurchaseSerializer,
     StockMovementSerializer,
@@ -39,7 +46,20 @@ from .serializers import (
     WarehouseSerializer,
 )
 from .services import apply_movement, supplier_apply
+from .services.inventory import (
+    cancel_inventory,
+    confirm_inventory,
+    fill_inventory,
+    lock_draft,
+    save_inventory_items,
+)
 from .services.loading import cancel_loading, confirm_loading, send_loading
+from .services.opening import (
+    stock_opening_bulk,
+    stock_opening_sheet,
+    supplier_opening_bulk,
+    supplier_opening_sheet,
+)
 from .services.purchase import confirm_purchase
 
 _WH_WRITE = (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN)
@@ -73,7 +93,32 @@ class SupplierViewSet(BaseModelViewSet):
     serializer_class = SupplierSerializer
     write_roles = _WH_WRITE
     search_fields = ("name", "phone", "inn")
-    action_roles = {"opening_balance": (Role.SUPER_ADMIN,)}
+    action_roles = {
+        "opening_balance": (Role.SUPER_ADMIN,),
+        "opening_sheet": (Role.SUPER_ADMIN,),
+        "opening_balance_bulk": (Role.SUPER_ADMIN,),
+    }
+
+    @extend_schema(
+        summary="Boshlang'ich qoldiq uchun barcha faol ta'minotchilar balansi",
+        responses=OpeningSheetRowSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], url_path="opening-sheet")
+    def opening_sheet(self, request: Request) -> Response:
+        return ok(OpeningSheetRowSerializer(supplier_opening_sheet(), many=True).data)
+
+    @extend_schema(
+        summary="Ta'minotchilar balansini ommaviy kiritish (yakuniy qiymat, ±)",
+        request=OpeningBulkSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance/bulk")
+    def opening_balance_bulk(self, request: Request) -> Response:
+        s = OpeningBulkSerializer(data=request.data, context={"decimal_places": 2})
+        s.is_valid(raise_exception=True)
+        return ok(supplier_opening_bulk(
+            rows=s.validated_data["rows"], note=s.validated_data["note"],
+            user=request.user,
+        ))
 
     @extend_schema(
         summary="Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)",
@@ -104,7 +149,39 @@ class StockViewSet(BaseReadOnlyViewSet):
     filterset_fields = ("warehouse", "product")
     search_fields = ("product__name", "product__sku")
     ordering_fields = ("quantity", "updated_at")
-    action_roles = {"opening_balance": (Role.MANAGER, Role.SUPER_ADMIN)}
+    action_roles = {
+        "opening_balance": (Role.MANAGER, Role.SUPER_ADMIN),
+        "opening_sheet": (Role.MANAGER, Role.SUPER_ADMIN),
+        "opening_balance_bulk": (Role.MANAGER, Role.SUPER_ADMIN),
+    }
+
+    @extend_schema(
+        summary="Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)",
+        parameters=[OpenApiParameter("warehouse", str, required=True)],
+        responses=OpeningSheetRowSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], url_path="opening-sheet")
+    def opening_sheet(self, request: Request) -> Response:
+        target = OpeningWarehouseSerializer(data=request.query_params)
+        target.is_valid(raise_exception=True)
+        rows = stock_opening_sheet(target.validated_data["warehouse"])
+        return ok(OpeningSheetRowSerializer(rows, many=True).data)
+
+    @extend_schema(
+        summary="Tovar qoldiqlarini ommaviy kiritish (yakuniy miqdor)",
+        request=OpeningBulkSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance/bulk")
+    def opening_balance_bulk(self, request: Request) -> Response:
+        target = OpeningWarehouseSerializer(data=request.data)
+        target.is_valid(raise_exception=True)
+        s = OpeningBulkSerializer(data=request.data, context={"non_negative": True})
+        s.is_valid(raise_exception=True)
+        return ok(stock_opening_bulk(
+            warehouse=target.validated_data["warehouse"],
+            rows=s.validated_data["rows"], note=s.validated_data["note"],
+            user=request.user,
+        ))
 
     @extend_schema(summary="Kam qolgan tovarlar (min_stock_alert dan past)")
     @action(detail=False, methods=["get"], url_path="low")
@@ -192,6 +269,81 @@ class PurchaseViewSet(BaseModelViewSet):
         purchase.recalc_totals()
         purchase.save(update_fields=["paid_amount", "debt_amount", "updated_at"])
         return ok(self.get_serializer(purchase).data)
+
+
+class InventoryCountViewSet(BaseModelViewSet):
+    """Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi."""
+
+    serializer_class = InventoryCountSerializer
+    write_roles = _WH_WRITE
+    read_roles = _WH_READ
+    # Omborchi sanaydi, qoldiqni tuzatishni rahbar tasdiqlaydi
+    action_roles = {"confirm": (Role.MANAGER, Role.SUPER_ADMIN)}
+    http_method_names = ("get", "post", "patch", "head", "options")
+    filterset_fields = ("warehouse", "status", "date")
+    search_fields = ("number", "note")
+    ordering_fields = ("date", "created_at")
+
+    def get_queryset(self) -> QuerySet[InventoryCount]:
+        # GROUP BY'da Meta.ordering e'tiborsiz qoladi — sahifalash barqaror bo'lsin
+        qs = InventoryCount.objects.select_related("warehouse").order_by(
+            "-date", "-created_at", "pk"
+        )
+        if self.action == "list":
+            counted = Q(items__actual_qty__isnull=False)
+            diff_value = ExpressionWrapper(
+                (F("items__actual_qty") - F("items__expected_qty"))
+                * F("items__cost_price"),
+                output_field=DecimalField(max_digits=20, decimal_places=5),
+            )
+            return qs.annotate(
+                annotated_items_count=Count("items"),
+                annotated_counted_count=Count("items", filter=counted),
+                annotated_difference_amount=Sum(diff_value, filter=counted),
+            )
+        return qs.prefetch_related("items__product__unit")
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return InventoryCountListSerializer
+        return InventoryCountSerializer
+
+    def _detail(self, count: InventoryCount) -> Response:
+        fresh = self.get_queryset().get(pk=count.pk)
+        return ok(InventoryCountSerializer(fresh).data)
+
+    @transaction.atomic
+    def perform_update(self, serializer) -> None:
+        lock_draft(serializer.instance)
+        serializer.save()
+
+    @extend_schema(summary="Qatorlarni joriy qoldiq bilan qayta to'ldirish", request=None)
+    @action(detail=True, methods=["post"])
+    def fill(self, request: Request, pk: str | None = None) -> Response:
+        return self._detail(fill_inventory(self.get_object(), user=request.user))
+
+    @extend_schema(
+        summary="Haqiqiy qoldiqlarni saqlash (bo'sh — sanalmagan)",
+        request=InventoryItemsUpdateSerializer,
+    )
+    @action(detail=True, methods=["patch"])
+    def items(self, request: Request, pk: str | None = None) -> Response:
+        count = self.get_object()
+        s = InventoryItemsUpdateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        save_inventory_items(count, s.validated_data["items"])
+        return self._detail(count)
+
+    @extend_schema(summary="Tasdiqlash — farq qoldiqqa tuzatish bo'lib yoziladi",
+                   request=None)
+    @action(detail=True, methods=["post"])
+    def confirm(self, request: Request, pk: str | None = None) -> Response:
+        return self._detail(confirm_inventory(self.get_object(), user=request.user))
+
+    @extend_schema(summary="Qoralamani bekor qilish", request=None)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request: Request, pk: str | None = None) -> Response:
+        return self._detail(cancel_inventory(self.get_object(), user=request.user))
 
 
 class LoadingViewSet(BaseModelViewSet):

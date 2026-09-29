@@ -8,6 +8,8 @@ from rest_framework import serializers
 from apps.catalog.models import Product
 
 from .models import (
+    InventoryCount,
+    InventoryCountItem,
     Loading,
     LoadingItem,
     Purchase,
@@ -18,6 +20,8 @@ from .models import (
     VanStock,
     Warehouse,
 )
+from .services.inventory import assign_number as assign_inventory_number
+from .services.inventory import fill_inventory
 from .services.loading import assign_number as assign_loading_number
 from .services.purchase import assign_number
 
@@ -79,6 +83,14 @@ class StockOpeningBalanceSerializer(serializers.Serializer):
         max_digits=14, decimal_places=3, min_value=Decimal("0.001")
     )
     note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class OpeningWarehouseSerializer(serializers.Serializer):
+    """Ommaviy boshlang'ich qoldiq qaysi omborga yoziladi."""
+
+    warehouse = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.filter(is_active=True)
+    )
 
 
 class StockSerializer(serializers.ModelSerializer):
@@ -333,3 +345,104 @@ class LoadingSerializer(serializers.ModelSerializer):
         instance.recalc_total()
         instance.save(update_fields=["total_amount", "updated_at"])
         return instance
+
+
+class InventoryCountItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    product_unit = serializers.CharField(source="product.unit.short_name", read_only=True)
+    difference = serializers.DecimalField(
+        max_digits=14, decimal_places=3, read_only=True, allow_null=True
+    )
+
+    class Meta:
+        model = InventoryCountItem
+        fields = (
+            "id", "product", "product_name", "product_sku", "product_unit",
+            "expected_qty", "actual_qty", "difference", "cost_price", "note",
+        )
+        read_only_fields = fields
+
+
+class _InventorySummaryMixin(serializers.Serializer):
+    """Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi."""
+
+    items_count = serializers.SerializerMethodField()
+    counted_count = serializers.SerializerMethodField()
+    difference_amount = serializers.SerializerMethodField()
+
+    def _summary(self, obj: InventoryCount) -> dict:
+        if hasattr(obj, "annotated_items_count"):
+            return {
+                "items_count": obj.annotated_items_count,
+                "counted_count": obj.annotated_counted_count,
+                "difference_amount": obj.annotated_difference_amount or Decimal("0"),
+            }
+        items = list(obj.items.all())
+        counted = [i for i in items if i.actual_qty is not None]
+        return {
+            "items_count": len(items),
+            "counted_count": len(counted),
+            "difference_amount": sum(
+                (i.difference * i.cost_price for i in counted), Decimal("0")
+            ),
+        }
+
+    def get_items_count(self, obj: InventoryCount) -> int:
+        return self._summary(obj)["items_count"]
+
+    def get_counted_count(self, obj: InventoryCount) -> int:
+        return self._summary(obj)["counted_count"]
+
+    def get_difference_amount(self, obj: InventoryCount) -> str:
+        return str(self._summary(obj)["difference_amount"].quantize(Decimal("0.01")))
+
+
+class InventoryCountListSerializer(_InventorySummaryMixin, serializers.ModelSerializer):
+    warehouse_name = serializers.CharField(source="warehouse.name", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = InventoryCount
+        fields = (
+            "id", "number", "warehouse", "warehouse_name", "date", "status",
+            "status_display", "note", "confirmed_at", "created_at",
+            "items_count", "counted_count", "difference_amount",
+        )
+        read_only_fields = (
+            "id", "number", "status", "status_display", "confirmed_at", "created_at",
+        )
+        extra_kwargs = {"note": {"required": False, "allow_blank": True}}
+
+
+class InventoryCountSerializer(InventoryCountListSerializer):
+    items = InventoryCountItemSerializer(many=True, read_only=True)
+
+    class Meta(InventoryCountListSerializer.Meta):
+        fields = (*InventoryCountListSerializer.Meta.fields, "items")
+
+    def validate_warehouse(self, value: Warehouse) -> Warehouse:
+        if self.instance and value != self.instance.warehouse:
+            raise serializers.ValidationError(
+                "Omborni o'zgartirib bo'lmaydi — yangi hujjat oching."
+            )
+        return value
+
+    @transaction.atomic
+    def create(self, validated_data: dict) -> InventoryCount:
+        count = InventoryCount(**validated_data)
+        assign_inventory_number(count)
+        count.save()
+        return fill_inventory(count, user=count.created_by)
+
+
+class InventoryItemInputSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    actual_qty = serializers.DecimalField(
+        max_digits=14, decimal_places=3, min_value=Decimal("0"), allow_null=True
+    )
+    note = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+class InventoryItemsUpdateSerializer(serializers.Serializer):
+    items = InventoryItemInputSerializer(many=True, allow_empty=False)

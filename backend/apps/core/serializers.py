@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import mimetypes
+from decimal import Decimal
 
 from rest_framework import serializers
 
@@ -56,3 +57,41 @@ class CompanyPublicSerializer(serializers.ModelSerializer):
 
     def get_stamp(self, obj: CompanySettings) -> str | None:
         return _data_uri(obj.stamp)
+
+
+class OpeningSheetRowSerializer(serializers.Serializer):
+    """Boshlang'ich qoldiqlar ro'yxati qatori — joriy balans bilan."""
+
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    code = serializers.CharField(allow_blank=True)
+    current = serializers.CharField()
+
+
+class OpeningRowSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    # Yakuniy qoldiq — farqni server hisoblaydi (qayta yuborish xavfsiz)
+    target = serializers.DecimalField(max_digits=14, decimal_places=3)
+
+
+class OpeningBulkSerializer(serializers.Serializer):
+    """Ommaviy boshlang'ich qoldiq. context: `non_negative`, `decimal_places`."""
+
+    rows = OpeningRowSerializer(many=True, allow_empty=False)
+    note = serializers.CharField(
+        required=False, allow_blank=True, default="", max_length=200
+    )
+
+    def validate_rows(self, rows: list[dict]) -> list[dict]:
+        ids = [row["id"] for row in rows]
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError("Bir yozuv ikki marta kiritilgan.")
+        if self.context.get("non_negative") and any(r["target"] < 0 for r in rows):
+            raise serializers.ValidationError("Qoldiq manfiy bo'lishi mumkin emas.")
+        places = self.context.get("decimal_places", 3)
+        step = Decimal(1).scaleb(-places)
+        if any(r["target"] != r["target"].quantize(step) for r in rows):
+            raise serializers.ValidationError(
+                f"Kasr qismi ko'pi bilan {places} xona bo'lishi mumkin."
+            )
+        return rows

@@ -1,3 +1,9 @@
+from .inventory import (
+    cancel_inventory,
+    confirm_inventory,
+    fill_inventory,
+    save_inventory_items,
+)
 from .loading import assign_number as assign_loading_number
 from .loading import cancel_loading, confirm_loading, send_loading
 from .purchase import assign_number, confirm_purchase
@@ -22,6 +28,10 @@ __all__ = (
     "send_loading",
     "confirm_loading",
     "cancel_loading",
+    "fill_inventory",
+    "save_inventory_items",
+    "confirm_inventory",
+    "cancel_inventory",
     "assign_loading_number",
     "supplier_apply",
     "supplier_balance_matches_ledger",

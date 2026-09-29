@@ -1,15 +1,17 @@
 import { useState, type ReactElement } from 'react';
 
+import { InventoryTab } from './InventoryTab';
 import { LoadingsTab } from './LoadingsTab';
 import { PurchasesTab } from './PurchasesTab';
 import { StockTab } from './StockTab';
 
-type Tab = 'stock' | 'purchases' | 'loadings';
+type Tab = 'stock' | 'purchases' | 'loadings' | 'inventory';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'stock', label: 'Qoldiq' },
   { id: 'purchases', label: 'Tovar qabullari' },
   { id: 'loadings', label: 'Yuklamalar' },
+  { id: 'inventory', label: 'Inventarizatsiya' },
 ];
 
 export function WarehousePage(): ReactElement {
@@ -19,7 +21,7 @@ export function WarehousePage(): ReactElement {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Ombor</h1>
 
-      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -38,6 +40,7 @@ export function WarehousePage(): ReactElement {
       {tab === 'stock' && <StockTab />}
       {tab === 'purchases' && <PurchasesTab />}
       {tab === 'loadings' && <LoadingsTab />}
+      {tab === 'inventory' && <InventoryTab />}
     </div>
   );
 }

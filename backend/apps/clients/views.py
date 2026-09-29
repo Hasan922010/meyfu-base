@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
+from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseModelViewSet, EnvelopeResponseMixin
 from apps.users.constants import Role
 
@@ -71,7 +72,11 @@ class ClientViewSet(BaseModelViewSet):
         "name", "owner_name", "phone", "route__name", "current_debt", "debt_limit",
         "is_blocked", "created_at",
     )
-    action_roles = {"opening_balance": _MANAGE}
+    action_roles = {
+        "opening_balance": _MANAGE,
+        "opening_sheet": _MANAGE,
+        "opening_balance_bulk": _MANAGE,
+    }
 
     def get_queryset(self) -> QuerySet[Client]:
         qs = Client.objects.select_related("route")
@@ -103,6 +108,33 @@ class ClientViewSet(BaseModelViewSet):
                 "items": [],  # Debt modeli — 5-bosqich
             }
         )
+
+    @extend_schema(
+        summary="Boshlang'ich qarz uchun mijozlar ro'yxati (joriy qarzi bilan)",
+        responses=OpeningSheetRowSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], url_path="opening-sheet")
+    def opening_sheet(self, request: Request) -> Response:
+        from apps.sales.services.debt import client_opening_sheet
+
+        return ok(OpeningSheetRowSerializer(client_opening_sheet(), many=True).data)
+
+    @extend_schema(
+        summary="Mijozlar qarzini ro'yxatdan kiritish (yakuniy qarz, faqat oshirish)",
+        request=OpeningBulkSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance/bulk")
+    def opening_balance_bulk(self, request: Request) -> Response:
+        from apps.sales.services.debt import client_opening_bulk
+
+        s = OpeningBulkSerializer(
+            data=request.data, context={"non_negative": True, "decimal_places": 2}
+        )
+        s.is_valid(raise_exception=True)
+        return ok(client_opening_bulk(
+            rows=s.validated_data["rows"], note=s.validated_data["note"],
+            user=request.user,
+        ))
 
     @extend_schema(
         summary="Mijoz boshlang'ich qarzi (sotuvsiz)",

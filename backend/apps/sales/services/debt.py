@@ -6,10 +6,12 @@ from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import F
+from rest_framework.exceptions import ValidationError
 
 from apps.clients.models import Client
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
+from apps.core.services.opening import audit_bulk, bulk_result, plan_deltas, sheet_row
 from apps.wallet.constants import TransactionType
 from apps.wallet.services import wallet_apply
 
@@ -140,3 +142,43 @@ def create_opening_debt(
         changes={"client": str(client.id), "amount": str(amount), "note": note},
     )
     return debt
+
+
+def client_opening_sheet() -> list[dict]:
+    """Boshlang'ich qarz uchun bloklanmagan mijozlar — joriy qarzi bilan."""
+    return [
+        sheet_row(id=c.id, name=c.name, code=c.phone, current=c.current_debt)
+        for c in Client.objects.filter(is_blocked=False).order_by("name", "pk")
+    ]
+
+
+@transaction.atomic
+def client_opening_bulk(*, rows: list[dict], note: str, user) -> dict:
+    """Yakuniy qarz kiritiladi — faqat oshirish mumkin (qarz sotuvsiz yaratiladi).
+
+    Kamaytirish qarz to'lovi orqali bo'ladi, aks holda qarzlar jurnali
+    (Debt/DebtPayment) va `current_debt` bir-biridan ajrab qoladi.
+    """
+    clients = {
+        c.id: c
+        for c in Client.objects.select_for_update().filter(
+            is_blocked=False, id__in=[row["id"] for row in rows]
+        )
+    }
+    changes = plan_deltas(rows, {pk: c.current_debt for pk, c in clients.items()})
+    lowered = [clients[pk].name for pk, delta in changes if delta < _ZERO]
+    if lowered:
+        names = ", ".join(lowered[:3]) + ("…" if len(lowered) > 3 else "")
+        raise ValidationError({
+            "rows": (
+                f"Qarzni bu yerda kamaytirib bo'lmaydi ({names}) — "
+                "qarz to'lovi orqali kiriting."
+            )
+        })
+    for client_id, delta in changes:
+        if delta > _ZERO:
+            create_opening_debt(
+                client=clients[client_id], amount=delta, note=note, user=user
+            )
+    audit_bulk(user=user, kind="client", note=note, changes=changes)
+    return bulk_result(changes)

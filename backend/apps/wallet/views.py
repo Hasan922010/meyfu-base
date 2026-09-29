@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.response import ok
+from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseReadOnlyViewSet
 from apps.users.constants import Role
 
@@ -20,7 +21,12 @@ from .serializers import (
     WalletSerializer,
     WalletTransactionSerializer,
 )
-from .services import get_or_create_wallet, wallet_apply
+from .services import (
+    get_or_create_wallet,
+    wallet_apply,
+    wallet_opening_bulk,
+    wallet_opening_sheet,
+)
 
 User = get_user_model()
 
@@ -49,13 +55,38 @@ class WalletViewSet(BaseReadOnlyViewSet):
     queryset = DistributorWallet.objects.select_related("distributor")
     read_roles = _READ
     filterset_fields = ("distributor",)
-    action_roles = {"opening_balance": (Role.SUPER_ADMIN,)}
+    action_roles = {
+        "opening_balance": (Role.SUPER_ADMIN,),
+        "opening_sheet": (Role.SUPER_ADMIN,),
+        "opening_balance_bulk": (Role.SUPER_ADMIN,),
+    }
 
     def get_queryset(self) -> QuerySet[DistributorWallet]:
         qs = super().get_queryset()
         if _is_distributor(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
+
+    @extend_schema(
+        summary="Boshlang'ich balans uchun xodimlar ro'yxati (hamyon balansi bilan)",
+        responses=OpeningSheetRowSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], url_path="opening-sheet")
+    def opening_sheet(self, request: Request) -> Response:
+        return ok(OpeningSheetRowSerializer(wallet_opening_sheet(), many=True).data)
+
+    @extend_schema(
+        summary="Xodimlar balansini ro'yxatdan kiritish (yakuniy qiymat, ±)",
+        request=OpeningBulkSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="opening-balance/bulk")
+    def opening_balance_bulk(self, request: Request) -> Response:
+        s = OpeningBulkSerializer(data=request.data, context={"decimal_places": 2})
+        s.is_valid(raise_exception=True)
+        return ok(wallet_opening_bulk(
+            rows=s.validated_data["rows"], note=s.validated_data["note"],
+            user=request.user,
+        ))
 
     @extend_schema(
         summary="Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun)",
