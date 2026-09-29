@@ -1712,6 +1712,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Client'
           description: ''
+  /api/v1/clients/{id}/statement/:
+    get:
+      operationId: clients_statement_retrieve
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: 'Solishtirma dalolatnoma (akt-sverka) — v5: C2'
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: fmt
+        schema:
+          type: string
+          enum:
+          - json
+          - pdf
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this mijoz.
+        required: true
+      tags:
+      - clients
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/clients/opening-balance/:
     post:
       operationId: clients_opening_balance_create
@@ -5379,6 +5422,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
           description: ''
+  /api/v1/products/import/:
+    post:
+      operationId: products_import_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: 'Mahsulotlarni Excel''dan import (v5: B1)'
+      tags:
+      - products
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                dry_run:
+                  type: boolean
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/products/import-template/:
+    get:
+      operationId: products_import_template_retrieve
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Import uchun Excel shablon
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/v1/products/search/:
     get:
       operationId: products_search_retrieve
@@ -5997,6 +6091,29 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/reports/distributor-locations/:
+    get:
+      operationId: reports_distributor_locations_retrieve
+      description: 'Tarqatuvchilarning bugungi oxirgi nuqtasi (faqat tashrif/sotuv
+        paytida) — v5: B2.'
+      summary: Tarqatuvchilar xaritasi (oxirgi tashrif/sotuv nuqtasi)
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/reports/distributor/{id}/full/:
     get:
       operationId: reports_distributor_full_retrieve
@@ -6077,6 +6194,33 @@ paths:
           - week
           - year
           - yesterday
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/expense-anomalies/:
+    get:
+      operationId: reports_expense_anomalies_retrieve
+      description: 'Odatdagidan ancha katta xarajatlar (v5: C5) — ko''rib chiqish
+        uchun signal.'
+      summary: Xarajat anomaliyalari (z-score)
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
       tags:
       - reports
       security:
@@ -6172,6 +6316,43 @@ paths:
                 type: string
                 format: binary
           description: ''
+  /api/v1/reports/export-1c/:
+    get:
+      operationId: reports_export_1c_retrieve
+      description: '1C uchun fayl eksporti — XML yoki CSV (v5: C6).'
+      summary: 1C uchun eksport (sotuv, qaytarish, to'lov)
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: fmt
+        schema:
+          type: string
+          enum:
+          - csv
+          - xml
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/v1/reports/profit/:
     get:
       operationId: reports_profit_retrieve
@@ -6247,6 +6428,35 @@ paths:
         name: route
         schema:
           type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/reorder/:
+    get:
+      operationId: reports_reorder_retrieve
+      description: 'Buyurtma tavsiyasi (v5: C1) — omborchi ham ko''radi, o''z filiali
+        bo''yicha.'
+      summary: Qoldiq prognozi va buyurtma tavsiyasi
+      parameters:
+      - in: query
+        name: cover
+        schema:
+          type: integer
+        description: Necha kunlik zaxira kerak (1–90, default 14)
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: O'rtacha sotuv davri (7–180, default 28)
       tags:
       - reports
       security:
@@ -6485,6 +6695,82 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/routes/{id}/optimize/:
+    get:
+      operationId: routes_optimize_retrieve
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: 'Marshrutni optimallashtirish taklifi (v5: C4) — yozmaydi'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this marshrut.
+        required: true
+      - in: query
+        name: start_lat
+        schema:
+          type: number
+          format: double
+      - in: query
+        name: start_lng
+        schema:
+          type: number
+          format: double
+      tags:
+      - routes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/routes/{id}/reorder/:
+    post:
+      operationId: routes_reorder_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: 'Marshrutdagi tashrif tartibini saqlash (v5: C4)'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this marshrut.
+        required: true
+      tags:
+      - routes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clients:
+                  type: array
+                  items:
+                    type: string
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/routes/my/:
     get:
       operationId: routes_my_retrieve
@@ -9753,6 +10039,10 @@ components:
         route_name:
           type: string
           readOnly: true
+        route_order:
+          type: integer
+          readOnly: true
+          title: Marshrutdagi tartib
         client_type:
           allOf:
           - $ref: '#/components/schemas/ClientTypeEnum'
@@ -9820,6 +10110,7 @@ components:
       - id
       - name
       - route_name
+      - route_order
       - updated_at
     ClientLite:
       type: object
@@ -15936,6 +16227,9 @@ components:
           format: uuid
           readOnly: true
           title: Tarqatuvchi
+        distributor_name:
+          type: string
+          readOnly: true
         client:
           type: string
           format: uuid
@@ -15989,6 +16283,7 @@ components:
       - created_at
       - date
       - distributor
+      - distributor_name
       - id
       - items
       - note

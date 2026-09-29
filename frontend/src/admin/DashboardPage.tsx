@@ -7,6 +7,8 @@ import { reportsApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
 import { money } from '@/shared/lib/format';
 
+import { DistributorsMap } from './DistributorsMap';
+
 function Kpi({ label, value, accent }: { label: string; value: string; accent?: string }): ReactElement {
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
@@ -86,6 +88,8 @@ export function DashboardPage(): ReactElement {
                 </ul>
               </section>
             </div>
+
+            <DistributorsMap />
 
             <section className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
               <h2 className="mb-2 font-semibold">Jonli lenta</h2>

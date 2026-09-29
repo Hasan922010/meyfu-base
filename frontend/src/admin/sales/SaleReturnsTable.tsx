@@ -92,7 +92,7 @@ export function SaleReturnsTable(): ReactElement {
                             <li key={it.id} className="flex justify-between">
                               <span>{it.product_name}</span>
                               <span>
-                                {it.quantity} × {money(it.price)} = {money(it.amount)}
+                                {it.quantity} × {money(it.price ?? 0)} = {money(it.amount ?? 0)}
                               </span>
                             </li>
                           ))}

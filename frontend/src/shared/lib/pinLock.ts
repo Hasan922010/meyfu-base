@@ -25,7 +25,10 @@ async function derive(pin: string, salt: Uint8Array): Promise<string> {
     'raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits'],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: 150_000, hash: 'SHA-256' }, key, 256,
+    // TS 5.7+: Uint8Array<ArrayBufferLike> ≠ BufferSource — nusxa ArrayBuffer'ga bog'lanadi
+    { name: 'PBKDF2', salt: new Uint8Array(salt), iterations: 150_000, hash: 'SHA-256' },
+    key,
+    256,
   );
   return toB64(bits);
 }

@@ -4,6 +4,8 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
 import { DataState } from '@/shared/components/DataState';
+import { MapView, type MapPoint } from '@/shared/components/map/MapView';
+import { toPoint } from '@/shared/components/map/mapPoints';
 
 /**
  * v5 C4: marshrut tartibini optimallashtirish — eng yaqin qo'shni + 2-opt.
@@ -61,6 +63,14 @@ export function RouteOptimizer({
               {data.without_location > 0 &&
                 ` Joylashuvi yo‘q ${data.without_location} ta mijoz oxirida qoldi.`}
             </p>
+            <MapView
+              points={data.clients
+                .map((c) => toPoint(c.id, c.latitude, c.longitude, c.name))
+                .filter((p): p is MapPoint => p !== null)}
+              connect
+              numbered
+              height={260}
+            />
             <ol className="max-h-72 space-y-1 overflow-y-auto">
               {data.clients.map((c) => (
                 <li

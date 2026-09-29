@@ -32,3 +32,17 @@ body {
       aria-[invalid=true]:border-danger aria-[invalid=true]:focus:ring-danger/30;
   }
 }
+
+/* v5 B2: xaritadagi tartib raqami (marshrut) — fon va o'q ko'rinmasin */
+.leaflet-tooltip.map-num {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 0;
+}
+.leaflet-tooltip.map-num::before {
+  display: none;
+}

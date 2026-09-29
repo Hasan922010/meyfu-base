@@ -46,6 +46,7 @@ from .services.branch import (
 )
 from .services.branch_compare import branch_comparison, comparison_rows_for_export
 from .services.expense_anomalies import expense_anomalies
+from .services.locations import distributor_locations
 from .services.onec import export_1c_csv, export_1c_xml
 from .services.reorder import reorder_suggestions
 from .services.branch import (
@@ -539,3 +540,16 @@ class OneCExportView(_ReportView):
             f'attachment; filename="1c-{df:%Y%m%d}-{dt:%Y%m%d}.{fmt}"'
         )
         return response
+
+
+class DistributorLocationsView(_ReportView):
+    """Tarqatuvchilarning bugungi oxirgi nuqtasi (faqat tashrif/sotuv paytida) — v5: B2."""
+
+    @extend_schema(
+        summary="Tarqatuvchilar xaritasi (oxirgi tashrif/sotuv nuqtasi)",
+        parameters=[OpenApiParameter("date", str, required=False)],
+        request=None, responses={200: dict},
+    )
+    def get(self, request: Request) -> Response:
+        day = parse_date(request.query_params.get("date", "")) or business_date()
+        return ok(distributor_locations(day=day, branch=self._scope(request)))

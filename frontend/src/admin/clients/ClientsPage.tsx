@@ -19,6 +19,7 @@ import { useServerTable } from '@/shared/table/useServerTable';
 import type { Client } from '@/shared/types/clients';
 
 import { ClientForm } from './ClientForm';
+import { ClientsMap } from './ClientsMap';
 import { ClientStatement } from './ClientStatement';
 
 export function ClientsPage(): ReactElement {
@@ -40,6 +41,7 @@ export function ClientsPage(): ReactElement {
   const { page, setPage } = table;
   const [editing, setEditing] = useState<Client | null>(null);
   const [statementOf, setStatementOf] = useState<Client | null>(null);
+  const [view, setView] = useState<'list' | 'map'>('list');
   const [creating, setCreating] = useState<boolean>(false);
 
   const routes = useQuery({
@@ -75,11 +77,20 @@ export function ClientsPage(): ReactElement {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Mijozlar</h1>
-        {canWrite && (
-          <button className="btn-brand px-4" onClick={() => setCreating(true)}>
-            + Mijoz
+        <div className="flex gap-2">
+          <button
+            className="btn px-4"
+            aria-pressed={view === 'map'}
+            onClick={() => setView(view === 'map' ? 'list' : 'map')}
+          >
+            {view === 'map' ? "Ro'yxat" : 'Xarita'}
           </button>
-        )}
+          {canWrite && (
+            <button className="btn-brand px-4" onClick={() => setCreating(true)}>
+              + Mijoz
+            </button>
+          )}
+        </div>
       </div>
 
       <TableToolbar
@@ -98,7 +109,13 @@ export function ClientsPage(): ReactElement {
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
+      {view === 'map' && <ClientsMap search={table.search} />}
+
+      <div
+        className={`overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900 ${
+          view === 'map' ? 'hidden' : ''
+        }`}
+      >
         <DataState
           isLoading={query.isLoading}
           isError={query.isError}
@@ -176,7 +193,7 @@ export function ClientsPage(): ReactElement {
         </DataState>
       </div>
 
-      {query.data && query.data.pages > 1 && (
+      {view === 'list' && query.data && query.data.pages > 1 && (
         <div className="flex items-center gap-2 text-sm">
           <button
             className="btn px-3"

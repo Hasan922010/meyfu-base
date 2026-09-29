@@ -1,5 +1,4 @@
 import { api } from '@/shared/api/client';
-import { api } from '@/shared/api/client';
 import { retrieve, type QueryParams } from '@/shared/api/crud';
 
 export type ReportDimension =
@@ -111,7 +110,21 @@ export interface ExpenseAnomalyRow {
   description: string;
 }
 
+export interface DistributorLocation {
+  id: string;
+  name: string;
+  latitude: string | null;
+  longitude: string | null;
+  at: string | null;
+  place: string | null;
+  sales_count: number;
+  sales_amount: string;
+}
+
 export const reportsAdvancedApi = {
+  /** v5 B2: tarqatuvchilarning bugungi oxirgi tashrif/sotuv nuqtasi */
+  distributorLocations: () =>
+    retrieve<{ date: string; rows: DistributorLocation[] }>('/reports/distributor-locations/'),
   /** v5 C6: 1C uchun XML/CSV fayl */
   export1c: async (params: QueryParams): Promise<Blob> => {
     const resp = await api.get(`/reports/export-1c/${toQ(params)}`, { responseType: 'blob' });

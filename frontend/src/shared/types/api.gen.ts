@@ -707,6 +707,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clients/{id}/statement/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Solishtirma dalolatnoma (akt-sverka) — v5: C2
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["clients_statement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clients/opening-balance/": {
         parameters: {
             query?: never;
@@ -2431,6 +2453,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/import/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mahsulotlarni Excel'dan import (v5: B1)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["products_import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/import-template/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Import uchun Excel shablon
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["products_import_template_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/search/": {
         parameters: {
             query?: never;
@@ -2707,6 +2773,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/distributor-locations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tarqatuvchilar xaritasi (oxirgi tashrif/sotuv nuqtasi)
+         * @description Tarqatuvchilarning bugungi oxirgi nuqtasi (faqat tashrif/sotuv paytida) — v5: B2.
+         */
+        get: operations["reports_distributor_locations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/distributor/{id}/full/": {
         parameters: {
             query?: never;
@@ -2739,6 +2825,26 @@ export interface paths {
          * @description MANAGER/ADMIN/ACCOUNTANT — istalgan tarqatuvchi; DISTRIBUTOR — faqat o'zi.
          */
         get: operations["reports_distributor_timeline_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/expense-anomalies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Xarajat anomaliyalari (z-score)
+         * @description Odatdagidan ancha katta xarajatlar (v5: C5) — ko'rib chiqish uchun signal.
+         */
+        get: operations["reports_expense_anomalies_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2781,6 +2887,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/export-1c/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 1C uchun eksport (sotuv, qaytarish, to'lov)
+         * @description 1C uchun fayl eksporti — XML yoki CSV (v5: C6).
+         */
+        get: operations["reports_export_1c_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/profit/": {
         parameters: {
             query?: never;
@@ -2807,6 +2933,26 @@ export interface paths {
         };
         /** Hisobot konstruktori — o'lcham bo'yicha agregatsiya */
         get: operations["reports_query_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Qoldiq prognozi va buyurtma tavsiyasi
+         * @description Buyurtma tavsiyasi (v5: C1) — omborchi ham ko'radi, o'z filiali bo'yicha.
+         */
+        get: operations["reports_reorder_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2892,6 +3038,50 @@ export interface paths {
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
          */
         patch: operations["routes_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/routes/{id}/optimize/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Marshrutni optimallashtirish taklifi (v5: C4) — yozmaydi
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["routes_optimize_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/routes/{id}/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marshrutdagi tashrif tartibini saqlash (v5: C4)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["routes_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/routes/my/": {
@@ -4571,6 +4761,8 @@ export interface components {
              */
             route?: string | null;
             readonly route_name: string;
+            /** Marshrutdagi tartib */
+            readonly route_order: number;
             /** Turi */
             client_type?: components["schemas"]["ClientTypeEnum"];
             readonly client_type_display: string;
@@ -8483,6 +8675,7 @@ export interface components {
              * Format: uuid
              */
             readonly distributor: string;
+            readonly distributor_name: string;
             /**
              * Mijoz
              * Format: uuid
@@ -10554,6 +10747,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
+    clients_statement_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                fmt?: "json" | "pdf";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this mijoz. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -13308,6 +13529,54 @@ export interface operations {
             };
         };
     };
+    products_import_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                    dry_run?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    products_import_template_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
     products_search_retrieve: {
         parameters: {
             query: {
@@ -13789,6 +14058,29 @@ export interface operations {
             };
         };
     };
+    reports_distributor_locations_retrieve: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     reports_distributor_full_retrieve: {
         parameters: {
             query?: {
@@ -13827,6 +14119,30 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_expense_anomalies_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -13895,6 +14211,30 @@ export interface operations {
             };
         };
     };
+    reports_export_1c_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                fmt?: "csv" | "xml";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xml": string;
+                    "text/csv": string;
+                };
+            };
+        };
+    };
     reports_profit_retrieve: {
         parameters: {
             query?: {
@@ -13931,6 +14271,32 @@ export interface operations {
                 payment_type?: string;
                 product?: string;
                 route?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_reorder_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Necha kunlik zaxira kerak (1–90, default 14) */
+                cover?: number;
+                /** @description O'rtacha sotuv davri (7–180, default 28) */
+                days?: number;
             };
             header?: never;
             path?: never;
@@ -14123,6 +14489,63 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Route"];
+                };
+            };
+        };
+    };
+    routes_optimize_retrieve: {
+        parameters: {
+            query?: {
+                start_lat?: number;
+                start_lng?: number;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this marshrut. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    routes_reorder_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this marshrut. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clients?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

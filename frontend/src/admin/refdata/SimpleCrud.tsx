@@ -32,7 +32,7 @@ interface Props {
   /** Jadvalda ko'rsatiladigan ustunlar (fields nomlari yoki o'qish uchun maydonlar) */
   columns: string[];
   /** Field bo'lmagan ustunlar sarlavhasi (masalan `manager_name`) */
-  columnLabels?: Record<string, string>;
+  columnLabels?: Record<string, string> | undefined;
   canWrite: boolean;
 }
 
