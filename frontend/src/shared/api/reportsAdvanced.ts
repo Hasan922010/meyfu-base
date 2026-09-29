@@ -1,4 +1,5 @@
 import { api } from '@/shared/api/client';
+import { api } from '@/shared/api/client';
 import { retrieve, type QueryParams } from '@/shared/api/crud';
 
 export type ReportDimension =
@@ -111,6 +112,11 @@ export interface ExpenseAnomalyRow {
 }
 
 export const reportsAdvancedApi = {
+  /** v5 C6: 1C uchun XML/CSV fayl */
+  export1c: async (params: QueryParams): Promise<Blob> => {
+    const resp = await api.get(`/reports/export-1c/${toQ(params)}`, { responseType: 'blob' });
+    return resp.data as Blob;
+  },
   /** v5 C5: odatdagidan katta xarajatlar (z-score) */
   expenseAnomalies: (params: QueryParams) =>
     retrieve<{ threshold: number; rows: ExpenseAnomalyRow[] }>(

@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from apps.core.branch import NO_BRANCH, branch_scope, scope_queryset
 from apps.core.business_day import business_date
+from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.users.constants import Role
@@ -45,6 +46,7 @@ from .services.branch import (
 )
 from .services.branch_compare import branch_comparison, comparison_rows_for_export
 from .services.expense_anomalies import expense_anomalies
+from .services.onec import export_1c_csv, export_1c_xml
 from .services.reorder import reorder_suggestions
 from .services.branch import (
     branch_activity,
@@ -501,3 +503,39 @@ class ExpenseAnomaliesView(_ReportView):
     def get(self, request: Request) -> Response:
         df, dt = self._range(request)
         return ok(expense_anomalies(date_from=df, date_to=dt, branch=self._scope(request)))
+
+
+class OneCExportView(_ReportView):
+    """1C uchun fayl eksporti — XML yoki CSV (v5: C6)."""
+
+    @extend_schema(
+        summary="1C uchun eksport (sotuv, qaytarish, to'lov)",
+        parameters=[
+            OpenApiParameter("date_from", str, required=False),
+            OpenApiParameter("date_to", str, required=False),
+            OpenApiParameter("fmt", str, required=False, enum=["xml", "csv"]),
+        ],
+        request=None,
+        responses={(200, "application/xml"): bytes, (200, "text/csv"): bytes},
+    )
+    def get(self, request: Request) -> HttpResponse:
+        df, dt = self._range(request)
+        fmt = request.query_params.get("fmt", "xml")
+        if fmt not in ("xml", "csv"):
+            raise ValidationError({"fmt": "xml yoki csv bo'lishi kerak."})
+        branch = self._scope(request)
+        if fmt == "csv":
+            content = export_1c_csv(date_from=df, date_to=dt, branch=branch)
+            content_type = "text/csv; charset=utf-8"
+        else:
+            content = export_1c_xml(date_from=df, date_to=dt, branch=branch)
+            content_type = "application/xml; charset=utf-8"
+        AuditLog.objects.create(
+            user=request.user, action="export.1c", model_name="Sale",
+            changes={"fmt": fmt, "date_from": df.isoformat(), "date_to": dt.isoformat()},
+        )
+        response = HttpResponse(content, content_type=content_type)
+        response["Content-Disposition"] = (
+            f'attachment; filename="1c-{df:%Y%m%d}-{dt:%Y%m%d}.{fmt}"'
+        )
+        return response

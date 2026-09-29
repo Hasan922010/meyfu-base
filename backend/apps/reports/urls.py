@@ -13,6 +13,7 @@ from .views import (
     DistributorTimelineView,
     ExpenseAnomaliesView,
     ExpensesReportView,
+    OneCExportView,
     ProfitView,
     ReorderView,
     ReportExportView,
@@ -46,4 +47,5 @@ urlpatterns = [
     path("reports/distributor/<uuid:pk>/timeline/",
          DistributorTimelineView.as_view(), name="reports-distributor-timeline"),
     path("reports/export/", ReportExportView.as_view(), name="reports-export"),
+    path("reports/export-1c/", OneCExportView.as_view(), name="reports-export-1c"),
 ]
