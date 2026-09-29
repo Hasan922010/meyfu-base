@@ -60,13 +60,13 @@ class ClientSerializer(serializers.ModelSerializer):
         model = Client
         fields = (
             "id", "name", "owner_name", "phone", "phone2", "address",
-            "latitude", "longitude", "route", "route_name",
+            "latitude", "longitude", "route", "route_name", "route_order",
             "client_type", "client_type_display",
             "debt_limit", "current_debt", "debt_available",
             "inn", "photo", "is_blocked", "note", "branch", "branch_name",
             "created_at", "updated_at",
         )
-        read_only_fields = ("id", "current_debt", "created_at", "updated_at")
+        read_only_fields = ("id", "current_debt", "route_order", "created_at", "updated_at")
 
     def validate_phone(self, value: str) -> str:
         return _clean_phone(value)

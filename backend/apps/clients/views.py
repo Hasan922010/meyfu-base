@@ -29,6 +29,7 @@ from apps.core.viewsets import BaseModelViewSet, BranchScopedMixin, EnvelopeResp
 from apps.users.constants import Role
 
 from .models import Client, ClientVisit, Route
+from .route_optimize import apply_route_order, optimize_route
 from .statement import client_statement, statement_pdf
 from .serializers import (
     ClientLiteSerializer,
@@ -100,6 +101,40 @@ class RouteViewSet(BaseModelViewSet):
             # Marshrut filialga o'tkazildi — uning mijozlari ham birga o'tadi
             Client.objects.filter(route=route).update(branch_id=route.branch_id)
 
+    @extend_schema(
+        summary="Marshrutni optimallashtirish taklifi (v5: C4) — yozmaydi",
+        parameters=[OpenApiParameter("start_lat", float, required=False),
+                    OpenApiParameter("start_lng", float, required=False)],
+        responses={200: dict},
+    )
+    @action(detail=True, methods=["get"])
+    def optimize(self, request: Request, pk: str | None = None) -> Response:
+        route = self.get_object()
+        start = None
+        lat, lng = request.query_params.get("start_lat"), request.query_params.get("start_lng")
+        if lat and lng:
+            try:
+                start = (float(lat), float(lng))
+            except ValueError as exc:
+                raise BusinessError(message="Boshlanish nuqtasi noto'g'ri.",
+                                    code="INVALID_START") from exc
+        return ok(optimize_route(route, start=start))
+
+    @extend_schema(
+        summary="Marshrutdagi tashrif tartibini saqlash (v5: C4)",
+        request={"application/json": {"type": "object", "properties": {
+            "clients": {"type": "array", "items": {"type": "string"}}}}},
+        responses={200: dict},
+    )
+    @action(detail=True, methods=["post"])
+    def reorder(self, request: Request, pk: str | None = None) -> Response:
+        route = self.get_object()
+        ids = request.data.get("clients")
+        if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
+            raise BusinessError(message="Mijozlar ro'yxati kerak.", code="INVALID_ORDER")
+        count = apply_route_order(route, ids, user=request.user)
+        return ok({"route": str(route.id), "clients": count})
+
     @extend_schema(summary="Mening marshrutlarim (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my")
     def my(self, request: Request) -> Response:
@@ -120,8 +155,8 @@ class ClientViewSet(BaseModelViewSet):
     search_fields = ("name", "owner_name", "phone", "phone2", "inn")
     # Admin jadvalidagi har bir ustun (UI: shared/table)
     ordering_fields = (
-        "name", "owner_name", "phone", "route__name", "current_debt", "debt_limit",
-        "is_blocked", "created_at",
+        "name", "owner_name", "phone", "route__name", "route_order", "current_debt",
+        "debt_limit", "is_blocked", "created_at",
     )
     action_roles = {
         "opening_balance": _MANAGE,

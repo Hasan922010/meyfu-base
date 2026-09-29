@@ -24,7 +24,12 @@ export function MyClientsPage(): ReactElement {
   const query = useQuery({
     queryKey: ['clients', 'mine', search],
     queryFn: () =>
-      clientsApi.list({ search: search || undefined, page_size: 100 }),
+      // Marshrut tartibida (v5 C4 — optimallashtirilgan tashrif ketma-ketligi)
+      clientsApi.list({
+        search: search || undefined,
+        page_size: 100,
+        ordering: 'route__name,route_order,name',
+      }),
   });
 
   const rows = query.data?.results ?? [];

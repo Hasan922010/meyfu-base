@@ -39,6 +39,22 @@ export interface ClientStatement {
   rows: StatementRow[];
 }
 
+/** v5 C4: marshrut optimallashtirish taklifi */
+export interface RouteOptimization {
+  route: string;
+  km_before: number;
+  km_after: number;
+  without_location: number;
+  clients: Array<{
+    id: string;
+    name: string;
+    address: string;
+    order: number;
+    latitude: string | null;
+    longitude: string | null;
+  }>;
+}
+
 interface ClientHistory {
   visits: ClientVisit[];
 }
@@ -67,6 +83,9 @@ export const clientsApi = {
 
   routes: (params?: QueryParams) => listPage<Route>('/routes/', params),
   myRoutes: () => retrieve<Route[]>('/routes/my/'),
+  optimizeRoute: (id: string) => retrieve<RouteOptimization>(`/routes/${id}/optimize/`),
+  reorderRoute: (id: string, clients: string[]) =>
+    postAction<{ route: string; clients: number }>(`/routes/${id}/reorder/`, { clients }),
   createRoute: (body: RouteInput) => create<Route, RouteInput>('/routes/', body),
   updateRoute: (id: string, body: Partial<RouteInput>) =>
     patch<Route, RouteInput>(`/routes/${id}/`, body),

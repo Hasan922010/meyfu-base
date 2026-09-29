@@ -70,6 +70,8 @@ class Client(BaseModel):
         Route, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="clients", verbose_name=_("marshrut"),
     )
+    # Marshrutdagi tashrif tartibi (v5: C4 — optimallashtirish yozadi, 0 — tartibsiz)
+    route_order = models.PositiveIntegerField(_("marshrutdagi tartib"), default=0)
     client_type = models.CharField(
         _("turi"), max_length=16, choices=ClientType.choices,
         default=ClientType.SHOP,

@@ -10,6 +10,8 @@ import { Modal } from '@/shared/components/Modal';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Route } from '@/shared/types/clients';
 
+import { RouteOptimizer } from './RouteOptimizer';
+
 const WEEKDAYS: Array<{ n: number; label: string }> = [
   { n: 1, label: 'Du' },
   { n: 2, label: 'Se' },
@@ -183,6 +185,7 @@ export function RoutesPage(): ReactElement {
 
   const [editing, setEditing] = useState<Route | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
+  const [optimizing, setOptimizing] = useState<Route | null>(null);
 
   const query = useQuery({
     queryKey: ['routes'],
@@ -235,12 +238,21 @@ export function RoutesPage(): ReactElement {
                   <td className="p-3 text-right">{r.clients_count}</td>
                   {canWrite && (
                     <td className="p-3 text-right">
-                      <button
-                        className="text-brand hover:underline"
-                        onClick={() => setEditing(r)}
-                      >
-                        Tahrirlash
-                      </button>
+                      <span className="flex justify-end gap-3">
+                        <button
+                          className="text-brand hover:underline"
+                          disabled={r.clients_count < 2}
+                          onClick={() => setOptimizing(r)}
+                        >
+                          Tartibni optimallash
+                        </button>
+                        <button
+                          className="text-brand hover:underline"
+                          onClick={() => setEditing(r)}
+                        >
+                          Tahrirlash
+                        </button>
+                      </span>
                     </td>
                   )}
                 </tr>
@@ -265,6 +277,17 @@ export function RoutesPage(): ReactElement {
             setEditing(null);
           }}
         />
+      </Modal>
+
+      <Modal
+        open={optimizing !== null}
+        title={`Marshrut tartibi — ${optimizing?.name ?? ''}`}
+        size="lg"
+        onClose={() => setOptimizing(null)}
+      >
+        {optimizing && (
+          <RouteOptimizer routeId={optimizing.id} onDone={() => setOptimizing(null)} />
+        )}
       </Modal>
     </div>
   );
