@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ScanLine,
   Truck,
+  Undo2,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
@@ -29,6 +30,7 @@ const LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
   { to: '/m/loading', label: 'Yuklama', Icon: PackageOpen },
   { to: '/m/van', label: 'Mashina qoldig‘i', Icon: Truck },
   { to: '/m/debts', label: 'Qarz undirish', Icon: HandCoins },
+  { to: '/m/return/new', label: 'Tovar qaytarish', Icon: Undo2 },
   { to: '/m/expenses', label: 'Xarajatlar', Icon: Receipt },
   { to: '/m/scan', label: 'Naklit skani', Icon: ScanLine },
   { to: '/m/visits', label: 'Tashriflar', Icon: MapPin },

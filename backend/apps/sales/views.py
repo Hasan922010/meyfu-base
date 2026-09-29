@@ -281,7 +281,9 @@ class SaleReturnViewSet(BaseModelViewSet):
     ordering_fields = ("date", "created_at")
 
     def get_queryset(self) -> QuerySet[SaleReturn]:
-        qs = SaleReturn.objects.select_related("distributor", "client", "sale")
+        qs = SaleReturn.objects.select_related("distributor", "client", "sale").prefetch_related(
+            "items__product"
+        )
         if _is_distributor(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs

@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { reportsApi, salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
@@ -15,6 +15,8 @@ import { useAuthStore } from '@/shared/store/authStore';
 import { SortableTh } from '@/shared/table/SortableTh';
 import { TableToolbar, type TableFilter } from '@/shared/table/TableToolbar';
 import { useServerTable } from '@/shared/table/useServerTable';
+
+import { SaleReturnsTable } from './SaleReturnsTable';
 
 const STATUS_CLASS: Record<string, string> = {
   COMPLETED: 'text-success',
@@ -60,6 +62,7 @@ export function SalesPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
   const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
+  const [tab, setTab] = useState<'sales' | 'returns'>('sales');
 
   // Saralash/qidiruv/filtr serverda — barcha sotuvlar ustida, faqat joriy sahifada emas
   const table = useServerTable({ initialSort: { key: 'date', dir: 'desc' } });
@@ -97,6 +100,31 @@ export function SalesPage(): ReactElement {
         </button>
       </div>
 
+      <div className="flex gap-2" role="tablist">
+        {(
+          [
+            ['sales', 'Sotuvlar'],
+            ['returns', 'Qaytarishlar'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            className={`rounded-lg px-4 py-1.5 text-sm ${
+              tab === key ? 'bg-brand text-brand-fg' : 'bg-gray-100 dark:bg-gray-800'
+            }`}
+            onClick={() => setTab(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'returns' ? (
+        <SaleReturnsTable />
+      ) : (
+      <>
       <TableToolbar
         search={table.search}
         onSearch={table.setSearch}
@@ -206,6 +234,8 @@ export function SalesPage(): ReactElement {
             ›
           </button>
         </div>
+      )}
+      </>
       )}
     </div>
   );

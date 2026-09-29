@@ -123,6 +123,55 @@ export async function saveDebtPaymentLocal(input: {
   return uuid;
 }
 
+export type ReturnReason = 'BRAK' | 'MUDDAT' | 'KELISHMOVCHILIK';
+
+/**
+ * Mijozdan tovar qaytarishini AVVAL lokal outbox'ga yozadi (CLAUDE.md 4.2).
+ * `restock` bo'lsa tovar mashinaga qaytadi — lokal qoldiq ham oshadi (4.3).
+ * Sotilgandan ko'p qaytarish serverda tekshiriladi (CONFLICT bo'lib qaytadi).
+ */
+export async function saveSaleReturnLocal(input: {
+  client: string;
+  client_name: string;
+  reason: ReturnReason;
+  restock: boolean;
+  lines: LocalSaleLine[];
+  note?: string;
+}): Promise<string> {
+  const total = input.lines.reduce((s, l) => s + l.quantity * l.price, 0);
+  const uuid = await enqueue(
+    'sale_return',
+    {
+      client: input.client,
+      reason: input.reason,
+      restock: input.restock,
+      date: todayISO(),
+      device_time: new Date().toISOString(),
+      note: input.note ?? '',
+      items: input.lines.map((l) => ({
+        product: l.product,
+        quantity: String(l.quantity),
+        price: String(l.price),
+      })),
+    },
+    `Qaytarish · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
+  );
+
+  if (input.restock) {
+    await db.transaction('rw', db.van_stock, async () => {
+      for (const line of input.lines) {
+        const vs = await db.van_stock.get(line.product);
+        if (vs) {
+          await db.van_stock.update(line.product, { quantity: vs.quantity + line.quantity });
+        }
+      }
+    });
+  }
+
+  void pushOutbox();
+  return uuid;
+}
+
 export async function localVanQty(productId: string): Promise<number> {
   const vs = await db.van_stock.get(productId);
   return vs?.quantity ?? 0;

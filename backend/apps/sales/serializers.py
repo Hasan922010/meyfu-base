@@ -153,6 +153,9 @@ class SaleReturnItemSerializer(serializers.ModelSerializer):
 class SaleReturnSerializer(serializers.ModelSerializer):
     items = SaleReturnItemSerializer(many=True, read_only=True)
     client_name = serializers.CharField(source="client.name", read_only=True)
+    distributor_name = serializers.CharField(
+        source="distributor.full_name", read_only=True
+    )
     reason_display = serializers.CharField(
         source="get_reason_display", read_only=True
     )
@@ -160,7 +163,8 @@ class SaleReturnSerializer(serializers.ModelSerializer):
     class Meta:
         model = SaleReturn
         fields = (
-            "id", "number", "date", "distributor", "client", "client_name",
+            "id", "number", "date", "distributor", "distributor_name",
+            "client", "client_name",
             "sale", "reason", "reason_display", "restock", "total_amount",
             "note", "items", "created_at",
         )

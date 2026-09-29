@@ -73,6 +73,7 @@ import { MyVanStockPage } from '@/mobile/MyVanStockPage';
 import { MyVisitsPage } from '@/mobile/MyVisitsPage';
 import { MyOrdersPage } from '@/mobile/MyOrdersPage';
 import { NewExpensePage } from '@/mobile/NewExpensePage';
+import { NewReturnPage } from '@/mobile/NewReturnPage';
 import { NewOrderPage } from '@/mobile/NewOrderPage';
 import { NewSalePage } from '@/mobile/NewSalePage';
 import { ProfilePage } from '@/mobile/ProfilePage';
@@ -215,6 +216,7 @@ const router = createBrowserRouter([
       { path: 'wallet', element: <WalletPage /> },
       { path: 'expenses', element: <MyExpensesPage /> },
       { path: 'expense/new', element: <NewExpensePage /> },
+      { path: 'return/new', element: <NewReturnPage /> },
       { path: 'payroll', element: <MyPayrollPage /> },
       { path: 'report', element: <MyReportPage /> },
       { path: 'debts', element: <DebtCollectPage /> },

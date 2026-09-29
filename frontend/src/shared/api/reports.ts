@@ -7,7 +7,7 @@ import type {
   DayClose,
   DayCloseToday,
 } from '@/shared/types/dayclose';
-import type { Debt, Sale } from '@/shared/types/sales';
+import type { Debt, Sale, SaleReturn } from '@/shared/types/sales';
 
 interface SalesSummary {
   group_by: string;
@@ -35,6 +35,7 @@ export const salesApi = {
   resolve: (id: string, accept: boolean) =>
     postAction<Sale>(`/sales/${id}/resolve/`, { accept }),
   debts: (params?: QueryParams) => listPage<Debt>('/debts/', params),
+  returns: (params?: QueryParams) => listPage<SaleReturn>('/sale-returns/', params),
 };
 
 export const dayCloseApi = {
