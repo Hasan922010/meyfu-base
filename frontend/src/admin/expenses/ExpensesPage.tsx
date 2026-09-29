@@ -14,6 +14,8 @@ import { dateShort, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Expense } from '@/shared/types/finance';
 
+import { ExpenseAnomalies } from './ExpenseAnomalies';
+
 const STATUS_CLASS: Record<string, string> = {
   PENDING: 'text-pending',
   APPROVED: 'text-success',
@@ -74,6 +76,8 @@ export function ExpensesPage(): ReactElement {
           </div>
         )}
       </div>
+
+      <ExpenseAnomalies />
 
       {(approve.isError || reject.isError) && (
         <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">

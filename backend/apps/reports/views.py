@@ -44,6 +44,7 @@ from .services.branch import (
     KINDS as BRANCH_KINDS,
 )
 from .services.branch_compare import branch_comparison, comparison_rows_for_export
+from .services.expense_anomalies import expense_anomalies
 from .services.reorder import reorder_suggestions
 from .services.branch import (
     branch_activity,
@@ -484,3 +485,19 @@ class ReorderView(_ReportView):
             days=_int_param(request, "days", 28),
             cover_days=_int_param(request, "cover", 14),
         ))
+
+
+class ExpenseAnomaliesView(_ReportView):
+    """Odatdagidan ancha katta xarajatlar (v5: C5) — ko'rib chiqish uchun signal."""
+
+    @extend_schema(
+        summary="Xarajat anomaliyalari (z-score)",
+        parameters=[
+            OpenApiParameter("date_from", str, required=False),
+            OpenApiParameter("date_to", str, required=False),
+        ],
+        request=None, responses={200: dict},
+    )
+    def get(self, request: Request) -> Response:
+        df, dt = self._range(request)
+        return ok(expense_anomalies(date_from=df, date_to=dt, branch=self._scope(request)))

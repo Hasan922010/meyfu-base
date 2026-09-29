@@ -97,7 +97,25 @@ export interface ReorderResult {
   rows: ReorderRow[];
 }
 
+export interface ExpenseAnomalyRow {
+  id: string;
+  date: string;
+  distributor: string;
+  category: string;
+  amount: string;
+  typical: string;
+  times_typical: number | null;
+  z_score: number;
+  status: string;
+  description: string;
+}
+
 export const reportsAdvancedApi = {
+  /** v5 C5: odatdagidan katta xarajatlar (z-score) */
+  expenseAnomalies: (params: QueryParams) =>
+    retrieve<{ threshold: number; rows: ExpenseAnomalyRow[] }>(
+      `/reports/expense-anomalies/${toQ(params)}`,
+    ),
   /** v5 C1: qoldiq prognozi va buyurtma tavsiyasi */
   reorder: (params: QueryParams) =>
     retrieve<ReorderResult>(`/reports/reorder/${toQ(params)}`),
