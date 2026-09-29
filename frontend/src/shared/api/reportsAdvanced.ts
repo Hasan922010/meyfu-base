@@ -78,7 +78,29 @@ function toQ(params?: QueryParams): string {
     : '';
 }
 
+export interface ReorderRow {
+  product: string;
+  name: string;
+  sku: string;
+  avg_daily: string;
+  stock: string;
+  on_vans: string;
+  days_left: string | null;
+  suggested: string;
+  status: 'URGENT' | 'SOON' | 'OK';
+}
+
+export interface ReorderResult {
+  days: number;
+  cover_days: number;
+  since: string;
+  rows: ReorderRow[];
+}
+
 export const reportsAdvancedApi = {
+  /** v5 C1: qoldiq prognozi va buyurtma tavsiyasi */
+  reorder: (params: QueryParams) =>
+    retrieve<ReorderResult>(`/reports/reorder/${toQ(params)}`),
   query: (params: QueryParams) =>
     retrieve<ReportQueryResult>(`/reports/query/${toQ(params)}`),
   abc: (params: QueryParams) => retrieve<AbcResult>(`/reports/abc/${toQ(params)}`),

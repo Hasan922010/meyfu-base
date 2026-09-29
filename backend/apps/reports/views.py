@@ -44,6 +44,7 @@ from .services.branch import (
     KINDS as BRANCH_KINDS,
 )
 from .services.branch_compare import branch_comparison, comparison_rows_for_export
+from .services.reorder import reorder_suggestions
 from .services.branch import (
     branch_activity,
     branch_activity_rows_for_export,
@@ -452,3 +453,34 @@ class ReportExportView(_ReportView):
         response = HttpResponse(content, content_type=_XLSX_CT)
         response["Content-Disposition"] = f'attachment; filename="{base}.xlsx"'
         return response
+
+
+def _int_param(request: Request, name: str, default: int) -> int:
+    raw = request.query_params.get(name, "")
+    try:
+        return int(raw) if raw else default
+    except ValueError as exc:
+        raise ValidationError({name: "Butun son kiriting."}) from exc
+
+
+class ReorderView(_ReportView):
+    """Buyurtma tavsiyasi (v5: C1) — omborchi ham ko'radi, o'z filiali bo'yicha."""
+
+    read_roles = _BRANCH_ROLES
+
+    @extend_schema(
+        summary="Qoldiq prognozi va buyurtma tavsiyasi",
+        parameters=[
+            OpenApiParameter("days", int, required=False,
+                             description="O'rtacha sotuv davri (7–180, default 28)"),
+            OpenApiParameter("cover", int, required=False,
+                             description="Necha kunlik zaxira kerak (1–90, default 14)"),
+        ],
+        request=None, responses={200: dict},
+    )
+    def get(self, request: Request) -> Response:
+        return ok(reorder_suggestions(
+            branch=self._scope(request),
+            days=_int_param(request, "days", 28),
+            cover_days=_int_param(request, "cover", 14),
+        ))
