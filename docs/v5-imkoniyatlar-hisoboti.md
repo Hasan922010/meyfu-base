@@ -90,7 +90,7 @@ Backend: 467 test o'tadi · Frontend: 176 unit test o'tadi · `tsc` va ESLint to
 ## F. Bajarilish holati (29.09.2026)
 
 Barcha 22 band bajarildi (`feat/branch-isolation` branch, lokal commitlar, push qilinmagan).
-Backend: **515 test** o'tadi · Frontend: **199 unit test**, `tsc -b`, ESLint va `vite build` toza.
+Backend: **515 test** o'tadi · Frontend: **191 unit test**, `tsc -b`, ESLint va `vite build` toza.
 
 | # | Holat | Qayerda |
 |---|---|---|
