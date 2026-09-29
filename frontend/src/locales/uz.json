@@ -40,6 +40,7 @@
     "warehouse": "Ombor",
     "branches": "Filiallar",
     "audit": "Audit jurnali",
+    "syncLog": "Sinxronizatsiya jurnali",
     "settings": "Sozlamalar",
     "routes": "Marshrutlar",
     "dayClose": "Kunlik hisob",

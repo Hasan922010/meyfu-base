@@ -40,6 +40,7 @@
     "warehouse": "Warehouse",
     "branches": "Branches",
     "audit": "Audit log",
+    "syncLog": "Sync log",
     "settings": "Settings",
     "routes": "Routes",
     "dayClose": "Day close",

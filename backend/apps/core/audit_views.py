@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import django_filters
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from rest_framework import serializers
 
 from apps.users.constants import Role
@@ -21,13 +21,30 @@ class SyncLogSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class SyncLogFilter(django_filters.FilterSet):
+    date_from = django_filters.DateFilter(field_name="created_at", lookup_expr="date__gte")
+    date_to = django_filters.DateFilter(field_name="created_at", lookup_expr="date__lte")
+    # Faqat konflikt yoki xatosi bor sinxronizatsiyalar
+    problems = django_filters.BooleanFilter(method="filter_problems")
+
+    class Meta:
+        model = SyncLog
+        fields = ("user", "device_id", "date_from", "date_to", "problems")
+
+    def filter_problems(self, queryset, name, value):
+        if not value:
+            return queryset
+        return queryset.filter(Q(conflicts_count__gt=0) | Q(errors_count__gt=0))
+
+
 class SyncLogViewSet(BaseReadOnlyViewSet):
     """Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o'z filiali."""
 
     serializer_class = SyncLogSerializer
     read_roles = (Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT)
     branch_lookup = "user__warehouse"
-    filterset_fields = ("user",)
+    filterset_class = SyncLogFilter
+    search_fields = ("user__full_name", "device_id")
     ordering = ("-created_at",)
 
     def get_queryset(self) -> QuerySet[SyncLog]:
