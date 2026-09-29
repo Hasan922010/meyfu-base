@@ -10,6 +10,22 @@ import type {
   Unit,
 } from '@/shared/types/catalog';
 
+export interface ProductImportRow {
+  row: number;
+  sku: string;
+  action: 'CREATE' | 'UPDATE' | 'SKIP' | 'ERROR';
+  errors: string[];
+}
+
+export interface ProductImportReport {
+  dry_run: boolean;
+  created: number;
+  updated: number;
+  unchanged: number;
+  errors: number;
+  rows: ProductImportRow[];
+}
+
 export const catalogApi = {
   products: (params?: QueryParams) => listPage<Product>('/products/', params),
   product: (id: string) =>
@@ -41,6 +57,21 @@ export const catalogApi = {
   },
   deleteImage: (productId: string, imageId: string) =>
     api.delete(`/products/${productId}/images/${imageId}/`),
+
+  /** v5 B1: Excel import. dry_run=true — faqat tekshiradi, hech narsa yozmaydi. */
+  importProducts: async (file: File, dryRun: boolean): Promise<ProductImportReport> => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('dry_run', dryRun ? 'true' : 'false');
+    const { data } = await api.post<ApiSuccess<ProductImportReport>>('/products/import/', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.data;
+  },
+  importTemplate: async (): Promise<Blob> => {
+    const resp = await api.get('/products/import-template/', { responseType: 'blob' });
+    return resp.data as Blob;
+  },
 
   categories: (params?: QueryParams) => listPage<Category>('/categories/', params),
   createCategory: (body: { name: string; parent?: string | null }) =>

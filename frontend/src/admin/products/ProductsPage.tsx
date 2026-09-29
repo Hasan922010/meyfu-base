@@ -12,6 +12,7 @@ import { useServerTable } from '@/shared/table/useServerTable';
 import type { Product } from '@/shared/types/catalog';
 
 import { ProductForm } from './ProductForm';
+import { ProductImport } from './ProductImport';
 
 export function ProductsPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
@@ -22,6 +23,7 @@ export function ProductsPage(): ReactElement {
   const { page, setPage } = table;
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
+  const [importing, setImporting] = useState<boolean>(false);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -57,9 +59,14 @@ export function ProductsPage(): ReactElement {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Mahsulotlar</h1>
         {canWrite && (
-          <button className="btn-brand px-4" onClick={() => setCreating(true)}>
-            + Mahsulot
-          </button>
+          <div className="flex gap-2">
+            <button className="btn px-4" onClick={() => setImporting(true)}>
+              Excel'dan import
+            </button>
+            <button className="btn-brand px-4" onClick={() => setCreating(true)}>
+              + Mahsulot
+            </button>
+          </div>
         )}
       </div>
 
@@ -181,6 +188,15 @@ export function ProductsPage(): ReactElement {
             setEditing(null);
           }}
         />
+      </Modal>
+
+      <Modal
+        open={importing}
+        title="Mahsulotlarni Excel'dan import"
+        size="lg"
+        onClose={() => setImporting(false)}
+      >
+        <ProductImport onDone={() => setImporting(false)} />
       </Modal>
     </div>
   );

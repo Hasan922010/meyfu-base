@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db.models import Q, QuerySet
+from django.http import HttpResponse
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
@@ -10,17 +11,20 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.branch import user_branch
+from apps.core.exceptions import BusinessError
 from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.constants import Role
 from apps.warehouse.constants import MovementType
+from apps.reports.export import rows_to_xlsx
 from apps.warehouse.services import apply_movement
 
 from .filters import ProductFilter
 from .models import BranchPrice, Brand, Category, Product, ProductImage, Unit
 from .pricing import PRICE_FIELDS, branch_price_map
+from .services.product_import import TEMPLATE_HEADER, import_products
 from .serializers import (
     BranchPriceSerializer,
     BrandSerializer,
@@ -41,6 +45,7 @@ from .services import (
 )
 
 _CATALOG_WRITE = (Role.MANAGER, Role.SUPER_ADMIN)
+_XLSX_CT = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 class CategoryViewSet(BaseModelViewSet):
@@ -86,6 +91,8 @@ class ProductViewSet(BaseModelViewSet):
     action_roles = {
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
+        "import_excel": _CATALOG_WRITE,
+        "import_template": _CATALOG_WRITE,
     }
 
     def get_serializer_context(self) -> dict:
@@ -214,6 +221,35 @@ class ProductViewSet(BaseModelViewSet):
         return ok(
             ProductPriceSerializer(product.price_history.all(), many=True).data
         )
+
+    @extend_schema(
+        summary="Mahsulotlarni Excel'dan import (v5: B1)",
+        request={"multipart/form-data": {
+            "type": "object",
+            "properties": {"file": {"type": "string", "format": "binary"},
+                           "dry_run": {"type": "boolean"}},
+        }},
+        responses={200: dict},
+    )
+    @action(detail=False, methods=["post"], url_path="import",
+            parser_classes=[MultiPartParser, FormParser])
+    def import_excel(self, request: Request) -> Response:
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise BusinessError(message="Excel faylni tanlang.", code="FILE_REQUIRED")
+        dry_run = str(request.data.get("dry_run", "true")).lower() in ("1", "true", "yes")
+        report = import_products(upload, user=request.user, dry_run=dry_run)
+        return ok(report.as_dict())
+
+    @extend_schema(summary="Import uchun Excel shablon", responses={200: bytes})
+    @action(detail=False, methods=["get"], url_path="import-template")
+    def import_template(self, request: Request) -> HttpResponse:
+        sample = ["ARL-3", "Ariel 3 kg", "Kir yuvish kukuni", "dona", "Ariel", "",
+                  95000, 110000, 125000, 105000, 4]
+        content = rows_to_xlsx([TEMPLATE_HEADER, sample], sheet_name="Mahsulotlar")
+        response = HttpResponse(content, content_type=_XLSX_CT)
+        response["Content-Disposition"] = 'attachment; filename="mahsulot-shablon.xlsx"'
+        return response
 
 
 class BranchPriceViewSet(BaseModelViewSet):
