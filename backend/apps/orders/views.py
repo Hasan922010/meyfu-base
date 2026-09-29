@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.catalog.models import Product
 from apps.clients.models import Client
+from apps.core.exceptions import BusinessError
 from apps.core.permissions import is_order_taker
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
@@ -97,7 +98,17 @@ class OrderViewSet(BaseModelViewSet):
         s.is_valid(raise_exception=True)
         data = s.validated_data
 
-        client = Client.objects.get(pk=data["client"])
+        client = Client.objects.select_related("route").get(pk=data["client"])
+        # Zakaz oluvchi faqat o'z marshruti mijozlaridan buyurtma oladi (xavfsizlik
+        # tekshiruvi: aks holda istalgan mijoz UUID'iga buyurtma yozish mumkin edi)
+        if is_order_taker(request.user) and (
+            client.route is None or client.route.order_taker_id != request.user.id
+        ):
+            raise BusinessError(
+                message=f"«{client.name}» sizning marshrutingizda emas.",
+                code="CLIENT_NOT_ON_ROUTE",
+                details={"client_id": str(client.id)},
+            )
         taken_by = request.user
         if data.get("taken_by") and not _is_field_staff(request.user):
             taken_by = User.objects.get(pk=data["taken_by"])

@@ -205,3 +205,25 @@ def test_route_order_taker_must_have_order_taker_role(
     )
 
     assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_order_taker_cannot_order_for_client_off_own_route(
+    taker_api, taker_route, catalog
+):
+    from apps.clients.models import Client
+
+    routeless = Client.objects.create(name="Marshrutsiz do'kon")
+
+    other = taker_api.post(
+        "/api/v1/orders/", _order_body(taker_route["other_client"], catalog["product"]),
+        format="json",
+    )
+    no_route = taker_api.post(
+        "/api/v1/orders/", _order_body(routeless, catalog["product"]), format="json"
+    )
+
+    assert other.status_code == 409
+    assert other.data["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
+    assert no_route.status_code == 409
+    assert not Order.objects.exists()
