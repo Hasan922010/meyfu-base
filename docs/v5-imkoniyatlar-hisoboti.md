@@ -84,3 +84,41 @@ Backend: 467 test o'tadi · Frontend: 176 unit test o'tadi · `tsc` va ESLint to
 - **Tarqatuvchilar:** filial xodimi bo'lishi uchun tarqatuvchiga filial biriktirilishi shart
   (Xodimlar → Tahrir → «Filial / ombor»). Biriktirilmagan tarqatuvchi markaz xodimi hisoblanadi.
 - **Katalog, narx, xarajat turlari, ta'minotchilar** — umumiy, faqat markaz o'zgartiradi.
+
+---
+
+## F. Bajarilish holati (29.09.2026)
+
+Barcha 22 band bajarildi (`feat/branch-isolation` branch, lokal commitlar, push qilinmagan).
+Backend: **515 test** o'tadi · Frontend: **199 unit test**, `tsc -b`, ESLint va `vite build` toza.
+
+| # | Holat | Qayerda |
+|---|---|---|
+| A1 | ✅ `df80b2d` | Moliya → «Markazga topshirish» (filial kassasi → markaz kassasi) |
+| A2 | ✅ `df80b2d` | Sotuv, qaytarish, kun yopish, topshirish, xarajat, maosh, avansda `branch` muhrlanadi |
+| A3 | ✅ `df80b2d` | Boshlang'ich qoldiqlar — filial rahbari o'z filiali uchun kiritadi |
+| A4 | ✅ `df80b2d` | Telegram 20:00 xulosasi filial rahbariga — o'z filiali bo'yicha |
+| A5, A6 | ✅ `df80b2d` | Filiallar → «Filiallar solishtiruvi» (savdo, foyda, qarz, kassa, ko'chirish qiymati) + Excel |
+| A7 | ✅ `df80b2d` | Filiallar → filial → «Narxlar» (faqat SUPER_ADMIN o'zgartiradi) |
+| A8 | ✅ `df80b2d` | Marshrut formasida «Filial» tanlovi; marshrut ko'chsa, mijozlari ham ko'chadi |
+| B1 | ✅ `9b35518` | Mahsulotlar → «Excel'dan import» (shablon, avval tekshirish, keyin tasdiqlash) |
+| B2 | ✅ `a505c5e` | Mijozlar → «Xarita»; marshrut optimallash xaritasi; dashboard — tarqatuvchilar xaritasi |
+| B3 | ✅ `393dfce` | Mobil: Bosh → «Tovar qaytarish» (offline); admin: Sotuvlar → «Qaytarishlar» |
+| B4 | ✅ `293623d` | Mobil: Profil → «Tez kirish (PIN)» |
+| B5 | ✅ `b89e486` | Admin → «Audit jurnali» |
+| B6 | ✅ `b89e486` | `SyncLog` modeli + `/sync-logs/` API (UI sahifasi hali yo'q) |
+| B7 | ✅ `b89e486` | Sarlavhada ☀/🌙 tugmasi (admin va mobil) |
+| B8 | ✅ `df80b2d` | `.github/workflows/ci.yml` — pytest, tsc, ESLint, vitest |
+| C1 | ✅ `00d1e32` | Ombor → «Buyurtma tavsiyasi» (o'rtacha kunlik sotuv, necha kunga yetadi) |
+| C2 | ✅ `8aa99e2` | Mijozlar → «Akt-sverka» (ko'rish + PDF) |
+| C3 | ✅ `df5a854` | Mobil chek → «Printerda chop etish» (Web Bluetooth, ESC/POS; 58/80 mm Profil'da) |
+| C4 | ✅ `5fcb34e` | Marshrutlar → «Tartibni optimallash» (eng yaqin qo'shni + 2-opt, taklif → saqlash) |
+| C5 | ✅ `62ad99b` | Xarajatlar → «Odatdagidan katta xarajatlar» (z-score ≥ 2.5, jarima emas — signal) |
+| C6 | ✅ `de95d0c` | Hisobotlar → «1C eksport» (XML yoki CSV) |
+
+**Cheklovlar va eslatmalar**
+- **C3:** Web Bluetooth faqat Android Chrome'da ishlaydi (iOS Safari qo'llamaydi — u yerda PDF/ulashish qoladi). Haqiqiy printerda sinab ko'rilmagan.
+- **C4:** masofa to'g'ri chiziq (haversine) bo'yicha — yo'l xaritasi emas, lekin internet va pul talab qilmaydi.
+- **B2:** xarita plitalari OpenStreetMap'dan yuklanadi (internet kerak). Tarqatuvchi joylashuvi faqat tashrif/sotuv paytidagi nuqta — kun bo'yi kuzatuv yo'q (CLAUDE.md 8).
+- **C6:** 1C'ga to'g'ridan-to'g'ri ulanish yo'q — fayl 1C'da qayta ishlash orqali yuklanadi; 1C tomonidagi import sozlamasi buxgalter bilan kelishilishi kerak.
+- Yangi npm paket: `leaflet` (+ `@types/leaflet`) — faqat xarita ochilganda yuklanadi.
