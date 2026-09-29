@@ -7,7 +7,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { saveOrderLocal, type LocalOrderLine } from '@/offline/actions';
 import { db } from '@/offline/db';
@@ -40,7 +40,8 @@ export function NewOrderPage(): ReactElement {
   const clients = useLiveQuery(() => db.clients.orderBy('name').toArray(), [], []);
   const products = useLiveQuery(() => db.products.toArray(), [], []);
 
-  const [clientId, setClientId] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const [clientId, setClientId] = useState<string>(searchParams.get('client') ?? '');
   const [clientSearch, setClientSearch] = useState<string>('');
   const [productSearch, setProductSearch] = useState<string>('');
   const [cart, setCart] = useState<LocalOrderLine[]>([]);

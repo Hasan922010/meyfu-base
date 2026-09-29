@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.db.models import Count, QuerySet
+from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.exceptions import BusinessError
-from apps.core.permissions import RolePermission
+from apps.core.permissions import RolePermission, is_order_taker
 from apps.core.response import ok
 from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseModelViewSet, EnvelopeResponseMixin
@@ -29,32 +29,43 @@ from .serializers import (
 
 _MANAGE = (Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
+# Zakaz oluvchi — faqat marshrut va mijozlarni o'qiydi (tashrif/yozish yo'q)
+_CLIENTS_READ = (*_READ, Role.ORDER_TAKER)
 
 
 def _is_distributor(user) -> bool:
     return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
 
 
+def _own_routes(user, prefix: str = "") -> Q | None:
+    """Maydon xodimining marshrutlari filtri; admin rollar uchun `None` (hammasi)."""
+    if _is_distributor(user):
+        return Q(**{f"{prefix}distributor": user})
+    if is_order_taker(user):
+        return Q(**{f"{prefix}order_taker": user})
+    return None
+
+
 class RouteViewSet(BaseModelViewSet):
     serializer_class = RouteSerializer
     write_roles = _MANAGE
-    read_roles = _READ
+    read_roles = _CLIENTS_READ
     search_fields = ("name", "distributor__full_name")
     ordering_fields = ("name", "created_at")
 
     def get_queryset(self) -> QuerySet[Route]:
-        qs = Route.objects.select_related("distributor").annotate(
+        qs = Route.objects.select_related("distributor", "order_taker").annotate(
             clients_count=Count("clients", distinct=True)
         )
-        if _is_distributor(self.request.user):
-            return qs.filter(distributor=self.request.user)
-        return qs
+        own = _own_routes(self.request.user)
+        return qs.filter(own) if own is not None else qs
 
     @extend_schema(summary="Mening marshrutlarim (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my")
     def my(self, request: Request) -> Response:
+        own = _own_routes(request.user) or Q(distributor=request.user)
         qs = (
-            Route.objects.filter(distributor=request.user, is_active=True)
+            Route.objects.filter(own, is_active=True)
             .annotate(clients_count=Count("clients", distinct=True))
             .order_by("name")
         )
@@ -64,7 +75,7 @@ class RouteViewSet(BaseModelViewSet):
 class ClientViewSet(BaseModelViewSet):
     serializer_class = ClientSerializer
     write_roles = _MANAGE
-    read_roles = _READ
+    read_roles = _CLIENTS_READ
     filterset_fields = ("route", "client_type", "is_blocked")
     search_fields = ("name", "owner_name", "phone", "phone2", "inn")
     # Admin jadvalidagi har bir ustun (UI: shared/table)
@@ -80,9 +91,8 @@ class ClientViewSet(BaseModelViewSet):
 
     def get_queryset(self) -> QuerySet[Client]:
         qs = Client.objects.select_related("route")
-        if _is_distributor(self.request.user):
-            return qs.filter(route__distributor=self.request.user)
-        return qs
+        own = _own_routes(self.request.user, prefix="route__")
+        return qs.filter(own) if own is not None else qs
 
     @extend_schema(summary="Mijoz tarixi — tashriflar (keyinchalik sotuvlar ham)")
     @action(detail=True, methods=["get"])
@@ -194,10 +204,10 @@ class ClientVisitViewSet(
 
 
 class ClientSyncView(APIView):
-    """Offline mijoz delta (CLAUDE.md 4.1, 10). Tarqatuvchi — faqat o'z marshruti."""
+    """Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z marshruti."""
 
     permission_classes = [IsAuthenticated, RolePermission]
-    read_roles = _READ
+    read_roles = _CLIENTS_READ
 
     @extend_schema(
         summary="Mijozlar sinxronizatsiyasi (delta)",
@@ -206,8 +216,9 @@ class ClientSyncView(APIView):
     )
     def get(self, request: Request) -> Response:
         qs = Client.all_objects.all()
-        if _is_distributor(request.user):
-            qs = qs.filter(route__distributor=request.user)
+        own = _own_routes(request.user, prefix="route__")
+        if own is not None:
+            qs = qs.filter(own)
 
         since_raw = request.query_params.get("since")
         if since_raw:

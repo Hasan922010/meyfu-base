@@ -110,8 +110,9 @@ Omborchi yuklagan naklit rasmlari shu yerga tushadi:
     saqlanadi (CLAUDE.md 5 — ma'lumot yo'qolmaydi). MANAGER va SUPER_ADMIN uchun.
   - **Boshlang'ich qarz** (mavjud mijoz uchun, sotuvsiz) — **«Boshlang'ich qoldiqlar»**
     bo'limidan (bo'lim 13) kiritiladi.
-- **Marshrutlar:** nom, biriktirilgan tarqatuvchi, ish kunlari. Mijozlarni marshrutga
-  biriktiring — tarqatuvchi shu ro'yxatni telefonida ko'radi.
+- **Marshrutlar:** nom, biriktirilgan tarqatuvchi, **zakaz oluvchi** (ixtiyoriy), ish kunlari.
+  Mijozlarni marshrutga biriktiring — tarqatuvchi va zakaz oluvchi shu ro'yxatni
+  telefonida ko'radi.
 - Mijoz kartasida: sotuvlar tarixi, qarzlari, tashriflar.
 
 ## 6. Sotuvlar
@@ -181,6 +182,12 @@ tovar farqi    = yuklangan − sotilgan − qaytarilgan
     (bo'lim 13). Ikkalasida ham: «Xodimga berilgan (avans)» yoki «Xodimning qarzi»
     tugmasi bilan yo'nalishni tanlang, so'ng summani kiriting — xodimning hamyoniga
     bir martalik yozuv sifatida tushadi.
+  - **Zakaz oluvchi** (ORDER_TAKER) — faqat buyurtma oladi. Telefonida: Bosh (bugungi
+    buyurtmalar soni va summasi), Buyurtma, Mijozlar (marshrutidagilar; mijozni bossa
+    shu mijozga yangi buyurtma ochiladi), Maosh. Sotuv, hamyon, xarajat, yuklama, kun
+    yopish, qarz undirish unga yopiq; buyurtmani tasdiqlash va yetkazish ham yo'q.
+    Qo'shimcha sozlama: **Zakaz olgani uchun %**. Marshrutni «Marshrutlar» bo'limida
+    biriktiring.
   - Faqat **DISTRIBUTOR** rolida qo'shimcha sozlamalar ochiladi: **Zakaz olgani uchun %**
     va **Yetkazib bergani uchun %** (ikki bosqichli komissiya), "Komissiya %" (eski —
     yuqoridagi ikkitasi 0 bo'lsagina ishlatiladi), oylik reja, qarz limiti, kunlik xarajat
@@ -208,7 +215,8 @@ o'zgarganlarni yozadi: yo hammasi saqlanadi, yo hech biri (xato bo'lsa sababi ko
 Bir xil ro'yxatni qayta saqlash ikkinchi marta hech narsani o'zgartirmaydi.
 
 - **Tovarlar** — avval omborni tanlang; ombordagi barcha faol tovarlar (qoldig'i yo'qlari
-  ham) chiqadi. Miqdor manfiy bo'lmaydi.
+  ham) chiqadi. Miqdor manfiy bo'lmaydi. Kiritadi: **Omborchi** (telefonida ham — Bosh →
+  «Boshlang'ich qoldiq»), menejer, super admin.
 - **Kassa** — kassadagi haqiqiy summa; manfiy — kamomad. Faqat **SUPER_ADMIN**.
 - **Ta'minotchilar** — musbat: biz qarzdormiz, manfiy: ta'minotchi qarzdor. Faqat
   **SUPER_ADMIN**. **Diqqat:** bu faqat boshlang'ich holat uchun — keyingi xaridlar va

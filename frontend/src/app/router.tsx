@@ -67,13 +67,15 @@ import { NewSalePage } from '@/mobile/NewSalePage';
 import { ProfilePage } from '@/mobile/ProfilePage';
 import { ScanInvoicePage } from '@/mobile/ScanInvoicePage';
 import { SyncPage } from '@/mobile/SyncPage';
+import { MobileOpeningStockPage } from '@/mobile/MobileOpeningStockPage';
+import { OrderTakerHomePage } from '@/mobile/OrderTakerHomePage';
 import { WalletPage } from '@/mobile/WalletPage';
 import { NotFound } from '@/shared/components/NotFound';
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute';
 import { isDesktopForced, useIsMobile } from '@/shared/lib/useIsMobile';
 import { useAuthStore } from '@/shared/store/authStore';
 
-const FIELD_ROLES = ['DISTRIBUTOR', 'WAREHOUSE'];
+const FIELD_ROLES = ['DISTRIBUTOR', 'WAREHOUSE', 'ORDER_TAKER'];
 const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT'];
 
 function HomeRedirect(): ReactElement {
@@ -89,6 +91,7 @@ function HomeRedirect(): ReactElement {
 function MobileHome(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
   if (role === 'WAREHOUSE') return <WarehouseHomePage />;
+  if (role === 'ORDER_TAKER') return <OrderTakerHomePage />;
   if (role != null && ADMIN_ROLES.includes(role)) return <MobileAdminHome />;
   return <MobileHomePage />;
 }
@@ -169,7 +172,9 @@ const router = createBrowserRouter([
     path: '/m',
     element: (
       <ProtectedRoute
-        roles={['DISTRIBUTOR', 'WAREHOUSE', 'SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT']}
+        roles={[
+          'DISTRIBUTOR', 'WAREHOUSE', 'ORDER_TAKER', 'SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT',
+        ]}
       >
         <MobileLayout />
       </ProtectedRoute>
@@ -183,6 +188,7 @@ const router = createBrowserRouter([
       { path: 'a/debts', element: <MobileAdminDebts /> },
       { path: 'receive', element: <MobileReceivePage /> },
       { path: 'stock', element: <MobileStockPage /> },
+      { path: 'opening-stock', element: <MobileOpeningStockPage /> },
       { path: 'loading', element: <MyLoadingPage /> },
       { path: 'orders', element: <MyOrdersPage /> },
       { path: 'order/new', element: <NewOrderPage /> },

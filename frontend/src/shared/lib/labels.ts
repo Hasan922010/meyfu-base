@@ -8,6 +8,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   WAREHOUSE: 'Omborchi',
   DISTRIBUTOR: 'Tarqatuvchi',
   ACCOUNTANT: 'Buxgalter',
+  ORDER_TAKER: 'Zakaz oluvchi',
 };
 
 export const PAYMENT_LABELS: Record<string, string> = {

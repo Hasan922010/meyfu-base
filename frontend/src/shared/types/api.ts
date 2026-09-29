@@ -19,7 +19,8 @@ export type Role =
   | 'MANAGER'
   | 'WAREHOUSE'
   | 'DISTRIBUTOR'
-  | 'ACCOUNTANT';
+  | 'ACCOUNTANT'
+  | 'ORDER_TAKER';
 
 export interface DistributorProfile {
   vehicle_number: string;

@@ -177,6 +177,11 @@ class ReceiptScanView(EnvelopeResponseMixin, viewsets.ViewSet):
     """Chek rasmi → {amount, date, supplier} (xarajat formasini to'ldirish uchun)."""
 
     permission_classes = [IsAuthenticated, RolePermission]
+    # Xarajat chekini skanerlash — xarajat kiritadigan rollar (zakaz oluvchida yo'q)
+    allowed_roles = (
+        Role.DISTRIBUTOR, Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN,
+        Role.ACCOUNTANT,
+    )
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "ocr"
 

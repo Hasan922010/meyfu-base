@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from apps.users.constants import Role
 from apps.users.models import User
 
 from .constants import WEEKDAYS
@@ -17,6 +18,9 @@ class RouteSerializer(serializers.ModelSerializer):
     distributor_name = serializers.CharField(
         source="distributor.full_name", read_only=True, default=None
     )
+    order_taker_name = serializers.CharField(
+        source="order_taker.full_name", read_only=True, default=None
+    )
     clients_count = serializers.IntegerField(read_only=True)
     days_display = serializers.SerializerMethodField()
 
@@ -24,10 +28,16 @@ class RouteSerializer(serializers.ModelSerializer):
         model = Route
         fields = (
             "id", "name", "distributor", "distributor_name",
+            "order_taker", "order_taker_name",
             "days_of_week", "days_display", "is_active",
             "clients_count", "created_at",
         )
         read_only_fields = ("id", "created_at", "clients_count")
+
+    def validate_order_taker(self, value):
+        if value is not None and value.role != Role.ORDER_TAKER:
+            raise serializers.ValidationError("Faqat «Zakaz oluvchi» rolidagi xodim.")
+        return value
 
     def get_days_display(self, obj: Route) -> list[str]:
         return [str(WEEKDAYS[d]) for d in obj.days_of_week if d in WEEKDAYS]

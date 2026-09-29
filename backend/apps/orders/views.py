@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.catalog.models import Product
 from apps.clients.models import Client
+from apps.core.permissions import is_order_taker
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.constants import Role
@@ -39,12 +40,17 @@ User = get_user_model()
 _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
 _WAREHOUSE = (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.WAREHOUSE,
-         Role.DISTRIBUTOR)
-_WRITE = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)
+         Role.DISTRIBUTOR, Role.ORDER_TAKER)
+_WRITE = (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.MANAGER, Role.SUPER_ADMIN)
 
 
 def _is_distributor(user) -> bool:
     return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
+
+
+def _is_field_staff(user) -> bool:
+    """O'z nomidan ishlaydigan xodim — `taken_by`/`distributor` o'ziga majburlanadi."""
+    return _is_distributor(user) or is_order_taker(user)
 
 
 class OrderViewSet(BaseModelViewSet):
@@ -57,7 +63,9 @@ class OrderViewSet(BaseModelViewSet):
         "cancel": _ADMIN,
         "build_loading": _WAREHOUSE,
         "for_loading": _WAREHOUSE,
-        "my_to_take": (Role.DISTRIBUTOR, *_ADMIN),
+        # Yetkazish (Sale yaratadi) — faqat tarqatuvchi; zakaz oluvchi pul ushlamaydi
+        "fulfill": (Role.DISTRIBUTOR, *_ADMIN),
+        "my_to_take": (Role.DISTRIBUTOR, Role.ORDER_TAKER, *_ADMIN),
         "my_to_deliver": (Role.DISTRIBUTOR, *_ADMIN),
     }
     filterset_fields = ("status", "client", "taken_by", "assigned_to", "date")
@@ -74,6 +82,8 @@ class OrderViewSet(BaseModelViewSet):
             return qs.filter(
                 Q(taken_by=self.request.user) | Q(assigned_to=self.request.user)
             )
+        if is_order_taker(self.request.user):
+            return qs.filter(taken_by=self.request.user)
         return qs
 
     def get_serializer_class(self):
@@ -89,7 +99,7 @@ class OrderViewSet(BaseModelViewSet):
 
         client = Client.objects.get(pk=data["client"])
         taken_by = request.user
-        if data.get("taken_by") and not _is_distributor(request.user):
+        if data.get("taken_by") and not _is_field_staff(request.user):
             taken_by = User.objects.get(pk=data["taken_by"])
 
         products = {

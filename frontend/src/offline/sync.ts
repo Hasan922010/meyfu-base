@@ -11,6 +11,7 @@ import {
 } from '@/shared/api/schemas';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { assertApiShape } from '@/shared/lib/validate';
+import { useAuthStore } from '@/shared/store/authStore';
 import type { ApiSuccess } from '@/shared/types/api';
 
 import { db, getMeta, setMeta } from './db';
@@ -64,9 +65,31 @@ export async function pullReferenceData(): Promise<void> {
     })),
   );
 
-  await pullVanStock();
+  // Zakaz oluvchida mashina qoldig'i va yetkazish yo'q (backend 403 qaytaradi)
+  if (useAuthStore.getState().user?.role !== 'ORDER_TAKER') {
+    await pullVanStock();
+    await pullOrdersToDeliver();
+  }
 
-  // Yetkazish uchun biriktirilgan buyurtmalar (v4 T1) — best-effort
+  // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort.
+  // Dinamik import — `companyCache` faqat chek oqimi bilan yuklanadi (PERF-001).
+  try {
+    const { saveCompanyCache } = await import('@/mobile/lib/companyCache');
+    await saveCompanyCache(await companyApi.public());
+  } catch {
+    /* rekvizitsiz ham chek chiqadi */
+  }
+
+  await setMeta('last_pull', new Date().toISOString());
+  if (!since) await setMeta('catalog_since', new Date().toISOString());
+}
+
+/**
+ * Faqat mashina qoldig'ini serverdan tortadi. Yuklama tasdiqlangach chaqiriladi —
+ * aks holda sotuv ekrani (lokal van_stock) yangi tovarni ko'rmaydi (UX audit M1).
+ */
+/** Yetkazish uchun biriktirilgan buyurtmalar (v4 T1) — best-effort. */
+async function pullOrdersToDeliver(): Promise<void> {
   try {
     const toDeliver = await ordersApi.myToDeliver();
     await db.orders.clear();
@@ -94,24 +117,8 @@ export async function pullReferenceData(): Promise<void> {
   } catch {
     // buyurtma oqimi hali yo'q bo'lishi mumkin — jimgina o'tkazamiz
   }
-
-  // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort.
-  // Dinamik import — `companyCache` faqat chek oqimi bilan yuklanadi (PERF-001).
-  try {
-    const { saveCompanyCache } = await import('@/mobile/lib/companyCache');
-    await saveCompanyCache(await companyApi.public());
-  } catch {
-    /* rekvizitsiz ham chek chiqadi */
-  }
-
-  await setMeta('last_pull', new Date().toISOString());
-  if (!since) await setMeta('catalog_since', new Date().toISOString());
 }
 
-/**
- * Faqat mashina qoldig'ini serverdan tortadi. Yuklama tasdiqlangach chaqiriladi —
- * aks holda sotuv ekrani (lokal van_stock) yangi tovarni ko'rmaydi (UX audit M1).
- */
 export async function pullVanStock(): Promise<void> {
   const van = await warehouseApi.myVanStock();
   assertApiShape(vanStockListShape, van, 'sync/van-stock');

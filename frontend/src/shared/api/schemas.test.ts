@@ -20,6 +20,11 @@ describe('loginDataShape', () => {
     ).not.toThrow();
   });
 
+  it('zakaz oluvchi (ORDER_TAKER) kirishini qabul qiladi', () => {
+    const taker = { ...validLogin, user: { ...validLogin.user, role: 'ORDER_TAKER' } };
+    expect(() => assertApiShape(loginDataShape, taker, 'login')).not.toThrow();
+  });
+
   it('access yo‘q — ApiShapeError', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { access: _drop, ...broken } = validLogin;

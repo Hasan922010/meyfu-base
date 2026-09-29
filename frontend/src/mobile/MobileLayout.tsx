@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   ChartColumn,
   ClipboardList,
+  Coins,
   House,
   type LucideIcon,
   PackagePlus,
@@ -15,7 +16,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEffect, type ReactElement } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { SyncBadge } from '@/offline/SyncBadge';
 import { useSync } from '@/offline/useSync';
@@ -43,6 +44,19 @@ const WAREHOUSE_TABS: Tab[] = [
   { to: '/m/stock', label: 'Qoldiq', Icon: Boxes, end: false },
 ];
 
+const ORDER_TAKER_TABS: Tab[] = [
+  { to: '/m', label: 'Bosh', Icon: House, end: true },
+  { to: '/m/orders', label: 'Buyurtma', Icon: ClipboardList, end: false },
+  { to: '/m/clients', label: 'Mijozlar', Icon: Store, end: false },
+  { to: '/m/payroll', label: 'Maosh', Icon: Coins, end: false },
+];
+
+/** Zakaz oluvchiga ochiq sahifalar — qolganlari (sotuv, hamyon...) backendda ham yopiq */
+const ORDER_TAKER_PATHS = [
+  '/m', '/m/orders', '/m/order/new', '/m/clients', '/m/payroll',
+  '/m/sync', '/m/profile', '/m/help',
+];
+
 const ADMIN_TABS: Tab[] = [
   { to: '/m', label: 'Bosh', Icon: House, end: true },
   { to: '/m/a/expenses', label: 'Xarajat', Icon: BadgeDollarSign, end: false },
@@ -61,9 +75,13 @@ export function MobileLayout(): ReactElement {
   const tabs =
     role === 'WAREHOUSE'
       ? WAREHOUSE_TABS
-      : role != null && ADMIN_ROLES.includes(role)
-        ? ADMIN_TABS
-        : DISTRIBUTOR_TABS;
+      : role === 'ORDER_TAKER'
+        ? ORDER_TAKER_TABS
+        : role != null && ADMIN_ROLES.includes(role)
+          ? ADMIN_TABS
+          : DISTRIBUTOR_TABS;
+  const pathname = location.pathname.replace(/\/+$/, '') || '/m';
+  const blocked = role === 'ORDER_TAKER' && !ORDER_TAKER_PATHS.includes(pathname);
 
   // Ochilishda avval navbatni yuboramiz, keyin tortamiz (UX N3): faqat tortish
   // navbatni 20 s kechiktirardi va server bilmagan sotuvni lokal qoldiqdan "qaytarardi"
@@ -86,7 +104,7 @@ export function MobileLayout(): ReactElement {
 
       <main className="flex-1 p-4 pb-24">
         <ErrorBoundary key={location.pathname} variant="page">
-          <Outlet />
+          {blocked ? <Navigate to="/m" replace /> : <Outlet />}
         </ErrorBoundary>
       </main>
 

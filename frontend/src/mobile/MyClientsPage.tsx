@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { clientsApi } from '@/shared/api/clients';
 import { DataState } from '@/shared/components/DataState';
 import { money } from '@/shared/lib/format';
+import { useAuthStore } from '@/shared/store/authStore';
 import type { Client } from '@/shared/types/clients';
 
 import { CheckInSheet } from './CheckInSheet';
@@ -11,6 +13,13 @@ import { CheckInSheet } from './CheckInSheet';
 export function MyClientsPage(): ReactElement {
   const [search, setSearch] = useState<string>('');
   const [selected, setSelected] = useState<Client | null>(null);
+  const navigate = useNavigate();
+  // Zakaz oluvchida tashrif (check-in) yo'q — mijozni bossa buyurtma ochiladi
+  const isOrderTaker = useAuthStore((s) => s.user?.role) === 'ORDER_TAKER';
+  const pick = (c: Client): void => {
+    if (isOrderTaker) void navigate(`/m/order/new?client=${c.id}`);
+    else setSelected(c);
+  };
 
   const query = useQuery({
     queryKey: ['clients', 'mine', search],
@@ -40,7 +49,7 @@ export function MyClientsPage(): ReactElement {
           {rows.map((c) => (
             <li key={c.id}>
               <button
-                onClick={() => setSelected(c)}
+                onClick={() => pick(c)}
                 className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left shadow-sm active:scale-[0.99] dark:bg-gray-900"
               >
                 <div>

@@ -36,7 +36,9 @@ function plusDays(days: number): string {
 }
 
 export function MyOrdersPage(): ReactElement {
-  const [tab, setTab] = useState<Tab>('deliver');
+  // Zakaz oluvchi yetkazmaydi — faqat o'zi olgan buyurtmalar
+  const isOrderTaker = useAuthStore((s) => s.user?.role) === 'ORDER_TAKER';
+  const [tab, setTab] = useState<Tab>(isOrderTaker ? 'taken' : 'deliver');
   const [fulfilling, setFulfilling] = useState<CachedOrder | null>(null);
 
   if (fulfilling) {
@@ -54,6 +56,7 @@ export function MyOrdersPage(): ReactElement {
         </Link>
       </div>
 
+      {!isOrderTaker && (
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {(
           [
@@ -72,6 +75,7 @@ export function MyOrdersPage(): ReactElement {
           </button>
         ))}
       </div>
+      )}
 
       {tab === 'deliver' ? (
         <DeliverTab onPick={setFulfilling} />

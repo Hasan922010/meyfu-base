@@ -29,11 +29,16 @@ function RouteForm({
   const qc = useQueryClient();
   const [name, setName] = useState<string>(route?.name ?? '');
   const [distributor, setDistributor] = useState<string>(route?.distributor ?? '');
+  const [orderTaker, setOrderTaker] = useState<string>(route?.order_taker ?? '');
   const [days, setDays] = useState<number[]>(route?.days_of_week ?? []);
 
   const distributors = useQuery({
     queryKey: ['distributors'],
     queryFn: () => authApi.distributors(),
+  });
+  const orderTakers = useQuery({
+    queryKey: ['order-takers'],
+    queryFn: () => authApi.orderTakers(),
   });
 
   const mutation = useMutation({
@@ -42,6 +47,7 @@ function RouteForm({
         name,
         days_of_week: [...days].sort((a, b) => a - b),
         distributor: distributor || null,
+        order_taker: orderTaker || null,
       };
       return route
         ? clientsApi.updateRoute(route.id, body)
@@ -74,6 +80,21 @@ function RouteForm({
           {distributors.data?.map((d) => (
             <option key={d.id} value={d.id}>
               {d.full_name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block space-y-1">
+        <span className="text-sm font-medium">Zakaz oluvchi</span>
+        <select
+          className="field"
+          value={orderTaker}
+          onChange={(e) => setOrderTaker(e.target.value)}
+        >
+          <option value="">—</option>
+          {orderTakers.data?.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.full_name}
             </option>
           ))}
         </select>
@@ -165,6 +186,7 @@ export function RoutesPage(): ReactElement {
               <tr>
                 <th className="p-3">Nomi</th>
                 <th className="p-3">Tarqatuvchi</th>
+                <th className="p-3">Zakaz oluvchi</th>
                 <th className="p-3">Kunlar</th>
                 <th className="p-3 text-right">Mijozlar</th>
                 {canWrite && <th className="p-3" />}
@@ -178,6 +200,7 @@ export function RoutesPage(): ReactElement {
                 >
                   <td className="p-3 font-medium">{r.name}</td>
                   <td className="p-3">{r.distributor_name ?? '—'}</td>
+                  <td className="p-3">{r.order_taker_name ?? '—'}</td>
                   <td className="p-3">{r.days_display.join(', ') || '—'}</td>
                   <td className="p-3 text-right">{r.clients_count}</td>
                   {canWrite && (

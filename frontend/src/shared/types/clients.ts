@@ -12,6 +12,8 @@ export interface Route {
   name: string;
   distributor: string | null;
   distributor_name: string | null;
+  order_taker: string | null;
+  order_taker_name: string | null;
   days_of_week: number[];
   days_display: string[];
   is_active: boolean;
@@ -22,6 +24,7 @@ export interface Route {
 export interface RouteInput {
   name: string;
   distributor?: string | null;
+  order_taker?: string | null;
   days_of_week: number[];
   is_active?: boolean;
 }

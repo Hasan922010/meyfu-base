@@ -214,3 +214,32 @@ def test_wallet_sheet_lists_staff_and_bulk_sets_balance(admin_api, distributor):
     rows = _sheet(admin_api, "/api/v1/wallet/opening-sheet/")
     assert Decimal(rows[str(distributor.id)]["current"]) == Decimal("-20000")
     assert AuditLog.objects.filter(action="opening_balance.bulk.wallet").exists()
+
+
+@pytest.mark.django_db
+def test_warehouse_keeper_enters_stock_opening_balance(stocked):
+    from django.contrib.auth import get_user_model
+    from rest_framework.test import APIClient
+
+    get_user_model().objects.create_user(
+        phone="+998907112233", password="pass12345", full_name="Omborchi",
+        role="WAREHOUSE",
+    )
+    api = APIClient()
+    token = api.post(
+        "/api/v1/auth/login/", {"phone": "+998907112233", "password": "pass12345"},
+        format="json",
+    ).data["data"]["access"]
+    api.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    wh, product = stocked["warehouse"], stocked["product"]
+
+    sheet = api.get(f"/api/v1/stock/opening-sheet/?warehouse={wh.id}")
+    resp = api.post(
+        "/api/v1/stock/opening-balance/bulk/",
+        {"warehouse": str(wh.id), "rows": [{"id": str(product.id), "target": "520"}]},
+        format="json",
+    )
+
+    assert sheet.status_code == 200
+    assert resp.status_code == 200, resp.data
+    assert Stock.objects.get(warehouse=wh, product=product).quantity == Decimal("520")

@@ -33,6 +33,11 @@ class Route(BaseModel):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="routes", verbose_name=_("tarqatuvchi"),
     )
+    # Marshrut mijozlaridan buyurtma oluvchi (tarqatuvchidan alohida bo'lishi mumkin)
+    order_taker = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="order_routes", verbose_name=_("zakaz oluvchi"),
+    )
     days_of_week = models.JSONField(
         _("hafta kunlari"), default=list, blank=True, validators=[_validate_weekdays]
     )

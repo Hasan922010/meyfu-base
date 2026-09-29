@@ -1,5 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Boxes, PackagePlus, ScanLine, type LucideIcon } from 'lucide-react';
+import {
+  BookOpen,
+  Boxes,
+  ClipboardPen,
+  PackagePlus,
+  ScanLine,
+  type LucideIcon,
+} from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +17,7 @@ import { useAuthStore } from '@/shared/store/authStore';
 const LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
   { to: '/m/scan', label: 'Naklit skani', Icon: ScanLine },
   { to: '/m/stock', label: 'Ombor qoldig‘i', Icon: Boxes },
+  { to: '/m/opening-stock', label: "Boshlang'ich qoldiq", Icon: ClipboardPen },
   { to: '/m/help', label: "Yo'riqnoma", Icon: BookOpen },
 ];
 

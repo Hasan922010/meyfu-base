@@ -104,7 +104,7 @@ class PayrollViewSet(
         "edit": _PAYROLL_ADMIN,
         "approve": (Role.SUPER_ADMIN,),
         "pay": _PAYROLL_ADMIN,
-        "my": (Role.DISTRIBUTOR,),
+        "my": (Role.DISTRIBUTOR, Role.ORDER_TAKER),
     }
     filterset_fields = ("distributor", "status", "period")
     ordering = ("-period",)

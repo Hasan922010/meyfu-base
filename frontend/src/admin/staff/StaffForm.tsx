@@ -23,6 +23,7 @@ const PROFILE_FIELD_MAP: Record<string, string> = {
 
 const ROLES: Array<{ value: Role; label: string }> = [
   { value: 'DISTRIBUTOR', label: 'Tarqatuvchi' },
+  { value: 'ORDER_TAKER', label: 'Zakaz oluvchi' },
   { value: 'WAREHOUSE', label: 'Omborchi' },
   { value: 'MANAGER', label: 'Menejer' },
   { value: 'ACCOUNTANT', label: 'Buxgalter' },
@@ -111,7 +112,9 @@ export function StaffForm({
               vehicle_number: v.p_vehicle_number || '',
               can_sell_below_price: Boolean(v.p_can_sell_below_price),
             }
-          : {}),
+          : v.role === 'ORDER_TAKER'
+            ? { order_commission_percent: v.p_order_commission_percent || '0' }
+            : {}),
       };
       if (!staff && v.p_opening_balance) {
         body.opening_balance = v.p_opening_balance;
@@ -235,6 +238,23 @@ export function StaffForm({
             </label>
           )}
         </div>
+
+        {role === 'ORDER_TAKER' && (
+          <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+            <p className="text-xs text-gray-500">
+              Zakaz oluvchi faqat buyurtma oladi — marshrutni «Marshrutlar» bo‘limida biriktiring.
+            </p>
+            <label className="block space-y-1">
+              <span className="text-sm">Zakaz olgani uchun %</span>
+              <input
+                className="field"
+                type="number"
+                step="0.01"
+                {...register('p_order_commission_percent')}
+              />
+            </label>
+          </div>
+        )}
 
         {role === 'DISTRIBUTOR' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">

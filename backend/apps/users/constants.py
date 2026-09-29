@@ -8,6 +8,8 @@ class Role(models.TextChoices):
     WAREHOUSE = "WAREHOUSE", _("Omborchi")
     DISTRIBUTOR = "DISTRIBUTOR", _("Tarqatuvchi")
     ACCOUNTANT = "ACCOUNTANT", _("Buxgalter")
+    # Faqat buyurtma oladi — sotuv, pul, tovar harakati yo'q
+    ORDER_TAKER = "ORDER_TAKER", _("Zakaz oluvchi")
 
 
 class ExpensesCoveredBy(models.TextChoices):

@@ -51,6 +51,13 @@ class IsSuperAdmin(BasePermission):
         )
 
 
+def is_order_taker(user) -> bool:
+    """Zakaz oluvchi — faqat o'z buyurtmalari va marshrut mijozlarini ko'radi."""
+    return getattr(user, "role", None) == Role.ORDER_TAKER and not getattr(
+        user, "is_superuser", False
+    )
+
+
 class IsDistributor(BasePermission):
     def has_permission(self, request, view) -> bool:
         user = request.user

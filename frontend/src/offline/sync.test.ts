@@ -18,13 +18,17 @@ vi.mock('@/shared/api/company', () => ({
 
 import { db } from './db';
 import { enqueue, listOutbox, markSending } from './outbox';
-import { fullSync, pullVanStock, pushOutbox } from './sync';
+import { useAuthStore } from '@/shared/store/authStore';
+import type { User } from '@/shared/types/api';
+
+import { fullSync, pullReferenceData, pullVanStock, pushOutbox } from './sync';
 
 beforeEach(async () => {
   await db.outbox.clear();
   await db.van_stock.clear();
   post.mockReset();
   myVanStock.mockReset();
+  useAuthStore.setState({ user: null });
 });
 
 describe('fullSync — UX N3', () => {
@@ -95,5 +99,18 @@ describe('pushOutbox — UX B1', () => {
     expect(body.operations.map((o) => o.client_uuid)).toEqual([id]);
     expect(res.sent).toBe(1);
     expect(await listOutbox()).toHaveLength(0);
+  });
+});
+
+describe('pullReferenceData — zakaz oluvchi', () => {
+  it('mashina qoldig‘ini so‘ramaydi — zakaz oluvchida u yo‘q (backend 403)', async () => {
+    // Arrange
+    useAuthStore.setState({ user: { role: 'ORDER_TAKER' } as User });
+
+    // Act
+    await pullReferenceData();
+
+    // Assert
+    expect(myVanStock).not.toHaveBeenCalled();
   });
 });

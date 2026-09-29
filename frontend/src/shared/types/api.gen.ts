@@ -3456,7 +3456,7 @@ export interface paths {
         };
         /**
          * Mijozlar sinxronizatsiyasi (delta)
-         * @description Offline mijoz delta (CLAUDE.md 4.1, 10). Tarqatuvchi — faqat o'z marshruti.
+         * @description Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z marshruti.
          */
         get: operations["sync_clients_list"];
         put?: never;
@@ -7012,6 +7012,11 @@ export interface components {
              * Format: uuid
              */
             distributor?: string | null;
+            /**
+             * Zakaz oluvchi
+             * Format: uuid
+             */
+            order_taker?: string | null;
             /** Hafta kunlari */
             days_of_week?: unknown;
             /** Faol */
@@ -7051,7 +7056,7 @@ export interface components {
             /** F.I.SH. */
             full_name?: string;
             /** Rol */
-            role?: components["schemas"]["Role38bEnum"];
+            role?: components["schemas"]["RoleD3fEnum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -7818,9 +7823,10 @@ export interface components {
          *     * `WAREHOUSE` - Omborchi
          *     * `DISTRIBUTOR` - Tarqatuvchi
          *     * `ACCOUNTANT` - Buxgalter
+         *     * `ORDER_TAKER` - Zakaz oluvchi
          * @enum {string}
          */
-        Role38bEnum: "SUPER_ADMIN" | "MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT";
+        RoleD3fEnum: "SUPER_ADMIN" | "MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
         Route: {
             /** Format: uuid */
             readonly id: string;
@@ -7832,6 +7838,12 @@ export interface components {
              */
             distributor?: string | null;
             readonly distributor_name: string;
+            /**
+             * Zakaz oluvchi
+             * Format: uuid
+             */
+            order_taker?: string | null;
+            readonly order_taker_name: string;
             /** Hafta kunlari */
             days_of_week?: unknown;
             readonly days_display: string[];
@@ -7852,6 +7864,11 @@ export interface components {
              * Format: uuid
              */
             distributor?: string | null;
+            /**
+             * Zakaz oluvchi
+             * Format: uuid
+             */
+            order_taker?: string | null;
             /** Hafta kunlari */
             days_of_week?: unknown;
             /** Faol */
@@ -8391,7 +8408,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            readonly role: components["schemas"]["Role38bEnum"];
+            readonly role: components["schemas"]["RoleD3fEnum"];
             /**
              * Rasm
              * Format: uri
@@ -8435,7 +8452,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role38bEnum"];
+            role?: components["schemas"]["RoleD3fEnum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -8466,7 +8483,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role38bEnum"];
+            role?: components["schemas"]["RoleD3fEnum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -14346,8 +14363,9 @@ export interface operations {
                  *     * `WAREHOUSE` - Omborchi
                  *     * `DISTRIBUTOR` - Tarqatuvchi
                  *     * `ACCOUNTANT` - Buxgalter
+                 *     * `ORDER_TAKER` - Zakaz oluvchi
                  */
-                role?: "ACCOUNTANT" | "DISTRIBUTOR" | "MANAGER" | "SUPER_ADMIN" | "WAREHOUSE";
+                role?: "ACCOUNTANT" | "DISTRIBUTOR" | "MANAGER" | "ORDER_TAKER" | "SUPER_ADMIN" | "WAREHOUSE";
                 /** @description A search term. */
                 search?: string;
             };

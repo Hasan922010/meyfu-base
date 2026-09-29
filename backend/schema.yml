@@ -7258,8 +7258,8 @@ paths:
   /api/v1/sync/clients/:
     get:
       operationId: sync_clients_list
-      description: Offline mijoz delta (CLAUDE.md 4.1, 10). Tarqatuvchi — faqat o'z
-        marshruti.
+      description: Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat
+        o'z marshruti.
       summary: Mijozlar sinxronizatsiyasi (delta)
       parameters:
       - in: query
@@ -7659,6 +7659,7 @@ paths:
           - ACCOUNTANT
           - DISTRIBUTOR
           - MANAGER
+          - ORDER_TAKER
           - SUPER_ADMIN
           - WAREHOUSE
         description: |-
@@ -7667,6 +7668,7 @@ paths:
           * `WAREHOUSE` - Omborchi
           * `DISTRIBUTOR` - Tarqatuvchi
           * `ACCOUNTANT` - Buxgalter
+          * `ORDER_TAKER` - Zakaz oluvchi
       - name: search
         required: false
         in: query
@@ -13184,6 +13186,11 @@ components:
           format: uuid
           nullable: true
           title: Tarqatuvchi
+        order_taker:
+          type: string
+          format: uuid
+          nullable: true
+          title: Zakaz oluvchi
         days_of_week:
           title: Hafta kunlari
         is_active:
@@ -13251,7 +13258,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role38bEnum'
+          - $ref: '#/components/schemas/RoleD3fEnum'
           title: Rol
         passport_series:
           type: string
@@ -14434,13 +14441,14 @@ components:
         * `SOTUV` - Sotuv bo'ldi
         * `SOTUVSIZ` - Sotuvsiz
         * `YOPIQ` - Yopiq edi
-    Role38bEnum:
+    RoleD3fEnum:
       enum:
       - SUPER_ADMIN
       - MANAGER
       - WAREHOUSE
       - DISTRIBUTOR
       - ACCOUNTANT
+      - ORDER_TAKER
       type: string
       description: |-
         * `SUPER_ADMIN` - Super admin
@@ -14448,6 +14456,7 @@ components:
         * `WAREHOUSE` - Omborchi
         * `DISTRIBUTOR` - Tarqatuvchi
         * `ACCOUNTANT` - Buxgalter
+        * `ORDER_TAKER` - Zakaz oluvchi
     Route:
       type: object
       properties:
@@ -14465,6 +14474,14 @@ components:
           nullable: true
           title: Tarqatuvchi
         distributor_name:
+          type: string
+          readOnly: true
+        order_taker:
+          type: string
+          format: uuid
+          nullable: true
+          title: Zakaz oluvchi
+        order_taker_name:
           type: string
           readOnly: true
         days_of_week:
@@ -14492,6 +14509,7 @@ components:
       - distributor_name
       - id
       - name
+      - order_taker_name
     RouteRequest:
       type: object
       properties:
@@ -14505,6 +14523,11 @@ components:
           format: uuid
           nullable: true
           title: Tarqatuvchi
+        order_taker:
+          type: string
+          format: uuid
+          nullable: true
+          title: Zakaz oluvchi
         days_of_week:
           title: Hafta kunlari
         is_active:
@@ -15462,7 +15485,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role38bEnum'
+          - $ref: '#/components/schemas/RoleD3fEnum'
           readOnly: true
           title: Rol
         avatar:
@@ -15532,7 +15555,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role38bEnum'
+          - $ref: '#/components/schemas/RoleD3fEnum'
           title: Rol
         passport_series:
           type: string
@@ -15580,7 +15603,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role38bEnum'
+          - $ref: '#/components/schemas/RoleD3fEnum'
           title: Rol
         passport_series:
           type: string

@@ -9,6 +9,7 @@ export const roleSchema = z.enum([
   'WAREHOUSE',
   'DISTRIBUTOR',
   'ACCOUNTANT',
+  'ORDER_TAKER',
 ]);
 
 export const userShape = z

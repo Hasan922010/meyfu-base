@@ -149,10 +149,11 @@ class StockViewSet(BaseReadOnlyViewSet):
     filterset_fields = ("warehouse", "product")
     search_fields = ("product__name", "product__sku")
     ordering_fields = ("quantity", "updated_at")
+    # Tovar boshlang'ich qoldig'ini omborchi kiritadi (menejer/admin ham)
     action_roles = {
-        "opening_balance": (Role.MANAGER, Role.SUPER_ADMIN),
-        "opening_sheet": (Role.MANAGER, Role.SUPER_ADMIN),
-        "opening_balance_bulk": (Role.MANAGER, Role.SUPER_ADMIN),
+        "opening_balance": _WH_WRITE,
+        "opening_sheet": _WH_WRITE,
+        "opening_balance_bulk": _WH_WRITE,
     }
 
     @extend_schema(
