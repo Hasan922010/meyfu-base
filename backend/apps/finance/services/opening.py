@@ -18,20 +18,22 @@ from .cash import cash_apply, get_account
 _ZERO = Decimal("0")
 
 
-def cash_opening_sheet() -> list[dict]:
-    account = get_account()
+def cash_opening_sheet(branch=None) -> list[dict]:
+    """`branch` — filial kassasi; `None` — markaz kassasi."""
+    account = get_account(branch)
     return [sheet_row(id=account.id, name=account.name, current=account.balance)]
 
 
 @transaction.atomic
-def cash_opening_bulk(*, rows: list[dict], note: str, user) -> dict:
-    account = CashAccount.objects.select_for_update().get(pk=get_account().pk)
+def cash_opening_bulk(*, rows: list[dict], note: str, user, branch=None) -> dict:
+    account = CashAccount.objects.select_for_update().get(pk=get_account(branch).pk)
     changes = plan_deltas(rows, {account.id: account.balance})
     for _account_id, delta in changes:
         if delta != _ZERO:
             cash_apply(
                 transaction_type=CashTxType.OPENING_BALANCE, amount=delta,
                 reference_type="opening_balance", note=note, user=user,
+                branch=branch,
             )
     audit_bulk(user=user, kind="cash", note=note, changes=changes)
     return bulk_result(changes)

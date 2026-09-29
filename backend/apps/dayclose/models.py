@@ -9,7 +9,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.catalog.models import Product
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, BranchStampedModel
 from apps.warehouse.models import Warehouse
 
 from .constants import DayCloseStatus, ItemCondition
@@ -19,7 +19,7 @@ _MONEY = {"max_digits": 14, "decimal_places": 2}
 _QTY = {"max_digits": 14, "decimal_places": 3}
 
 
-class DayClose(BaseModel):
+class DayClose(BranchStampedModel):
     date = models.DateField(_("sana"))
     distributor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="day_closes",
@@ -153,7 +153,7 @@ class DailyReturnItem(BaseModel):
         return f"{self.product.sku} × {self.quantity} ({self.condition})"
 
 
-class CashHandover(BaseModel):
+class CashHandover(BranchStampedModel):
     date = models.DateField(_("sana"))
     distributor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,

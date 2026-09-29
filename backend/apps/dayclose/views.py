@@ -11,6 +11,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.catalog.models import Product
+from apps.catalog.pricing import branch_price_map, price_for
+from apps.core.branch import staff_branch
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import RolePermission
@@ -48,7 +50,7 @@ class DayCloseViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = DayCloseSerializer
-    branch_lookup = "distributor__warehouse"
+    branch_lookup = "branch"
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _READ
     action_roles = {
@@ -81,6 +83,8 @@ class DayCloseViewSet(
                        "day_close": DayCloseSerializer(existing).data})
 
         snap = build_snapshot(request.user, today)
+        branch = staff_branch(request.user)
+        price_map = branch_price_map(branch)
         van = [
             {
                 "product": str(vs.product_id),
@@ -88,7 +92,9 @@ class DayCloseViewSet(
                 "product_sku": vs.product.sku,
                 "unit": vs.product.unit.short_name,
                 "quantity": str(vs.quantity),
-                "wholesale_price": str(vs.product.wholesale_price),
+                "wholesale_price": str(
+                    price_for(vs.product, branch, price_map).wholesale_price
+                ),
             }
             for vs in VanStock.objects.select_related(
                 "product", "product__unit"
@@ -156,7 +162,7 @@ class DayCloseViewSet(
 
 class CashHandoverViewSet(BaseReadOnlyViewSet):
     serializer_class = CashHandoverSerializer
-    branch_lookup = "distributor__warehouse"
+    branch_lookup = "branch"
     queryset = CashHandover.objects.select_related("distributor", "received_by")
     read_roles = _READ
     filterset_fields = ("distributor", "confirmed", "date")

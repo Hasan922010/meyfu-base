@@ -48,6 +48,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit-logs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kim, qachon, nimani o'zgartirdi. Filial rahbari — o'z filiali xodimlari. */
+        get: operations["audit_logs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-logs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kim, qachon, nimani o'zgartirdi. Filial rahbari — o'z filiali xodimlari. */
+        get: operations["audit_logs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/change-password/": {
         parameters: {
             query?: never;
@@ -190,6 +224,44 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branch-prices/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        get: operations["branch_prices_list"];
+        put?: never;
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        post: operations["branch_prices_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branch-prices/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        get: operations["branch_prices_retrieve"];
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        put: operations["branch_prices_update"];
+        post?: never;
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        delete: operations["branch_prices_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        patch: operations["branch_prices_partial_update"];
         trace?: never;
     };
     "/api/v1/brands/": {
@@ -416,6 +488,27 @@ export interface paths {
         get: operations["cash_transactions_opening_sheet_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/to-center/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Filial kassasidan markazga pul topshirish (inkassatsiya)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        post: operations["cash_transactions_to_center_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2543,6 +2636,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/branches/comparison/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Filiallar kesimida solishtirish va hisob-kitob
+         * @description Filiallarni solishtirish + markaz bilan hisob-kitob. Filial xodimi — o'z qatori.
+         */
+        get: operations["reports_branches_comparison_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/dashboard/": {
         parameters: {
             query?: never;
@@ -4095,8 +4208,111 @@ export interface components {
             /** @default  */
             note: string;
         };
+        AuditLog: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            /**
+             * Foydalanuvchi
+             * Format: uuid
+             */
+            readonly user: string | null;
+            readonly user_name: string;
+            /** Harakat */
+            readonly action: string;
+            /** Model */
+            readonly model_name: string;
+            /** Obyekt ID */
+            readonly object_id: string;
+            /** O'zgarishlar */
+            readonly changes: unknown;
+            readonly ip: string | null;
+            /** Qurilma / brauzer */
+            readonly user_agent: string;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
+        /** @description Filialdan markazga topshirish. `branch` — faqat markaz xodimi uchun. */
+        BranchCashTransferRequest: {
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
+            /** Format: uuid */
+            branch?: string | null;
+        };
+        /** @description Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1). */
+        BranchPrice: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch: string;
+            readonly branch_name: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            readonly product_name: string;
+            readonly product_sku: string;
+            /**
+             * Optom narx
+             * Format: decimal
+             */
+            wholesale_price: string;
+            /**
+             * Chakana narx
+             * Format: decimal
+             */
+            retail_price: string;
+            /**
+             * Minimal narx
+             * Format: decimal
+             */
+            min_price: string;
+            /** Format: decimal */
+            readonly base_wholesale_price: string;
+            /**
+             * Yangilangan vaqti
+             * Format: date-time
+             */
+            readonly updated_at: string;
+        };
+        /** @description Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1). */
+        BranchPriceRequest: {
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Optom narx
+             * Format: decimal
+             */
+            wholesale_price: string;
+            /**
+             * Chakana narx
+             * Format: decimal
+             */
+            retail_price: string;
+            /**
+             * Minimal narx
+             * Format: decimal
+             */
+            min_price: string;
+        };
         Brand: {
             /** Format: uuid */
             readonly id: string;
@@ -4243,9 +4459,11 @@ export interface components {
          *     * `OTHER_OUT` - Boshqa chiqim (−)
          *     * `CORRECTION` - Tuzatuvchi yozuv (±)
          *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+         *     * `BRANCH_OUT` - Markazga topshirildi (−)
+         *     * `CENTER_IN` - Filialdan qabul qilindi (+)
          * @enum {string}
          */
-        CashTransactionTransactionTypeEnum: "HANDOVER_IN" | "OTHER_IN" | "BANK_DEPOSIT" | "SUPPLIER_PAYMENT" | "COMPANY_EXPENSE" | "OTHER_OUT" | "CORRECTION" | "OPENING_BALANCE";
+        CashTransactionTransactionTypeEnum: "HANDOVER_IN" | "OTHER_IN" | "BANK_DEPOSIT" | "SUPPLIER_PAYMENT" | "COMPANY_EXPENSE" | "OTHER_OUT" | "CORRECTION" | "OPENING_BALANCE" | "BRANCH_OUT" | "CENTER_IN";
         Category: {
             /** Format: uuid */
             readonly id: string;
@@ -6088,6 +6306,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Advance"][];
         };
+        PaginatedAuditLogList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AuditLog"][];
+        };
         PaginatedBrandList: {
             /** @example 123 */
             count: number;
@@ -6687,6 +6920,34 @@ export interface components {
         PasswordResetRequestRequest: {
             phone: string;
         };
+        /** @description Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1). */
+        PatchedBranchPriceRequest: {
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product?: string;
+            /**
+             * Optom narx
+             * Format: decimal
+             */
+            wholesale_price?: string;
+            /**
+             * Chakana narx
+             * Format: decimal
+             */
+            retail_price?: string;
+            /**
+             * Minimal narx
+             * Format: decimal
+             */
+            min_price?: string;
+        };
         PatchedBrandRequest: {
             /** Nomi */
             name?: string;
@@ -6925,6 +7186,11 @@ export interface components {
             sort_order?: number;
             is_primary?: boolean;
         };
+        /**
+         * @description Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+         *
+         *     View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+         */
         PatchedProductRequest: {
             /** Nomi */
             name?: string;
@@ -7458,6 +7724,11 @@ export interface components {
             readonly created_at: string;
             readonly details: components["schemas"]["PayrollDetail"][];
         };
+        /**
+         * @description Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+         *
+         *     View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+         */
         Product: {
             /** Format: uuid */
             readonly id: string;
@@ -7649,6 +7920,11 @@ export interface components {
              */
             readonly created_at: string;
         };
+        /**
+         * @description Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+         *
+         *     View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+         */
         ProductRequest: {
             /** Nomi */
             name: string;
@@ -8957,6 +9233,61 @@ export interface operations {
             };
         };
     };
+    audit_logs_list: {
+        parameters: {
+            query?: {
+                action?: string;
+                date_from?: string;
+                date_to?: string;
+                model_name?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditLogList"];
+                };
+            };
+        };
+    };
+    audit_logs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this audit yozuvi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLog"];
+                };
+            };
+        };
+    };
     auth_change_password_create: {
         parameters: {
             query?: never;
@@ -9151,6 +9482,156 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    branch_prices_list: {
+        parameters: {
+            query?: {
+                branch?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                product?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"][];
+                };
+            };
+        };
+    };
+    branch_prices_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchPriceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BranchPriceRequest"];
+                "multipart/form-data": components["schemas"]["BranchPriceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
+                };
+            };
+        };
+    };
+    branch_prices_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
+                };
+            };
+        };
+    };
+    branch_prices_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchPriceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BranchPriceRequest"];
+                "multipart/form-data": components["schemas"]["BranchPriceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
+                };
+            };
+        };
+    };
+    branch_prices_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    branch_prices_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedBranchPriceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedBranchPriceRequest"];
+                "multipart/form-data": components["schemas"]["PatchedBranchPriceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
                 };
             };
         };
@@ -9381,8 +9862,10 @@ export interface operations {
                  *     * `OTHER_OUT` - Boshqa chiqim (−)
                  *     * `CORRECTION` - Tuzatuvchi yozuv (±)
                  *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 *     * `BRANCH_OUT` - Markazga topshirildi (−)
+                 *     * `CENTER_IN` - Filialdan qabul qilindi (+)
                  */
-                transaction_type?: "BANK_DEPOSIT" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
+                transaction_type?: "BANK_DEPOSIT" | "BRANCH_OUT" | "CENTER_IN" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
             };
             header?: never;
             path?: never;
@@ -9537,8 +10020,10 @@ export interface operations {
                  *     * `OTHER_OUT` - Boshqa chiqim (−)
                  *     * `CORRECTION` - Tuzatuvchi yozuv (±)
                  *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 *     * `BRANCH_OUT` - Markazga topshirildi (−)
+                 *     * `CENTER_IN` - Filialdan qabul qilindi (+)
                  */
-                transaction_type?: "BANK_DEPOSIT" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
+                transaction_type?: "BANK_DEPOSIT" | "BRANCH_OUT" | "CENTER_IN" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
             };
             header?: never;
             path?: never;
@@ -9552,6 +10037,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    cash_transactions_to_center_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchCashTransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BranchCashTransferRequest"];
+                "multipart/form-data": components["schemas"]["BranchCashTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashTransaction"];
                 };
             };
         };
@@ -13095,6 +13605,31 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_branches_comparison_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

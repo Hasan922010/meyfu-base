@@ -43,6 +43,7 @@ from .services import (
 from .services.branch import (
     KINDS as BRANCH_KINDS,
 )
+from .services.branch_compare import branch_comparison, comparison_rows_for_export
 from .services.branch import (
     branch_activity,
     branch_activity_rows_for_export,
@@ -278,6 +279,20 @@ class BranchActivityView(_BranchView):
         return ok(branch_activity(warehouse, kind, start, end))
 
 
+class BranchComparisonView(_ReportView):
+    """Filiallarni solishtirish + markaz bilan hisob-kitob. Filial xodimi — o'z qatori."""
+
+    @extend_schema(summary="Filiallar kesimida solishtirish va hisob-kitob",
+                   parameters=_PERIOD_PARAMS, request=None, responses={200: dict})
+    def get(self, request: Request) -> Response:
+        preset, df, dt = _period(request)
+        start, end, *_ = resolve_period(preset, df, dt)
+        scope = self._scope(request)
+        return ok(branch_comparison(
+            start, end, branch_ids=None if scope is None else [scope]
+        ))
+
+
 class DistributorComparisonView(_ReportView):
     @extend_schema(summary="Tarqatuvchilarni solishtirish + reyting",
                    parameters=_PERIOD_PARAMS, request=None, responses={200: dict})
@@ -387,6 +402,15 @@ class ReportExportView(_ReportView):
             rows = branch_activity_rows_for_export(payload)
             base = f"filial_{warehouse.name}_{payload['kind']}_{start}_{end}"
             title = f"{warehouse.name} · {payload['label']} · {start} – {end}"
+        elif report_type == "branches":
+            preset, pdf_, pdt = _period(request)
+            start, end, *_ = resolve_period(preset, pdf_ or df, pdt or dt)
+            payload = branch_comparison(
+                start, end, branch_ids=None if branch is None else [branch]
+            )
+            rows = comparison_rows_for_export(payload)
+            base = f"filiallar_{start}_{end}"
+            title = f"Filiallar solishtirmasi · {start} – {end}"
         elif report_type == "query":
             payload = report_query(
                 dimension=request.query_params.get("dimension", "product"),

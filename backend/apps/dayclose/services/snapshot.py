@@ -147,7 +147,15 @@ def build_snapshot(distributor, date, *, daily_return_items=None) -> DayCloseSna
     snap.new_clients_count = 0  # yangi mijoz — 3-fazada aniqlashtiriladi
 
     # --- per-product tovar farqi ---
+    from apps.catalog.pricing import branch_price_map, price_for
+    from apps.core.branch import staff_branch
+
     by_product: dict[str, ProductDiff] = {}
+    branch = staff_branch(distributor)
+    price_map = branch_price_map(branch)
+
+    def _wholesale(product):
+        return price_for(product, branch, price_map).wholesale_price
 
     def _row(product):
         pid = str(product.id)
@@ -155,7 +163,7 @@ def build_snapshot(distributor, date, *, daily_return_items=None) -> DayCloseSna
             by_product[pid] = ProductDiff(
                 product_id=pid, product_name=product.name,
                 loaded=_ZERO, sold=_ZERO, sale_returned=_ZERO, daily_returned=_ZERO,
-                price=product.wholesale_price,
+                price=_wholesale(product),
             )
         return by_product[pid]
 
@@ -186,7 +194,7 @@ def build_snapshot(distributor, date, *, daily_return_items=None) -> DayCloseSna
         for row in daily_return_items:
             r = _row(row["product"])
             r.daily_returned += row["quantity"]
-            returned_amount += row["quantity"] * row["product"].wholesale_price
+            returned_amount += row["quantity"] * _wholesale(row["product"])
 
     snap.returned_amount = returned_amount
     snap.product_diffs = list(by_product.values())

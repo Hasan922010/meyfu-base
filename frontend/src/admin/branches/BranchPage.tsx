@@ -68,7 +68,14 @@ export function BranchPage(): ReactElement {
             </p>
           )}
         </div>
-        <PeriodSwitcher value={preset} onChange={setPreset} />
+        <div className="flex flex-wrap items-center gap-2">
+          {data?.warehouse.is_branch && (
+            <Link to={`/admin/branches/${id}/prices`} className="btn px-3 py-1.5 text-sm">
+              Filial narxlari
+            </Link>
+          )}
+          <PeriodSwitcher value={preset} onChange={setPreset} />
+        </div>
       </div>
 
       <DataState isLoading={query.isLoading} isError={query.isError} isEmpty={false}>

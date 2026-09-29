@@ -144,16 +144,24 @@ def create_opening_debt(
     return debt
 
 
-def client_opening_sheet() -> list[dict]:
-    """Boshlang'ich qarz uchun bloklanmagan mijozlar — joriy qarzi bilan."""
+def _opening_clients(branch):
+    qs = Client.objects.filter(is_blocked=False)
+    return qs.filter(branch=branch) if branch is not None else qs
+
+
+def client_opening_sheet(branch=None) -> list[dict]:
+    """Boshlang'ich qarz uchun bloklanmagan mijozlar — joriy qarzi bilan.
+
+    `branch` — faqat shu filial mijozlari (filial rahbari uchun).
+    """
     return [
         sheet_row(id=c.id, name=c.name, code=c.phone, current=c.current_debt)
-        for c in Client.objects.filter(is_blocked=False).order_by("name", "pk")
+        for c in _opening_clients(branch).order_by("name", "pk")
     ]
 
 
 @transaction.atomic
-def client_opening_bulk(*, rows: list[dict], note: str, user) -> dict:
+def client_opening_bulk(*, rows: list[dict], note: str, user, branch=None) -> dict:
     """Yakuniy qarz kiritiladi — faqat oshirish mumkin (qarz sotuvsiz yaratiladi).
 
     Kamaytirish qarz to'lovi orqali bo'ladi, aks holda qarzlar jurnali
@@ -161,8 +169,8 @@ def client_opening_bulk(*, rows: list[dict], note: str, user) -> dict:
     """
     clients = {
         c.id: c
-        for c in Client.objects.select_for_update().filter(
-            is_blocked=False, id__in=[row["id"] for row in rows]
+        for c in _opening_clients(branch).select_for_update().filter(
+            id__in=[row["id"] for row in rows]
         )
     }
     changes = plan_deltas(rows, {pk: c.current_debt for pk, c in clients.items()})

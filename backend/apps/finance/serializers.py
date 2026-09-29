@@ -4,15 +4,20 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from apps.warehouse.models import Warehouse
+
 from .models import CashAccount, CashTransaction, CompanyExpense
 
 _MONEY = {"max_digits": 16, "decimal_places": 2}
 
 
 class CashAccountSerializer(serializers.ModelSerializer):
+    branch_name = serializers.CharField(source="branch.name", read_only=True, default=None)
+
     class Meta:
         model = CashAccount
-        fields = ("id", "name", "balance", "is_active", "updated_at")
+        fields = ("id", "name", "balance", "is_active", "branch", "branch_name",
+                  "updated_at")
         read_only_fields = fields
 
 
@@ -48,6 +53,16 @@ class CashTransactionCreateSerializer(serializers.Serializer):
         if attrs["transaction_type"] == "OTHER_OUT" and not attrs.get("note", "").strip():
             raise serializers.ValidationError({"note": "Chiqim sababini yozing."})
         return attrs
+
+
+class BranchCashTransferSerializer(serializers.Serializer):
+    """Filialdan markazga topshirish. `branch` — faqat markaz xodimi uchun."""
+
+    amount = serializers.DecimalField(**_MONEY, min_value=Decimal("0.01"))
+    note = serializers.CharField(required=False, allow_blank=True, default="", max_length=255)
+    branch = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.filter(is_branch=True), required=False, allow_null=True,
+    )
 
 
 class CashOpeningBalanceSerializer(serializers.Serializer):

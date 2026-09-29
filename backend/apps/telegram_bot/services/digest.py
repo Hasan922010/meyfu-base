@@ -15,14 +15,16 @@ def _fmt(n) -> str:
     return f"{float(n):,.0f}".replace(",", " ")
 
 
-def build_today_summary(day=None) -> str:
+def build_today_summary(day=None, branch=None) -> str:
+    """Kunlik xulosa; `branch` — faqat shu filial bo'yicha (filial rahbari uchun)."""
     from apps.reports.services import dashboard
 
     day = day or business_date()
-    d = dashboard(day=day)
+    d = dashboard(day=day, branch=branch.pk if branch else None)
     k = d["kpi"]
+    title = f" · {branch.name}" if branch else ""
     lines = [
-        f"<b>📊 Bugungi hisobot · {day:%d.%m.%Y}</b>",
+        f"<b>📊 Bugungi hisobot{title} · {day:%d.%m.%Y}</b>",
         "",
         f"Savdo: <b>{_fmt(k['sales_total'])}</b> so'm  ({k['sales_count']} ta)",
         f"Sof foyda: {_fmt(k['profit'])} so'm",
@@ -34,7 +36,7 @@ def build_today_summary(day=None) -> str:
     if k["flagged_sales"]:
         lines.append(f"⚠️ Belgilangan sotuvlar: {k['flagged_sales']}")
 
-    orders = _orders_today(day)
+    orders = _orders_today(day, branch)
     if orders["total"]:
         lines.append("")
         lines.append(
@@ -51,11 +53,13 @@ def build_today_summary(day=None) -> str:
     return "\n".join(lines)
 
 
-def _orders_today(day) -> dict:
+def _orders_today(day, branch=None) -> dict:
     from apps.orders.constants import OrderStatus
     from apps.orders.models import Order
 
     qs = Order.objects.filter(date=day)
+    if branch is not None:
+        qs = qs.filter(client__branch=branch)
     return {
         "total": qs.count(),
         "placed": qs.filter(status=OrderStatus.PLACED).count(),
@@ -67,10 +71,10 @@ def _orders_today(day) -> dict:
     }
 
 
-def build_overdue_summary() -> str:
+def build_overdue_summary(branch=None) -> str:
     from apps.reports.services import debt_aging
 
-    a = debt_aging()
+    a = debt_aging(branch=branch.pk if branch else None)
     lines = [
         f"<b>💳 Muddati o'tgan qarzlar</b>  ({a['as_of']})",
         f"Jami: <b>{_fmt(a['overdue_total'])}</b> so'm",
@@ -84,8 +88,23 @@ def build_overdue_summary() -> str:
 
 
 def send_daily_digest() -> int:
-    """Har kuni 20:00 — bog'langan adminlarга kunlik xulosa."""
-    return tg_send_admins(build_today_summary())
+    """Har kuni 20:00 — markaz rahbarlariga butun kompaniya bo'yicha, har filial
+    rahbariga faqat o'z filiali bo'yicha kunlik xulosa."""
+    User = get_user_model()
+    sent = tg_send_admins(build_today_summary())
+    managers = (
+        User.objects.filter(role=Role.BRANCH_MANAGER, is_active=True,
+                            warehouse__is_branch=True)
+        .exclude(telegram_chat_id="").select_related("warehouse")
+    )
+    summaries: dict = {}
+    for manager in managers:
+        branch = manager.warehouse
+        if branch.pk not in summaries:
+            summaries[branch.pk] = build_today_summary(branch=branch)
+        if tg_send(manager, summaries[branch.pk]):
+            sent += 1
+    return sent
 
 
 def send_morning_loading_reminder() -> int:

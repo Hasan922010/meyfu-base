@@ -44,7 +44,7 @@ class ExpenseCategoryViewSet(BaseModelViewSet):
 
 class DistributorExpenseViewSet(BaseModelViewSet):
     serializer_class = DistributorExpenseSerializer
-    branch_lookup = "distributor__warehouse"
+    branch_lookup = "branch"
     http_method_names = ["get", "post", "head", "options"]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     read_roles = _READ

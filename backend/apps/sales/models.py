@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.catalog.models import Product
 from apps.clients.models import Client
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, BranchStampedModel
 
 from .constants import (
     DebtStatus,
@@ -36,7 +36,7 @@ _QTY = {"max_digits": 14, "decimal_places": 3}
 _GEO = {"max_digits": 9, "decimal_places": 6, "null": True, "blank": True}
 
 
-class Sale(BaseModel):
+class Sale(BranchStampedModel):
     number = models.CharField(_("raqam"), max_length=32, unique=True, blank=True)
     date = models.DateField(_("sana"))
     distributor = models.ForeignKey(
@@ -151,7 +151,7 @@ class SaleItem(BaseModel):
         )
 
 
-class SaleReturn(BaseModel):
+class SaleReturn(BranchStampedModel):
     number = models.CharField(_("raqam"), max_length=32, unique=True, blank=True)
     date = models.DateField(_("sana"))
     distributor = models.ForeignKey(

@@ -136,20 +136,27 @@ def create_sale(
         flags.append("CLIENT_BLOCKED")
 
     # --- qatorlarni tayyorlash ---
+    # Filial narxi bo'lsa — minimal narx filialniki (v5: A7)
+    from apps.catalog.pricing import branch_price_map, price_for
+    from apps.core.branch import staff_branch
+
+    branch = staff_branch(distributor)
+    price_map = branch_price_map(branch, [ln.product.pk for ln in lines])
     prepared: list[tuple[SaleLine, Decimal, bool]] = []
     for line in lines:
         product = line.product
-        below_min = line.price < product.min_price and product.min_price > _ZERO
+        min_price = price_for(product, branch, price_map).min_price
+        below_min = line.price < min_price and min_price > _ZERO
         if below_min:
             if strict and not can_below:
                 raise BusinessError(
                     message=(
                         f"«{product.name}» narxi {line.price} — minimal narx "
-                        f"{product.min_price} dan past."
+                        f"{min_price} dan past."
                     ),
                     code="PRICE_BELOW_MINIMUM",
                     details={"product_id": str(product.id),
-                             "min_price": str(product.min_price)},
+                             "min_price": str(min_price)},
                 )
             flags.append("PRICE_BELOW_MINIMUM")
         prepared.append((line, product.cost_price, below_min))

@@ -11,14 +11,18 @@ class CashTxType(models.TextChoices):
     OTHER_OUT = "OTHER_OUT", _("Boshqa chiqim (−)")
     CORRECTION = "CORRECTION", _("Tuzatuvchi yozuv (±)")
     OPENING_BALANCE = "OPENING_BALANCE", _("Boshlang'ich qoldiq (±)")
+    # Filial kassasidan markaz kassasiga pul topshirish (inkassatsiya) — juft yozuv
+    BRANCH_OUT = "BRANCH_OUT", _("Markazga topshirildi (−)")
+    CENTER_IN = "CENTER_IN", _("Filialdan qabul qilindi (+)")
 
 
-POSITIVE_CASH_TYPES = {CashTxType.HANDOVER_IN, CashTxType.OTHER_IN}
+POSITIVE_CASH_TYPES = {CashTxType.HANDOVER_IN, CashTxType.OTHER_IN, CashTxType.CENTER_IN}
 NEGATIVE_CASH_TYPES = {
     CashTxType.BANK_DEPOSIT,
     CashTxType.SUPPLIER_PAYMENT,
     CashTxType.COMPANY_EXPENSE,
     CashTxType.OTHER_OUT,
+    CashTxType.BRANCH_OUT,
 }
 
 

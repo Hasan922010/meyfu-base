@@ -7,7 +7,56 @@ from rest_framework import serializers
 from apps.users.constants import Role
 from apps.warehouse.models import Warehouse
 
-from .models import Brand, Category, Product, ProductImage, ProductPrice, Unit
+from .models import BranchPrice, Brand, Category, Product, ProductImage, ProductPrice, Unit
+from .pricing import PRICE_FIELDS
+
+
+class BranchPricedMixin:
+    """Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+
+    View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+    """
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        override = (self.context.get("branch_price_map") or {}).get(instance.pk)
+        if override is not None:
+            for field in PRICE_FIELDS:
+                if field in data:
+                    data[field] = str(getattr(override, field))
+        return data
+
+
+class BranchPriceSerializer(serializers.ModelSerializer):
+    """Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1)."""
+
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    branch_name = serializers.CharField(source="branch.name", read_only=True)
+    base_wholesale_price = serializers.DecimalField(
+        source="product.wholesale_price", max_digits=14, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = BranchPrice
+        fields = (
+            "id", "branch", "branch_name", "product", "product_name", "product_sku",
+            "wholesale_price", "retail_price", "min_price", "base_wholesale_price",
+            "updated_at",
+        )
+        read_only_fields = ("id", "updated_at")
+
+    def validate(self, attrs: dict) -> dict:
+        branch = attrs.get("branch", getattr(self.instance, "branch", None))
+        if branch is not None and not branch.is_branch:
+            raise serializers.ValidationError({"branch": "Faqat filial uchun narx belgilanadi."})
+        retail = attrs.get("retail_price", getattr(self.instance, "retail_price", None))
+        minimum = attrs.get("min_price", getattr(self.instance, "min_price", None))
+        if retail is not None and minimum is not None and minimum > retail:
+            raise serializers.ValidationError(
+                {"min_price": "Minimal narx chakana narxdan katta bo'lmasligi kerak."}
+            )
+        return attrs
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -76,7 +125,7 @@ def _primary_thumb_url(obj, context) -> str | None:
     return request.build_absolute_uri(target.url) if request else target.url
 
 
-class ProductSerializer(serializers.ModelSerializer):
+class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     brand_name = serializers.CharField(source="brand.name", read_only=True, default=None)
     unit_name = serializers.CharField(source="unit.short_name", read_only=True)
@@ -156,7 +205,7 @@ class ProductSerializer(serializers.ModelSerializer):
             )
 
 
-class ProductLiteSerializer(serializers.ModelSerializer):
+class ProductLiteSerializer(BranchPricedMixin, serializers.ModelSerializer):
     """Offline katalog sinxronizatsiyasi uchun yengil variant (CLAUDE.md 4.1)."""
 
     unit = serializers.CharField(source="unit.short_name", read_only=True)

@@ -183,6 +183,38 @@ class ProductPrice(BaseModel):
         return f"{self.product.sku} @ {self.effective_from:%Y-%m-%d}"
 
 
+class BranchPrice(BaseModel):
+    """Filialga xos narx (v5: A7). Yo'q bo'lsa — mahsulotning umumiy narxi amal qiladi.
+
+    Narxni faqat markaz belgilaydi (masalan, viloyat filiali uchun transport ustamasi).
+    """
+
+    branch = models.ForeignKey(
+        "warehouse.Warehouse", on_delete=models.CASCADE, related_name="prices",
+        verbose_name=_("filial"),
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="branch_prices",
+        verbose_name=_("mahsulot"),
+    )
+    wholesale_price = models.DecimalField(_("optom narx"), **_MONEY)
+    retail_price = models.DecimalField(_("chakana narx"), **_MONEY)
+    min_price = models.DecimalField(_("minimal narx"), **_MONEY)
+
+    class Meta:
+        verbose_name = _("filial narxi")
+        verbose_name_plural = _("filial narxlari")
+        ordering = ("product__name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch", "product"], name="uniq_branch_price_per_product",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.branch_id} · {self.product_id}"
+
+
 class ProductAlias(BaseModel):
     """Naklit skanida uchraydigan nomlar (CLAUDE.md 6, 9 — OCR o'rganishi)."""
 

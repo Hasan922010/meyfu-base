@@ -10,6 +10,7 @@ import { dateShort, money } from '@/shared/lib/format';
 import { useCan } from '@/shared/lib/permissions';
 
 import { CashTxModal } from './CashTxModal';
+import { ToCenterModal } from './ToCenterModal';
 
 const CATEGORIES = [
   { v: 'RENT', l: 'Ijara' },
@@ -26,6 +27,7 @@ export function FinancePage(): ReactElement {
   const [tab, setTab] = useState<'overview' | 'cash' | 'company'>('overview');
   const [expModal, setExpModal] = useState<boolean>(false);
   const [cashModal, setCashModal] = useState<boolean>(false);
+  const [toCenter, setToCenter] = useState<boolean>(false);
   // Kassa va kompaniya xarajatini faqat SUPER_ADMIN/ACCOUNTANT yozadi (audit K3b)
   const canWrite = useCan('cashWrite');
 
@@ -114,9 +116,16 @@ export function FinancePage(): ReactElement {
             </span>
           </div>
           {canWrite && (
-            <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
-              + Kassa yozuvi
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-brand px-4" onClick={() => setCashModal(true)}>
+                + Kassa yozuvi
+              </button>
+              {account.data?.branch && (
+                <button className="btn px-4" onClick={() => setToCenter(true)}>
+                  Markazga topshirish
+                </button>
+              )}
+            </div>
           )}
           <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
             <DataState
@@ -222,6 +231,18 @@ export function FinancePage(): ReactElement {
           void qc.invalidateQueries({ queryKey: ['profit'] });
           void qc.invalidateQueries({ queryKey: ['cash-account'] });
           setExpModal(false);
+        }}
+      />
+      <ToCenterModal
+        open={toCenter}
+        balance={account.data?.balance ?? '0'}
+        branchName={account.data?.branch_name ?? 'Filial'}
+        onClose={() => setToCenter(false)}
+        onDone={() => {
+          void qc.invalidateQueries({ queryKey: ['cash-tx'] });
+          void qc.invalidateQueries({ queryKey: ['cash-account'] });
+          void qc.invalidateQueries({ queryKey: ['profit'] });
+          setToCenter(false);
         }}
       />
       <CashTxModal

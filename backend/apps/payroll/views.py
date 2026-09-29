@@ -62,7 +62,7 @@ class AdvanceViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = AdvanceSerializer
-    branch_lookup = "distributor__warehouse"
+    branch_lookup = "branch"
     queryset = Advance.objects.select_related("distributor")
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = (*_PAYROLL_READ, Role.DISTRIBUTOR)
@@ -102,7 +102,7 @@ class PayrollViewSet(
     viewsets.GenericViewSet,
 ):
     serializer_class = PayrollSerializer
-    branch_lookup = "distributor__warehouse"
+    branch_lookup = "branch"
     queryset = Payroll.objects.select_related("distributor", "approved_by")
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _PAYROLL_READ

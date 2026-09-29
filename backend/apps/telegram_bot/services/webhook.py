@@ -6,6 +6,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from apps.core.branch import user_branch
 from apps.core.formatting import fmt_money
 from apps.users.constants import Role
 
@@ -15,7 +16,7 @@ from .digest import build_overdue_summary, build_today_summary
 from .send import tg_send_chat
 
 logger = logging.getLogger("apps.telegram_bot")
-_ADMIN_ROLES = {Role.SUPER_ADMIN, Role.MANAGER}
+_ADMIN_ROLES = {Role.SUPER_ADMIN, Role.MANAGER, Role.BRANCH_MANAGER}
 
 WELCOME = (
     "MeyFu botiga xush kelibsiz!\n\n"
@@ -84,11 +85,11 @@ def _handle_message(message: dict) -> None:
 
     if text.startswith("/hisobot"):
         _require_admin(user, chat_id, lambda: tg_send_chat(
-            chat_id, build_today_summary()
+            chat_id, build_today_summary(branch=user_branch(user))
         ))
     elif text.startswith("/qarzdorlar"):
         _require_admin(user, chat_id, lambda: tg_send_chat(
-            chat_id, build_overdue_summary()
+            chat_id, build_overdue_summary(branch=user_branch(user))
         ))
     else:
         tg_send_chat(chat_id, HELP)
@@ -142,6 +143,9 @@ def _handle_callback(cq: dict) -> None:
         from apps.expenses.services import approve_expense, reject_expense
 
         expense = DistributorExpense.objects.filter(pk=obj_id).first()
+        branch = user_branch(user)
+        if expense is not None and branch is not None and expense.branch_id != branch.pk:
+            expense = None  # filial rahbari — faqat o'z filiali xarajati
         if expense is None:
             answer_callback_query(cq_id, "Xarajat topilmadi")
             return

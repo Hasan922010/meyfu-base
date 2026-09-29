@@ -68,6 +68,31 @@ class BaseModel(models.Model):
         super().delete(using=using, keep_parents=keep_parents)
 
 
+class BranchStampedModel(BaseModel):
+    """Hujjat qaysi filialda yaratilganini saqlaydi (CLAUDE.md 5 — tarix o'zgarmaydi).
+
+    Yaratilishda `branch` bo'sh bo'lsa, tarqatuvchining o'sha paytdagi filiali
+    yoziladi. Xodim keyin boshqa filialga o'tkazilsa ham eski hujjatlar joyida qoladi.
+    """
+
+    branch = models.ForeignKey(
+        "warehouse.Warehouse", on_delete=models.PROTECT, null=True, blank=True,
+        related_name="+", verbose_name=_("filial"),
+    )
+
+    class Meta(BaseModel.Meta):
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.branch_id is None:
+            from apps.core.branch import staff_branch
+
+            branch = staff_branch(getattr(self, "distributor", None))
+            if branch is not None:
+                self.branch = branch
+        super().save(*args, **kwargs)
+
+
 class AppendOnlyModel(BaseModel):
     """Faqat qo'shiladigan jurnal (append-only).
 

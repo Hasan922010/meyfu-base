@@ -4,6 +4,7 @@ from .views import (
     AbcAnalysisView,
     BranchActivityView,
     BranchCardsView,
+    BranchComparisonView,
     BranchListView,
     DashboardView,
     DebtAgingView,
@@ -19,6 +20,8 @@ from .views import (
 
 urlpatterns = [
     path("reports/branches/", BranchListView.as_view(), name="reports-branches"),
+    path("reports/branches/comparison/", BranchComparisonView.as_view(),
+         name="reports-branch-comparison"),
     path("reports/branches/<uuid:pk>/cards/", BranchCardsView.as_view(),
          name="reports-branch-cards"),
     path("reports/branches/<uuid:pk>/activity/", BranchActivityView.as_view(),

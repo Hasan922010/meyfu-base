@@ -35,6 +35,9 @@ export interface CashAccount {
   id: string;
   name: string;
   balance: string;
+  /** Filial kassasi bo'lsa — filial (markaz kassasida `null`) */
+  branch?: string | null;
+  branch_name?: string | null;
   updated_at: string;
 }
 
@@ -76,6 +79,9 @@ export const financeApi = {
     counterparty?: string;
     note?: string;
   }) => postAction<CashTransaction>('/cash-transactions/', body),
+  /** Filial kassasidan markaz kassasiga topshirish (inkassatsiya) */
+  transferToCenter: (body: { amount: string; note?: string; branch?: string }) =>
+    postAction<CashTransaction>('/cash-transactions/to-center/', body),
   /** Kassa boshlang'ich qoldig'i (faqat SUPER_ADMIN) — `amount` ishorali. */
   openingBalance: (body: { amount: string; note?: string }) =>
     postAction<CashTransaction>('/cash-transactions/opening-balance/', body),

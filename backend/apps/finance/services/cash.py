@@ -75,6 +75,48 @@ def cash_apply(
     )
 
 
+@transaction.atomic
+def transfer_to_center(*, branch, amount: Decimal, note: str = "", user=None):
+    """Filial kassasidan markaz kassasiga pul topshirish (inkassatsiya).
+
+    Ikki append-only yozuv bitta tranzaksiyada: filialdan chiqim va markazga kirim,
+    umumiy `reference_id` bilan. Kassada yo'q pulni topshirib bo'lmaydi.
+    """
+    import uuid
+
+    from apps.core.exceptions import BusinessError
+    from apps.core.models import AuditLog
+
+    from ..constants import CashTxType
+
+    if amount <= _ZERO:
+        raise BusinessError(message="Summa musbat bo'lishi kerak.", code="INVALID_AMOUNT")
+    account = CashAccount.objects.select_for_update().get(pk=get_account(branch).pk)
+    if amount > account.balance:
+        raise BusinessError(
+            message=f"Filial kassasida {account.balance:,.0f} so'm bor — "
+                    "shundan ko'p topshirib bo'lmaydi.".replace(",", " "),
+            code="INSUFFICIENT_CASH",
+        )
+    ref = uuid.uuid4()
+    text = note or f"{branch.name} → markaz"
+    out = cash_apply(
+        transaction_type=CashTxType.BRANCH_OUT, amount=-amount, counterparty="Markaz",
+        reference_type="branch_cash_transfer", reference_id=ref, note=text,
+        user=user, branch=branch,
+    )
+    cash_apply(
+        transaction_type=CashTxType.CENTER_IN, amount=amount, counterparty=branch.name,
+        reference_type="branch_cash_transfer", reference_id=ref, note=text, user=user,
+    )
+    AuditLog.objects.create(
+        user=user, action="cash.branch_to_center", model_name="CashTransaction",
+        object_id=str(out.pk),
+        changes={"branch": branch.name, "amount": str(amount), "note": note},
+    )
+    return out
+
+
 def cash_matches_ledger() -> bool:
     """Har bir kassa (markaz va filiallar) balansi o'z jurnali yig'indisiga teng."""
     get_account()  # markaz kassasi har doim mavjud bo'lsin

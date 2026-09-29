@@ -4,11 +4,12 @@ from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.core.branch import user_branch
+from apps.core.branch import acting_branch, user_branch
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
@@ -18,6 +19,7 @@ from apps.users.constants import Role
 from .constants import CashTxType
 from .models import CashTransaction, CompanyExpense
 from .serializers import (
+    BranchCashTransferSerializer,
     CashAccountSerializer,
     CashOpeningBalanceSerializer,
     CashTransactionCreateSerializer,
@@ -25,6 +27,7 @@ from .serializers import (
     CompanyExpenseSerializer,
 )
 from .services import cash_apply, create_company_expense, get_account
+from .services.cash import transfer_to_center
 from .services.opening import cash_opening_bulk, cash_opening_sheet
 
 _FINANCE = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
@@ -45,10 +48,11 @@ class CashTransactionViewSet(
     # Filial rahbari — faqat o'z filiali kassasiga (branch_lookup + create)
     write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER)
     branch_lookup = "account__branch"
+    # Filial rahbari — faqat o'z filiali kassasining boshlang'ich qoldig'i
     action_roles = {
-        "opening_balance": (Role.SUPER_ADMIN,),
-        "opening_sheet": (Role.SUPER_ADMIN,),
-        "opening_balance_bulk": (Role.SUPER_ADMIN,),
+        "opening_balance": (Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
+        "opening_sheet": (Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
+        "opening_balance_bulk": (Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
     }
     filterset_fields = ("transaction_type", "date")
     ordering = ("-created_at",)
@@ -59,7 +63,8 @@ class CashTransactionViewSet(
     )
     @action(detail=False, methods=["get"], url_path="opening-sheet")
     def opening_sheet(self, request: Request) -> Response:
-        return ok(OpeningSheetRowSerializer(cash_opening_sheet(), many=True).data)
+        rows = cash_opening_sheet(branch=acting_branch(request.user))
+        return ok(OpeningSheetRowSerializer(rows, many=True).data)
 
     @extend_schema(
         summary="Kassa balansini ro'yxatdan kiritish (yakuniy qiymat, ±)",
@@ -71,8 +76,27 @@ class CashTransactionViewSet(
         s.is_valid(raise_exception=True)
         return ok(cash_opening_bulk(
             rows=s.validated_data["rows"], note=s.validated_data["note"],
-            user=request.user,
+            user=request.user, branch=acting_branch(request.user),
         ))
+
+    @extend_schema(
+        summary="Filial kassasidan markazga pul topshirish (inkassatsiya)",
+        request=BranchCashTransferSerializer, responses=CashTransactionSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="to-center")
+    def to_center(self, request: Request) -> Response:
+        s = BranchCashTransferSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        # Filial xodimi — faqat o'z filialidan; markaz — tanlangan filial nomidan
+        branch = user_branch(request.user) or data.get("branch")
+        if branch is None or not branch.is_branch:
+            raise ValidationError({"branch": "Qaysi filial kassasidan topshirilishini tanlang."})
+        tx = transfer_to_center(
+            branch=branch, amount=data["amount"], note=data.get("note", ""),
+            user=request.user,
+        )
+        return ok(CashTransactionSerializer(tx).data, status_code=201)
 
     @extend_schema(summary="Kassa balansi")
     @action(detail=False, methods=["get"])
@@ -95,6 +119,7 @@ class CashTransactionViewSet(
             reference_type="opening_balance",
             note=data.get("note", ""),
             user=request.user,
+            branch=acting_branch(request.user),
         )
         return ok(CashTransactionSerializer(tx).data, status_code=201)
 

@@ -54,11 +54,11 @@ def dashboard(
 def _dashboard_compute(day: date_cls, branch=None) -> dict:
     sales = in_branch(
         Sale.objects.filter(date=day, status__in=_ACTIVE), branch,
-        "distributor__warehouse",
+        "branch",
     )
     items = in_branch(
         SaleItem.objects.filter(sale__date=day, sale__status__in=_ACTIVE), branch,
-        "sale__distributor__warehouse",
+        "sale__branch",
     )
 
     agg = sales.aggregate(
@@ -140,7 +140,7 @@ def sales_summary(
 ) -> list[dict]:
     qs = in_branch(
         Sale.objects.filter(date__gte=date_from, date__lte=date_to, status__in=_ACTIVE),
-        branch, "distributor__warehouse",
+        branch, "branch",
     )
 
     if group_by == "distributor":
@@ -154,7 +154,7 @@ def sales_summary(
                     sale__date__gte=date_from, sale__date__lte=date_to,
                     sale__status__in=_ACTIVE,
                 ),
-                branch, "sale__distributor__warehouse",
+                branch, "sale__branch",
             )
             .values("product__name")
             .annotate(quantity=Sum("quantity"), amount=Sum("amount"),
@@ -258,7 +258,7 @@ def profit_and_loss(*, date_from, date_to, branch=None) -> dict:
             sale__date__gte=date_from, sale__date__lte=date_to,
             sale__status__in=_ACTIVE,
         ),
-        branch, "sale__distributor__warehouse",
+        branch, "sale__branch",
     )
     revenue = sale_items.aggregate(
         s=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC)
@@ -271,7 +271,7 @@ def profit_and_loss(*, date_from, date_to, branch=None) -> dict:
         DistributorExpense.objects.filter(
             date__gte=date_from, date__lte=date_to, status="APPROVED",
         ),
-        branch, "distributor__warehouse",
+        branch, "branch",
     ).aggregate(s=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC))["s"]
 
     company_exp_qs = in_branch(
@@ -316,7 +316,7 @@ def expenses_report(*, date_from, date_to, branch=None) -> dict:
     """Xarajatlar hisoboti (CLAUDE.md 10)."""
     dist_qs = in_branch(
         DistributorExpense.objects.filter(date__gte=date_from, date__lte=date_to),
-        branch, "distributor__warehouse",
+        branch, "branch",
     ).exclude(status="REJECTED")
 
     by_category = list(
@@ -383,7 +383,7 @@ def sales_rows_for_export(*, date_from, date_to, branch=None) -> list[list]:
     qs = (
         in_branch(
             Sale.objects.filter(date__gte=date_from, date__lte=date_to),
-            branch, "distributor__warehouse",
+            branch, "branch",
         )
         .select_related("distributor", "client")
         .order_by("date", "number")

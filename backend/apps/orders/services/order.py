@@ -243,16 +243,20 @@ def build_loading_from_orders(
         .annotate(qty=Sum("quantity"))
     )
     from apps.catalog.models import Product
+    from apps.catalog.pricing import branch_price_map, price_for
+    from apps.core.branch import staff_branch
 
     products = {p.id: p for p in Product.objects.filter(
         id__in=[r["product_id"] for r in rows]
     )}
+    branch = staff_branch(distributor)
+    price_map = branch_price_map(branch, products)
     for row in rows:
         product = products[row["product_id"]]
+        price = price_for(product, branch, price_map).wholesale_price
         LoadingItem.objects.create(
             loading=loading, product=product, quantity=row["qty"],
-            price=product.wholesale_price,
-            amount=row["qty"] * product.wholesale_price,
+            price=price, amount=row["qty"] * price,
         )
     loading.recalc_total()
     loading.save(update_fields=["number", "total_amount", "updated_at"])

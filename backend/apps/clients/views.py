@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.branch import (
+    acting_branch,
     branch_scope,
     ensure_same_branch,
     scope_queryset,
@@ -89,7 +90,12 @@ class RouteViewSet(BaseModelViewSet):
         self._save_in_branch(serializer, created_by=self.request.user)
 
     def perform_update(self, serializer) -> None:
+        before = serializer.instance.branch_id
         self._save_in_branch(serializer)
+        route = serializer.instance
+        if route.branch_id != before:
+            # Marshrut filialga o'tkazildi — uning mijozlari ham birga o'tadi
+            Client.objects.filter(route=route).update(branch_id=route.branch_id)
 
     @extend_schema(summary="Mening marshrutlarim (tarqatuvchi uchun)")
     @action(detail=False, methods=["get"], url_path="my")
@@ -119,8 +125,6 @@ class ClientViewSet(BaseModelViewSet):
         "opening_sheet": _MANAGE,
         "opening_balance_bulk": _MANAGE,
     }
-    # Boshlang'ich qarz ro'yxati barcha mijozlar bo'yicha — hozircha faqat markaz
-    central_only_actions = ("opening_balance", "opening_sheet", "opening_balance_bulk")
     branch_lookup = "branch"
 
     def get_queryset(self) -> QuerySet[Client]:
@@ -181,7 +185,8 @@ class ClientViewSet(BaseModelViewSet):
     def opening_sheet(self, request: Request) -> Response:
         from apps.sales.services.debt import client_opening_sheet
 
-        return ok(OpeningSheetRowSerializer(client_opening_sheet(), many=True).data)
+        rows = client_opening_sheet(branch=acting_branch(request.user))
+        return ok(OpeningSheetRowSerializer(rows, many=True).data)
 
     @extend_schema(
         summary="Mijozlar qarzini ro'yxatdan kiritish (yakuniy qarz, faqat oshirish)",
@@ -197,7 +202,7 @@ class ClientViewSet(BaseModelViewSet):
         s.is_valid(raise_exception=True)
         return ok(client_opening_bulk(
             rows=s.validated_data["rows"], note=s.validated_data["note"],
-            user=request.user,
+            user=request.user, branch=acting_branch(request.user),
         ))
 
     @extend_schema(
@@ -212,6 +217,8 @@ class ClientViewSet(BaseModelViewSet):
         s = ClientOpeningDebtSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
+        if acting_branch(request.user) is not None:
+            ensure_same_branch(request.user, data["client"].branch_id, "client")
         debt = create_opening_debt(
             client=data["client"], amount=data["amount"],
             note=data.get("note", ""), user=request.user,

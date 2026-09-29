@@ -4,6 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { authApi } from '@/shared/api/users';
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -31,6 +32,14 @@ function RouteForm({
   const [distributor, setDistributor] = useState<string>(route?.distributor ?? '');
   const [orderTaker, setOrderTaker] = useState<string>(route?.order_taker ?? '');
   const [days, setDays] = useState<number[]>(route?.days_of_week ?? []);
+  const [branch, setBranch] = useState<string>(route?.branch ?? '');
+  // Markaz marshrutni filialga biriktiradi; filial rahbari uchun server o'zi qo'yadi
+  const isCentral = useAuthStore((s) => s.user?.role) !== 'BRANCH_MANAGER';
+  const branches = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
+    enabled: isCentral,
+  });
 
   const distributors = useQuery({
     queryKey: ['distributors'],
@@ -48,6 +57,7 @@ function RouteForm({
         days_of_week: [...days].sort((a, b) => a - b),
         distributor: distributor || null,
         order_taker: orderTaker || null,
+        ...(isCentral ? { branch: branch || null } : {}),
       };
       return route
         ? clientsApi.updateRoute(route.id, body)
@@ -99,6 +109,24 @@ function RouteForm({
           ))}
         </select>
       </label>
+      {isCentral && (
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Filial</span>
+          <select className="field" value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <option value="">— Markaz</option>
+            {(branches.data?.results ?? [])
+              .filter((w) => w.is_branch)
+              .map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+          </select>
+          <span className="block text-xs text-gray-500">
+            Filial o'zgartirilsa, marshrutdagi barcha mijozlar ham shu filialga o'tadi.
+          </span>
+        </label>
+      )}
       <div className="space-y-1">
         <span className="text-sm font-medium">Hafta kunlari</span>
         <div className="flex gap-1">
@@ -188,6 +216,7 @@ export function RoutesPage(): ReactElement {
                 <th className="p-3">Tarqatuvchi</th>
                 <th className="p-3">Zakaz oluvchi</th>
                 <th className="p-3">Kunlar</th>
+                <th className="p-3">Filial</th>
                 <th className="p-3 text-right">Mijozlar</th>
                 {canWrite && <th className="p-3" />}
               </tr>
@@ -202,6 +231,7 @@ export function RoutesPage(): ReactElement {
                   <td className="p-3">{r.distributor_name ?? '—'}</td>
                   <td className="p-3">{r.order_taker_name ?? '—'}</td>
                   <td className="p-3">{r.days_display.join(', ') || '—'}</td>
+                  <td className="p-3">{r.branch_name ?? 'Markaz'}</td>
                   <td className="p-3 text-right">{r.clients_count}</td>
                   {canWrite && (
                     <td className="p-3 text-right">

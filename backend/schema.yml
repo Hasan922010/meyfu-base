@@ -114,6 +114,92 @@ paths:
               schema:
                 $ref: '#/components/schemas/Advance'
           description: ''
+  /api/v1/audit-logs/:
+    get:
+      operationId: audit_logs_list
+      description: Kim, qachon, nimani o'zgartirdi. Filial rahbari — o'z filiali xodimlari.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: model_name
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - audit-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogList'
+          description: ''
+  /api/v1/audit-logs/{id}/:
+    get:
+      operationId: audit_logs_retrieve
+      description: Kim, qachon, nimani o'zgartirdi. Filial rahbari — o'z filiali xodimlari.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this audit yozuvi.
+        required: true
+      tags:
+      - audit-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: ''
   /api/v1/auth/change-password/:
     post:
       operationId: auth_change_password_create
@@ -311,6 +397,186 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/branch-prices/:
+    get:
+      operationId: branch_prices_list
+      description: 'Filial narxlari — markaz belgilaydi, filial o''z narxlarini o''qiydi
+        (v5: A7).'
+      parameters:
+      - in: query
+        name: branch
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: product
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - branch-prices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BranchPrice'
+          description: ''
+    post:
+      operationId: branch_prices_create
+      description: 'Filial narxlari — markaz belgilaydi, filial o''z narxlarini o''qiydi
+        (v5: A7).'
+      tags:
+      - branch-prices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchPriceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BranchPriceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchPriceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchPrice'
+          description: ''
+  /api/v1/branch-prices/{id}/:
+    get:
+      operationId: branch_prices_retrieve
+      description: 'Filial narxlari — markaz belgilaydi, filial o''z narxlarini o''qiydi
+        (v5: A7).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this filial narxi.
+        required: true
+      tags:
+      - branch-prices
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchPrice'
+          description: ''
+    put:
+      operationId: branch_prices_update
+      description: 'Filial narxlari — markaz belgilaydi, filial o''z narxlarini o''qiydi
+        (v5: A7).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this filial narxi.
+        required: true
+      tags:
+      - branch-prices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchPriceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BranchPriceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchPriceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchPrice'
+          description: ''
+    patch:
+      operationId: branch_prices_partial_update
+      description: 'Filial narxlari — markaz belgilaydi, filial o''z narxlarini o''qiydi
+        (v5: A7).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this filial narxi.
+        required: true
+      tags:
+      - branch-prices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBranchPriceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBranchPriceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBranchPriceRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchPrice'
+          description: ''
+    delete:
+      operationId: branch_prices_destroy
+      description: 'Filial narxlari — markaz belgilaydi, filial o''z narxlarini o''qiydi
+        (v5: A7).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this filial narxi.
+        required: true
+      tags:
+      - branch-prices
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/brands/:
     get:
       operationId: brands_list
@@ -627,6 +893,8 @@ paths:
           title: Turi
           enum:
           - BANK_DEPOSIT
+          - BRANCH_OUT
+          - CENTER_IN
           - COMPANY_EXPENSE
           - CORRECTION
           - HANDOVER_IN
@@ -643,6 +911,8 @@ paths:
           * `OTHER_OUT` - Boshqa chiqim (−)
           * `CORRECTION` - Tuzatuvchi yozuv (±)
           * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+          * `BRANCH_OUT` - Markazga topshirildi (−)
+          * `CENTER_IN` - Filialdan qabul qilindi (+)
       tags:
       - cash-transactions
       security:
@@ -829,6 +1099,8 @@ paths:
           title: Turi
           enum:
           - BANK_DEPOSIT
+          - BRANCH_OUT
+          - CENTER_IN
           - COMPANY_EXPENSE
           - CORRECTION
           - HANDOVER_IN
@@ -845,6 +1117,8 @@ paths:
           * `OTHER_OUT` - Boshqa chiqim (−)
           * `CORRECTION` - Tuzatuvchi yozuv (±)
           * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+          * `BRANCH_OUT` - Markazga topshirildi (−)
+          * `CENTER_IN` - Filialdan qabul qilindi (+)
       tags:
       - cash-transactions
       security:
@@ -855,6 +1129,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedOpeningSheetRowList'
+          description: ''
+  /api/v1/cash-transactions/to-center/:
+    post:
+      operationId: cash_transactions_to_center_create
+      description: |-
+        `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+        filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+      summary: Filial kassasidan markazga pul topshirish (inkassatsiya)
+      tags:
+      - cash-transactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchCashTransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BranchCashTransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BranchCashTransferRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CashTransaction'
           description: ''
   /api/v1/categories/:
     get:
@@ -5578,6 +5882,46 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/reports/branches/comparison/:
+    get:
+      operationId: reports_branches_comparison_retrieve
+      description: Filiallarni solishtirish + markaz bilan hisob-kitob. Filial xodimi
+        — o'z qatori.
+      summary: Filiallar kesimida solishtirish va hisob-kitob
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: preset
+        schema:
+          type: string
+          enum:
+          - custom
+          - last_month
+          - month
+          - quarter
+          - today
+          - week
+          - year
+          - yesterday
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/reports/dashboard/:
     get:
       operationId: reports_dashboard_retrieve
@@ -8774,9 +9118,179 @@ components:
       required:
       - amount
       - distributor
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Yaratilgan vaqti
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Foydalanuvchi
+        user_name:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+          title: Harakat
+        model_name:
+          type: string
+          readOnly: true
+          title: Model
+        object_id:
+          type: string
+          readOnly: true
+          title: Obyekt ID
+        changes:
+          readOnly: true
+          title: O'zgarishlar
+        ip:
+          type: string
+          readOnly: true
+          nullable: true
+        user_agent:
+          type: string
+          readOnly: true
+          title: Qurilma / brauzer
+      required:
+      - action
+      - changes
+      - created_at
+      - id
+      - ip
+      - model_name
+      - object_id
+      - user
+      - user_agent
+      - user_name
     BlankEnum:
       enum:
       - ''
+    BranchCashTransferRequest:
+      type: object
+      description: Filialdan markazga topshirish. `branch` — faqat markaz xodimi uchun.
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - amount
+    BranchPrice:
+      type: object
+      description: Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin
+        (CLAUDE.md 7.1).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+          title: Filial
+        branch_name:
+          type: string
+          readOnly: true
+        product:
+          type: string
+          format: uuid
+          title: Mahsulot
+        product_name:
+          type: string
+          readOnly: true
+        product_sku:
+          type: string
+          readOnly: true
+        wholesale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Optom narx
+        retail_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Chakana narx
+        min_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Minimal narx
+        base_wholesale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Yangilangan vaqti
+      required:
+      - base_wholesale_price
+      - branch
+      - branch_name
+      - id
+      - min_price
+      - product
+      - product_name
+      - product_sku
+      - retail_price
+      - updated_at
+      - wholesale_price
+    BranchPriceRequest:
+      type: object
+      description: Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin
+        (CLAUDE.md 7.1).
+      properties:
+        branch:
+          type: string
+          format: uuid
+          title: Filial
+        product:
+          type: string
+          format: uuid
+          title: Mahsulot
+        wholesale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Optom narx
+        retail_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Chakana narx
+        min_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Minimal narx
+      required:
+      - branch
+      - min_price
+      - product
+      - retail_price
+      - wholesale_price
     Brand:
       type: object
       properties:
@@ -9030,6 +9544,8 @@ components:
       - OTHER_OUT
       - CORRECTION
       - OPENING_BALANCE
+      - BRANCH_OUT
+      - CENTER_IN
       type: string
       description: |-
         * `HANDOVER_IN` - Tarqatuvchidan naqd (+)
@@ -9040,6 +9556,8 @@ components:
         * `OTHER_OUT` - Boshqa chiqim (−)
         * `CORRECTION` - Tuzatuvchi yozuv (±)
         * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+        * `BRANCH_OUT` - Markazga topshirildi (−)
+        * `CENTER_IN` - Filialdan qabul qilindi (+)
     Category:
       type: object
       properties:
@@ -12103,6 +12621,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Advance'
+    PaginatedAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
     PaginatedBrandList:
       type: object
       required:
@@ -13036,6 +13577,34 @@ components:
           maxLength: 32
       required:
       - phone
+    PatchedBranchPriceRequest:
+      type: object
+      description: Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin
+        (CLAUDE.md 7.1).
+      properties:
+        branch:
+          type: string
+          format: uuid
+          title: Filial
+        product:
+          type: string
+          format: uuid
+          title: Mahsulot
+        wholesale_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Optom narx
+        retail_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Chakana narx
+        min_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Minimal narx
     PatchedBrandRequest:
       type: object
       properties:
@@ -13365,6 +13934,10 @@ components:
           type: boolean
     PatchedProductRequest:
       type: object
+      description: |-
+        Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+
+        View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
       properties:
         name:
           type: string
@@ -14163,6 +14736,10 @@ components:
       - total_sales
     Product:
       type: object
+      description: |-
+        Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+
+        View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
       properties:
         id:
           type: string
@@ -14469,6 +15046,10 @@ components:
       - wholesale_price
     ProductRequest:
       type: object
+      description: |-
+        Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+
+        View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
       properties:
         name:
           type: string

@@ -29,9 +29,14 @@ const TABS: Array<{ id: TabId; label: string; writeRoles: Role[] }> = [
     label: 'Tovarlar',
     writeRoles: ['WAREHOUSE', 'MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
   },
-  { id: 'cash', label: 'Kassa', writeRoles: ['SUPER_ADMIN'] },
+  // Filial rahbari — faqat o'z filiali kassasi va mijozlari (backend cheklaydi)
+  { id: 'cash', label: 'Kassa', writeRoles: ['SUPER_ADMIN', 'BRANCH_MANAGER'] },
   { id: 'suppliers', label: "Ta'minotchilar", writeRoles: ['SUPER_ADMIN'] },
-  { id: 'clients', label: 'Mijozlar', writeRoles: ['MANAGER', 'SUPER_ADMIN'] },
+  {
+    id: 'clients',
+    label: 'Mijozlar',
+    writeRoles: ['MANAGER', 'BRANCH_MANAGER', 'SUPER_ADMIN'],
+  },
   { id: 'staff', label: 'Xodimlar', writeRoles: ['SUPER_ADMIN'] },
 ];
 

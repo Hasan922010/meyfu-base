@@ -58,10 +58,15 @@ def submit_day_close(
         date=date, distributor=distributor, warehouse=warehouse,
         day_close=day_close, created_by=distributor,
     )
+    from apps.catalog.pricing import branch_price_map, price_for
+    from apps.core.branch import staff_branch
+
+    branch = staff_branch(distributor)
+    price_map = branch_price_map(branch, [row.product.pk for row in return_rows])
     total = _ZERO
     items = []
     for row in return_rows:
-        price = row.product.wholesale_price
+        price = price_for(row.product, branch, price_map).wholesale_price
         amount = row.quantity * price
         total += amount
         items.append(DailyReturnItem(

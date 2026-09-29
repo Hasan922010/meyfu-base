@@ -8,7 +8,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, BranchStampedModel
 from apps.dayclose.models import DayClose
 
 from .constants import ExpenseStatus, PaidBy, PaymentSource
@@ -42,7 +42,7 @@ class ExpenseCategory(BaseModel):
         return self.name
 
 
-class DistributorExpense(BaseModel):
+class DistributorExpense(BranchStampedModel):
     distributor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="expenses",
         verbose_name=_("tarqatuvchi"),

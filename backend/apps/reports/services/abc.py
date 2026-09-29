@@ -47,7 +47,7 @@ def abc_analysis(
         sale__status__in=_ACTIVE,
     )
     if branch is not None:
-        base = base.filter(sale__distributor__warehouse=branch)
+        base = base.filter(sale__branch=branch)
     rows = list(
         base
         .values(lookup)

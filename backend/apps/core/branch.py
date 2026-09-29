@@ -63,6 +63,19 @@ def scope_queryset(qs: QuerySet, user, lookup: str) -> QuerySet:
     return qs.filter(**{lookup: scope})
 
 
+def acting_branch(user):
+    """Yozish amallari uchun filial: markaz — `None`, filial xodimi — uning filiali.
+
+    Filial rahbariga filial biriktirilmagan bo'lsa — ruxsat yo'q (xato sozlama).
+    """
+    from rest_framework.exceptions import PermissionDenied
+
+    scope = branch_scope(user)
+    if scope is NO_BRANCH:
+        raise PermissionDenied("Sizga filial biriktirilmagan — administratorga murojaat qiling.")
+    return user_branch(user)
+
+
 def staff_branch(staff):
     """Tarqatuvchi/xodim qaysi filialga tegishli (`None` — markaz)."""
     warehouse = getattr(staff, "warehouse", None) if staff is not None else None

@@ -12,7 +12,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.models import BaseModel
+from apps.core.models import BaseModel, BranchStampedModel
 
 from .constants import CommissionRole, CommissionScope, PayrollStatus
 
@@ -57,7 +57,7 @@ class CommissionRule(BaseModel):
         return f"{self.get_scope_display()} · {self.percent}%"
 
 
-class Payroll(BaseModel):
+class Payroll(BranchStampedModel):
     """Bir tarqatuvchining bir oylik maoshi.
 
     final = base_salary + commission + bonus + reimbursement_expense
@@ -193,7 +193,7 @@ class PayrollDetail(BaseModel):
         return f"{self.percent}% × {self.base_amount} = {self.commission_amount}"
 
 
-class Advance(BaseModel):
+class Advance(BranchStampedModel):
     """Avans — berilganda hamyonga ADVANCE(+) va kassadan chiqim yoziladi.
 
     Oy davomidagi avanslar o'sha oy Payroll'ida `advance` bo'lib ushlanadi.

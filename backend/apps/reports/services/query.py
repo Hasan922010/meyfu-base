@@ -69,7 +69,7 @@ def report_query(
         sale__status__in=_ACTIVE,
     )
     if branch is not None:
-        qs = qs.filter(sale__distributor__warehouse=branch)
+        qs = qs.filter(sale__branch=branch)
     for name, value in (filters or {}).items():
         if value and name in FILTERS:
             qs = qs.filter(**{FILTERS[name]: value})

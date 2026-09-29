@@ -317,16 +317,27 @@ class LoadingSerializer(serializers.ModelSerializer):
         return attrs
 
     def _write_items(self, loading: Loading, items_data: list[dict]) -> None:
+        from apps.catalog.pricing import branch_price_map, price_for
+        from apps.core.branch import staff_branch
+
         loading.items.all().delete()
+        # Narx ko'rsatilmasa — tarqatuvchi filialining optom narxi (v5: A7)
+        branch = staff_branch(loading.distributor)
+        price_map = branch_price_map(branch, [row["product"].pk for row in items_data])
+
+        def _price(row):
+            return row.get("price") or price_for(
+                row["product"], branch, price_map
+            ).wholesale_price
+
         LoadingItem.objects.bulk_create(
             [
                 LoadingItem(
                     loading=loading,
                     product=row["product"],
                     quantity=row["quantity"],
-                    price=row.get("price") or row["product"].wholesale_price,
-                    amount=row["quantity"]
-                    * (row.get("price") or row["product"].wholesale_price),
+                    price=_price(row),
+                    amount=row["quantity"] * _price(row),
                     created_by=loading.created_by,
                 )
                 for row in items_data

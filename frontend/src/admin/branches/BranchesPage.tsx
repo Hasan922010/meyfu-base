@@ -6,11 +6,17 @@ import { Link } from 'react-router-dom';
 import { branchesApi } from '@/shared/api/branches';
 import { DataState } from '@/shared/components/DataState';
 import { money, qty } from '@/shared/lib/format';
+import { useAuthStore } from '@/shared/store/authStore';
+
+import { BranchComparison } from './BranchComparison';
 
 /** Filiallar — har ombor/filial kartochka ko'rinishida, bosilsa faoliyati ochiladi. */
 export function BranchesPage(): ReactElement {
   const query = useQuery({ queryKey: ['branches'], queryFn: () => branchesApi.list() });
   const rows = query.data ?? [];
+  const role = useAuthStore((s) => s.user?.role);
+  // Solishtirma — markaz rahbarlari uchun (filial rahbari o'z kartalarini ko'radi)
+  const showComparison = role === 'SUPER_ADMIN' || role === 'MANAGER' || role === 'ACCOUNTANT';
 
   return (
     <div className="space-y-4">
@@ -21,6 +27,8 @@ export function BranchesPage(): ReactElement {
           Filialni bosib, uning barcha faoliyatini ko'ring.
         </p>
       </div>
+
+      {showComparison && <BranchComparison />}
 
       <DataState
         isLoading={query.isLoading}

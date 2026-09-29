@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
@@ -9,6 +9,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.branch import user_branch
+from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
@@ -17,8 +19,10 @@ from apps.warehouse.constants import MovementType
 from apps.warehouse.services import apply_movement
 
 from .filters import ProductFilter
-from .models import Brand, Category, Product, ProductImage, Unit
+from .models import BranchPrice, Brand, Category, Product, ProductImage, Unit
+from .pricing import PRICE_FIELDS, branch_price_map
 from .serializers import (
+    BranchPriceSerializer,
     BrandSerializer,
     CategorySerializer,
     ProductImagePatchSerializer,
@@ -83,6 +87,12 @@ class ProductViewSet(BaseModelViewSet):
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
     }
+
+    def get_serializer_context(self) -> dict:
+        # Filial xodimi — o'z filiali narxini ko'radi (v5: A7)
+        context = super().get_serializer_context()
+        context["branch_price_map"] = branch_price_map(user_branch(self.request.user))
+        return context
 
     def perform_create(self, serializer: ProductSerializer) -> None:
         stock_warehouse = serializer.validated_data.pop("initial_stock_warehouse", None)
@@ -206,6 +216,41 @@ class ProductViewSet(BaseModelViewSet):
         )
 
 
+class BranchPriceViewSet(BaseModelViewSet):
+    """Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7)."""
+
+    queryset = BranchPrice.objects.select_related("branch", "product")
+    serializer_class = BranchPriceSerializer
+    write_roles = (Role.SUPER_ADMIN,)  # narx — faqat SUPER_ADMIN (CLAUDE.md 2)
+    central_only_write = True
+    branch_lookup = "branch"
+    filterset_fields = ("branch", "product")
+    search_fields = ("product__name", "product__sku")
+    pagination_class = None
+
+    def perform_create(self, serializer) -> None:
+        price = serializer.save(created_by=self.request.user)
+        self._audit("branch_price.create", price, {})
+
+    def perform_update(self, serializer) -> None:
+        before = {f: str(getattr(serializer.instance, f)) for f in PRICE_FIELDS}
+        price = serializer.save()
+        self._audit("branch_price.update", price, {"before": before})
+
+    def perform_destroy(self, instance) -> None:
+        self._audit("branch_price.delete", instance, {})
+        instance.hard_delete()
+
+    def _audit(self, action_name: str, price, extra: dict) -> None:
+        # CLAUDE.md 5.3 — narx o'zgarishi majburiy audit
+        AuditLog.objects.create(
+            user=self.request.user, action=action_name, model_name="BranchPrice",
+            object_id=str(price.pk),
+            changes={**extra, "branch": price.branch.name, "product": price.product.sku,
+                     **{f: str(getattr(price, f)) for f in PRICE_FIELDS}},
+        )
+
+
 class CatalogSyncView(APIView):
     """Offline uchun delta yuklab olish (CLAUDE.md 4.1, 10).
 
@@ -222,6 +267,7 @@ class CatalogSyncView(APIView):
     )
     def get(self, request: Request) -> Response:
         since_raw = request.query_params.get("since")
+        branch = user_branch(request.user)
         qs = Product.all_objects.select_related("unit").prefetch_related("images").all()
         if since_raw:
             since = parse_datetime(since_raw)
@@ -233,16 +279,20 @@ class CatalogSyncView(APIView):
                     code="INVALID_SINCE",
                     status_code=400,
                 )
-            qs = qs.filter(updated_at__gt=since)
+            # Filial narxi o'zgarsa ham mahsulot qaytadan yuborilsin (A7)
+            changed = Q(updated_at__gt=since)
+            if branch is not None:
+                changed |= Q(branch_prices__branch=branch,
+                             branch_prices__updated_at__gt=since)
+            qs = qs.filter(changed).distinct()
 
         from django.utils import timezone
 
+        context = {"request": request, "branch_price_map": branch_price_map(branch)}
         return ok(
             {
                 "server_time": timezone.now().isoformat(),
                 "count": qs.count(),
-                "products": ProductLiteSerializer(
-                    qs, many=True, context={"request": request}
-                ).data,
+                "products": ProductLiteSerializer(qs, many=True, context=context).data,
             }
         )
