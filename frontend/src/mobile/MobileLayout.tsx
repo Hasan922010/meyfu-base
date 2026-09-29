@@ -23,6 +23,7 @@ import { useSync } from '@/offline/useSync';
 import { fullSync } from '@/offline/sync';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
+import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { useAuthStore } from '@/shared/store/authStore';
 
@@ -97,6 +98,7 @@ export function MobileLayout(): ReactElement {
           {user?.full_name} ›
         </Link>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <NotificationBell />
           <SyncBadge state={sync} />
         </div>

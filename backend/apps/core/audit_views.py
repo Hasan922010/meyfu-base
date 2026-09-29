@@ -7,8 +7,31 @@ from rest_framework import serializers
 
 from apps.users.constants import Role
 
-from .models import AuditLog
+from .models import AuditLog, SyncLog
 from .viewsets import BaseReadOnlyViewSet
+
+
+class SyncLogSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.full_name", read_only=True, default=None)
+
+    class Meta:
+        model = SyncLog
+        fields = ("id", "created_at", "user", "user_name", "device_id", "operations_count",
+                  "conflicts_count", "errors_count", "duration_ms")
+        read_only_fields = fields
+
+
+class SyncLogViewSet(BaseReadOnlyViewSet):
+    """Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o'z filiali."""
+
+    serializer_class = SyncLogSerializer
+    read_roles = (Role.SUPER_ADMIN, Role.MANAGER, Role.ACCOUNTANT)
+    branch_lookup = "user__warehouse"
+    filterset_fields = ("user",)
+    ordering = ("-created_at",)
+
+    def get_queryset(self) -> QuerySet[SyncLog]:
+        return SyncLog.objects.select_related("user").order_by("-created_at")
 
 
 class AuditLogSerializer(serializers.ModelSerializer):

@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .audit_views import AuditLogViewSet
+from .audit_views import AuditLogViewSet, SyncLogViewSet
 from .views import (
     CompanyPublicView,
     CompanySettingsView,
@@ -20,4 +20,5 @@ urlpatterns = [
 
 router = SimpleRouter()
 router.register("audit-logs", AuditLogViewSet, basename="audit-log")
+router.register("sync-logs", SyncLogViewSet, basename="sync-log")
 urlpatterns += router.urls

@@ -458,6 +458,22 @@ def test_branch_notification_reaches_only_own_branch_manager(world):
     assert Notification.objects.filter(user=world["central"]).count() == 1
 
 
+# ------------------------------------------------------------------ sinxronizatsiya jurnali (B6)
+
+
+def test_bulk_sync_writes_sync_log(world):
+    from apps.core.models import SyncLog
+
+    api = _login(world["a"]["distributor"].phone)
+    resp = api.post("/api/v1/sales/bulk-sync/", {"operations": []}, format="json",
+                    HTTP_X_DEVICE_ID="tel-01")
+
+    assert resp.status_code == 200, resp.data
+    log = SyncLog.objects.get(user=world["a"]["distributor"])
+    assert log.device_id == "tel-01"
+    assert log.operations_count == 0
+
+
 # ------------------------------------------------------------------ kassa
 
 

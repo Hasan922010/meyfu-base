@@ -16,6 +16,7 @@ import {
   PiggyBank,
   Route,
   ScanLine,
+  ScrollText,
   Settings,
   ShoppingCart,
   Store,
@@ -33,6 +34,7 @@ import { logout } from '@/shared/api/auth';
 import { ConnectionBadge } from '@/shared/components/ConnectionBadge';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
+import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { setDesktopForced } from '@/shared/lib/useIsMobile';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -44,6 +46,8 @@ const NAV: {
   Icon: LucideIcon;
   /** Markaz sozlamasi — filial rahbariga ko'rsatilmaydi */
   centralOnly?: boolean;
+  /** Backend ruxsat bermaydigan rollar uchun yashiriladi */
+  hiddenFor?: string[];
 }[] = [
   { to: '/admin', key: 'nav.dashboard', end: true, Icon: LayoutDashboard },
   { to: '/admin/products', key: 'nav.products', end: false, Icon: Package },
@@ -63,6 +67,13 @@ const NAV: {
   { to: '/admin/payroll', key: 'nav.payroll', end: false, Icon: Coins },
   { to: '/admin/reports', key: 'nav.reports', end: false, Icon: BarChart3 },
   { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity, centralOnly: true },
+  {
+    to: '/admin/audit',
+    key: 'nav.audit',
+    end: false,
+    Icon: ScrollText,
+    hiddenFor: ['WAREHOUSE'],
+  },
   { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library, centralOnly: true },
   {
     to: '/admin/opening-balances',
@@ -100,7 +111,11 @@ export function AdminLayout(): ReactElement {
   }
 
   const isBranchManager = user?.role === 'BRANCH_MANAGER';
-  const items = NAV.filter((item) => !(isBranchManager && item.centralOnly));
+  const items = NAV.filter(
+    (item) =>
+      !(isBranchManager && item.centralOnly) &&
+      !(user?.role && item.hiddenFor?.includes(user.role)),
+  );
 
   const nav = (
     <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
@@ -169,6 +184,7 @@ export function AdminLayout(): ReactElement {
             <ConnectionBadge />
           </div>
           <div className="flex items-center gap-2 text-sm sm:gap-3">
+            <ThemeToggle />
             <NotificationBell />
             <button
               onClick={() => {

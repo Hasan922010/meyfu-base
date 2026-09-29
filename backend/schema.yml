@@ -7589,6 +7589,76 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedOpeningSheetRowList'
           description: ''
+  /api/v1/sync-logs/:
+    get:
+      operationId: sync_logs_list
+      description: 'Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o''z
+        filiali.'
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - sync-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSyncLogList'
+          description: ''
+  /api/v1/sync-logs/{id}/:
+    get:
+      operationId: sync_logs_retrieve
+      description: 'Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o''z
+        filiali.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this sinxronizatsiya jurnali.
+        required: true
+      tags:
+      - sync-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncLog'
+          description: ''
   /api/v1/sync/catalog/:
     get:
       operationId: sync_catalog_list
@@ -13380,6 +13450,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SupplierTransaction'
+    PaginatedSyncLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncLog'
     PaginatedTransferList:
       type: object
       required:
@@ -16360,6 +16453,57 @@ components:
       - id
       - note
       - transaction_type
+    SyncLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Yaratilgan vaqti
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Foydalanuvchi
+        user_name:
+          type: string
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+          title: Qurilma
+        operations_count:
+          type: integer
+          readOnly: true
+          title: Operatsiyalar
+        conflicts_count:
+          type: integer
+          readOnly: true
+          title: Konfliktlar
+        errors_count:
+          type: integer
+          readOnly: true
+          title: Xatolar
+        duration_ms:
+          type: integer
+          readOnly: true
+          title: Davomiyligi (ms)
+      required:
+      - conflicts_count
+      - created_at
+      - device_id
+      - duration_ms
+      - errors_count
+      - id
+      - operations_count
+      - user
+      - user_name
     TokenRefresh:
       type: object
       properties:

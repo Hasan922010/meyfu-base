@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from django.db.models import Prefetch, QuerySet
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -11,6 +13,7 @@ from apps.catalog.models import Product
 from apps.clients.models import Client
 from apps.core.business_day import business_date
 from apps.core.formatting import fmt_money
+from apps.core.models import SyncLog
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
@@ -160,7 +163,19 @@ class SaleViewSet(BaseModelViewSet):
             }
             for op in s.validated_data["operations"]
         ]
+        started = time.monotonic()
         results = process_operations(ops, user=request.user)
+        # Sinxronizatsiya jurnali (v5: B6) — offline muammolarini tahlil qilish uchun
+        SyncLog.objects.create(
+            user=request.user,
+            device_id=request.headers.get("X-Device-Id", "")[:128]
+            or getattr(request.user, "device_id", ""),
+            operations_count=len(results),
+            conflicts_count=sum(1 for r in results if r.get("status") == "CONFLICT"),
+            errors_count=sum(1 for r in results if r.get("status") == "FAILED"),
+            duration_ms=int((time.monotonic() - started) * 1000),
+            created_by=request.user,
+        )
         return ok({"results": results, "server_time": timezone.now().isoformat()})
 
     @extend_schema(summary="Bugungi sotuvlarim")

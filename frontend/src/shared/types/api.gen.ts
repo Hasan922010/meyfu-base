@@ -3436,6 +3436,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sync-logs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o'z filiali. */
+        get: operations["sync_logs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync-logs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o'z filiali. */
+        get: operations["sync_logs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sync/catalog/": {
         parameters: {
             query?: never;
@@ -6801,6 +6835,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["SupplierTransaction"][];
         };
+        PaginatedSyncLogList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SyncLog"][];
+        };
         PaginatedTransferList: {
             /** @example 123 */
             count: number;
@@ -8719,6 +8768,31 @@ export interface components {
             readonly note: string;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        SyncLog: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            /**
+             * Foydalanuvchi
+             * Format: uuid
+             */
+            readonly user: string | null;
+            readonly user_name: string;
+            /** Qurilma */
+            readonly device_id: string;
+            /** Operatsiyalar */
+            readonly operations_count: number;
+            /** Konfliktlar */
+            readonly conflicts_count: number;
+            /** Xatolar */
+            readonly errors_count: number;
+            /** Davomiyligi (ms) */
+            readonly duration_ms: number;
         };
         TokenRefresh: {
             readonly access: string;
@@ -14858,6 +14932,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    sync_logs_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSyncLogList"];
+                };
+            };
+        };
+    };
+    sync_logs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this sinxronizatsiya jurnali. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncLog"];
                 };
             };
         };

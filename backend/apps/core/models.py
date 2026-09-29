@@ -128,6 +128,32 @@ class AppendOnlyModel(BaseModel):
         raise ValidationError(_("Append-only jurnal yozuvini o'chirib bo'lmaydi."))
 
 
+class SyncLog(AppendOnlyModel):
+    """Offline sinxronizatsiya jurnali (spetsifikatsiya 6 — Tizim, v5: B6).
+
+    Har `bulk-sync` chaqiruvi: kim, qaysi qurilma, nechta operatsiya,
+    nechtasi konflikt/xato va qancha vaqt oldi — offline muammolarini tahlil qilish uchun.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="sync_logs", verbose_name=_("foydalanuvchi"),
+    )
+    device_id = models.CharField(_("qurilma"), max_length=128, blank=True)
+    operations_count = models.PositiveIntegerField(_("operatsiyalar"), default=0)
+    conflicts_count = models.PositiveIntegerField(_("konfliktlar"), default=0)
+    errors_count = models.PositiveIntegerField(_("xatolar"), default=0)
+    duration_ms = models.PositiveIntegerField(_("davomiyligi (ms)"), default=0)
+
+    class Meta(AppendOnlyModel.Meta):
+        verbose_name = _("sinxronizatsiya jurnali")
+        verbose_name_plural = _("sinxronizatsiya jurnali")
+        indexes = [models.Index(fields=["user", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} · {self.operations_count} op"
+
+
 class AuditLog(AppendOnlyModel):
     """Audit jurnali (CLAUDE.md 5.3). Faqat qo'shiladi."""
 

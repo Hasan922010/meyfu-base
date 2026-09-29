@@ -49,6 +49,7 @@ const SystemHealthPage = lz(
   () => import('@/admin/system/SystemHealthPage'),
   'SystemHealthPage',
 );
+const AuditLogPage = lz(() => import('@/admin/system/AuditLogPage'), 'AuditLogPage');
 const GuidePage = lz(() => import('@/shared/help/GuidePage'), 'GuidePage');
 import { DayCloseWizard } from '@/mobile/DayCloseWizard';
 import { DebtCollectPage } from '@/mobile/DebtCollectPage';
@@ -179,6 +180,7 @@ const router = createBrowserRouter([
       { path: 'reports', element: <Lazy><ReportsPage /></Lazy> },
       { path: 'ocr', element: <Lazy><OcrPage /></Lazy> },
       { path: 'system', element: <Lazy><SystemHealthPage /></Lazy> },
+      { path: 'audit', element: <Lazy><AuditLogPage /></Lazy> },
       { path: 'refdata', element: <Lazy><RefDataPage /></Lazy> },
       { path: 'settings', element: <Lazy><SettingsPage /></Lazy> },
       { path: 'help', element: <Lazy><GuidePage /></Lazy> },
