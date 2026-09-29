@@ -109,6 +109,47 @@ def reverse_reference(
     )]
 
 
+def _opening_staff():
+    from django.contrib.auth import get_user_model
+
+    return get_user_model().objects.filter(is_active=True, is_deleted=False)
+
+
+def wallet_opening_sheet() -> list[dict]:
+    """Boshlang'ich balans uchun faol xodimlar — hamyon balansi bilan."""
+    from apps.core.services.opening import sheet_row
+
+    balances = dict(DistributorWallet.objects.values_list("distributor_id", "balance"))
+    return [
+        sheet_row(id=u.id, name=u.full_name, code=u.phone,
+                  current=balances.get(u.id, _ZERO))
+        for u in _opening_staff().order_by("full_name", "pk")
+    ]
+
+
+@transaction.atomic
+def wallet_opening_bulk(*, rows: list[dict], note: str, user) -> dict:
+    from apps.core.services.opening import audit_bulk, bulk_result, plan_deltas
+
+    staff = {u.id: u for u in _opening_staff().filter(id__in=[r["id"] for r in rows])}
+    current = dict.fromkeys(staff, _ZERO)
+    current.update(
+        DistributorWallet.objects.select_for_update()
+        .filter(distributor_id__in=staff)
+        .values_list("distributor_id", "balance")
+    )
+    changes = plan_deltas(rows, current)
+    for staff_id, delta in changes:
+        if delta != _ZERO:
+            wallet_apply(
+                distributor=staff[staff_id],
+                transaction_type=TransactionType.OPENING_BALANCE,
+                amount=delta, note=note, user=user,
+            )
+    audit_bulk(user=user, kind="wallet", note=note, changes=changes)
+    return bulk_result(changes)
+
+
 def wallet_matches_ledger(distributor) -> bool:
     """CLAUDE.md 5.2: balance == SUM(transactions.amount)?"""
     wallet = get_or_create_wallet(distributor)

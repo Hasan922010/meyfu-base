@@ -168,6 +168,13 @@ const FIELD_LABELS: Record<string, string> = {
   items: 'Mahsulotlar',
 };
 
+/** Backend biznes xatosi kodi (masalan `STALE_STOCK`); bo'lmasa `null`. */
+export function apiErrorCode(error: unknown): string | null {
+  if (!(error instanceof AxiosError)) return null;
+  const body = error.response?.data as ApiErrorBody | undefined;
+  return typeof body === 'object' && body?.error?.code ? body.error.code : null;
+}
+
 /**
  * DRF maydon xatolarini (`{"phone": ["..."], "profile": {"x": ["..."]}}`) tekis
  * `{yo'l: xabar}` ko'rinishiga keltiradi (audit UX-001).

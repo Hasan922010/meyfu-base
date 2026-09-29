@@ -12,6 +12,7 @@ from apps.catalog.models import Product
 from apps.core.models import AppendOnlyModel, BaseModel
 
 from .constants import (
+    InventoryStatus,
     LoadingStatus,
     MovementType,
     PurchaseSource,
@@ -353,3 +354,77 @@ class LoadingItem(BaseModel):
     def save(self, *args, **kwargs):
         self.amount = (self.quantity or _ZERO) * (self.price or _ZERO)
         super().save(*args, **kwargs)
+
+
+class InventoryCount(BaseModel):
+    """Inventarizatsiya hujjati — sanalgan qoldiq bilan hisobdagini solishtirish.
+
+    Tasdiqlanganda farq `ADJUSTMENT` harakati bilan yoziladi (5.1 — jurnal
+    o'zgartirilmaydi, faqat tuzatuvchi yozuv qo'shiladi).
+    """
+
+    number = models.CharField(_("raqam"), max_length=32, unique=True, blank=True)
+    warehouse = models.ForeignKey(
+        Warehouse, on_delete=models.PROTECT, related_name="inventory_counts",
+        verbose_name=_("ombor"),
+    )
+    date = models.DateField(_("sana"))
+    status = models.CharField(
+        _("holat"), max_length=10, choices=InventoryStatus.choices,
+        default=InventoryStatus.DRAFT, db_index=True,
+    )
+    note = models.CharField(_("izoh"), max_length=255, blank=True)
+    confirmed_at = models.DateTimeField(_("tasdiqlangan vaqti"), null=True, blank=True)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="confirmed_inventory_counts", verbose_name=_("kim tasdiqladi"),
+    )
+
+    class Meta:
+        verbose_name = _("inventarizatsiya")
+        verbose_name_plural = _("inventarizatsiyalar")
+        ordering = ("-date", "-created_at")
+
+    def __str__(self) -> str:
+        return self.number or f"Inventarizatsiya {self.pk}"
+
+
+class InventoryCountItem(BaseModel):
+    """Bitta tovar qatori. `actual_qty` bo'sh — hali sanalmagan."""
+
+    count = models.ForeignKey(
+        InventoryCount, on_delete=models.CASCADE, related_name="items",
+        verbose_name=_("inventarizatsiya"),
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="inventory_items",
+        verbose_name=_("mahsulot"),
+    )
+    # To'ldirilgan paytdagi hisob qoldig'i — tasdiqlashda joriy qoldiq bilan
+    # solishtiriladi (orada harakat bo'lsa, qayta to'ldirish so'raladi).
+    expected_qty = models.DecimalField(_("hisobda"), **_QTY, default=_ZERO)
+    actual_qty = models.DecimalField(
+        _("haqiqiy"), **_QTY, null=True, blank=True,
+        validators=[MinValueValidator(_ZERO)],
+    )
+    cost_price = models.DecimalField(_("tannarx"), **_MONEY, default=_ZERO)
+    note = models.CharField(_("izoh"), max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = _("inventarizatsiya qatori")
+        verbose_name_plural = _("inventarizatsiya qatorlari")
+        ordering = ("product__name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["count", "product"], name="uniq_inventory_item_product"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.product.sku}: {self.expected_qty} → {self.actual_qty}"
+
+    @property
+    def difference(self) -> Decimal | None:
+        if self.actual_qty is None:
+            return None
+        return self.actual_qty - self.expected_qty

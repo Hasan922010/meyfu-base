@@ -1,26 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, useContext, useState, type ReactElement } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  createContext,
+  useContext,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
-import { catalogApi } from '@/shared/api/catalog';
-import { extractApiError } from '@/shared/api/client';
-import { clientsApi } from '@/shared/api/clients';
 import { debtsApi } from '@/shared/api/debts';
 import { walletApi } from '@/shared/api/finance';
 import { financeApi } from '@/shared/api/finance2';
-import { staffApi } from '@/shared/api/users';
 import { warehouseApi } from '@/shared/api/warehouse';
-import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
-import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { dateShort, money, qty } from '@/shared/lib/format';
 import { ROLE_LABELS } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role } from '@/shared/types/api';
 
+import { BalanceGrid } from './BalanceGrid';
+
 type TabId = 'products' | 'cash' | 'suppliers' | 'clients' | 'staff';
 
-// Kim kirita oladi — backenddagi `opening_balance` action_roles bilan bir xil
-// (stock, cash-transactions, suppliers, clients, wallet). Qolganlar faqat tarixni ko'radi (audit K3b).
+// Kim kirita oladi — backenddagi `opening_balance`/`opening_balance_bulk`
+// action_roles bilan bir xil. Qolganlar faqat tarixni ko'radi (audit K3b).
 const TABS: Array<{ id: TabId; label: string; writeRoles: Role[] }> = [
   { id: 'products', label: 'Tovarlar', writeRoles: ['MANAGER', 'SUPER_ADMIN'] },
   { id: 'cash', label: 'Kassa', writeRoles: ['SUPER_ADMIN'] },
@@ -42,9 +44,9 @@ export function OpeningBalancesPage(): ReactElement {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Boshlang'ich qoldiqlar</h1>
       <p className="text-sm text-gray-500">
-        Tizimni birinchi marta sozlashda yoki mavjud yozuvlarga tuzatish
-        kiritishda — tovar, kassa, ta'minotchi, mijoz va xodim boshlang'ich
-        holatini shu yerdan kiriting.
+        Ro'yxat avtomatik to'ldiriladi — har qatorga haqiqiy (yakuniy) qoldiqni
+        yozing, farqni tizim o'zi hisoblaydi. Bo'sh qoldirilgan qatorlar
+        o'zgarmaydi.
       </p>
 
       <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
@@ -72,17 +74,8 @@ export function OpeningBalancesPage(): ReactElement {
   );
 }
 
-function FormShell({
-  children,
-  error,
-  onSubmit,
-  disabled,
-}: {
-  children: ReactElement | (ReactElement | false | null)[];
-  error: unknown;
-  onSubmit: () => void;
-  disabled: boolean;
-}): ReactElement {
+/** Yozish ruxsati bo'lmasa — ro'yxat o'rniga izoh (tarix baribir ko'rinadi). */
+function WriteGate({ children }: { children: ReactNode }): ReactElement {
   const writeRoles = useContext(ReadOnlyContext);
   if (writeRoles) {
     return (
@@ -92,19 +85,15 @@ function FormShell({
       </p>
     );
   }
-  return (
-    <div className="max-w-xl space-y-3 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
-      {children}
-      {Boolean(error) && (
-        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          {extractApiError(error)}
-        </p>
-      )}
-      <button className="btn-brand w-full" disabled={disabled} onClick={onSubmit}>
-        Saqlash
-      </button>
-    </div>
-  );
+  return <>{children}</>;
+}
+
+interface HistoryRow {
+  id: string;
+  date: string;
+  label: string;
+  amount: string;
+  note?: string;
 }
 
 function HistoryTable({
@@ -115,56 +104,52 @@ function HistoryTable({
 }: {
   /** 'qty' — tovar miqdori (dona), aks holda pul (audit m6) */
   kind?: 'money' | 'qty';
-  rows: Array<{
-    id: string;
-    date: string;
-    label: string;
-    amount: string;
-    balanceAfter?: string;
-    note?: string;
-  }>;
+  rows: HistoryRow[];
   isLoading: boolean;
   isError: boolean;
 }): ReactElement {
   return (
-    <div className="max-w-xl overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
-      <DataState
-        isLoading={isLoading}
-        isError={isError}
-        isEmpty={!isLoading && rows.length === 0}
-        emptyText="Hali yozuv yo'q"
-      >
-        <table className="w-full text-sm">
-          <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
-            <tr>
-              <th className="p-3">Sana</th>
-              <th className="p-3">Turi</th>
-              <th className="p-3 text-right">{kind === 'qty' ? 'Miqdor' : 'Summa'}</th>
-              <th className="p-3">Izoh</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr
-                key={r.id}
-                className="border-b border-gray-100 last:border-0 dark:border-gray-800"
-              >
-                <td className="p-3">{dateShort(r.date)}</td>
-                <td className="p-3">{r.label}</td>
-                <td
-                  className={`p-3 text-right font-medium ${
-                    Number(r.amount) < 0 ? 'text-danger' : 'text-success'
-                  }`}
-                >
-                  {Number(r.amount) > 0 ? '+' : ''}
-                  {kind === 'qty' ? qty(r.amount) : money(r.amount)}
-                </td>
-                <td className="p-3 text-gray-500">{r.note || '—'}</td>
+    <div className="space-y-1">
+      <h2 className="text-sm font-semibold text-gray-500">Oxirgi kiritilganlar</h2>
+      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
+        <DataState
+          isLoading={isLoading}
+          isError={isError}
+          isEmpty={!isLoading && rows.length === 0}
+          emptyText="Hali yozuv yo'q"
+        >
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
+              <tr>
+                <th className="p-3">Sana</th>
+                <th className="p-3">Turi</th>
+                <th className="p-3 text-right">{kind === 'qty' ? 'Miqdor' : 'Summa'}</th>
+                <th className="p-3">Izoh</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </DataState>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-b border-gray-100 last:border-0 dark:border-gray-800"
+                >
+                  <td className="p-3">{dateShort(r.date)}</td>
+                  <td className="p-3">{r.label}</td>
+                  <td
+                    className={`p-3 text-right font-medium ${
+                      Number(r.amount) < 0 ? 'text-danger' : 'text-success'
+                    }`}
+                  >
+                    {Number(r.amount) > 0 ? '+' : ''}
+                    {kind === 'qty' ? qty(r.amount) : money(r.amount)}
+                  </td>
+                  <td className="p-3 text-gray-500">{r.note || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </DataState>
+      </div>
     </div>
   );
 }
@@ -173,15 +158,8 @@ function HistoryTable({
 
 function ProductsTab(): ReactElement {
   const qc = useQueryClient();
-  const [product, setProduct] = useState<string>('');
   const [warehouse, setWarehouse] = useState<string>('');
-  const [quantity, setQuantity] = useState<string>('');
-  const [note, setNote] = useState<string>('');
 
-  const products = useQuery({
-    queryKey: ['products-all'],
-    queryFn: () => catalogApi.products({ page_size: 500, is_active: 'true' }),
-  });
   const warehouses = useQuery({
     queryKey: ['warehouses'],
     queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
@@ -196,72 +174,40 @@ function ProductsTab(): ReactElement {
       }),
   });
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      warehouseApi.stockOpeningBalance({ product, warehouse, quantity, note }),
-    onSuccess: () => {
-      setQuantity('');
-      setNote('');
-      void qc.invalidateQueries({ queryKey: ['stock-movements', 'opening'] });
-      void qc.invalidateQueries({ queryKey: ['stock'] });
-    },
-  });
-
   return (
     <div className="space-y-4">
-      <FormShell
-        error={mutation.error}
-        disabled={!product || !warehouse || !quantity || mutation.isPending}
-        onSubmit={() => mutation.mutate()}
-      >
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Mahsulot</span>
-          <select
-            className="field"
-            value={product}
-            onChange={(e) => setProduct(e.target.value)}
-          >
-            <option value="">— tanlang —</option>
-            {products.data?.results.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.sku})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Ombor</span>
-          <select
-            className="field"
-            value={warehouse}
-            onChange={(e) => setWarehouse(e.target.value)}
-          >
-            <option value="">— tanlang —</option>
-            {warehouses.data?.results.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Miqdor</span>
-          <AmountInput
-            value={quantity}
-            onChange={setQuantity}
-            showWords={false}
-            suffix=""
+      <WriteGate>
+        <div className="space-y-3">
+          <label className="block max-w-xs space-y-1">
+            <span className="text-sm font-medium">Ombor</span>
+            <select
+              className="field"
+              value={warehouse}
+              onChange={(e) => setWarehouse(e.target.value)}
+            >
+              <option value="">— tanlang —</option>
+              {warehouses.data?.results.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {/* key — ombor almashsa kiritilganlar boshqa omborga o'tib ketmasin */}
+          <BalanceGrid
+            key={warehouse}
+            kind="stock"
+            warehouse={warehouse}
+            valueKind="qty"
+            rules={{ allowNegative: false, increaseOnly: false }}
+            hint="Ombordagi barcha tovarlar ro'yxati. Haqiqiy miqdorni yozing — farq boshlang'ich qoldiq sifatida yoziladi."
+            onSaved={() => {
+              void qc.invalidateQueries({ queryKey: ['stock-movements', 'opening'] });
+              void qc.invalidateQueries({ queryKey: ['stock'] });
+            }}
           />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Izoh (ixtiyoriy)</span>
-          <input
-            className="field"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-        </label>
-      </FormShell>
+        </div>
+      </WriteGate>
 
       <HistoryTable
         kind="qty"
@@ -283,13 +229,6 @@ function ProductsTab(): ReactElement {
 
 function CashTab(): ReactElement {
   const qc = useQueryClient();
-  const [amount, setAmount] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-
-  const account = useQuery({
-    queryKey: ['cash-account'],
-    queryFn: () => financeApi.cashAccount(),
-  });
   const history = useQuery({
     queryKey: ['cash-tx', 'opening'],
     queryFn: () =>
@@ -299,42 +238,20 @@ function CashTab(): ReactElement {
       }),
   });
 
-  const mutation = useMutation({
-    mutationFn: () => financeApi.openingBalance({ amount, note }),
-    onSuccess: () => {
-      setAmount('');
-      setNote('');
-      void qc.invalidateQueries({ queryKey: ['cash-tx', 'opening'] });
-      void qc.invalidateQueries({ queryKey: ['cash-account'] });
-      void qc.invalidateQueries({ queryKey: ['profit'] });
-    },
-  });
-
   return (
     <div className="space-y-4">
-      <div className="max-w-xl rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
-        <span className="text-sm text-gray-500">Joriy balans</span>
-        <div className="text-xl font-bold">{money(account.data?.balance ?? '0')}</div>
-      </div>
-
-      <FormShell
-        error={mutation.error}
-        disabled={!amount || mutation.isPending}
-        onSubmit={() => mutation.mutate()}
-      >
-        <SignedAmountInput
-          value={amount}
-          onChange={setAmount}
-          positiveLabel="Kassada bor (+)"
-          negativeLabel="Kamomad (−)"
+      <WriteGate>
+        <BalanceGrid
+          kind="cash"
+          rules={{ allowNegative: true, increaseOnly: false }}
+          hint="Kassadagi haqiqiy summani yozing. Manfiy qiymat — kamomad."
+          onSaved={() => {
+            void qc.invalidateQueries({ queryKey: ['cash-tx', 'opening'] });
+            void qc.invalidateQueries({ queryKey: ['cash-account'] });
+            void qc.invalidateQueries({ queryKey: ['profit'] });
+          }}
         />
-        <input
-          className="field"
-          placeholder="Izoh (ixtiyoriy)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </FormShell>
+      </WriteGate>
 
       <HistoryTable
         isLoading={history.isLoading}
@@ -355,69 +272,24 @@ function CashTab(): ReactElement {
 
 function SuppliersTab(): ReactElement {
   const qc = useQueryClient();
-  const [supplier, setSupplier] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-
-  const suppliers = useQuery({
-    queryKey: ['suppliers-all'],
-    queryFn: () => warehouseApi.suppliers({ page_size: 200 }),
-  });
   const history = useQuery({
     queryKey: ['supplier-tx', 'opening'],
     queryFn: () => warehouseApi.supplierTransactions({ page_size: 20 }),
   });
 
-  const mutation = useMutation({
-    mutationFn: () => warehouseApi.supplierOpeningBalance({ supplier, amount, note }),
-    onSuccess: () => {
-      setAmount('');
-      setNote('');
-      void qc.invalidateQueries({ queryKey: ['supplier-tx', 'opening'] });
-      void qc.invalidateQueries({ queryKey: ['suppliers-all'] });
-    },
-  });
-
   return (
     <div className="space-y-4">
-      <p className="max-w-xl rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800">
-        Faqat boshlang'ich holat uchun — keyingi xaridlar va to'lovlar bu
-        balansga avtomatik qo'shilmaydi.
-      </p>
-
-      <FormShell
-        error={mutation.error}
-        disabled={!supplier || !amount || mutation.isPending}
-        onSubmit={() => mutation.mutate()}
-      >
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Ta'minotchi</span>
-          <select
-            className="field"
-            value={supplier}
-            onChange={(e) => setSupplier(e.target.value)}
-          >
-            <option value="">— tanlang —</option>
-            {suppliers.data?.results.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <SignedAmountInput
-          value={amount}
-          onChange={setAmount}
-          positiveLabel="Biz qarzdormiz (+)"
-          negativeLabel="U qarzdor (−)"
+      <WriteGate>
+        <BalanceGrid
+          kind="suppliers"
+          rules={{ allowNegative: true, increaseOnly: false }}
+          hint="Musbat — biz qarzdormiz, manfiy — ta'minotchi qarzdor. Faqat boshlang'ich holat uchun: keyingi xaridlar va to'lovlar bu balansga avtomatik qo'shilmaydi."
+          onSaved={() => {
+            void qc.invalidateQueries({ queryKey: ['supplier-tx', 'opening'] });
+            void qc.invalidateQueries({ queryKey: ['suppliers-all'] });
+          }}
         />
-        <input
-          className="field"
-          placeholder="Izoh (ixtiyoriy)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </FormShell>
+      </WriteGate>
 
       <HistoryTable
         isLoading={history.isLoading}
@@ -438,78 +310,38 @@ function SuppliersTab(): ReactElement {
 
 function ClientsTab(): ReactElement {
   const qc = useQueryClient();
-  const [client, setClient] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-
-  const clients = useQuery({
-    queryKey: ['clients-all'],
-    queryFn: () => clientsApi.list({ page_size: 500, is_blocked: 'false' }),
-  });
   const history = useQuery({
-    queryKey: ['debts', 'opening', client],
-    queryFn: () =>
-      debtsApi.list({ client: client || undefined, page_size: 20, ordering: '-created_at' }),
-    enabled: Boolean(client),
+    queryKey: ['debts', 'opening'],
+    queryFn: () => debtsApi.list({ page_size: 50, ordering: '-created_at' }),
   });
-
-  const mutation = useMutation({
-    mutationFn: () => clientsApi.openingBalance({ client, amount, note }),
-    onSuccess: () => {
-      setAmount('');
-      setNote('');
-      void qc.invalidateQueries({ queryKey: ['debts', 'opening', client] });
-      void qc.invalidateQueries({ queryKey: ['clients-all'] });
-    },
-  });
+  // Boshlang'ich qarz — sotuvsiz yaratilgan qarz yozuvi
+  const openingDebts = (history.data?.results ?? []).filter((d) => !d.sale);
 
   return (
     <div className="space-y-4">
-      <FormShell
-        error={mutation.error}
-        disabled={!client || !amount || mutation.isPending}
-        onSubmit={() => mutation.mutate()}
-      >
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Mijoz</span>
-          <select
-            className="field"
-            value={client}
-            onChange={(e) => setClient(e.target.value)}
-          >
-            <option value="">— tanlang —</option>
-            {clients.data?.results.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Boshlang'ich qarz</span>
-          <AmountInput value={amount} onChange={setAmount} showWords={false} />
-        </label>
-        <input
-          className="field"
-          placeholder="Izoh (ixtiyoriy)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
+      <WriteGate>
+        <BalanceGrid
+          kind="clients"
+          rules={{ allowNegative: false, increaseOnly: true }}
+          hint="Mijozning umumiy qarzini yozing — farq sotuvsiz boshlang'ich qarz bo'lib qo'shiladi. Qarzni kamaytirish qarz to'lovi orqali kiritiladi."
+          onSaved={() => {
+            void qc.invalidateQueries({ queryKey: ['debts'] });
+            void qc.invalidateQueries({ queryKey: ['clients-all'] });
+          }}
         />
-      </FormShell>
+      </WriteGate>
 
-      {client && (
-        <HistoryTable
-          isLoading={history.isLoading}
-          isError={history.isError}
-          rows={(history.data?.results ?? []).map((d) => ({
-            id: d.id,
-            date: d.created_at,
-            label: d.sale ? `Sotuv ${d.sale_number ?? ''}` : "Boshlang'ich qarz",
-            amount: d.amount,
-            note: `Qoldiq: ${qty(d.remaining)}`,
-          }))}
-        />
-      )}
+      <HistoryTable
+        isLoading={history.isLoading}
+        isError={history.isError}
+        rows={openingDebts.map((d) => ({
+          id: d.id,
+          date: d.created_at,
+          label: d.client_name,
+          amount: d.amount,
+          note: `Qoldiq: ${money(d.remaining)}`,
+        }))}
+      />
     </div>
   );
 }
@@ -518,64 +350,22 @@ function ClientsTab(): ReactElement {
 
 function StaffTab(): ReactElement {
   const qc = useQueryClient();
-  const [staff, setStaff] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-
-  const staffList = useQuery({
-    queryKey: ['staff-all'],
-    queryFn: () => staffApi.list({ is_active: 'true', page_size: 200 }),
-  });
   const history = useQuery({
     queryKey: ['wallet-tx', 'opening'],
     queryFn: () =>
       walletApi.transactions({ transaction_type: 'OPENING_BALANCE', page_size: 20 }),
   });
 
-  const mutation = useMutation({
-    mutationFn: () => walletApi.openingBalance({ distributor: staff, amount, note }),
-    onSuccess: () => {
-      setAmount('');
-      setNote('');
-      void qc.invalidateQueries({ queryKey: ['wallet-tx', 'opening'] });
-    },
-  });
-
   return (
     <div className="space-y-4">
-      <FormShell
-        error={mutation.error}
-        disabled={!staff || !amount || mutation.isPending}
-        onSubmit={() => mutation.mutate()}
-      >
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Xodim</span>
-          <select
-            className="field"
-            value={staff}
-            onChange={(e) => setStaff(e.target.value)}
-          >
-            <option value="">— tanlang —</option>
-            {staffList.data?.results.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.full_name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <SignedAmountInput
-          value={amount}
-          onChange={setAmount}
-          positiveLabel="Xodimga berilgan (avans)"
-          negativeLabel="Xodimning qarzi"
+      <WriteGate>
+        <BalanceGrid
+          kind="staff"
+          rules={{ allowNegative: true, increaseOnly: false }}
+          hint="Musbat — xodimga berilgan (avans), manfiy — xodimning qarzi."
+          onSaved={() => void qc.invalidateQueries({ queryKey: ['wallet-tx', 'opening'] })}
         />
-        <input
-          className="field"
-          placeholder="Izoh (ixtiyoriy)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-      </FormShell>
+      </WriteGate>
 
       <HistoryTable
         isLoading={history.isLoading}

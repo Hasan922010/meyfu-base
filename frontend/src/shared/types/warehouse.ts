@@ -154,3 +154,45 @@ export interface VanStock {
   quantity: string;
   updated_at: string;
 }
+
+export type InventoryStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
+
+export interface InventoryCountItem {
+  id: string;
+  product: string;
+  product_name: string;
+  product_sku: string;
+  product_unit: string;
+  /** To'ldirilgan paytdagi hisob qoldig'i */
+  expected_qty: string;
+  /** `null` — hali sanalmagan */
+  actual_qty: string | null;
+  difference: string | null;
+  cost_price: string;
+  note: string;
+}
+
+export interface InventoryCount {
+  id: string;
+  number: string;
+  warehouse: string;
+  warehouse_name: string;
+  date: string;
+  status: InventoryStatus;
+  status_display: string;
+  note: string;
+  confirmed_at: string | null;
+  created_at: string;
+  items_count: number;
+  counted_count: number;
+  /** Sanalgan qatorlar farqi × tannarx (so'm, ishorali) */
+  difference_amount: string;
+  /** Faqat bitta hujjat so'ralganda keladi */
+  items?: InventoryCountItem[];
+}
+
+export interface InventoryItemInput {
+  id: string;
+  actual_qty: string | null;
+  note?: string;
+}

@@ -50,7 +50,7 @@ farqi, kam qolgan tovar — bosib tafsilotga o'ting.
 
 ## 3. Ombor
 
-Uch bo'lim (tab):
+To'rt bo'lim (tab):
 
 ### Qoldiq
 Har ombor bo'yicha tovar qoldig'i. Kam qolganlar ajratib ko'rsatiladi.
@@ -71,6 +71,21 @@ Ertalab tarqatuvchiga beriladigan tovar:
 3. «Yuborish» → tarqatuvchi telefonida ko'radi va **tasdiqlaydi**.
 4. Tasdiqlangach tovar tarqatuvchining "mashina qoldig'iga" (VanStock) o'tadi.
 5. **PDF** — yuklama varaqasini chop etish.
+
+### Inventarizatsiya
+Ombordagi haqiqiy qoldiqni hisobdagi bilan solishtirib, tuzatish:
+1. «+ Inventarizatsiya» → ombor va sana. Hujjat (`INV-2026-00001`) ochiladi va ombordagi
+   **barcha tovarlar** hisobdagi qoldig'i bilan **avtomatik to'ldiriladi**.
+2. Sanab, «Haqiqiy» ustuniga miqdorni yozing (Enter — keyingi qator). Farq donada va so'mda
+   (tannarx bo'yicha) darhol ko'rinadi. Filtr: «Farqlilar», «Sanalmaganlar»; qidiruv.
+3. «Saqlash» — qoralama saqlanadi, keyin davom ettirish mumkin. Sanalmagan qatorlar
+   tasdiqlashda **o'zgarmaydi**; kerak bo'lsa «Sanalmaganlarni 0 qilish».
+4. «Tasdiqlash» (**MANAGER / SUPER_ADMIN**; omborchi faqat sanaydi va saqlaydi) — har farq
+   uchun qoldiq tuzatiladi (`StockMovement` «Tuzatish (inventarizatsiya)», jurnal
+   o'chirilmaydi) va audit jurnaliga yoziladi. Tasdiqlangan hujjat tahrirlanmaydi.
+5. Sanash davomida sotuv/yuklama bo'lib qoldiq o'zgargan bo'lsa, tizim tasdiqlashni
+   to'xtatadi — «Hisobdagi qoldiqni yangilash» ni bosing (kiritilganlar saqlanib qoladi)
+   va qayta tasdiqlang.
 
 ## 4. Naklit skani (OCR)
 
@@ -183,20 +198,28 @@ tovar farqi    = yuklangan − sotilgan − qaytarilgan
 ## 13. Boshlang'ich qoldiqlar
 
 Tizimni birinchi marta sozlashda (yoki mavjud yozuvlarga tuzatish kiritishda) barcha
-"boshlang'ich holat"larni **bitta bo'limda**, alohida-alohida sahifada (tab) kiritasiz:
+"boshlang'ich holat"larni **bitta bo'limda**, alohida-alohida sahifada (tab) kiritasiz.
 
-- **Tovarlar** — mahsulot + ombor tanlang, miqdorni kiriting. Mavjud mahsulotlar uchun
-  ham ishlaydi (yaratish paytida kiritishga majbur emassiz).
-- **Kassa** — «Kassada bor (+)» / «Kamomad (−)» + summa. Faqat **SUPER_ADMIN**.
-- **Ta'minotchilar** — ta'minotchi tanlang, «Biz qarzdormiz (+)» / «U qarzdor (−)» +
-  summa. Faqat **SUPER_ADMIN**. **Diqqat:** bu faqat boshlang'ich holat uchun — keyingi
-  xaridlar va to'lovlar bu balansga avtomatik qo'shilmaydi.
-- **Mijozlar** — mijoz tanlang, boshlang'ich qarz summasini kiriting. Mijozning
-  qarzdorligiga (bo'lim 5, 10) darhol qo'shiladi.
-- **Xodimlar** — xodim tanlang, «Xodimga berilgan (avans)» / «Xodimning qarzi» + summa.
-  Faqat **SUPER_ADMIN**.
+Har tabda ro'yxat **avtomatik to'ldiriladi** — barcha kassalar, tovarlar, ta'minotchilar,
+mijozlar yoki xodimlar hozirgi balansi bilan chiqadi. «Yangi qoldiq» ustuniga **yakuniy**
+(haqiqiy) qiymatni yozing — farqni tizim o'zi hisoblaydi va ko'rsatadi. Bo'sh qoldirilgan
+qatorlar o'zgarmaydi. Enter — keyingi qatorga o'tadi. «Saqlash» bitta bosishda barcha
+o'zgarganlarni yozadi: yo hammasi saqlanadi, yo hech biri (xato bo'lsa sababi ko'rsatiladi).
+Bir xil ro'yxatni qayta saqlash ikkinchi marta hech narsani o'zgartirmaydi.
 
-Har bir tabda pastda oxirgi kiritilgan yozuvlar ro'yxati ko'rinadi.
+- **Tovarlar** — avval omborni tanlang; ombordagi barcha faol tovarlar (qoldig'i yo'qlari
+  ham) chiqadi. Miqdor manfiy bo'lmaydi.
+- **Kassa** — kassadagi haqiqiy summa; manfiy — kamomad. Faqat **SUPER_ADMIN**.
+- **Ta'minotchilar** — musbat: biz qarzdormiz, manfiy: ta'minotchi qarzdor. Faqat
+  **SUPER_ADMIN**. **Diqqat:** bu faqat boshlang'ich holat uchun — keyingi xaridlar va
+  to'lovlar bu balansga avtomatik qo'shilmaydi.
+- **Mijozlar** — mijozning umumiy qarzi. Farq sotuvsiz boshlang'ich qarz bo'lib qo'shiladi
+  (bo'lim 5, 10). Qarzni **kamaytirish** bu yerda emas — qarz to'lovi orqali.
+- **Xodimlar** — musbat: xodimga berilgan (avans), manfiy: xodimning qarzi. Faqat
+  **SUPER_ADMIN**.
+
+Har bir tabda pastda oxirgi kiritilgan yozuvlar ro'yxati ko'rinadi. Har ommaviy saqlash
+audit jurnaliga yoziladi.
 
 ## 14. Tarqatuvchilar — 360° karta
 

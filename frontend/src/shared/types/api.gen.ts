@@ -122,6 +122,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password-reset/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parolni tiklash — kod va yangi parol */
+        post: operations["auth_password_reset_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Parolni tiklash — kod so'rash
+         * @description Telegram'ga bog'langan xodimga tiklash kodini yuboradi.
+         *
+         *     Javob har doim bir xil — raqam tizimda bor-yo'qligi oshkor qilinmaydi.
+         */
+        post: operations["auth_password_reset_request_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/refresh/": {
         parameters: {
             query?: never;
@@ -361,6 +400,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/cash-transactions/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kassa balansini ro'yxatdan kiritish (yakuniy qiymat, ±)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        post: operations["cash_transactions_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qoldiq uchun kassalar ro'yxati (joriy balans bilan)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        get: operations["cash_transactions_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/categories/": {
         parameters: {
             query?: never;
@@ -573,6 +658,50 @@ export interface paths {
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
          */
         post: operations["clients_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mijozlar qarzini ro'yxatdan kiritish (yakuniy qarz, faqat oshirish)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["clients_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qarz uchun mijozlar ro'yxati (joriy qarzi bilan)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["clients_opening_sheet_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1168,6 +1297,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inventory-counts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        get: operations["inventory_counts_list"];
+        put?: never;
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        post: operations["inventory_counts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        get: operations["inventory_counts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        patch: operations["inventory_counts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qoralamani bekor qilish
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        post: operations["inventory_counts_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tasdiqlash — farq qoldiqqa tuzatish bo'lib yoziladi
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        post: operations["inventory_counts_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/fill/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qatorlarni joriy qoldiq bilan qayta to'ldirish
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        post: operations["inventory_counts_fill_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Haqiqiy qoldiqlarni saqlash (bo'sh — sanalmagan)
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        patch: operations["inventory_counts_items_partial_update"];
+        trace?: never;
+    };
     "/api/v1/invoice-scans/": {
         parameters: {
             query?: never;
@@ -1514,7 +1759,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Bugungi yuklamam (tarqatuvchi uchun)
+         * Bugungi yuklamam + hali tasdiqlanmaganlari (tarqatuvchi uchun)
          * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
          *
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
@@ -2961,6 +3206,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stock/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tovar qoldiqlarini ommaviy kiritish (yakuniy miqdor)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        post: operations["stock_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stock/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        get: operations["stock_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/supplier-transactions/": {
         parameters: {
             query?: never;
@@ -3083,6 +3374,50 @@ export interface paths {
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
          */
         post: operations["suppliers_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suppliers/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ta'minotchilar balansini ommaviy kiritish (yakuniy qiymat, ±)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["suppliers_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suppliers/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qoldiq uchun barcha faol ta'minotchilar balansi
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["suppliers_opening_sheet_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3635,6 +3970,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wallet/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Xodimlar balansini ro'yxatdan kiritish (yakuniy qiymat, ±)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        post: operations["wallet_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallet/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich balans uchun xodimlar ro'yxati (hamyon balansi bilan)
+         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
+         *
+         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
+         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         */
+        get: operations["wallet_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/warehouses/": {
         parameters: {
             query?: never;
@@ -3855,6 +4236,8 @@ export interface components {
             readonly reference_id: string;
             /** Izoh */
             readonly note: string;
+            /** @default  */
+            readonly created_by_name: string;
             /**
              * Yaratilgan vaqti
              * Format: date-time
@@ -5042,6 +5425,132 @@ export interface components {
             /** Format: decimal */
             price?: string | null;
         };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        InventoryCount: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Raqam */
+            readonly number: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse: string;
+            readonly warehouse_name: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Holat */
+            readonly status: components["schemas"]["StatusBb1Enum"];
+            readonly status_display: string;
+            /** Izoh */
+            note?: string;
+            /**
+             * Tasdiqlangan vaqti
+             * Format: date-time
+             */
+            readonly confirmed_at: string | null;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            readonly items_count: number;
+            readonly counted_count: number;
+            readonly difference_amount: string;
+            readonly items: components["schemas"]["InventoryCountItem"][];
+        };
+        InventoryCountItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            readonly product: string;
+            readonly product_name: string;
+            readonly product_sku: string;
+            readonly product_unit: string;
+            /**
+             * Hisobda
+             * Format: decimal
+             */
+            readonly expected_qty: string;
+            /**
+             * Haqiqiy
+             * Format: decimal
+             */
+            readonly actual_qty: string | null;
+            /** Format: decimal */
+            readonly difference: string | null;
+            /**
+             * Tannarx
+             * Format: decimal
+             */
+            readonly cost_price: string;
+            /** Izoh */
+            readonly note: string;
+        };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        InventoryCountList: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Raqam */
+            readonly number: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse: string;
+            readonly warehouse_name: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Holat */
+            readonly status: components["schemas"]["StatusBb1Enum"];
+            readonly status_display: string;
+            /** Izoh */
+            note?: string;
+            /**
+             * Tasdiqlangan vaqti
+             * Format: date-time
+             */
+            readonly confirmed_at: string | null;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            readonly items_count: number;
+            readonly counted_count: number;
+            readonly difference_amount: string;
+        };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        InventoryCountRequest: {
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Izoh */
+            note?: string;
+        };
+        InventoryItemInputRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            actual_qty: string | null;
+            note?: string;
+        };
         InvoiceScan: {
             /** Format: uuid */
             readonly id: string;
@@ -5391,6 +5900,26 @@ export interface components {
          * @enum {string}
          */
         NotificationTypeEnum: "sale.flagged" | "expense.limit_exceeded" | "expense.approved" | "expense.rejected" | "cash.difference" | "stock.low" | "loading.confirmed" | "dayclose.submitted" | "debt.overdue" | "sync.conflict" | "general";
+        /** @description Ommaviy boshlang'ich qoldiq. context: `non_negative`, `decimal_places`. */
+        OpeningBulkRequest: {
+            rows: components["schemas"]["OpeningRowRequest"][];
+            /** @default  */
+            note: string;
+        };
+        OpeningRowRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            target: string;
+        };
+        /** @description Boshlang'ich qoldiqlar ro'yxati qatori — joriy balans bilan. */
+        OpeningSheetRow: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            code: string;
+            current: string;
+        };
         Order: {
             /** Format: uuid */
             readonly id: string;
@@ -5770,6 +6299,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["ExpenseCategory"][];
         };
+        PaginatedInventoryCountListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["InventoryCountList"][];
+        };
         PaginatedInvoiceScanList: {
             /** @example 123 */
             count: number;
@@ -5814,6 +6358,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Notification"][];
+        };
+        PaginatedOpeningSheetRowList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["OpeningSheetRow"][];
         };
         PaginatedOrderList: {
             /** @example 123 */
@@ -6106,6 +6665,14 @@ export interface components {
          * @enum {string}
          */
         PaidByEnum: "COMPANY" | "DISTRIBUTOR";
+        PasswordResetConfirmRequest: {
+            phone: string;
+            code: string;
+            new_password: string;
+        };
+        PasswordResetRequestRequest: {
+            phone: string;
+        };
         PatchedBrandRequest: {
             /** Nomi */
             name?: string;
@@ -6271,6 +6838,24 @@ export interface components {
             paid_by?: components["schemas"]["PaidByEnum"];
             /** Faol */
             is_active?: boolean;
+        };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        PatchedInventoryCountRequest: {
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse?: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date?: string;
+            /** Izoh */
+            note?: string;
+        };
+        PatchedInventoryItemsUpdateRequest: {
+            items?: components["schemas"]["InventoryItemInputRequest"][];
         };
         PatchedInvoiceScanLineUpdateRequest: {
             /**
@@ -7606,6 +8191,13 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "MANUAL" | "SCAN";
+        /**
+         * @description * `DRAFT` - Qoralama
+         *     * `CONFIRMED` - Tasdiqlangan
+         *     * `CANCELLED` - Bekor qilingan
+         * @enum {string}
+         */
+        StatusBb1Enum: "DRAFT" | "CONFIRMED" | "CANCELLED";
         Stock: {
             /** Format: uuid */
             readonly id: string;
@@ -7622,6 +8214,9 @@ export interface components {
             readonly product: string;
             readonly product_name: string;
             readonly product_sku: string;
+            readonly product_unit: string;
+            /** Format: decimal */
+            readonly min_stock_alert: string;
             /**
              * Qoldiq
              * Format: decimal
@@ -8209,6 +8804,60 @@ export interface operations {
             };
         };
     };
+    auth_password_reset_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirmRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirmRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetConfirmRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    auth_password_reset_request_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetRequestRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     auth_refresh_create: {
         parameters: {
             query?: never;
@@ -8587,6 +9236,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CashTransaction"];
+                };
+            };
+        };
+    };
+    cash_transactions_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashTransaction"];
+                };
+            };
+        };
+    };
+    cash_transactions_opening_sheet_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `HANDOVER_IN` - Tarqatuvchidan naqd (+)
+                 *     * `OTHER_IN` - Boshqa kirim (+)
+                 *     * `BANK_DEPOSIT` - Bankka topshirildi (−)
+                 *     * `SUPPLIER_PAYMENT` - Yetkazib beruvchiga to'lov (−)
+                 *     * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
+                 *     * `OTHER_OUT` - Boshqa chiqim (−)
+                 *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 */
+                transaction_type?: "BANK_DEPOSIT" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
                 };
             };
         };
@@ -9030,6 +9744,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
+    clients_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
+    clients_opening_sheet_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `SHOP` - Do'kon
+                 *     * `MARKET` - Bozor
+                 *     * `SUPERMARKET` - Supermarket
+                 *     * `PHARMACY` - Dorixona
+                 *     * `OTHER` - Boshqa
+                 */
+                client_type?: "MARKET" | "OTHER" | "PHARMACY" | "SHOP" | "SUPERMARKET";
+                is_blocked?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                route?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
                 };
             };
         };
@@ -10038,6 +10815,211 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    inventory_counts_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `DRAFT` - Qoralama
+                 *     * `CONFIRMED` - Tasdiqlangan
+                 *     * `CANCELLED` - Bekor qilingan
+                 */
+                status?: "CANCELLED" | "CONFIRMED" | "DRAFT";
+                warehouse?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedInventoryCountListList"];
+                };
+            };
+        };
+    };
+    inventory_counts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InventoryCountRequest"];
+                "multipart/form-data": components["schemas"]["InventoryCountRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedInventoryCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedInventoryCountRequest"];
+                "multipart/form-data": components["schemas"]["PatchedInventoryCountRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_fill_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedInventoryItemsUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedInventoryItemsUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedInventoryItemsUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
                 };
             };
         };
@@ -12262,6 +13244,8 @@ export interface operations {
         parameters: {
             query?: {
                 client?: string;
+                date__gte?: string;
+                date__lte?: string;
                 distributor?: string;
                 flagged?: boolean;
                 /** @description Which field to use when ordering the results. */
@@ -12622,6 +13606,61 @@ export interface operations {
             };
         };
     };
+    stock_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stock"];
+                };
+            };
+        };
+    };
+    stock_opening_sheet_list: {
+        parameters: {
+            query: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                product?: string;
+                /** @description A search term. */
+                search?: string;
+                warehouse: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
     supplier_transactions_list: {
         parameters: {
             query?: {
@@ -12851,6 +13890,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupplierTransaction"];
+                };
+            };
+        };
+    };
+    suppliers_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Supplier"];
+                };
+            };
+        };
+    };
+    suppliers_opening_sheet_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
                 };
             };
         };
@@ -13636,6 +14728,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WalletTransaction"];
+                };
+            };
+        };
+    };
+    wallet_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+        };
+    };
+    wallet_opening_sheet_list: {
+        parameters: {
+            query?: {
+                distributor?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
                 };
             };
         };

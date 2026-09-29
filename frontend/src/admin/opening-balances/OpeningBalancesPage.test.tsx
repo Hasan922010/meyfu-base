@@ -20,6 +20,9 @@ vi.mock('@/shared/api/finance', () => ({ walletApi: emptyApi() }));
 vi.mock('@/shared/api/finance2', () => ({ financeApi: emptyApi() }));
 vi.mock('@/shared/api/users', () => ({ staffApi: emptyApi() }));
 vi.mock('@/shared/api/warehouse', () => ({ warehouseApi: emptyApi() }));
+vi.mock('@/shared/api/opening', () => ({
+  openingApi: { sheet: () => Promise.resolve([]), bulk: vi.fn() },
+}));
 
 const auth = vi.hoisted(() => ({ role: 'ACCOUNTANT' }));
 vi.mock('@/shared/store/authStore', () => ({
@@ -54,7 +57,9 @@ describe('OpeningBalancesPage — rolga qarab yozish (audit K3b)', () => {
     auth.role = 'MANAGER';
     renderPage();
 
-    expect(await screen.findByRole('button', { name: 'Saqlash' })).toBeInTheDocument();
+    // Tovarlar ro'yxati ombor tanlangach chiqadi
+    expect(await screen.findByText(/omborni tanlang/)).toBeInTheDocument();
+    expect(screen.queryByText(/Faqat ko‘rish/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Kassa' }));
     expect(await screen.findByText(/Faqat ko‘rish/)).toBeInTheDocument();
