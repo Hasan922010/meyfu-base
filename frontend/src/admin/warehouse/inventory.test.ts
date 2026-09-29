@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { InventoryCountItem } from '@/shared/types/warehouse';
 
-import { changedRows, differenceOf, filterRows, summarize } from './inventory';
+import { changedRows, differenceOf, filterRows, rebasedCountedRows, summarize } from './inventory';
 
 function item(id: string, expected: string, actual: string | null, cost = '1000'): InventoryCountItem {
   return {
@@ -51,5 +51,12 @@ describe('inventory helpers', () => {
     expect(filterRows(items, drafts, 'diff', '').map((i) => i.id)).toEqual(['a']);
     expect(filterRows(items, drafts, 'uncounted', '').map((i) => i.id)).toEqual(['c']);
     expect(filterRows(items, drafts, 'all', 'sku-b').map((i) => i.id)).toEqual(['b']);
+  });
+
+  it('lists counted rows whose book quantity changed after refresh', () => {
+    const before = [item('a', '10.000', '9.000'), item('b', '5.000', null), item('c', '1.000', '1.000')];
+    const after = [item('a', '7.000', '9.000'), item('b', '2.000', null), item('c', '1.000', '1.000')];
+
+    expect(rebasedCountedRows(before, after).map((i) => i.id)).toEqual(['a']);
   });
 });

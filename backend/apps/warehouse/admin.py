@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from apps.core.admin import AppendOnlyAdmin
 
+from .constants import InventoryStatus
 from .models import (
     InventoryCount,
     InventoryCountItem,
@@ -120,3 +121,13 @@ class InventoryCountAdmin(admin.ModelAdmin):
     search_fields = ("number",)
     readonly_fields = ("number", "status", "confirmed_at", "confirmed_by")
     inlines = (InventoryCountItemInline,)
+
+    def has_delete_permission(self, request, obj=None) -> bool:
+        # Tasdiqlangan hujjatga StockMovement/AuditLog havola qiladi (5.1, 5.3) —
+        # faqat qoralama o'chiriladi. obj=None — ro'yxatdagi ommaviy o'chirish,
+        # u tasdiqlanganlarni ham tanlab yuborishi mumkin, shuning uchun yopiq.
+        if obj is None:
+            return False
+        return obj.status == InventoryStatus.DRAFT and super().has_delete_permission(
+            request, obj
+        )

@@ -264,3 +264,41 @@ def test_list_shows_summary(manager_api, product, second_product, warehouse):
     assert row["counted_count"] == 1
     # 10 dona × 20 000 tannarx
     assert Decimal(row["difference_amount"]) == Decimal("-200000")
+
+
+@pytest.mark.django_db
+def test_draft_date_cannot_move_to_another_year(manager_api, product, warehouse):
+    data = _create(manager_api, warehouse["warehouse"])
+
+    url = f"{URL}{data['id']}/"
+
+    other_year = manager_api.patch(url, {"date": "2027-01-02"}, format="json")
+    same_year = manager_api.patch(url, {"date": "2026-09-30"}, format="json")
+
+    assert other_year.status_code == 400
+    assert same_year.status_code == 200, same_year.data
+
+
+@pytest.mark.django_db
+def test_admin_cannot_delete_confirmed_inventory(
+    manager_api, admin_user, product, warehouse
+):
+    from django.contrib.admin.sites import site
+    from django.test import RequestFactory
+
+    draft = _create(manager_api, warehouse["warehouse"])
+    confirmed = _create(manager_api, warehouse["warehouse"])
+    item_id = _item(confirmed, product)["id"]
+    _set_actual(manager_api, confirmed["id"], [(item_id, "499")])
+    manager_api.post(f"{URL}{confirmed['id']}/confirm/")
+    model_admin = site._registry[InventoryCount]
+    request = RequestFactory().get("/")
+    request.user = admin_user
+
+    draft_obj = InventoryCount.objects.get(pk=draft["id"])
+    confirmed_obj = InventoryCount.objects.get(pk=confirmed["id"])
+
+    assert model_admin.has_delete_permission(request, draft_obj)
+    assert not model_admin.has_delete_permission(request, confirmed_obj)
+    # Ro'yxatdagi ommaviy o'chirish tasdiqlanganlarni ham qamrab olardi
+    assert not model_admin.has_delete_permission(request)

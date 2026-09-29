@@ -53,6 +53,21 @@ export function changedRows(items: InventoryCountItem[], drafts: Drafts): Invent
     .map((item) => ({ id: item.id, actual_qty: actualOf(item, drafts) }));
 }
 
+/**
+ * "Hisobni yangilash"dan keyin hisobdagi qoldig'i o'zgargan, lekin allaqachon
+ * sanalgan qatorlar — farq endi boshqacha, foydalanuvchi qayta ko'rib chiqsin.
+ */
+export function rebasedCountedRows(
+  before: InventoryCountItem[],
+  after: InventoryCountItem[],
+): InventoryCountItem[] {
+  const previous = new Map(before.map((item) => [item.id, item.expected_qty]));
+  return after.filter((item) => {
+    const old = previous.get(item.id);
+    return item.actual_qty !== null && old !== undefined && Number(old) !== Number(item.expected_qty);
+  });
+}
+
 export function filterRows(
   items: InventoryCountItem[],
   drafts: Drafts,

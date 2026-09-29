@@ -428,6 +428,14 @@ class InventoryCountSerializer(InventoryCountListSerializer):
             )
         return value
 
+    def validate_date(self, value):
+        # Raqam yil bo'yicha beriladi (INV-<yil>-...) — boshqa yilga ko'chsa mos kelmaydi
+        if self.instance and value.year != self.instance.date.year:
+            raise serializers.ValidationError(
+                "Sanani boshqa yilga o'zgartirib bo'lmaydi — yangi hujjat oching."
+            )
+        return value
+
     @transaction.atomic
     def create(self, validated_data: dict) -> InventoryCount:
         count = InventoryCount(**validated_data)

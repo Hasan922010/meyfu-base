@@ -117,4 +117,24 @@ describe('InventoryEditor', () => {
 
     expect(screen.queryByRole('button', { name: 'Tasdiqlash' })).not.toBeInTheDocument();
   });
+
+  it('warns which counted rows got a new book quantity after refresh', async () => {
+    const counted = {
+      ...COUNT,
+      items: [{ ...COUNT.items[0]!, actual_qty: '480.000' }, COUNT.items[1]!],
+    };
+    warehouseApi.inventoryCount.mockResolvedValue(counted);
+    warehouseApi.fillInventoryCount.mockResolvedValue({
+      ...counted,
+      items: [{ ...counted.items[0]!, expected_qty: '470.000' }, counted.items[1]!],
+    });
+    renderEditor();
+    await screen.findByLabelText('Bio kukun 3kg — haqiqiy qoldiq');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hisobni yangilash' }));
+
+    const notice = await screen.findByRole('status');
+    expect(notice).toHaveTextContent("1 ta sanalgan tovarning hisobdagi qoldig'i o'zgardi");
+    expect(notice).toHaveTextContent('Bio kukun 3kg');
+  });
 });

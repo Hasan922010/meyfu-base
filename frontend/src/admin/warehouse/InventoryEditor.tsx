@@ -12,6 +12,7 @@ import type { InventoryCount } from '@/shared/types/warehouse';
 import {
   changedRows,
   filterRows,
+  rebasedCountedRows,
   summarize,
   type Drafts,
   type RowFilter,
@@ -40,6 +41,8 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
   const [filter, setFilter] = useState<RowFilter>('all');
   const [search, setSearch] = useState<string>('');
   const [confirming, setConfirming] = useState<boolean>(false);
+  // Yangilashdan keyin "Hisobda" o'zgargan sanalgan tovarlar (farqni qayta ko'rish uchun)
+  const [rebased, setRebased] = useState<string[]>([]);
 
   const query = useQuery({
     queryKey: ['inventory-count', countId],
@@ -69,7 +72,10 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
       await flush();
       return warehouseApi.fillInventoryCount(countId);
     },
-    onSuccess: onSaved,
+    onSuccess: (fresh) => {
+      setRebased(rebasedCountedRows(items, fresh.items ?? []).map((i) => i.product_name));
+      onSaved(fresh);
+    },
   });
   const confirm = useMutation({
     mutationFn: async () => {
@@ -158,6 +164,22 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
               Hisobdagi qoldiqni yangilash
             </button>
           )}
+        </div>
+      )}
+
+      {rebased.length > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-2 rounded-lg bg-pending/10 px-3 py-2 text-sm text-pending"
+        >
+          <span>
+            {`${rebased.length} ta sanalgan tovarning hisobdagi qoldig'i o'zgardi — farqni qayta tekshiring: `}
+            {rebased.slice(0, 5).join(', ')}
+            {rebased.length > 5 ? '…' : ''}
+          </span>
+          <button className="btn px-2 py-0.5 text-xs" onClick={() => setRebased([])}>
+            Tushunarli
+          </button>
         </div>
       )}
 
