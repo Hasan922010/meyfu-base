@@ -22,7 +22,7 @@ from apps.core.models import AuditLog, DocumentSequence
 from apps.notifications.services import notify
 from apps.sales.services.sale import SaleLine, create_sale
 from apps.warehouse.services.loading import assign_number
-from realtime.broadcast import broadcast
+from realtime.broadcast import broadcast_admin
 
 from ..constants import OPEN_STATUSES, ORDER_PREFIX, OrderStatus
 from ..models import Order, OrderItem
@@ -108,7 +108,7 @@ def create_order(
         changes={"number": order.number, "client": client.name,
                  "total": str(order.total_amount), "placed": place},
     )
-    broadcast("admin_dashboard", "order.placed" if place else "order.created", {
+    broadcast_admin(order.client.branch_id, "order.placed" if place else "order.created", {
         "order_id": str(order.id), "number": order.number,
         "client": client.name, "taken_by": taken_by.full_name,
         "total": str(order.total_amount), "status": order.status,
@@ -136,7 +136,7 @@ def place_order(order: Order, *, user=None) -> Order:
         user=user, action="order.placed", model_name="Order",
         object_id=str(order.id), changes={"number": order.number},
     )
-    broadcast("admin_dashboard", "order.placed", {
+    broadcast_admin(order.client.branch_id, "order.placed", {
         "order_id": str(order.id), "number": order.number,
     })
     return order
@@ -158,7 +158,7 @@ def approve_order(order: Order, *, user=None) -> Order:
         body=f"{order.number} · {order.client.name} · {fmt_money(order.total_amount)}",
         data={"order_id": str(order.id)},
     )
-    broadcast("admin_dashboard", "order.approved", {
+    broadcast_admin(order.client.branch_id, "order.approved", {
         "order_id": str(order.id), "number": order.number,
     })
     return order
@@ -392,7 +392,7 @@ def fulfill_order(
     )
     event = ("order.delivered" if order.status == OrderStatus.DELIVERED
              else "order.partially_delivered")
-    broadcast("admin_dashboard", event, {
+    broadcast_admin(order.client.branch_id, event, {
         "order_id": str(order.id), "number": order.number,
         "sale": result.sale.number, "status": order.status,
     })

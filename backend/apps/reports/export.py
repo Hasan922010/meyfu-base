@@ -7,7 +7,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
-
 # Excel formula sifatida bajariladigan boshlanishlar (audit SEC-118)
 _FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 

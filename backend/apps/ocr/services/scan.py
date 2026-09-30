@@ -172,15 +172,20 @@ def _fail(scan: InvoiceScan, message: str, *, notify: bool = False) -> InvoiceSc
     return scan
 
 
+def _scan_branch(scan: InvoiceScan):
+    warehouse = scan.warehouse
+    return warehouse.pk if warehouse is not None and warehouse.is_branch else None
+
+
 def _broadcast(scan: InvoiceScan, event: str) -> None:
     try:
-        from realtime.broadcast import broadcast
+        from realtime.broadcast import broadcast, broadcast_admin
 
         payload = {"scan_id": str(scan.id), "status": scan.status,
                    "number": scan.detected_invoice_number}
         broadcast(f"user_{scan.uploaded_by_id}", event, payload)
         broadcast(f"warehouse_{scan.warehouse_id}", event, payload)
-        broadcast("admin_dashboard", event, payload)
+        broadcast_admin(_scan_branch(scan), event, payload)
     except Exception:  # noqa: BLE001
         pass
 

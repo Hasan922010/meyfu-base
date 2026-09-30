@@ -74,14 +74,14 @@ def apply_movement(
 
     # Kam qoldiq ogohlantirishi — faqat chegaradan o'tganda (CLAUDE.md 11)
     if alert_level > _ZERO and new_quantity <= alert_level and was_above:
-        from realtime.broadcast import broadcast
+        from realtime.broadcast import broadcast, broadcast_admin
 
         payload = {
             "product_id": str(product.id), "product_name": product.name,
             "warehouse": warehouse.name, "quantity": str(new_quantity),
             "alert_level": str(product.min_stock_alert),
         }
-        broadcast("admin_dashboard", "stock.low", payload)
+        broadcast_admin(warehouse.id if warehouse.is_branch else None, "stock.low", payload)
         broadcast(f"warehouse_{warehouse.id}", "stock.low", payload)
 
     return StockMovement.objects.create(

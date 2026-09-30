@@ -27,7 +27,7 @@ from apps.wallet.constants import TransactionType
 from apps.wallet.services import reverse_reference, wallet_apply
 from apps.warehouse.models import VanStock
 from apps.warehouse.services.van import van_apply
-from realtime.broadcast import broadcast
+from realtime.broadcast import broadcast, broadcast_admin
 
 from ..constants import PaymentType, SaleStatus
 from ..models import Debt, Sale, SaleItem
@@ -364,7 +364,7 @@ def create_sale(
     if not conflict:
         _apply_stock_and_debt(sale, lines, distributor, client)
 
-    broadcast("admin_dashboard", "sale.created", {
+    broadcast_admin(sale.branch_id, "sale.created", {
         "sale_id": str(sale.id), "number": sale.number,
         "client": client.name, "distributor": distributor.full_name,
         "total": str(sale.total_amount), "status": sale.status,

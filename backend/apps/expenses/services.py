@@ -14,7 +14,7 @@ from apps.core.formatting import fmt_money
 from apps.core.models import AuditLog
 from apps.wallet.constants import TransactionType
 from apps.wallet.services import reverse_reference, wallet_apply
-from realtime.broadcast import broadcast
+from realtime.broadcast import broadcast, broadcast_admin
 
 from .constants import ExpenseStatus, PaymentSource
 from .models import DistributorExpense, ExpenseCategory, FuelLog
@@ -141,7 +141,7 @@ def create_expense(
     from apps.notifications.services import notify_admins
 
     if over_limit:
-        broadcast("admin_dashboard", "expense.limit_exceeded", {
+        broadcast_admin(expense.branch_id, "expense.limit_exceeded", {
             "expense_id": str(expense.id), "distributor": distributor.full_name,
             "amount": str(amount), "category": category.name,
         })
@@ -165,7 +165,7 @@ def create_expense(
             ]],
         )
     else:
-        broadcast("admin_dashboard", "expense.created", {
+        broadcast_admin(expense.branch_id, "expense.created", {
             "expense_id": str(expense.id), "distributor": distributor.full_name,
             "amount": str(amount),
         })

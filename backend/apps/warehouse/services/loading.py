@@ -91,14 +91,14 @@ def confirm_loading(loading: Loading, user=None) -> Loading:
     loading.confirmed_at = timezone.now()
     loading.save(update_fields=["status", "confirmed_at", "updated_at"])
 
-    from realtime.broadcast import broadcast
+    from realtime.broadcast import broadcast, broadcast_admin
 
     payload = {
         "loading_id": str(loading.id), "number": loading.number,
         "distributor": loading.distributor.full_name,
         "total": str(loading.total_amount),
     }
-    broadcast("admin_dashboard", "loading.confirmed", payload)
+    broadcast_admin(loading.warehouse_id if loading.warehouse.is_branch else None, "loading.confirmed", payload)
     broadcast(f"warehouse_{loading.warehouse_id}", "loading.confirmed", payload)
     return loading
 

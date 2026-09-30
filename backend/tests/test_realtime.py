@@ -120,3 +120,24 @@ async def test_ping_pong(distributor):
     pong = await comm.receive_json_from()
     assert pong["event"] == "pong"
     await comm.disconnect()
+
+
+# ------------------------------------------------ audit SEC-116 (2026-09-30)
+
+@pytest.mark.django_db(transaction=True)
+async def test_branch_manager_joins_only_own_branch_dashboard():
+    from apps.users.models import User
+    from apps.warehouse.models import Warehouse
+
+    branch = await sync_to_async(Warehouse.objects.create)(name="Filial X", is_branch=True)
+    manager = await sync_to_async(User.objects.create_user)(
+        phone="+998907778899", password="pass12345", full_name="Rahbar X",
+        role="BRANCH_MANAGER", warehouse=branch,
+    )
+    comm, connected = await _connect(_token(manager))
+    assert connected is True
+    groups = (await comm.receive_json_from())["payload"]["groups"]
+
+    assert "admin_dashboard" not in groups
+    assert f"admin_dashboard_{branch.pk}" in groups
+    await comm.disconnect()

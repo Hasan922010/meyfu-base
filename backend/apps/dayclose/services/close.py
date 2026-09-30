@@ -90,9 +90,9 @@ def submit_day_close(
 
     from apps.core.branch import staff_branch
     from apps.notifications.services import notify_admins
-    from realtime.broadcast import broadcast
+    from realtime.broadcast import broadcast_admin
 
-    broadcast("admin_dashboard", "dayclose.submitted", {
+    broadcast_admin(day_close.branch_id, "dayclose.submitted", {
         "day_close_id": str(day_close.id),
         "distributor": distributor.full_name,
         "date": str(date),
@@ -100,7 +100,7 @@ def submit_day_close(
         "stock_difference_qty": str(day_close.stock_difference_qty),
     })
     if day_close.has_difference:
-        broadcast("admin_dashboard", "cash.difference", {
+        broadcast_admin(day_close.branch_id, "cash.difference", {
             "day_close_id": str(day_close.id),
             "distributor": distributor.full_name,
             "cash_difference": str(day_close.cash_difference),

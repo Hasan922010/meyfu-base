@@ -44,17 +44,17 @@ from .services import (
 from .services.branch import (
     KINDS as BRANCH_KINDS,
 )
-from .services.branch_compare import branch_comparison, comparison_rows_for_export
-from .services.expense_anomalies import expense_anomalies
-from .services.locations import distributor_locations
-from .services.onec import export_1c_csv, export_1c_xml
-from .services.reorder import reorder_suggestions
 from .services.branch import (
     branch_activity,
     branch_activity_rows_for_export,
     branch_cards,
     branch_list,
 )
+from .services.branch_compare import branch_comparison, comparison_rows_for_export
+from .services.expense_anomalies import expense_anomalies
+from .services.locations import distributor_locations
+from .services.onec import export_1c_csv, export_1c_xml
+from .services.reorder import reorder_suggestions
 
 User = get_user_model()
 

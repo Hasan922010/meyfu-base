@@ -7,7 +7,15 @@ from rest_framework import serializers
 from apps.users.constants import Role
 from apps.warehouse.models import Warehouse
 
-from .models import BranchPrice, Brand, Category, Product, ProductImage, ProductPrice, Unit
+from .models import (
+    BranchPrice,
+    Brand,
+    Category,
+    Product,
+    ProductImage,
+    ProductPrice,
+    Unit,
+)
 from .pricing import PRICE_FIELDS
 
 
