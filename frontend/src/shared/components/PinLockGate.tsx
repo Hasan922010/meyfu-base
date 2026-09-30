@@ -39,6 +39,7 @@ export function PinLockGate({ children }: { children: ReactNode }): ReactElement
   if (!locked) return <>{children}</>;
 
   async function submit(): Promise<void> {
+    if (busy) return; // parallel urinishlar hisoblagichni aylanib o'tmasin (FE-109)
     setBusy(true);
     const result = await verifyPin(userId, pin);
     setBusy(false);
@@ -73,7 +74,11 @@ export function PinLockGate({ children }: { children: ReactNode }): ReactElement
           if (e.key === 'Enter' && pin.length >= 4) void submit();
         }}
       />
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
       <button
         className="btn-brand w-48"
         disabled={pin.length < 4 || busy}

@@ -92,42 +92,46 @@ export function MobileLayout(): ReactElement {
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col">
-      <RealtimeBridge />
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-        <Link to="/m/profile" className="truncate text-sm font-semibold">
-          {user?.full_name} ›
-        </Link>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <NotificationBell />
-          <SyncBadge state={sync} />
-        </div>
-      </header>
+    // Qulf butun ekranni yopadi — ism, bildirishnomalar, toast'lar ham (audit FE-109).
+    // Sinxronizatsiya (yuqoridagi effektlar) qulf ostida ham davom etadi.
+    <PinLockGate>
+      <div className="mx-auto flex min-h-full max-w-md flex-col">
+        <RealtimeBridge />
+        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+          <Link to="/m/profile" className="truncate text-sm font-semibold">
+            {user?.full_name} ›
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <NotificationBell />
+            <SyncBadge state={sync} />
+          </div>
+        </header>
 
-      <main className="flex-1 p-4 pb-24">
-        <ErrorBoundary key={location.pathname} variant="page">
-          <PinLockGate>{blocked ? <Navigate to="/m" replace /> : <Outlet />}</PinLockGate>
-        </ErrorBoundary>
-      </main>
+        <main className="flex-1 p-4 pb-24">
+          <ErrorBoundary key={location.pathname} variant="page">
+            {blocked ? <Navigate to="/m" replace /> : <Outlet />}
+          </ErrorBoundary>
+        </main>
 
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md justify-around border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-gray-800 dark:bg-gray-900">
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) =>
-              `flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs ${
-                isActive ? 'text-brand' : 'text-gray-500'
-              }`
-            }
-          >
-            <tab.Icon size={22} aria-hidden />
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+        <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md justify-around border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-gray-800 dark:bg-gray-900">
+          {tabs.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              end={tab.end}
+              className={({ isActive }) =>
+                `flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs ${
+                  isActive ? 'text-brand' : 'text-gray-500'
+                }`
+              }
+            >
+              <tab.Icon size={22} aria-hidden />
+              {tab.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </PinLockGate>
   );
 }
