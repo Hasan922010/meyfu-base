@@ -62,6 +62,9 @@ _REPORT_ROLES = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
 _NOWHERE = UUID(int=0)  # filialsiz filial rahbari — bo'sh hisobot
 
 
+MAX_REPORT_RANGE_DAYS = 366
+
+
 def report_branch(user):
     """Hisobot filiali: `None` — butun kompaniya (markaz), aks holda filial ID."""
     scope = branch_scope(user)
@@ -80,6 +83,13 @@ class _ReportView(APIView):
         today = business_date()
         df = parse_date(request.query_params.get("date_from", "")) or today.replace(day=1)
         dt = parse_date(request.query_params.get("date_to", "")) or today
+        # cheklanmagan oraliq — 1C eksport/hisobotlar xotirani to'ldirardi (BE-113)
+        if df > dt:
+            raise ValidationError({"date_from": "Boshlanish sanasi tugashdan keyin."})
+        if (dt - df).days > MAX_REPORT_RANGE_DAYS:
+            raise ValidationError(
+                {"date_to": f"Oraliq {MAX_REPORT_RANGE_DAYS} kundan oshmasin."}
+            )
         return df, dt
 
 

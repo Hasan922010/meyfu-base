@@ -8,6 +8,18 @@ from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 
 
+# Excel formula sifatida bajariladigan boshlanishlar (audit SEC-118)
+_FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _safe_cell(value):
+    """Matn `=HYPERLINK(...)` kabi formula bo'lib ochilmasin (mijoz/tovar nomi
+    foydalanuvchi kiritadi). Raqamlar o'zgarmaydi."""
+    if isinstance(value, str) and value.startswith(_FORMULA_START):
+        return f"'{value}"
+    return value
+
+
 def rows_to_xlsx(rows: list[list], *, sheet_name: str = "Hisobot") -> bytes:
     wb = Workbook()
     ws = wb.active
@@ -15,7 +27,7 @@ def rows_to_xlsx(rows: list[list], *, sheet_name: str = "Hisobot") -> bytes:
 
     for r_idx, row in enumerate(rows, start=1):
         for c_idx, value in enumerate(row, start=1):
-            cell = ws.cell(row=r_idx, column=c_idx, value=value)
+            cell = ws.cell(row=r_idx, column=c_idx, value=_safe_cell(value))
             if r_idx == 1:
                 cell.font = Font(bold=True)
 

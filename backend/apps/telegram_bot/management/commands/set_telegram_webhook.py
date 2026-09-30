@@ -5,7 +5,6 @@ Foydalanish:
 """
 from __future__ import annotations
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.telegram_bot.client import is_enabled, set_webhook

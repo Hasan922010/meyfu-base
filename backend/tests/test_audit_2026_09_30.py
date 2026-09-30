@@ -318,3 +318,51 @@ def test_cancel_sale_on_closed_day_requires_super_admin_reason(
     assert admin_api.post(url, {}, format="json").status_code == 409
     assert admin_api.post(url, {"reason": "Mijoz qaytardi"},
                           format="json").status_code == 200
+
+
+# ---------- SEC-118 / BE-113 / SEC-120 ----------
+
+def test_xlsx_export_neutralises_formulas():
+    import io
+
+    from openpyxl import load_workbook
+
+    from apps.reports.export import rows_to_xlsx
+
+    data = rows_to_xlsx([["Mijoz", "Summa"], ['=HYPERLINK("http://x","ok")', 5000]])
+    ws = load_workbook(io.BytesIO(data)).active
+
+    assert ws["A2"].value.startswith("'=")
+    assert ws["A2"].data_type == "s"
+    assert ws["B2"].value == 5000
+
+
+@pytest.mark.django_db
+def test_report_range_is_capped(manager_api):
+    resp = manager_api.get(
+        "/api/v1/reports/export-1c/?date_from=2020-01-01&date_to=2026-01-01"
+    )
+    assert resp.status_code == 400
+
+    reversed_range = manager_api.get(
+        "/api/v1/reports/export-1c/?date_from=2026-02-01&date_to=2026-01-01"
+    )
+    assert reversed_range.status_code == 400
+
+
+@pytest.mark.django_db
+def test_change_password_rejects_weak_and_revokes_sessions(auth_api, distributor):
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+    weak = auth_api.post("/api/v1/auth/change-password/", {
+        "old_password": "pass12345", "new_password": "12345678",
+    }, format="json")
+    assert weak.status_code == 400
+
+    ok_resp = auth_api.post("/api/v1/auth/change-password/", {
+        "old_password": "pass12345", "new_password": "Kuchli.Parol-2026",
+    }, format="json")
+    assert ok_resp.status_code == 200, ok_resp.data
+    tokens = OutstandingToken.objects.filter(user=distributor)
+    assert tokens.exists()
+    assert all(hasattr(t, "blacklistedtoken") for t in tokens)

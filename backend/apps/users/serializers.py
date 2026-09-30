@@ -218,10 +218,22 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Joriy parol noto'g'ri.")
         return value
 
+    def validate_new_password(self, value: str) -> str:
+        validate_password(value, user=self.context["request"].user)  # SEC-120
+        return value
+
     def save(self, **kwargs) -> None:
+        from rest_framework_simplejwt.token_blacklist.models import (
+            BlacklistedToken,
+            OutstandingToken,
+        )
+
         user = self.context["request"].user
         user.set_password(self.validated_data["new_password"])
         user.save(update_fields=["password", "updated_at"])
+        # boshqa qurilmalardagi sessiyalar ham tugaydi (audit SEC-120)
+        for token in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=token)
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -232,3 +244,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=32)
     code = serializers.RegexField(r"^\d{6}$")
     new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_new_password(self, value: str) -> str:
+        validate_password(value)  # audit SEC-120
+        return value
