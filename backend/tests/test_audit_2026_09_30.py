@@ -403,3 +403,23 @@ def test_warehouse_with_stock_cannot_be_deleted(admin_api, stocked):
     resp = admin_api.delete(f"/api/v1/warehouses/{stocked['warehouse'].pk}/")
     assert resp.status_code == 409
     assert resp.data["error"]["code"] == "WAREHOUSE_NOT_EMPTY"
+
+
+# ---------- BE-106: integrity yangi jurnallarni qamraydi ----------
+
+@pytest.mark.django_db
+def test_integrity_detects_client_debt_drift_and_ignores_cancelled(
+    auth_api, admin_api, van_stocked
+):
+    from apps.clients.models import Client
+    from apps.core.services.integrity import run_integrity_check
+
+    client = van_stocked["client"]
+    body = _sale_body(van_stocked, payment_type="QARZ", due_date="2099-01-01")
+    sale_id = auth_api.post("/api/v1/sales/", body, format="json").data["data"]["id"]
+    admin_api.post(f"/api/v1/sales/{sale_id}/cancel/", {"reason": "test"}, format="json")
+    assert run_integrity_check()["ok"] is True  # bekor qilingan qarz hisobga olinmaydi
+
+    Client.objects.filter(pk=client.pk).update(current_debt=Decimal("999"))
+    kinds = {m["kind"] for m in run_integrity_check()["mismatches"]}
+    assert "client_debt" in kinds

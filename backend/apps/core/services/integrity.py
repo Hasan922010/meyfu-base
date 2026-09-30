@@ -11,7 +11,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 _ZERO = Decimal("0")
@@ -84,20 +84,64 @@ def _van_mismatches() -> list[dict]:
 
 
 def _cash_mismatches() -> list[dict]:
+    """Markaz va har bir filial kassasi (audit BE-106)."""
+    from apps.finance.models import CashAccount
     from apps.finance.services import get_account
 
-    account = get_account()
-    ledger = account.transactions.aggregate(s=Sum("amount"))["s"] or _ZERO
-    if account.balance == ledger:
-        return []
-    return [{
-        "kind": "cash_account",
-        "id": str(account.id),
-        "label": f"Kassa · {account.name}",
-        "stored": _q(account.balance, _CENT),
-        "ledger": _q(ledger, _CENT),
-        "diff": _q(account.balance - ledger, _CENT),
-    }]
+    get_account()  # markaz kassasi har doim mavjud
+    out: list[dict] = []
+    for account in CashAccount.objects.all():
+        ledger = account.transactions.aggregate(s=Sum("amount"))["s"] or _ZERO
+        if account.balance != ledger:
+            out.append({
+                "kind": "cash_account",
+                "id": str(account.id),
+                "label": f"Kassa · {account.name}",
+                "stored": _q(account.balance, _CENT),
+                "ledger": _q(ledger, _CENT),
+                "diff": _q(account.balance - ledger, _CENT),
+            })
+    return out
+
+
+def _supplier_mismatches() -> list[dict]:
+    """Supplier.balance == SUM(SupplierTransaction.amount) (audit BE-106)."""
+    from apps.warehouse.models import Supplier
+
+    out: list[dict] = []
+    for sup in Supplier.objects.annotate(ledger=Sum("transactions__amount")):
+        ledger = sup.ledger or _ZERO
+        if sup.balance != ledger:
+            out.append({
+                "kind": "supplier",
+                "id": str(sup.id),
+                "label": f"Ta'minotchi · {sup.name}",
+                "stored": _q(sup.balance, _CENT),
+                "ledger": _q(ledger, _CENT),
+                "diff": _q(sup.balance - ledger, _CENT),
+            })
+    return out
+
+
+def _client_debt_mismatches() -> list[dict]:
+    """Client.current_debt == SUM(Debt.remaining) (audit BE-106)."""
+    from apps.clients.models import Client
+
+    out: list[dict] = []
+    for c in Client.objects.annotate(
+        ledger=Sum("debts__remaining", filter=Q(debts__is_deleted=False))
+    ):
+        ledger = c.ledger or _ZERO
+        if c.current_debt != ledger:
+            out.append({
+                "kind": "client_debt",
+                "id": str(c.id),
+                "label": f"Mijoz qarzi · {c.name}",
+                "stored": _q(c.current_debt, _CENT),
+                "ledger": _q(ledger, _CENT),
+                "diff": _q(c.current_debt - ledger, _CENT),
+            })
+    return out
 
 
 def _order_mismatches() -> list[dict]:
@@ -126,15 +170,19 @@ def run_integrity_check() -> dict:
     Hech narsani o'zgartirmaydi. Natija: ``{ok, checked_at, counts,
     mismatch_count, mismatches}``.
     """
+    from apps.clients.models import Client
+    from apps.finance.models import CashAccount
     from apps.orders.models import Order
     from apps.wallet.models import DistributorWallet
-    from apps.warehouse.models import Stock, VanStock
+    from apps.warehouse.models import Stock, Supplier, VanStock
 
     mismatches = (
         _wallet_mismatches()
         + _stock_mismatches()
         + _van_mismatches()
         + _cash_mismatches()
+        + _supplier_mismatches()
+        + _client_debt_mismatches()
         + _order_mismatches()
     )
     return {
@@ -144,7 +192,9 @@ def run_integrity_check() -> dict:
             "wallets": DistributorWallet.objects.count(),
             "stocks": Stock.objects.count(),
             "van_stocks": VanStock.objects.count(),
-            "cash_accounts": 1,
+            "cash_accounts": CashAccount.objects.count(),
+            "suppliers": Supplier.objects.count(),
+            "clients": Client.objects.count(),
             "orders": Order.objects.count(),
         },
         "mismatch_count": len(mismatches),
@@ -178,6 +228,14 @@ def apply_integrity_fix(mismatch: dict) -> None:
         from apps.finance.models import CashAccount
 
         CashAccount.objects.filter(id=mismatch["id"]).update(balance=target)
+    elif kind == "supplier":
+        from apps.warehouse.models import Supplier
+
+        Supplier.objects.filter(id=mismatch["id"]).update(balance=target)
+    elif kind == "client_debt":
+        from apps.clients.models import Client
+
+        Client.objects.filter(id=mismatch["id"]).update(current_debt=target)
     elif kind == "order_total":
         from apps.orders.models import Order
 
