@@ -85,12 +85,43 @@ export function qty(value: string | number): string {
   return `${sign}${groupThousands(int)}${frac ? `.${frac}` : ''}`;
 }
 
+/** Barcha sana/vaqtlar Toshkent vaqtida (CLAUDE.md 5.4) — qurilma zonasidan qat'i nazar. */
+export const TIME_ZONE = 'Asia/Tashkent';
+
+const dateFmt = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+const timeFmt = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** `dd.MM.yyyy`. Faqat sana ("2026-09-30") vaqt zonasiga bog'lanmaydi —
+ * `new Date()` uni UTC yarim tunda o'qib, g'arbiy zonalarda kechagi kunni berardi. */
 export function dateShort(iso: string): string {
+  const m = DATE_ONLY.exec(iso);
+  if (m) return `${m[3]}.${m[2]}.${m[1]}`;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  return dateFmt.format(d);
+}
+
+/** `HH:mm` Toshkent vaqtida. */
+export function timeShort(iso: string | Date): string {
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return timeFmt.format(d);
+}
+
+/** `dd.MM.yyyy HH:mm` Toshkent vaqtida. */
+export function dateTimeShort(iso: string | Date): string {
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return `${dateFmt.format(d)} ${timeFmt.format(d)}`;
 }

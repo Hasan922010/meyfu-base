@@ -5,6 +5,7 @@ import axios, {
 } from 'axios';
 
 import { env } from '@/shared/config/env';
+import { deviceId } from '@/shared/lib/device';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { ApiErrorBody } from '@/shared/types/api';
 
@@ -19,6 +20,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (access) {
     config.headers.set('Authorization', `Bearer ${access}`);
   }
+  config.headers.set('X-Device-Id', deviceId());
   return config;
 });
 

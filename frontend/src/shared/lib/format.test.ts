@@ -98,3 +98,16 @@ describe('plainQty', () => {
     expect(plainQty('')).toBe('');
   });
 });
+
+describe('Toshkent vaqti — audit FE-108', async () => {
+  const { dateShort, dateTimeShort, timeShort } = await import('./format');
+
+  it('faqat sana qurilma zonasidan qat’i nazar o‘sha kun', () => {
+    expect(dateShort('2026-09-30')).toBe('30.09.2026');
+  });
+
+  it('UTC vaqtni Toshkentga (+05:00) o‘giradi', () => {
+    expect(timeShort('2026-09-30T20:15:00Z')).toBe('01:15');
+    expect(dateTimeShort('2026-09-30T20:15:00Z')).toBe('01.10.2026 01:15');
+  });
+});

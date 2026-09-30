@@ -20,7 +20,7 @@ import { SaleProductList } from '@/mobile/SaleProductList';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
-import { money } from '@/shared/lib/format';
+import { dateTimeShort, money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
 
@@ -109,13 +109,7 @@ export function NewSalePage(): ReactElement {
         kind: 'sale',
         numberOrRef: uuid.slice(0, 8).toUpperCase(),
         synced: false,
-        date: new Date().toLocaleString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        date: dateTimeShort(new Date()),
         distributorName,
         clientName: client.name,
         paymentLabel: paymentLabel(paymentType),

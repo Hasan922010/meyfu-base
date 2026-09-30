@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -260,6 +261,8 @@ SPECTACULAR_SETTINGS = {
 # --- CORS ---
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_CREDENTIALS = True
+# Sync log qurilma ustuni (audit FE-107)
+CORS_ALLOW_HEADERS = (*default_headers, "x-device-id")
 
 # --- Admin URL (audit CFG-003) — standart /admin/ ni sozlanadigan qilish ---
 ADMIN_URL = env("ADMIN_URL", default="admin/")

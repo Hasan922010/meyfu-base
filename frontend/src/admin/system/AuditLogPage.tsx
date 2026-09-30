@@ -3,7 +3,7 @@ import { Fragment, useState, type ReactElement } from 'react';
 
 import { listPage } from '@/shared/api/crud';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort } from '@/shared/lib/format';
+import { dateShort, timeShort } from '@/shared/lib/format';
 
 interface AuditRow {
   id: string;
@@ -19,7 +19,7 @@ interface AuditRow {
 const PAGE_SIZE = 50;
 
 function timeOf(iso: string): string {
-  return new Date(iso).toLocaleTimeString('uz', { hour: '2-digit', minute: '2-digit' });
+  return timeShort(iso);
 }
 
 /** Audit jurnali (CLAUDE.md 5.3): kim, qachon, nimani o'zgartirdi. Faqat o'qish. */

@@ -4,10 +4,10 @@ import type { ReactElement } from 'react';
 import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
 import { MapView, type MapPoint } from '@/shared/components/map/MapView';
 import { toPoint } from '@/shared/components/map/mapPoints';
-import { money } from '@/shared/lib/format';
+import { money, timeShort } from '@/shared/lib/format';
 
 function timeOf(iso: string): string {
-  return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return timeShort(iso);
 }
 
 /**

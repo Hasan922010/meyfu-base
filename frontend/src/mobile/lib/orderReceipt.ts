@@ -1,5 +1,6 @@
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import type { Order } from '@/shared/api/orders';
+import { dateShort } from '@/shared/lib/format';
 import { paymentLabel } from '@/shared/lib/labels';
 
 /** Buyurtmadan chek hujjati (PDF/ulashish uchun). */
@@ -8,11 +9,7 @@ export function orderToReceipt(o: Order): ReceiptDoc {
     kind: 'order',
     numberOrRef: o.number,
     synced: true,
-    date: new Date(o.created_at).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }),
+    date: dateShort(o.created_at),
     distributorName: o.taken_by_name,
     clientName: o.client_name,
     paymentLabel: o.payment_intent ? paymentLabel(o.payment_intent) : undefined,

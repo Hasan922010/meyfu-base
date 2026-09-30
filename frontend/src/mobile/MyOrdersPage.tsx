@@ -14,7 +14,7 @@ import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { ordersApi } from '@/shared/api/orders';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
-import { money } from '@/shared/lib/format';
+import { dateTimeShort, money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
 
@@ -224,13 +224,7 @@ function FulfillScreen({
         kind: 'sale',
         numberOrRef: order.number,
         synced: false,
-        date: new Date().toLocaleString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        date: dateTimeShort(new Date()),
         distributorName,
         clientName: order.client_name,
         paymentLabel: paymentLabel(paymentType),
