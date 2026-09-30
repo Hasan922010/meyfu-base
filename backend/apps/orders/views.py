@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.catalog.models import Product
 from apps.clients.models import Client
+from apps.core.branch import ensure_same_branch, scope_queryset, staff_branch
 from apps.core.exceptions import BusinessError
 from apps.core.permissions import is_order_taker
 from apps.core.response import ok
@@ -242,6 +243,8 @@ class OrderViewSet(BaseModelViewSet):
         qs = Order.objects.select_related("client", "taken_by").filter(
             status=OrderStatus.APPROVED
         )
+        # filial xodimi faqat o'z filiali buyurtmalarini ko'radi (audit SEC-113)
+        qs = scope_queryset(qs, request.user, "client__branch")
         return ok(OrderSerializer(qs, many=True).data)
 
     @extend_schema(summary="Tanlangan buyurtmalardan yuklama yig'ish",
@@ -254,11 +257,21 @@ class OrderViewSet(BaseModelViewSet):
         s.is_valid(raise_exception=True)
         data = s.validated_data
         orders = list(
-            Order.objects.filter(id__in=data["order_ids"]).select_related("client")
+            scope_queryset(
+                Order.objects.filter(id__in=data["order_ids"]),
+                request.user, "client__branch",
+            ).select_related("client")
+        )
+        distributor = User.objects.get(pk=data["distributor"])
+        warehouse = Warehouse.objects.get(pk=data["warehouse"])
+        branch = staff_branch(distributor)
+        ensure_same_branch(request.user, branch.pk if branch else None, "distributor")
+        ensure_same_branch(
+            request.user, warehouse.pk if warehouse.is_branch else None, "warehouse"
         )
         loading = build_loading_from_orders(
-            distributor=User.objects.get(pk=data["distributor"]),
-            warehouse=Warehouse.objects.get(pk=data["warehouse"]),
+            distributor=distributor,
+            warehouse=warehouse,
             orders=orders,
             date=data.get("date"),
             user=request.user,

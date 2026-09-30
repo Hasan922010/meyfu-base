@@ -8,12 +8,14 @@ from django.http import HttpResponse
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.branch import NO_BRANCH, branch_scope, ensure_same_branch, staff_branch
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
+from apps.core.permissions import IsCentralStaff, RolePermission
 from apps.core.response import ok
 from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
@@ -148,6 +150,7 @@ class SupplierViewSet(BaseModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
     write_roles = _WH_WRITE
+    central_only_write = True  # ta'minotchi — kompaniya ma'lumotnomasi (SEC-115)
     search_fields = ("name", "phone", "inn")
     action_roles = {
         "opening_balance": (Role.SUPER_ADMIN,),
@@ -292,6 +295,8 @@ class SupplierTransactionViewSet(BaseReadOnlyViewSet):
     queryset = SupplierTransaction.objects.select_related("supplier")
     serializer_class = SupplierTransactionSerializer
     read_roles = _WH_READ
+    # ta'minotchilar jurnali — kompaniya moliyasi, filialga emas (audit SEC-115)
+    permission_classes = [IsAuthenticated, RolePermission, IsCentralStaff]
     filterset_fields = ("supplier", "transaction_type")
     ordering_fields = ("created_at",)
     ordering = ("-created_at",)

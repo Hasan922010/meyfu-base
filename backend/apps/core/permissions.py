@@ -79,3 +79,17 @@ class IsDistributor(BasePermission):
         return bool(
             user and user.is_authenticated and user.role == Role.DISTRIBUTOR
         )
+
+
+class IsCentralStaff(BasePermission):
+    """Filialga biriktirilgan xodim (rahbar, omborchi, buxgalter) kompaniya
+    bo'yicha umumiy ma'lumotni ko'rmaydi: butunlik farqlari, tizim holati,
+    ta'minotchilar jurnali (audit SEC-115)."""
+
+    def has_permission(self, request, view) -> bool:
+        from apps.core.branch import branch_scope
+
+        user = request.user
+        if not (user and user.is_authenticated):
+            return False
+        return bool(user.is_superuser) or branch_scope(user) is None

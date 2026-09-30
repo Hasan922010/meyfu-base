@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404
 from rest_framework import status
@@ -193,6 +194,13 @@ def api_exception_handler(exc: Exception, context: dict) -> Response | None:
             _error_body("VALIDATION_ERROR", "Ma'lumot noto'g'ri.",
                         {"messages": _translate_tree(exc.messages)}),
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if isinstance(exc, ObjectDoesNotExist):
+        # `Model.objects.get(pk=...)` — mavjud bo'lmagan ID 500 emas, 404 (audit BE-108)
+        return Response(
+            _error_body("NOT_FOUND", "Ma'lumot topilmadi.", {}),
+            status=status.HTTP_404_NOT_FOUND,
         )
 
     response = drf_exception_handler(exc, context)

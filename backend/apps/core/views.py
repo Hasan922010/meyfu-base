@@ -13,7 +13,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.core.models import AuditLog, CompanySettings
 from apps.core.net import client_ip
-from apps.core.permissions import RolePermission
+from apps.core.permissions import IsCentralStaff, RolePermission
 from apps.core.response import ok
 from apps.core.serializers import (
     CompanyPublicSerializer,
@@ -84,7 +84,7 @@ class HealthView(APIView):
 class SystemStatusView(APIView):
     """Admin tizim salomatligi paneli — hamma narsa bir joyda (CLAUDE.md 13 #16)."""
 
-    permission_classes = [IsAuthenticated, RolePermission]
+    permission_classes = [IsAuthenticated, RolePermission, IsCentralStaff]
     read_roles = _ADMIN_ROLES
 
     @extend_schema(
@@ -100,7 +100,7 @@ class SystemStatusView(APIView):
 class IntegrityCheckView(APIView):
     """Butunlik tekshiruvini qo'lda ishga tushirish (CLAUDE.md 5.2)."""
 
-    permission_classes = [IsAuthenticated, RolePermission]
+    permission_classes = [IsAuthenticated, RolePermission, IsCentralStaff]
     read_roles = _ADMIN_ROLES
     write_roles = (Role.SUPER_ADMIN,)
 

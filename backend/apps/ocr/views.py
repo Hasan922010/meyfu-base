@@ -158,9 +158,14 @@ class InvoiceScanViewSet(
         self, request: Request, pk: str | None = None,
         line_id: str | None = None,
     ) -> Response:
-        line = InvoiceScanLine.objects.filter(
-            scan_id=pk, pk=line_id
-        ).select_related("scan").first()
+        # get_object() — filial/ombor doirasi va rol tekshiruvi (audit SEC-112)
+        scan = self.get_object()
+        if scan.status in (ScanStatus.CONFIRMED, ScanStatus.CANCELLED):
+            raise BusinessError(
+                message="Tasdiqlangan yoki bekor qilingan naklitni tahrirlab bo'lmaydi.",
+                code="SCAN_LOCKED",
+            )
+        line = InvoiceScanLine.objects.filter(scan=scan, pk=line_id).first()
         if line is None:
             raise BusinessError(message="Qator topilmadi.", code="LINE_NOT_FOUND")
         s = InvoiceScanLineUpdateSerializer(line, data=request.data, partial=True)
@@ -171,7 +176,10 @@ class InvoiceScanViewSet(
     @extend_schema(summary="OCR metrikalari (CLAUDE.md 9)")
     @action(detail=False, methods=["get"])
     def metrics(self, request: Request) -> Response:
-        days = int(request.query_params.get("days", 30))
+        try:
+            days = max(1, min(int(request.query_params.get("days", 30)), 366))
+        except ValueError:
+            days = 30
         return ok(compute_metrics(days=days))
 
 

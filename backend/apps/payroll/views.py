@@ -131,6 +131,8 @@ class PayrollViewSet(
         s = PayrollCalculateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         distributor = User.objects.get(pk=s.validated_data["distributor"])
+        branch = staff_branch(distributor)  # audit SEC-114
+        ensure_same_branch(request.user, branch.pk if branch else None, "distributor")
         payroll = calculate_payroll(
             distributor=distributor,
             period=s.validated_data["period"],
