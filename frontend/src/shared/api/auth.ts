@@ -41,3 +41,9 @@ export async function logout(): Promise<void> {
     // stateless — mijoz baribir tozalaydi
   }
 }
+
+/** WebSocket uchun bir martalik, qisqa muddatli ticket (JWT URL/loglarga chiqmasin). */
+export async function fetchWsTicket(): Promise<string> {
+  const { data } = await api.post<ApiSuccess<{ ticket: string }>>('/auth/ws-ticket/');
+  return data.data.ticket;
+}
