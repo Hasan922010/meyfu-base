@@ -157,7 +157,7 @@ class TelegramLinkCode(BaseModel):
             expires_at=timezone.now()
         )
         # `code` unique — kamdan-kam to'qnashuvda qayta urinamiz (audit BE-118)
-        for _ in range(5):
+        for _attempt in range(5):
             code = f"{secrets.randbelow(900000) + 100000}"
             if not cls.objects.filter(code=code).exists():
                 break

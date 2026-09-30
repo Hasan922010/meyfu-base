@@ -62,7 +62,7 @@ async def test_reject_malformed_query_token():
 @pytest.mark.django_db(transaction=True)
 async def test_one_time_ticket_cannot_be_replayed(distributor):
     raw_ticket = "test-one-time-ticket"
-    ticket = await sync_to_async(WebSocketTicket.objects.create)(
+    await sync_to_async(WebSocketTicket.objects.create)(
         user=distributor,
         token_hash=hashlib.sha256(raw_ticket.encode()).hexdigest(),
         expires_at=timezone.now() + timedelta(seconds=30),
