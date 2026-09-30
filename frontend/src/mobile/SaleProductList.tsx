@@ -22,12 +22,21 @@ interface Props {
   /** Standart (optom) narx */
   priceOf: (productId: string) => number;
   thumbOf: (productId: string) => string | null | undefined;
+  /** Minimal narx (0 — cheklov yo'q). Pastroq narx darhol ko'rsatiladi (FE-106). */
+  minPriceOf?: (productId: string) => number;
   onChange: (cart: CartLine[], notice: string) => void;
 }
 
 type Editing = { product: string; field: 'qty' | 'price' } | null;
 
-export function SaleProductList({ van, cart, priceOf, thumbOf, onChange }: Props): ReactElement {
+export function SaleProductList({
+  van,
+  cart,
+  priceOf,
+  thumbOf,
+  minPriceOf,
+  onChange,
+}: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
   const [editing, setEditing] = useState<Editing>(null);
 
@@ -54,7 +63,12 @@ export function SaleProductList({ van, cart, priceOf, thumbOf, onChange }: Props
     setEditing(null);
     const value = Number(raw);
     if (field === 'price') {
-      onChange(setLinePrice(cart, v.product, value), '');
+      const min = minPriceOf?.(v.product) ?? 0;
+      const notice =
+        min > 0 && value < min
+          ? `Minimal narx ${money(min)} — bu sotuv admin ko‘rigiga belgilanadi`
+          : '';
+      onChange(setLinePrice(cart, v.product, value), notice);
       return;
     }
     emit(setLineQuantity(cart, lineFor(v, value), v.quantity), v.unit);
@@ -64,6 +78,7 @@ export function SaleProductList({ van, cart, priceOf, thumbOf, onChange }: Props
     <div className="space-y-2">
       <input
         className="field"
+        aria-label="Tovar qidirish"
         placeholder="Tovar qidirish…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}

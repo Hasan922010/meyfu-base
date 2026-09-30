@@ -228,6 +228,7 @@ export function NewSalePage(): ReactElement {
             van={van}
             cart={cart}
             priceOf={(id) => Number(suggestedPrice(id) || 0)}
+            minPriceOf={(id) => Number(products.find((p) => p.id === id)?.min_price ?? 0)}
             thumbOf={(id) => thumbById.get(id)}
             onChange={(next, message) => {
               setCart(next);

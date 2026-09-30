@@ -193,3 +193,26 @@ describe('recoverOrphanedSending (UX B1)', () => {
     expect(statuses).toEqual(['CONFLICT', 'FAILED']);
   });
 });
+
+describe('applyResult — audit FE-106', () => {
+  it('tuzalmaydigan xato darhol DEAD, server xabari saqlanadi', async () => {
+    const uuid = await enqueue('sale', { x: 1 }, 'Sotuv');
+
+    await applyResult({
+      client_uuid: uuid, status: 'FAILED',
+      error: { code: 'BRANCH_MISMATCH', message: 'Boshqa filial mijozi' },
+    });
+
+    const op = await db.outbox.get(uuid);
+    expect(op?.status).toBe('DEAD');
+    expect(op?.error).toBe('Boshqa filial mijozi');
+  });
+
+  it('CONFLICT uchun server xabari ko‘rsatiladi', async () => {
+    const uuid = await enqueue('sale_return', { x: 1 }, 'Qaytarish');
+
+    await applyResult({ client_uuid: uuid, status: 'CONFLICT', error: { message: 'Qaytarish ziddiyati' } });
+
+    expect((await db.outbox.get(uuid))?.error).toBe('Qaytarish ziddiyati');
+  });
+});

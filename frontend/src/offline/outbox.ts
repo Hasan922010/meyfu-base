@@ -110,10 +110,27 @@ export async function recoverOrphanedSending(): Promise<number> {
   return db.outbox.where('status').equals('SENDING').modify({ status: 'PENDING' });
 }
 
+/**
+ * Qayta yuborish bilan tuzalmaydigan xatolar — darhol DEAD (foydalanuvchiga
+ * ko'rsatiladi), 20 marta soatlab takrorlanmaydi (audit FE-106).
+ */
+const TERMINAL_CODES = new Set([
+  'INVALID_QUANTITY',
+  'INVALID_PRICE',
+  'INVALID_DISCOUNT',
+  'INVALID_AMOUNT',
+  'EMPTY_SALE',
+  'EMPTY_RETURN',
+  'BRANCH_MISMATCH',
+  'ORDER_NOT_ASSIGNED',
+  'NOT_FOUND',
+  'VALIDATION_ERROR',
+]);
+
 export async function applyResult(result: {
   client_uuid: string;
   status: string;
-  error?: { message?: string };
+  error?: { code?: string; message?: string };
 }): Promise<void> {
   const op = await db.outbox.get(result.client_uuid);
   if (!op) return;
@@ -125,14 +142,15 @@ export async function applyResult(result: {
   if (result.status === 'CONFLICT') {
     await db.outbox.update(result.client_uuid, {
       status: 'CONFLICT',
-      error: 'Serverda qoldiq yetmadi — admin hal qiladi',
+      error: result.error?.message ?? 'Serverda qoldiq yetmadi — admin hal qiladi',
     });
     return;
   }
   // FAILED
   const attempts = op.attempts + 1;
+  const terminal = TERMINAL_CODES.has(result.error?.code ?? '');
   await db.outbox.update(result.client_uuid, {
-    status: attempts >= MAX_ATTEMPTS ? 'DEAD' : 'FAILED',
+    status: terminal || attempts >= MAX_ATTEMPTS ? 'DEAD' : 'FAILED',
     attempts,
     last_attempt_at: Date.now(),
     error: result.error?.message ?? 'Xatolik',
@@ -188,9 +206,10 @@ function lineQty(value: unknown): number {
  * aks holda offline sotilgan tovar yana "bor" bo'lib ko'rinardi (audit FE-102).
  */
 export async function unsentStockDelta(): Promise<Map<string, number>> {
+  // DEAD serverga bormaydi — mashina qoldig'idan ayirilmaydi
   const ops = await db.outbox
     .where('status')
-    .anyOf('PENDING', 'SENDING', 'FAILED', 'DEAD')
+    .anyOf('PENDING', 'SENDING', 'FAILED')
     .filter(isMine)
     .toArray();
   const delta = new Map<string, number>();

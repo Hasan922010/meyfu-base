@@ -29,7 +29,7 @@ interface BulkSyncResult {
     client_uuid: string;
     status: string;
     server_id?: string;
-    error?: { message?: string };
+    error?: { code?: string; message?: string };
   }>;
   server_time: string;
 }
