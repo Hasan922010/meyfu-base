@@ -89,6 +89,7 @@ class UserWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"password": "Yangi xodim uchun parol majburiy."}
             )
+        self._guard_money_fields(attrs)
         role = attrs.get("role", getattr(self.instance, "role", None))
         warehouse = attrs.get("warehouse", getattr(self.instance, "warehouse", None))
         if role == Role.BRANCH_MANAGER and (warehouse is None or not warehouse.is_branch):
@@ -96,6 +97,36 @@ class UserWriteSerializer(serializers.ModelSerializer):
                 {"warehouse": "Filial rahbariga filial biriktiring."}
             )
         return attrs
+
+    def _guard_money_fields(self, attrs: dict) -> None:
+        """CLAUDE.md 2: foiz, maosh va hamyon balansi — faqat SUPER_ADMIN.
+
+        Filial rahbari xodimni yaratib/tahrirlab, bu maydonlarni o'zgartira
+        olmaydi (audit SEC-107). O'zgarmagan qiymat yuborilsa — xato emas
+        (forma butun profilni yuboradi).
+        """
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or user.is_superuser or user.role == Role.SUPER_ADMIN:
+            return
+        errors: dict[str, str] = {}
+        if attrs.get("opening_balance"):
+            errors["opening_balance"] = "Boshlang'ich balansni faqat SUPER_ADMIN kiritadi."
+        profile_data = attrs.get("distributor_profile") or {}
+        current = getattr(self.instance, "distributor_profile", None)
+        for name in DistributorProfile.MONEY_FIELDS:
+            if name not in profile_data:
+                continue
+            baseline = (
+                getattr(current, name) if current is not None
+                else DistributorProfile._meta.get_field(name).get_default()
+            )
+            if profile_data[name] != baseline:
+                errors[f"distributor_profile.{name}"] = (
+                    "Maosh va foizni faqat SUPER_ADMIN o'zgartira oladi."
+                )
+        if errors:
+            raise serializers.ValidationError(errors)
 
     @transaction.atomic
     def create(self, validated_data: dict):

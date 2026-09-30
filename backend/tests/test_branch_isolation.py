@@ -503,3 +503,31 @@ def test_branch_manager_sees_only_own_cash_transactions(world):
     assert resp.status_code == 200
     assert resp.data["data"]["results"] == []
     assert CashTransaction.objects.count() == 1
+
+
+# ------------------------------------------------ audit SEC-107 (2026-09-30)
+
+def test_branch_manager_cannot_mint_opening_balance_or_commission(world):
+    api = _login(world["a"]["manager"].phone)
+
+    resp = api.post("/api/v1/users/", {
+        "phone": "+998904440022", "full_name": "Soxta", "role": "DISTRIBUTOR",
+        "password": "Kuchli.Parol123", "opening_balance": "10000000",
+        "distributor_profile": {"commission_percent": "50"},
+    }, format="json")
+
+    assert resp.status_code == 400
+    assert not User.objects.filter(phone="+998904440022").exists()
+
+
+def test_branch_manager_can_edit_staff_without_touching_pay(world):
+    api = _login(world["a"]["manager"].phone)
+    dist = world["a"]["distributor"]
+
+    resp = api.patch(f"/api/v1/users/{dist.pk}/", {
+        "full_name": "Yangi ism",
+        "distributor_profile": {"vehicle_number": "01A777AA",
+                                "commission_percent": "0"},  # o'zgarmagan
+    }, format="json")
+
+    assert resp.status_code == 200, resp.data

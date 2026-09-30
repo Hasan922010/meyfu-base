@@ -189,6 +189,13 @@ class DistributorProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # CLAUDE.md 2 — faqat SUPER_ADMIN o'zgartiradigan maosh/foiz maydonlari
+    # (audit SEC-107). Limitlar (reja, qarz, xarajat) — operatsion, menejerda.
+    MONEY_FIELDS = (
+        "base_salary", "commission_percent", "order_commission_percent",
+        "delivery_commission_percent", "can_sell_below_price",
+    )
+
     class Meta:
         verbose_name = _("tarqatuvchi profili")
         verbose_name_plural = _("tarqatuvchi profillari")
