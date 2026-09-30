@@ -45,6 +45,7 @@ def submit_day_close(
             message="Bu kun allaqachon yopilgan yoki tasdiq kutmoqda.",
             code="ALREADY_SUBMITTED",
         )
+    _validate_returns(distributor, warehouse, return_rows)
 
     day_close = DayClose(
         date=date, distributor=distributor, status=DayCloseStatus.PENDING,
@@ -192,12 +193,21 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
     if day_close.status == DayCloseStatus.CLOSED:
         raise BusinessError(message="Kun allaqachon yopilgan.", code="ALREADY_CLOSED")
 
+    shortfalls: list[dict] = []
     for dr in day_close.daily_returns.all():
         for item in dr.items.select_related("product"):
-            _settle_van(day_close.distributor, item.product, item.quantity)
+            # omborga faqat mashinadan haqiqatda chiqqan miqdor kiradi (BE-102)
+            settled = _settle_van(day_close.distributor, item.product, item.quantity)
+            if settled < item.quantity:
+                shortfalls.append({
+                    "product": str(item.product_id),
+                    "declared": str(item.quantity), "settled": str(settled),
+                })
+            if settled <= _ZERO:
+                continue
             apply_movement(
                 warehouse=dr.warehouse, product=item.product,
-                quantity=item.quantity, movement_type=MovementType.IN_RETURN,
+                quantity=settled, movement_type=MovementType.IN_RETURN,
                 user=user, reference_type="daily_return", reference_id=dr.pk,
                 from_location=f"Mashina: {day_close.distributor.full_name}",
                 to_location=dr.warehouse.name,
@@ -205,7 +215,7 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
             if item.condition != ItemCondition.GOOD:
                 apply_movement(
                     warehouse=dr.warehouse, product=item.product,
-                    quantity=-item.quantity, movement_type=MovementType.WRITE_OFF,
+                    quantity=-settled, movement_type=MovementType.WRITE_OFF,
                     user=user, reference_type="daily_return", reference_id=dr.pk,
                     note=f"Holati: {item.get_condition_display()}",
                 )
@@ -222,7 +232,8 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
     from apps.finance.constants import CashTxType
     from apps.finance.services import cash_apply
 
-    cash_branch = staff_branch(day_close.distributor)
+    # kun yopilgan paytdagi filial — xodim keyin ko'chirilgan bo'lsa ham (BE-119)
+    cash_branch = day_close.branch or staff_branch(day_close.distributor)
 
     for handover in day_close.cash_handovers.filter(confirmed=False):
         if handover.amount > _ZERO:
@@ -279,19 +290,59 @@ def confirm_day_close(day_close: DayClose, user=None) -> DayClose:
             "date": str(day_close.date),
             "cash_difference": str(day_close.cash_difference),
             "stock_difference_qty": str(day_close.stock_difference_qty),
+            **({"return_shortfalls": shortfalls} if shortfalls else {}),
         },
     )
     return day_close
 
 
-def _settle_van(distributor, product, quantity: Decimal) -> None:
-    """Mashina qoldig'ini kamaytiradi (0 dan pastga tushmaydi)."""
+def _validate_returns(distributor, warehouse, return_rows: list[ReturnRow]) -> None:
+    """Qaytarish: musbat miqdor, mashinadagidan ko'p emas, o'z filiali ombori
+    (audit BE-102). Aks holda ombor mashinada yo'q tovarni "qabul qilardi"."""
+    from apps.core.branch import staff_branch
+
+    branch = staff_branch(distributor)
+    if (branch is not None and warehouse.pk != branch.pk) or (
+        branch is None and warehouse.is_branch
+    ):
+        raise BusinessError(
+            message="Qaytarishni faqat o'z filialingiz omboriga topshirasiz.",
+            code="WRONG_WAREHOUSE",
+        )
+    requested: dict = {}
+    for row in return_rows:
+        if row.quantity <= _ZERO:
+            raise BusinessError(message="Qaytarish miqdori musbat bo'lishi kerak.",
+                                code="INVALID_QUANTITY")
+        requested[row.product.pk] = requested.get(row.product.pk, _ZERO) + row.quantity
+    have = dict(
+        VanStock.objects.select_for_update()
+        .filter(distributor=distributor, product__in=list(requested))
+        .values_list("product_id", "quantity")
+    )
+    for row in return_rows:
+        available = have.get(row.product.pk, _ZERO)
+        if requested[row.product.pk] > available:
+            raise BusinessError(
+                message=f"Mashinada «{row.product.name}» faqat {available} bor.",
+                code="INSUFFICIENT_STOCK",
+                details={"product_id": str(row.product.pk),
+                         "available": str(available),
+                         "requested": str(requested[row.product.pk])},
+            )
+
+
+def _settle_van(distributor, product, quantity: Decimal) -> Decimal:
+    """Mashina qoldig'ini kamaytiradi (0 dan pastga tushmaydi) va haqiqatda
+    ayirilgan miqdorni qaytaradi — ombor faqat shuni oladi."""
     vs = (
         VanStock.objects.select_for_update()
         .filter(distributor=distributor, product=product)
         .first()
     )
     if vs is None:
-        return
-    vs.quantity = max(_ZERO, vs.quantity - quantity)
+        return _ZERO
+    settled = min(vs.quantity, quantity)
+    vs.quantity -= settled
     vs.save(update_fields=["quantity", "updated_at"])
+    return settled

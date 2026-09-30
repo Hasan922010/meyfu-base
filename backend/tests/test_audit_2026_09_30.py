@@ -191,3 +191,54 @@ def test_branchless_branch_manager_denied_in_bot(monkeypatch):
     webhook.handle_update(_tg_msg(4242, "/hisobot"))
 
     assert sent and "faqat admin" in sent[-1]
+
+
+# ---------- BE-103: kompaniya xarajati kassa jurnalidan ajralmasin ----------
+
+@pytest.mark.django_db
+def test_company_expense_cannot_be_patched_or_deleted(admin_api):
+    created = admin_api.post("/api/v1/company-expenses/", {
+        "category": "RENT", "amount": "1000000", "description": "Ijara",
+        "paid_from_cash": True,
+    }, format="json")
+    assert created.status_code == 201, created.data
+    url = f"/api/v1/company-expenses/{created.data['data']['id']}/"
+
+    assert admin_api.patch(url, {"amount": "100"}, format="json").status_code == 405
+    assert admin_api.delete(url).status_code == 405
+
+
+# ---------- BE-102: kechki qaytarish mashina qoldig'idan oshmasin ----------
+
+@pytest.mark.django_db
+def test_day_close_return_more_than_van_rejected(auth_api, van_stocked):
+    from apps.dayclose.models import DayClose
+    from apps.warehouse.models import Stock
+
+    warehouse, product = van_stocked["warehouse"], van_stocked["product"]
+    stock_before = Stock.objects.get(warehouse=warehouse, product=product).quantity
+
+    resp = auth_api.post("/api/v1/day-close/submit/", {
+        "warehouse": str(warehouse.id), "cash_handed": "0",
+        "items": [{"product": str(product.id), "quantity": "501", "condition": "GOOD"}],
+    }, format="json")
+
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "INSUFFICIENT_STOCK"
+    assert not DayClose.objects.exists()
+    assert Stock.objects.get(warehouse=warehouse, product=product).quantity == stock_before
+
+
+@pytest.mark.django_db
+def test_day_close_return_to_other_branch_warehouse_rejected(auth_api, van_stocked):
+    from apps.warehouse.models import Warehouse
+
+    other = Warehouse.objects.create(name="Begona filial", is_branch=True)
+    resp = auth_api.post("/api/v1/day-close/submit/", {
+        "warehouse": str(other.id), "cash_handed": "0",
+        "items": [{"product": str(van_stocked["product"].id), "quantity": "1",
+                   "condition": "GOOD"}],
+    }, format="json")
+
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "WRONG_WAREHOUSE"

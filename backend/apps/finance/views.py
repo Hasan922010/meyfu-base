@@ -150,7 +150,10 @@ class CashTransactionViewSet(
 class CompanyExpenseViewSet(BaseModelViewSet):
     serializer_class = CompanyExpenseSerializer
     queryset = CompanyExpense.objects.select_related("cash_transaction")
-    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    # PATCH/DELETE yo'q: summa/sana o'zgarsa kassa jurnali (CashTransaction)
+    # bilan ajralib qolardi. Xato — tuzatuvchi kassa yozuvi bilan (CLAUDE.md 5.1;
+    # audit BE-103).
+    http_method_names = ["get", "post", "head", "options"]
     read_roles = _FINANCE
     write_roles = (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER)
     branch_lookup = "branch"
