@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.core.models import AuditLog, CompanySettings
+from apps.core.net import client_ip
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.serializers import (
@@ -125,7 +126,7 @@ class IntegrityCheckView(APIView):
             user=request.user,
             action="integrity.fix",
             changes={"fixed": result["mismatches"]},
-            ip=request.META.get("REMOTE_ADDR"),
+            ip=client_ip(request),
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
         )
         return ok({"fixed_count": result["mismatch_count"], **run_integrity_check()})
@@ -161,7 +162,7 @@ class CompanySettingsView(APIView):
             model_name="CompanySettings", object_id=str(obj.id),
             changes={"fields": list(serializer.validated_data.keys()),
                      "before": before},
-            ip=request.META.get("REMOTE_ADDR"),
+            ip=client_ip(request),
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
         )
         return ok(CompanySettingsSerializer(obj, context={"request": request}).data)

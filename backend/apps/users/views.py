@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from django.contrib.auth import get_user_model
-from django.conf import settings
-from django.db.models import QuerySet
-from django.utils import timezone
-from datetime import timedelta
 import hashlib
 import secrets
+from datetime import timedelta
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db.models import QuerySet
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -17,16 +17,18 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.core.branch import BRANCH_STAFF_ROLES, branch_scope, user_branch
 from apps.core.models import AuditLog
+from apps.core.net import client_ip
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.constants import Role
 
+from .models import WebSocketTicket
 from .serializers import (
     ChangePasswordSerializer,
     LoginSerializer,
@@ -35,7 +37,6 @@ from .serializers import (
     UserSerializer,
     UserWriteSerializer,
 )
-from .models import WebSocketTicket
 from .services import password_reset
 
 User = get_user_model()
@@ -175,7 +176,7 @@ class PasswordResetConfirmView(APIView):
         data = serializer.validated_data
         changed = password_reset.confirm_code(
             data["phone"], data["code"], data["new_password"],
-            ip=request.META.get("REMOTE_ADDR"),
+            ip=client_ip(request),
             user_agent=request.META.get("HTTP_USER_AGENT", ""),
         )
         if not changed:
@@ -275,6 +276,6 @@ class UserViewSet(BaseModelViewSet):
         AuditLog.objects.create(
             user=self.request.user, action=action_name, model_name="User",
             object_id=str(user.id), changes=changes,
-            ip=self.request.META.get("REMOTE_ADDR"),
+            ip=client_ip(self.request),
             user_agent=self.request.META.get("HTTP_USER_AGENT", "")[:255],
         )

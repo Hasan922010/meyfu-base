@@ -42,6 +42,10 @@ def get_bot_username() -> str:
     return credential.bot_username if credential else settings.TELEGRAM_BOT_USERNAME
 
 
+_WEAK_WEBHOOK_SECRETS = {"dev-webhook-secret"}
+_MIN_WEBHOOK_SECRET_LEN = 16
+
+
 def get_webhook_secret() -> str:
     from .models import TelegramBotCredential
 
@@ -50,7 +54,12 @@ def get_webhook_secret() -> str:
         secret = credential.get_webhook_secret()
         if secret:
             return secret
-    return settings.TELEGRAM_WEBHOOK_SECRET
+    # Ma'lum standart yoki qisqa sirga hech qachon tushmaymiz (audit SEC-105):
+    # bo'sh qiymat → webhook hech kimni o'tkazmaydi.
+    fallback = settings.TELEGRAM_WEBHOOK_SECRET or ""
+    if fallback in _WEAK_WEBHOOK_SECRETS or len(fallback) < _MIN_WEBHOOK_SECRET_LEN:
+        return ""
+    return fallback
 
 
 def is_enabled() -> bool:

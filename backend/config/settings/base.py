@@ -202,6 +202,10 @@ REST_FRAMEWORK = {
             else []
         )
     ),
+    # Ishonchli reverse-proxy soni (audit SEC-104). 0 — to'g'ridan-to'g'ri
+    # REMOTE_ADDR; docker/nginx ortida 1. Busiz throttle kaliti mijoz yuborgan
+    # butun X-Forwarded-For bo'ladi va har so'rovda almashtirib aylanib o'tiladi.
+    "NUM_PROXIES": env.int("NUM_PROXIES", default=0),
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",

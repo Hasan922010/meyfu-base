@@ -49,3 +49,6 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 CELERY_TASK_ALWAYS_EAGER = True
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+# audit SEC-105: standart "dev-webhook-secret" endi rad etiladi
+TELEGRAM_WEBHOOK_SECRET = "test-webhook-secret-0123456789abcdef"  # noqa: S105

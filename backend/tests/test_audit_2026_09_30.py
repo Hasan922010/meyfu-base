@@ -119,3 +119,75 @@ def test_duplicate_lines_checked_against_total_quantity(auth_api, van_stocked):
     }, format="json")
     assert resp.status_code == 409
     assert resp.data["error"]["details"]["requested"] == "600.000"
+
+
+# ---------- SEC-103: Telegram bog'lash kodini taxmin qilish ----------
+
+def _tg_msg(chat_id: int, text: str) -> dict:
+    return {"message": {"chat": {"id": chat_id}, "message_id": 1, "text": text}}
+
+
+@pytest.mark.django_db
+def test_telegram_link_bruteforce_is_throttled(distributor):
+    from apps.telegram_bot.models import TelegramLinkCode
+    from apps.telegram_bot.services.webhook import (
+        LINK_MAX_FAILS_PER_CHAT,
+        handle_update,
+    )
+
+    for _ in range(LINK_MAX_FAILS_PER_CHAT):
+        handle_update(_tg_msg(777001, "000000"))
+    code = TelegramLinkCode.issue(distributor)
+    handle_update(_tg_msg(777001, code.code))  # to'g'ri kod ham — bloklangan
+
+    distributor.refresh_from_db()
+    assert distributor.telegram_chat_id == ""
+
+
+@pytest.mark.django_db
+def test_telegram_relink_notifies_previous_chat(distributor, monkeypatch):
+    from apps.telegram_bot.models import TelegramLinkCode
+    from apps.telegram_bot.services import webhook
+
+    sent: list[tuple] = []
+    monkeypatch.setattr(
+        webhook, "tg_send_chat", lambda chat, text: sent.append((chat, text))
+    )
+    distributor.telegram_chat_id = "111"
+    distributor.save()
+
+    code = TelegramLinkCode.issue(distributor)
+    webhook.handle_update(_tg_msg(222, f"/start {code.code}"))
+
+    assert any(chat == "111" for chat, _ in sent)
+
+
+# ---------- SEC-105: standart webhook siri ----------
+
+@pytest.mark.django_db
+def test_webhook_rejects_default_secret(api, settings):
+    settings.TELEGRAM_WEBHOOK_SECRET = "dev-webhook-secret"
+    resp = api.post(
+        "/api/v1/telegram/webhook/", _tg_msg(1, "/help"), format="json",
+        HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN="dev-webhook-secret",
+    )
+    assert resp.status_code == 403
+
+
+# ---------- SEC-121: filialsiz filial rahbari botda ----------
+
+@pytest.mark.django_db
+def test_branchless_branch_manager_denied_in_bot(monkeypatch):
+    from apps.telegram_bot.services import webhook
+    from apps.users.models import User
+
+    User.objects.create_user(
+        phone="+998907770011", password="pass12345", full_name="BM",
+        role="BRANCH_MANAGER", telegram_chat_id="4242",
+    )
+    sent: list[str] = []
+    monkeypatch.setattr(webhook, "tg_send_chat", lambda chat, text: sent.append(text))
+
+    webhook.handle_update(_tg_msg(4242, "/hisobot"))
+
+    assert sent and "faqat admin" in sent[-1]
