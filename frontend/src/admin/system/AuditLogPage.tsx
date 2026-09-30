@@ -108,8 +108,16 @@ export function AuditLogPage(): ReactElement {
               {rows.map((r) => (
                 <Fragment key={r.id}>
                   <tr
-                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/50"
+                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-gray-800 dark:hover:bg-gray-800/50"
+                    tabIndex={0}
+                    aria-expanded={open === r.id}
                     onClick={() => setOpen(open === r.id ? null : r.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setOpen(open === r.id ? null : r.id);
+                      }
+                    }}
                   >
                     <td className="whitespace-nowrap p-3">
                       {dateShort(r.created_at)} {timeOf(r.created_at)}

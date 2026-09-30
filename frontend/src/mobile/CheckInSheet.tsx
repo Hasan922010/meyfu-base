@@ -65,6 +65,7 @@ export function CheckInSheet({
         </p>
         <textarea
           className="field min-h-[80px] py-2"
+          aria-label="Tashrif izohi"
           placeholder="Izoh (ixtiyoriy)"
           value={note}
           onChange={(e) => setNote(e.target.value)}

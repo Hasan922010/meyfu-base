@@ -208,6 +208,7 @@ export function NewReturnPage(): ReactElement {
 
       <input
         className="field"
+        aria-label="Izoh"
         placeholder="Izoh (ixtiyoriy)"
         value={note}
         onChange={(e) => setNote(e.target.value)}

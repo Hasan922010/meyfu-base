@@ -1,6 +1,9 @@
 import { X } from 'lucide-react';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface Props extends PropsWithChildren {
   open: boolean;
@@ -23,28 +26,53 @@ export function Modal({
   size = 'md',
 }: Props): ReactElement | null {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
+    // Fokus dialog ichida qoladi va yopilganda joyiga qaytadi (audit FE-113)
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const first = dialog?.querySelector<HTMLElement>(FOCUSABLE);
+    (first ?? dialog)?.focus();
+
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialog) return;
+      const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (items.length === 0) return;
+      const head = items[0];
+      const tail = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === head) {
+        e.preventDefault();
+        tail?.focus();
+      } else if (!e.shiftKey && document.activeElement === tail) {
+        e.preventDefault();
+        head?.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      previous?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
-      onClick={onClose}
-    >
+    // Fonni bosish yopmaydi: tasodifiy tegish formadagi ma'lumotni yo'qotardi (FE-113).
+    // Yopish — × tugmasi yoki Escape.
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`mt-10 w-full ${WIDTH[size]} rounded-2xl bg-white p-5 shadow-xl dark:bg-gray-900`}
-        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+        className={`mt-10 w-full ${WIDTH[size]} rounded-2xl bg-white p-5 shadow-xl outline-none dark:bg-gray-900`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 id={titleId} className="text-lg font-semibold">

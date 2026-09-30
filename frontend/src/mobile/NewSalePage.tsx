@@ -187,6 +187,7 @@ export function NewSalePage(): ReactElement {
         <div className="space-y-2">
           <input
             className="field"
+            aria-label="Mijoz qidirish"
             placeholder="Mijoz qidirish…"
             value={clientSearch}
             onChange={(e) => setClientSearch(e.target.value)}

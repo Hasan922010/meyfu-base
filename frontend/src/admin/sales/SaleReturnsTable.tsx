@@ -73,8 +73,16 @@ export function SaleReturnsTable(): ReactElement {
               {rows.map((r) => (
                 <Fragment key={r.id}>
                   <tr
-                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
+                    className="cursor-pointer border-b border-gray-100 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand dark:border-gray-800 dark:hover:bg-gray-800"
+                    tabIndex={0}
+                    aria-expanded={open === r.id}
                     onClick={() => setOpen(open === r.id ? '' : r.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setOpen(open === r.id ? '' : r.id);
+                      }
+                    }}
                   >
                     <td className="p-3 font-mono text-xs">{r.number}</td>
                     <td className="p-3">{dateShort(r.date)}</td>
@@ -110,7 +118,12 @@ export function SaleReturnsTable(): ReactElement {
 
       {query.data && query.data.pages > 1 && (
         <div className="flex items-center gap-2 text-sm">
-          <button className="btn px-3" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          <button
+            className="btn px-3"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+            aria-label="Oldingi sahifa"
+          >
             ‹
           </button>
           <span>
@@ -120,6 +133,7 @@ export function SaleReturnsTable(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage(page + 1)}
+            aria-label="Keyingi sahifa"
           >
             ›
           </button>
