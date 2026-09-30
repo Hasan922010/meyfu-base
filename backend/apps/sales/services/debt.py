@@ -49,6 +49,12 @@ def collect_debt_payment(
         if existing:
             return DebtPaymentResult(payment=existing, created=False, duplicate=True)
 
+    from apps.dayclose.services.lock import resolve_operation_date
+
+    date, _late = resolve_operation_date(
+        collected_by, date, offline=not strict, kind="DebtPayment"
+    )
+
     if payment_type not in DEBT_PAYMENT_TYPES:
         raise BusinessError(
             message="Qarz to'lovi naqd, plastik yoki o'tkazma bo'lishi mumkin.",

@@ -159,6 +159,14 @@ def create_sale(
     _validate_amounts(lines, discount_amount, paid_amount)
 
     flags: list[str] = []
+    # 7.7 — yopilgan kunga yozilmaydi (offline — bugunga ko'chiriladi, BE-101)
+    from apps.dayclose.services.lock import resolve_operation_date
+
+    date, late = resolve_operation_date(
+        distributor, date, offline=not strict, kind="Sale"
+    )
+    if late:
+        flags.append("DAY_CLOSED")
     profile = getattr(distributor, "distributor_profile", None)
     can_below = bool(profile and profile.can_sell_below_price)
 
@@ -376,6 +384,9 @@ def _apply_stock_and_debt(sale: Sale, lines: list[SaleLine], distributor, client
 def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
     """Sotuvni bekor qiladi: mashina qoldig'ini va qarzni qaytaradi."""
     sale = Sale.objects.select_for_update().get(pk=sale.pk)
+    from apps.dayclose.services.lock import assert_day_open
+
+    assert_day_open(sale.distributor, sale.date, user=user, reason=reason, kind="Sale")
     if sale.status == SaleStatus.CANCELLED:
         raise BusinessError(message="Sotuv allaqachon bekor qilingan.",
                             code="ALREADY_CANCELLED")

@@ -242,3 +242,79 @@ def test_day_close_return_to_other_branch_warehouse_rejected(auth_api, van_stock
 
     assert resp.status_code == 409
     assert resp.data["error"]["code"] == "WRONG_WAREHOUSE"
+
+
+# ---------- BE-101: yopilgan kun qulfi (CLAUDE.md 7.7) ----------
+
+def _close_day(distributor, date):
+    from apps.dayclose.constants import DayCloseStatus
+    from apps.dayclose.models import DayClose
+
+    return DayClose.objects.create(
+        distributor=distributor, date=date, status=DayCloseStatus.CLOSED,
+    )
+
+
+def _sale_body(van_stocked, **extra):
+    return {
+        "client": str(van_stocked["client"].id), "payment_type": "NAQD",
+        "items": [{"product": str(van_stocked["product"].id), "quantity": "1",
+                   "price": "27000"}],
+        **extra,
+    }
+
+
+@pytest.mark.django_db
+def test_online_sale_on_closed_day_rejected(auth_api, van_stocked):
+    from apps.core.business_day import business_date
+
+    _close_day(van_stocked["distributor"], business_date())
+
+    resp = auth_api.post("/api/v1/sales/", _sale_body(van_stocked), format="json")
+
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "DAY_CLOSED"
+
+
+@pytest.mark.django_db
+def test_offline_sale_for_closed_day_moves_to_today_and_flags(auth_api, van_stocked):
+    import datetime
+
+    from apps.core.business_day import business_date
+    from apps.core.models import AuditLog
+
+    today = business_date()
+    yesterday = today - datetime.timedelta(days=1)
+    _close_day(van_stocked["distributor"], yesterday)
+
+    result = _sync_sale(auth_api, van_stocked["client"], van_stocked["product"],
+                        quantity="1", price="27000")
+    assert result["status"] == "SENT"  # sanasiz — bugun, qulf yo'q
+    op = {
+        "type": "sale", "client_uuid": str(uuid.uuid4()),
+        "payload": {**_sale_body(van_stocked), "date": str(yesterday)},
+    }
+    res = auth_api.post(SYNC_URL, {"operations": [op]}, format="json")
+
+    assert res.data["data"]["results"][0]["status"] == "SENT"
+    sale = Sale.objects.get(client_uuid=op["client_uuid"])
+    assert sale.date == today
+    assert "DAY_CLOSED" in sale.flag_reason
+    assert AuditLog.objects.filter(action="dayclose.late_operation").exists()
+
+
+@pytest.mark.django_db
+def test_cancel_sale_on_closed_day_requires_super_admin_reason(
+    auth_api, manager_api, admin_api, van_stocked
+):
+    from apps.core.business_day import business_date
+
+    created = auth_api.post("/api/v1/sales/", _sale_body(van_stocked), format="json")
+    sale_id = created.data["data"]["id"]
+    _close_day(van_stocked["distributor"], business_date())
+    url = f"/api/v1/sales/{sale_id}/cancel/"
+
+    assert manager_api.post(url, {"reason": "xato"}, format="json").status_code == 409
+    assert admin_api.post(url, {}, format="json").status_code == 409
+    assert admin_api.post(url, {"reason": "Mijoz qaytardi"},
+                          format="json").status_code == 200

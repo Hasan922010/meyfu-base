@@ -92,6 +92,7 @@ def create_sale_return(
     note: str = "",
     client_uuid: str | None = None,
     device_time=None,
+    offline: bool = False,
 ) -> SaleReturnResult:
     date = date or business_date()
 
@@ -99,6 +100,12 @@ def create_sale_return(
         existing = SaleReturn.objects.filter(client_uuid=client_uuid).first()
         if existing:
             return SaleReturnResult(sale_return=existing, created=False, duplicate=True)
+
+    from apps.dayclose.services.lock import resolve_operation_date
+
+    date, _late = resolve_operation_date(
+        distributor, date, offline=offline, kind="SaleReturn"
+    )
 
     if not lines:
         raise BusinessError(message="Qaytarishda kamida bitta qator bo'lishi kerak.",

@@ -164,6 +164,7 @@ def _handle_return(payload: dict, client_uuid: str | None, user) -> dict[str, An
         for row in payload.get("items", [])
     ]
     res = create_sale_return(
+        offline=True,
         distributor=user, client=client, reason=payload["reason"], lines=lines,
         restock=payload.get("restock", True),
         date=parse_date(payload["date"]) if payload.get("date") else None,
@@ -202,6 +203,7 @@ def _handle_visit(payload: dict, client_uuid: str | None, user) -> dict[str, Any
 def _handle_expense(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
     category = ExpenseCategory.objects.get(pk=payload["category"])
     res = create_expense(
+        offline=True,
         distributor=user,
         category=category,
         amount=_dec(payload["amount"]),

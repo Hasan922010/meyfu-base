@@ -58,6 +58,7 @@ def create_expense(
     fuel: dict | None = None,
     client_uuid: str | None = None,
     device_time=None,
+    offline: bool = False,
 ) -> ExpenseResult:
     date = date or business_date()
 
@@ -65,6 +66,12 @@ def create_expense(
         existing = DistributorExpense.objects.filter(client_uuid=client_uuid).first()
         if existing:
             return ExpenseResult(expense=existing, created=False, duplicate=True)
+
+    from apps.dayclose.services.lock import resolve_operation_date
+
+    date, _late = resolve_operation_date(
+        distributor, date, offline=offline, kind="DistributorExpense"
+    )
 
     # bulk-sync payload'i serializer'dan o'tmaydi (audit SEC-101)
     if amount is None or amount <= _ZERO:
