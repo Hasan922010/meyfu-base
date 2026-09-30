@@ -124,6 +124,31 @@ def _off_route(distributor, client) -> bool:
     return route_owner_id is not None and route_owner_id != distributor.id
 
 
+def ensure_client_in_scope(user, client) -> None:
+    """Xodim faqat o'z filiali mijozi bilan ishlaydi (audit SEC-108/109).
+
+    Filial xodimi (rahbar, buxgalter) — `branch_scope`; tarqatuvchi — o'z
+    filiali (markaz tarqatuvchisi — markaz mijozlari). Superuser cheklanmaydi.
+    """
+    from apps.core.branch import NO_BRANCH, branch_scope, staff_branch
+    from apps.users.constants import Role
+
+    if getattr(user, "is_superuser", False):
+        return
+    if getattr(user, "role", None) == Role.DISTRIBUTOR:
+        branch = staff_branch(user)
+        allowed = client.branch_id == (branch.pk if branch else None)
+    else:
+        scope = branch_scope(user)
+        allowed = scope is None or (scope is not NO_BRANCH and client.branch_id == scope)
+    if not allowed:
+        raise BusinessError(
+            message=f"«{client.name}» boshqa filial mijozi.",
+            code="BRANCH_MISMATCH",
+            details={"client_id": str(client.id)},
+        )
+
+
 @transaction.atomic
 def create_sale(
     *,
@@ -158,6 +183,7 @@ def create_sale(
     discount_amount = discount_amount or _ZERO
     _validate_amounts(lines, discount_amount, paid_amount)
 
+    ensure_client_in_scope(distributor, client)
     flags: list[str] = []
     # 7.7 — yopilgan kunga yozilmaydi (offline — bugunga ko'chiriladi, BE-101)
     from apps.dayclose.services.lock import resolve_operation_date

@@ -14,7 +14,7 @@ from apps.warehouse.services.van import van_apply
 
 from ..constants import SaleStatus
 from ..models import SaleItem, SaleReturn, SaleReturnItem
-from .sale import _off_route
+from .sale import _off_route, ensure_client_in_scope
 
 RETURN_PREFIX = "QYT"
 _ZERO = Decimal("0")
@@ -110,6 +110,7 @@ def create_sale_return(
     if not lines:
         raise BusinessError(message="Qaytarishda kamida bitta qator bo'lishi kerak.",
                             code="EMPTY_RETURN")
+    ensure_client_in_scope(distributor, client)
     # bulk-sync payload'i serializer'dan o'tmaydi (audit SEC-101)
     for line in lines:
         if line.quantity <= _ZERO or line.price < _ZERO:

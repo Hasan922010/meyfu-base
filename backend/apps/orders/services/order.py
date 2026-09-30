@@ -318,6 +318,12 @@ def fulfill_order(
         raise BusinessError(
             message="Yetkazuvchi belgilanmagan.", code="NO_DISTRIBUTOR",
         )
+    # Boshqa yetkazuvchiga biriktirilgan buyurtmani yetkazib bo'lmaydi (SEC-108)
+    if order.assigned_to_id not in (None, distributor.pk):
+        raise BusinessError(
+            message="Bu buyurtma boshqa yetkazuvchiga biriktirilgan.",
+            code="ORDER_NOT_ASSIGNED",
+        )
     payment_type = payment_type or order.payment_intent
     if not payment_type:
         raise BusinessError(

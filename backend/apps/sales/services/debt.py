@@ -17,7 +17,7 @@ from apps.wallet.services import wallet_apply
 
 from ..constants import DEBT_PAYMENT_TYPES, PaymentType
 from ..models import Debt, DebtPayment
-from .sale import _off_route
+from .sale import _off_route, ensure_client_in_scope
 
 _ZERO = Decimal("0")
 
@@ -61,6 +61,7 @@ def collect_debt_payment(
             code="INVALID_PAYMENT_TYPE",
         )
 
+    ensure_client_in_scope(collected_by, debt.client)
     if _off_route(collected_by, debt.client):
         raise BusinessError(
             message="Bu qarz sizning marshrutingizda emas.",

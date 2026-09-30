@@ -569,3 +569,31 @@ def test_branch_manager_cannot_patch_loading_warehouse_to_other_branch(world, ca
     }, format="json")
 
     assert resp.status_code == 400
+
+
+# ------------------------------------------------ audit SEC-109 (2026-09-30)
+
+def test_branch_manager_cannot_collect_other_branch_debt(world):
+    api = _login(world["a"]["manager"].phone)
+
+    resp = api.post("/api/v1/debt-payments/", {
+        "debt": str(world["b"]["debt"].pk), "amount": "1000", "payment_type": "NAQD",
+    }, format="json")
+
+    assert resp.status_code in (404, 409)
+    world["b"]["debt"].refresh_from_db()
+    assert world["b"]["debt"].remaining == Decimal("5000")
+
+
+def test_distributor_cannot_sell_to_unrouted_client_of_other_branch(world, catalog):
+    other = Client.objects.create(name="Begona", branch=world["b"]["branch"])
+    api = _login(world["a"]["distributor"].phone)
+
+    resp = api.post("/api/v1/sales/", {
+        "client": str(other.pk), "payment_type": "NAQD",
+        "items": [{"product": str(catalog["product"].pk), "quantity": "1",
+                   "price": "27000"}],
+    }, format="json")
+
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "BRANCH_MISMATCH"
