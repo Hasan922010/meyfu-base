@@ -121,8 +121,47 @@ eng jiddiy topilmalarni kodda qo'lda tasdiqlash. Tasdiqlanmagan gumonlar — **S
 
 Tuzatish holati — ushbu faylning 8-bo'limida.
 
-## 8. Tuzatish holati
+## 8. Tuzatish holati (branch `fix/audit-2026-09-30`)
 
-| ID | Holat | Commit |
+**Yakuniy tekshiruv:** backend **555 pytest** ✅ (oldin 529 + 1 yiqilgan) · `makemigrations --check` ✅ ·
+`check --deploy` 0 ✅ · ruff (E9,F,I) 0 ✅ · `pip-audit` 0 ✅ · frontend **206 vitest** ✅ (oldin 191) ·
+`tsc -b` / `eslint` / `vite build` ✅ · `npm audit --omit=dev` 0 ✅. Regressiya testlari:
+`backend/tests/test_audit_2026_09_30.py`, `frontend/src/offline/session.test.ts` va b.
+
+| ID | Holat | Izoh |
 |---|---|---|
-| ARCH-101 (1 test) | ✅ `test_debt_aging_report` nisbiy sana | — |
+| SEC-101, SEC-102, BE-115 | ✅ | Servisda miqdor/narx/chegirma chegarasi; min narx sof narxdan; qatorlar jamlanadi |
+| FE-101 | ✅ | Outbox egasi (`owner_id`); foydalanuvchi almashsa/chiqsa kesh tozalanadi |
+| SEC-103, SEC-105, SEC-121 | ✅ | Kod urinishlari cheklovi + eski chatga ogohlantirish; standart webhook siri yo'q |
+| SEC-104 | ✅ | `NUM_PROXIES`, nginx `X-Forwarded-For $remote_addr`; audit IP to'g'ri |
+| SEC-106 | ✅ | Replit prod: kuchli kalit, aniq hostlar (favqulodda: `REPLIT_ALLOW_ANY_HOST=1`) |
+| SEC-107 | ✅ | Balans/maosh/foiz — faqat SUPER_ADMIN |
+| BE-101 | ✅ | Yopilgan kun qulfi; offline — bugunga ko'chiriladi + AuditLog; bekor qilish — SUPER_ADMIN sabab bilan |
+| BE-102, BE-119 | ✅ | Qaytarish qoldiq/filial bo'yicha; ombor faqat haqiqiy miqdorni oladi |
+| BE-103 | ✅ | Kompaniya xarajati PATCH/DELETE o'chirildi |
+| BE-105, SEC-111 | ✅ | Transfer tahriri qulf bilan; PATCH'da filial tekshiruvi |
+| FE-102, FE-103, FE-105 | ✅ | Yuborilmagan operatsiyalar qoldiqda; tashrif outbox orqali; 50 talik paket, xato sanaladi |
+| SEC-108, SEC-109 | ✅ | Mijoz/qarz filial doirasi; faqat biriktirilgan buyurtma |
+| SEC-110 | ✅ | Tannarx/komissiya sotuvchi rollarga ko'rinmaydi |
+| SEC-112..115, BE-108 | ✅ | OCR qatori, buyurtma→yuklama, maosh — filial; tizim/ta'minotchi — markaz; `DoesNotExist` → 404 |
+| SEC-116 | ✅ | WS: `admin_dashboard_<filial>` |
+| SEC-117 | ✅ | MinIO bucket yopiq (faqat `products/`, `company/` ochiq) |
+| SEC-118, SEC-119, SEC-120, SEC-123 | ✅ | XLSX formula; import cheklovi; parol validatori + sessiyalar bekor; chek talabi |
+| BE-104, BE-111, BE-112 | ✅ | Narx o'zgarishi (audit + tarix), mijoz, konflikt, ombor yopish |
+| BE-106 | ✅ | Integrity: barcha kassalar, ta'minotchi, mijoz qarzi |
+| BE-109, BE-113, BE-114, BE-118 | ✅ | Kun yopish poygasi 409; oraliq ≤366 kun; ish kuni oynasi; kod to'qnashuvi |
+| FE-106..FE-115 (FE-110 bilan) | ✅ | DEAD xatolar; min narx ogohlantirishi; `X-Device-Id`; Toshkent vaqti; WS ticket (prod'da realtime ishlamayotgan edi); PIN qulfi; inventar; vergul; a11y; atomar Dexie; saqlash xatosi |
+| ARCH-101, 102, 103 | ✅ | Yilga bog'liq testlar; CI (ruff, deploy check, audit, build); chunk bo'linishi |
+
+### Ochiq qolganlar (qaror yoki alohida bosqich kerak)
+
+| ID | Nega ochiq |
+|---|---|
+| **BE-110** | Transfer yo'lidagi kamomadni kim ko'taradi (jo'natuvchi, qabul qiluvchi, haydovchi)? Biznes qarori kerak — hozircha `TransferItem.difference` + AuditLog'da |
+| **SEC-122** | MANAGER yangi mahsulotni narx bilan yarata oladi. "Narx o'zgartirmaydi" qoidasi yaratishga ham tegishlimi? |
+| **FE-104** | i18n: ~118 fayl hardcode o'zbekcha matn. Katta hajm — alohida bosqich (eslint `i18next/no-literal-string` bilan) |
+| FE-116 (SHUBHA) | Kg/litrda sotiladigan tovar bormi? Bo'lsa mobil miqdor butun son bilan cheklangan |
+| FE-117 | Xarita offline'da bo'sh (admin uchun maqbul) |
+| BE-116, BE-117, BE-120, BE-121 | Unumdorlik/aniqlik (katta `IN` ro'yxat, reorder yo'ldagi tovar, batch'siz backfill) — hozirgi hajmda xavfsiz |
+| ARCH-104, ARCH-105 | `distributor.py` 805 qator; drf-spectacular enum nomlari; ruff E501 (65 ta uzun qator) |
+| Route lazy-loading | Admin sahifalari eager yuklanadi — chunk'lar bo'lindi, lekin boshlang'ich yuklash hamon katta |
