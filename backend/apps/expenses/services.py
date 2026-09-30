@@ -66,6 +66,11 @@ def create_expense(
         if existing:
             return ExpenseResult(expense=existing, created=False, duplicate=True)
 
+    # bulk-sync payload'i serializer'dan o'tmaydi (audit SEC-101)
+    if amount is None or amount <= _ZERO:
+        raise BusinessError(message="Xarajat summasi musbat bo'lishi kerak.",
+                            code="INVALID_AMOUNT")
+
     if category.requires_receipt and receipt_image is None and not (
         client_uuid  # offline — rasm keyinroq media_queue orqali keladi
     ):

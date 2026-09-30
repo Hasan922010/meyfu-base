@@ -68,7 +68,8 @@ class SaleLineInputSerializer(serializers.Serializer):
     quantity = serializers.DecimalField(**_QTY, min_value=Decimal("0.001"))
     price = serializers.DecimalField(**_MONEY, min_value=Decimal("0"))
     discount_percent = serializers.DecimalField(
-        max_digits=5, decimal_places=2, required=False, default=Decimal("0")
+        max_digits=5, decimal_places=2, required=False, default=Decimal("0"),
+        min_value=Decimal("0"), max_value=Decimal("100"),
     )
 
 
@@ -82,7 +83,7 @@ class SaleCreateSerializer(serializers.Serializer):
     paid_amount = serializers.DecimalField(**_MONEY, required=False)
     due_date = serializers.DateField(required=False, allow_null=True)
     discount_amount = serializers.DecimalField(
-        **_MONEY, required=False, default=Decimal("0")
+        **_MONEY, required=False, default=Decimal("0"), min_value=Decimal("0")
     )
     latitude = serializers.DecimalField(
         max_digits=9, decimal_places=6, required=False, allow_null=True

@@ -57,6 +57,51 @@ class SaleResult:
     flags: list[str] = field(default_factory=list)
 
 
+_HUNDRED = Decimal("100")
+
+
+def _validate_amounts(
+    lines: list[SaleLine], discount_amount: Decimal, paid_amount: Decimal | None
+) -> None:
+    """Sotuv qatorlari chegaralari — bulk-sync payload'i (JSON) serializer'dan
+    o'tmaydi, shuning uchun servisda tekshiriladi (audit SEC-101/102).
+
+    Manfiy miqdor `van_apply(-qty)` orqali mashinaga tovar qo'shib yuborardi;
+    100% dan katta yoki manfiy chegirma manfiy summa va hamyon krediti berardi.
+    """
+    for line in lines:
+        if line.quantity is None or line.quantity <= _ZERO:
+            raise BusinessError(
+                message=f"«{line.product.name}» miqdori noldan katta bo'lishi kerak.",
+                code="INVALID_QUANTITY",
+            )
+        if line.price is None or line.price < _ZERO:
+            raise BusinessError(
+                message=f"«{line.product.name}» narxi manfiy bo'lishi mumkin emas.",
+                code="INVALID_PRICE",
+            )
+        if not (_ZERO <= (line.discount_percent or _ZERO) <= _HUNDRED):
+            raise BusinessError(
+                message="Chegirma 0% dan 100% gacha bo'lishi kerak.",
+                code="INVALID_DISCOUNT",
+            )
+    subtotal = sum((ln.quantity * _net_unit_price(ln) for ln in lines), _ZERO)
+    if discount_amount < _ZERO or discount_amount > subtotal:
+        raise BusinessError(
+            message="Umumiy chegirma sotuv summasidan oshmasligi kerak.",
+            code="INVALID_DISCOUNT",
+        )
+    if paid_amount is not None and paid_amount < _ZERO:
+        raise BusinessError(
+            message="To'langan summa manfiy bo'lishi mumkin emas.",
+            code="INVALID_AMOUNT",
+        )
+
+
+def _net_unit_price(line: SaleLine) -> Decimal:
+    return line.price * (1 - (line.discount_percent or _ZERO) / _HUNDRED)
+
+
 def _next_number(date) -> str:
     return DocumentSequence.next_number(SALE_PREFIX, year=date.year)
 
@@ -110,6 +155,8 @@ def create_sale(
     if not lines:
         raise BusinessError(message="Sotuvda kamida bitta qator bo'lishi kerak.",
                             code="EMPTY_SALE")
+    discount_amount = discount_amount or _ZERO
+    _validate_amounts(lines, discount_amount, paid_amount)
 
     flags: list[str] = []
     profile = getattr(distributor, "distributor_profile", None)
@@ -143,10 +190,13 @@ def create_sale(
     branch = staff_branch(distributor)
     price_map = branch_price_map(branch, [ln.product.pk for ln in lines])
     prepared: list[tuple[SaleLine, Decimal, bool]] = []
+    min_total = _ZERO
     for line in lines:
         product = line.product
         min_price = price_for(product, branch, price_map).min_price
-        below_min = line.price < min_price and min_price > _ZERO
+        min_total += min_price * line.quantity
+        # chegirma bilan min narxni aylanib o'tmaslik uchun — sof birlik narxi
+        below_min = _net_unit_price(line) < min_price and min_price > _ZERO
         if below_min:
             if strict and not can_below:
                 raise BusinessError(
@@ -161,7 +211,19 @@ def create_sale(
             flags.append("PRICE_BELOW_MINIMUM")
         prepared.append((line, product.cost_price, below_min))
 
-    # 7.2 — VanStock yetarliligi (select_for_update)
+    # Umumiy (sotuv darajasidagi) chegirma ham min narx qoidasini aylanib o'tmasin
+    net_total = sum((ln.quantity * _net_unit_price(ln) for ln in lines), _ZERO)
+    if discount_amount > _ZERO and net_total - discount_amount < min_total:
+        if strict and not can_below:
+            raise BusinessError(
+                message="Chegirma bilan sotuv summasi minimal narxlardan past.",
+                code="PRICE_BELOW_MINIMUM",
+                details={"min_total": str(min_total)},
+            )
+        flags.append("PRICE_BELOW_MINIMUM")
+
+    # 7.2 — VanStock yetarliligi (select_for_update); bir mahsulot bir necha
+    # qatorda bo'lsa — jami miqdor bo'yicha (audit BE-115)
     van_rows = {
         vs.product_id: vs
         for vs in VanStock.objects.select_for_update().filter(
@@ -169,10 +231,17 @@ def create_sale(
             product__in=[ln.product for ln in lines],
         )
     }
+    requested: dict = {}
     for line in lines:
+        requested[line.product.id] = requested.get(line.product.id, _ZERO) + line.quantity
+    checked: set = set()
+    for line in lines:
+        if line.product.id in checked:
+            continue
+        checked.add(line.product.id)
         have = van_rows.get(line.product.id)
         have_qty = have.quantity if have else _ZERO
-        if have_qty < line.quantity:
+        if have_qty < requested[line.product.id]:
             if strict:
                 raise InsufficientStock(
                     message=(
@@ -181,7 +250,7 @@ def create_sale(
                     ),
                     details={"product_id": str(line.product.id),
                              "available": str(have_qty),
-                             "requested": str(line.quantity)},
+                             "requested": str(requested[line.product.id])},
                 )
             flags.append("INSUFFICIENT_VAN_STOCK")
 

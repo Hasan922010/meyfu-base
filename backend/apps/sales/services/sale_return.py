@@ -103,6 +103,13 @@ def create_sale_return(
     if not lines:
         raise BusinessError(message="Qaytarishda kamida bitta qator bo'lishi kerak.",
                             code="EMPTY_RETURN")
+    # bulk-sync payload'i serializer'dan o'tmaydi (audit SEC-101)
+    for line in lines:
+        if line.quantity <= _ZERO or line.price < _ZERO:
+            raise BusinessError(
+                message="Qaytarish miqdori musbat, narxi manfiy bo'lmasligi kerak.",
+                code="INVALID_QUANTITY",
+            )
 
     # Marshrut egaligi — tarqatuvchi faqat o'z marshrutidagi mijozdan qaytarish
     # qabul qiladi. Aks holda begona mijoz savdosi orqali o'z mashina qoldig'ini
