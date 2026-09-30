@@ -93,6 +93,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # Bucket yopiq: cheklar, naklitlar, imzolar, topshirish rasmlari faqat
+  # Django bergan imzolangan (muddatli) URL bilan ochiladi. Ochiq — faqat
+  # katalog rasmlari va logotip (audit SEC-117).
   minio-init:
     image: minio/mc:latest
     depends_on:
@@ -102,7 +105,9 @@ services:
       /bin/sh -c "
       until mc alias set local http://minio:9000 ${AWS_ACCESS_KEY_ID:-minioadmin} ${AWS_SECRET_ACCESS_KEY:-minioadmin}; do sleep 2; done;
       mc mb -p local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media};
-      mc anonymous set download local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media};
+      mc anonymous set none local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media};
+      mc anonymous set download local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media}/products;
+      mc anonymous set download local/${AWS_STORAGE_BUCKET_NAME:-meyfu-media}/company;
       exit 0;
       "
 
