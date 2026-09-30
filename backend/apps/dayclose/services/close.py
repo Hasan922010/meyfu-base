@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 
 from apps.core.exceptions import BusinessError
@@ -51,7 +51,14 @@ def submit_day_close(
         date=date, distributor=distributor, status=DayCloseStatus.PENDING,
         note=note, created_by=distributor,
     )
-    day_close.save()
+    try:
+        with transaction.atomic():  # parallel ikki submit — unique constraint (BE-109)
+            day_close.save()
+    except IntegrityError as exc:
+        raise BusinessError(
+            message="Bu kun allaqachon yopilgan yoki tasdiq kutmoqda.",
+            code="ALREADY_SUBMITTED",
+        ) from exc
 
     # DailyReturn
     dr = DailyReturn.objects.create(

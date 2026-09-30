@@ -17,7 +17,7 @@ from django.db.models import Count, DecimalField, F, Q, Sum, Value
 from django.db.models.functions import Coalesce, ExtractHour
 
 from apps.clients.models import Client, ClientVisit
-from apps.core.business_day import business_date
+from apps.core.business_day import business_date, business_day_range
 from apps.dayclose.models import DayClose
 from apps.expenses.models import DistributorExpense
 from apps.orders.constants import OrderStatus
@@ -298,7 +298,9 @@ def _clients_block(distributor, df, dt) -> dict:
         .count()
     )
     new_clients = Client.objects.filter(
-        created_by=distributor, created_at__date__gte=df, created_at__date__lte=dt
+        created_by=distributor,
+        created_at__gte=business_day_range(df, dt)[0],
+        created_at__lt=business_day_range(df, dt)[1],
     ).count()
     top = list(
         Sale.objects.filter(

@@ -62,3 +62,17 @@ def test_sale_before_six_lands_on_previous_business_day_and_in_day_close(
     today = auth_api.get("/api/v1/day-close/my-today/")
     assert today.data["data"]["date"] == "2026-09-23"
     assert today.data["data"]["cash_sales_amount"] == "270000.00"
+
+
+def test_business_day_range_starts_at_business_hour():
+    """audit BE-114: tongdagi harakat kechagi ish kuniga tushadi."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.core.business_day import business_day_range
+
+    begin, end = business_day_range(dt.date(2026, 9, 1), dt.date(2026, 9, 1))
+
+    assert timezone.localtime(begin).hour == 6
+    assert (end - begin) == dt.timedelta(days=1)

@@ -11,6 +11,7 @@ from decimal import Decimal
 
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, QuerySet, Sum
 
+from apps.core.business_day import business_day_range
 from apps.dayclose.models import DailyReturn
 from apps.warehouse.constants import MovementType, TransferStatus
 from apps.warehouse.models import (
@@ -91,7 +92,8 @@ def _movements(
     _label, types = MOVEMENT_KINDS[kind]
     qs = StockMovement.objects.filter(
         warehouse=warehouse, movement_type__in=types,
-        created_at__date__gte=start, created_at__date__lte=end,
+        created_at__gte=business_day_range(start, end)[0],
+        created_at__lt=business_day_range(start, end)[1],
     )
     # Ko'chirish yo'nalishi hujjatdan aniqlanadi: bekor qilish (manbaga qaytish)
     # "jo'natilgan"ni kamaytiradi, "kelgan" bo'lib ko'rinmaydi.
@@ -322,7 +324,11 @@ def branch_list(warehouses: QuerySet[Warehouse], today: date_cls) -> list[dict]:
         .values_list("transfer__to_warehouse", "q")
     )
     today_counts = dict(
-        StockMovement.objects.filter(warehouse__in=ids, created_at__date=today)
+        StockMovement.objects.filter(
+            warehouse__in=ids,
+            created_at__gte=business_day_range(today, today)[0],
+            created_at__lt=business_day_range(today, today)[1],
+        )
         .values("warehouse").annotate(c=Count("pk")).values_list("warehouse", "c")
     )
     return [
