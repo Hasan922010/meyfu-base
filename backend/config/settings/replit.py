@@ -13,19 +13,37 @@ SECRET_KEY = os.environ.get("SESSION_SECRET") or env(
     default="insecure-replit-preview-key-change-before-production",
 )
 if not DEBUG:
+    # Ma'lum standart kalit bilan JWT soxtalashtirilardi (audit SEC-106)
+    if SECRET_KEY.startswith(("insecure-", "django-insecure-", "change-me")) or len(
+        SECRET_KEY
+    ) < 50:
+        raise ImproperlyConfigured(
+            "Replit deployment uchun kuchli SESSION_SECRET (≥50 belgi) kerak."
+        )
     if "TELEGRAM_CREDENTIAL_KEYS" not in os.environ:
         raise ImproperlyConfigured(
             "Replit deployment uchun TELEGRAM_CREDENTIAL_KEYS secreti kerak."
         )
     validate_telegram_credential_keys()
 
-ALLOWED_HOSTS = ["*"]
-
 _domains = [
     item.strip()
     for item in os.environ.get("REPLIT_DOMAINS", "").split(",")
     if item.strip()
 ]
+# Host-header poisoning'dan himoya (audit SEC-106): productionda faqat ma'lum
+# domenlar + ichki health probe. Favqulodda holatda REPLIT_ALLOW_ANY_HOST=1.
+if DEBUG or env.bool("REPLIT_ALLOW_ANY_HOST", default=False):
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = [
+        *_domains,
+        "meyfu-base.uz",
+        "www.meyfu-base.uz",
+        "localhost",
+        "127.0.0.1",
+        *env.list("ALLOWED_HOSTS_EXTRA", default=[]),
+    ]
 CSRF_TRUSTED_ORIGINS = [
     *(f"https://{domain}" for domain in _domains),
     "https://meyfu-base.uz",

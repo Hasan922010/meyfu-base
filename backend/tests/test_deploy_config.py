@@ -251,3 +251,24 @@ def test_replit_accepts_plain_telegram_credential_key() -> None:
     )
     assert result.returncode == 0
     assert "strong-plain-telegram-credential-key-123456" in result.stdout
+
+
+# ------------------------------------------------ audit SEC-106 (2026-09-30)
+
+def test_replit_production_rejects_default_secret_key() -> None:
+    result = _load_replit_settings(
+        "print('loaded')", debug=False, SESSION_SECRET=None, SECRET_KEY=None,
+    )
+    assert result.returncode != 0
+    assert "SESSION_SECRET" in result.stderr
+
+
+def test_replit_production_has_no_wildcard_host() -> None:
+    result = _load_replit_settings(
+        "from django.conf import settings as s;"
+        "assert '*' not in s.ALLOWED_HOSTS, s.ALLOWED_HOSTS;"
+        "assert 'app.replit.dev' in s.ALLOWED_HOSTS;"
+        "print('ok')",
+        debug=False, REPLIT_DOMAINS="app.replit.dev",
+    )
+    assert result.returncode == 0, result.stderr
