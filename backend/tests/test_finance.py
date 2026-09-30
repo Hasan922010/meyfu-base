@@ -3,6 +3,7 @@ import datetime
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 
 from apps.finance.models import CashTransaction
 from apps.finance.services import cash_matches_ledger, get_account
@@ -177,7 +178,9 @@ def test_debt_aging_report(manager_api, auth_api, van_stocked):
     # muddati o'tgan qarz
     _sale(auth_api, client, product, "10", price="27000",
           payment="QARZ", due_date="2026-09-06")
-    Debt.objects.all().update(due_date=datetime.date(2026, 7, 1))  # ~67 kun
+    # bugunga nisbatan 75 kun oldin — sana o'tgani sari d61_90 dan chiqib ketmaydi
+    overdue_since = timezone.localdate() - datetime.timedelta(days=75)
+    Debt.objects.all().update(due_date=overdue_since)
 
     resp = manager_api.get("/api/v1/reports/debt-aging/")
     assert resp.status_code == 200
