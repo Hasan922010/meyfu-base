@@ -41,8 +41,9 @@ def test_throttle_scopes_configured():
 def test_throttled_login_message_is_localized():
     """Login `10/min` limitiga tegilganda DRF standart inglizcha xabari
     o'rniga o'zbekcha, kutish vaqti bilan xabar qaytishi kerak (CLAUDE.md 20)."""
-    from apps.core.exceptions import api_exception_handler
     from rest_framework.exceptions import Throttled
+
+    from apps.core.exceptions import api_exception_handler
 
     response = api_exception_handler(Throttled(wait=42), {})
 
@@ -66,8 +67,9 @@ def test_report_index_present_on_sale():
 def _raised_validation_response(serializer):
     """Berilgan serializer `is_valid(raise_exception=True)` chaqirganda
     ko'tarilgan DRF ValidationError'ni `api_exception_handler` orqali o'tkazadi."""
-    from apps.core.exceptions import api_exception_handler
     from rest_framework.exceptions import ValidationError as DRFValidationError
+
+    from apps.core.exceptions import api_exception_handler
 
     try:
         serializer.is_valid(raise_exception=True)

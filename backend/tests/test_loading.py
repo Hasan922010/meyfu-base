@@ -1,4 +1,5 @@
 """4-bosqich: Yuklash → mobil tasdiqlash → VanStock. Atomik + testlar."""
+import re
 from decimal import Decimal
 
 import pytest
@@ -51,7 +52,7 @@ def test_warehouse_creates_and_sends_loading(manager_api, stocked, distributor):
     )
     assert created.status_code == 201, created.data
     lid = created.data["data"]["id"]
-    assert created.data["data"]["number"].startswith("YK-2026-")
+    assert re.match(r"YK-\d{4}-", created.data["data"]["number"])
     assert created.data["data"]["total_amount"] == "2500000.00"
 
     sent = manager_api.post(f"/api/v1/loadings/{lid}/send/")

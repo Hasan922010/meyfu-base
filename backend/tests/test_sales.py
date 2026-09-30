@@ -1,4 +1,5 @@
 """5-bosqich: Sotuv yadrosi + biznes qoidalari + offline (CLAUDE.md 5, 7, 4.6)."""
+import re
 import uuid
 from decimal import Decimal
 
@@ -27,7 +28,7 @@ def test_cash_sale_decrements_van_stock(auth_api, van_stocked):
     resp = auth_api.post("/api/v1/sales/", _sale_body(client, product), format="json")
     assert resp.status_code == 201, resp.data
     d = resp.data["data"]
-    assert d["number"].startswith("SOT-2026-")
+    assert re.match(r"SOT-\d{4}-", d["number"])
     assert d["total_amount"] == "270000.00"
     assert d["debt_amount"] == "0.00"
     assert d["status"] == "COMPLETED"

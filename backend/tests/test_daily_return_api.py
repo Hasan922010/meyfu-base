@@ -3,6 +3,7 @@
 Tarqatuvchi faqat o'z qaytarishini, filialga biriktirilgan omborchi faqat o'z
 omboriga tushgan qaytarishni ko'radi (CLAUDE.md 18 — rol ruxsatlari).
 """
+import re
 from decimal import Decimal
 
 import pytest
@@ -51,7 +52,7 @@ def test_admin_reads_daily_return_with_items(admin_api, daily_return):
 
     assert resp.status_code == 200
     data = resp.data["data"]
-    assert data["number"] == "QT-2026-00001"
+    assert re.fullmatch(r"QT-\d{4}-00001", data["number"])
     assert data["warehouse_name"] == "Markaziy ombor"
     assert data["distributor_name"] == "Test Tarqatuvchi"
     assert data["items"][0]["product_name"] == "Test kukun 3kg"

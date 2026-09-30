@@ -1,4 +1,5 @@
 """2-bosqich DoD: tovar kirim qilinadi, qoldiq to'g'ri, StockMovement o'chirilmaydi."""
+import re
 from decimal import Decimal
 
 import pytest
@@ -121,7 +122,7 @@ def test_purchase_confirm_increases_stock(manager_api, catalog, warehouse):
     )
     assert created.status_code == 201, created.data
     purchase_id = created.data["data"]["id"]
-    assert created.data["data"]["number"].startswith("KIR-2026-")
+    assert re.match(r"KIR-\d{4}-", created.data["data"]["number"])
     assert created.data["data"]["total_amount"] == "2000000.00"
 
     confirmed = manager_api.post(f"/api/v1/purchases/{purchase_id}/confirm/")

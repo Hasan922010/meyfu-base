@@ -3,6 +3,7 @@
 Hujjat ombordagi barcha tovarlar bilan avtomatik to'ldiriladi, haqiqiy qoldiq
 kiritiladi, tasdiqlanganda farq append-only `ADJUSTMENT` harakati bilan yoziladi.
 """
+import re
 from decimal import Decimal
 
 import pytest
@@ -75,7 +76,7 @@ def test_create_autofills_all_active_products_with_live_stock(
 ):
     data = _create(manager_api, warehouse["warehouse"])
 
-    assert data["number"].startswith("INV-2026-")
+    assert re.match(r"INV-\d{4}-", data["number"])
     assert data["status"] == "DRAFT"
     assert {str(row["product"]) for row in data["items"]} == {
         str(product.id), str(second_product.id)

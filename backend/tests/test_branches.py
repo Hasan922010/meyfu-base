@@ -4,6 +4,7 @@ Ko'chirish ikki bosqichli: yuborilganda manba ombordan chiqadi (tovar "yo'lda"),
 filial qabul qilganda qabul qilingan miqdor kirim bo'ladi. Filial omborchisi
 faqat o'z filialini ko'radi.
 """
+import re
 from decimal import Decimal
 
 import pytest
@@ -117,7 +118,7 @@ def test_staff_can_be_assigned_to_branch(admin_api, branch):
 def test_send_moves_stock_out_of_source_only(manager_api, stocked, branch):
     source, product = stocked["warehouse"], stocked["product"]
     data = _create(manager_api, source, branch, product)
-    assert data["number"].startswith("KCH-2026-")
+    assert re.match(r"KCH-\d{4}-", data["number"])
 
     resp = manager_api.post(f"{URL}{data['id']}/send/")
 

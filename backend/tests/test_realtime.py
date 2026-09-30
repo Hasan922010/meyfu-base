@@ -1,5 +1,6 @@
 """8-bosqich: WebSocket consumer + event yetkazish (CLAUDE.md 11)."""
 import hashlib
+import re
 from datetime import timedelta
 
 import pytest
@@ -8,9 +9,9 @@ from channels.testing import WebsocketCommunicator
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from apps.users.models import WebSocketTicket
 from config.asgi import application
 from realtime.broadcast import broadcast
-from apps.users.models import WebSocketTicket
 
 
 def _token(user) -> str:
@@ -108,7 +109,7 @@ async def test_broadcast_reaches_client(admin_user):
 
     msg = await comm.receive_json_from()
     assert msg["event"] == "sale.created"
-    assert msg["payload"]["number"] == "SOT-2026-00001"
+    assert re.fullmatch(r"SOT-\d{4}-00001", msg["payload"]["number"])
     await comm.disconnect()
 
 
