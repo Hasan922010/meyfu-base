@@ -366,3 +366,40 @@ def test_change_password_rejects_weak_and_revokes_sessions(auth_api, distributor
     tokens = OutstandingToken.objects.filter(user=distributor)
     assert tokens.exists()
     assert all(hasattr(t, "blacklistedtoken") for t in tokens)
+
+
+# ---------- BE-104 / BE-112: audit va ombor yopish ----------
+
+@pytest.mark.django_db
+def test_price_change_writes_audit_and_history(admin_api, catalog):
+    from apps.catalog.models import ProductPrice
+    from apps.core.models import AuditLog
+
+    product = catalog["product"]
+    resp = admin_api.patch(f"/api/v1/products/{product.pk}/",
+                           {"retail_price": "29000"}, format="json")
+
+    assert resp.status_code == 200, resp.data
+    log = AuditLog.objects.get(action="product.price_changed")
+    assert log.changes["retail_price"] == ["28000.00", "29000.00"]
+    assert ProductPrice.objects.filter(product=product, reason="Qo'lda o'zgartirildi").exists()
+
+
+@pytest.mark.django_db
+def test_client_block_is_audited(manager_api, routed_clients):
+    from apps.core.models import AuditLog
+
+    client = routed_clients["my_client"]
+    resp = manager_api.patch(f"/api/v1/clients/{client.pk}/",
+                             {"is_blocked": True}, format="json")
+
+    assert resp.status_code == 200, resp.data
+    assert AuditLog.objects.filter(action="client.updated",
+                                   object_id=str(client.pk)).exists()
+
+
+@pytest.mark.django_db
+def test_warehouse_with_stock_cannot_be_deleted(admin_api, stocked):
+    resp = admin_api.delete(f"/api/v1/warehouses/{stocked['warehouse'].pk}/")
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "WAREHOUSE_NOT_EMPTY"

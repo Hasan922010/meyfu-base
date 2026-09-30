@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
@@ -10,21 +12,29 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.audit import diff_fields, write_audit
 from apps.core.branch import user_branch
 from apps.core.exceptions import BusinessError
 from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
+from apps.reports.export import rows_to_xlsx
 from apps.users.constants import Role
 from apps.warehouse.constants import MovementType
-from apps.reports.export import rows_to_xlsx
 from apps.warehouse.services import apply_movement
 
 from .filters import ProductFilter
-from .models import BranchPrice, Brand, Category, Product, ProductImage, Unit
+from .models import (
+    BranchPrice,
+    Brand,
+    Category,
+    Product,
+    ProductImage,
+    ProductPrice,
+    Unit,
+)
 from .pricing import PRICE_FIELDS, branch_price_map
-from .services.product_import import TEMPLATE_HEADER, import_products
 from .serializers import (
     BranchPriceSerializer,
     BrandSerializer,
@@ -43,6 +53,7 @@ from .services import (
     reorder_product_images,
     set_primary_image,
 )
+from .services.product_import import TEMPLATE_HEADER, import_products
 
 _CATALOG_WRITE = (Role.MANAGER, Role.SUPER_ADMIN)
 _XLSX_CT = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -114,6 +125,32 @@ class ProductViewSet(BaseModelViewSet):
                 user=self.request.user,
                 note="Mahsulot yaratilganda boshlang'ich qoldiq",
             )
+
+    @transaction.atomic
+    def perform_update(self, serializer: ProductSerializer) -> None:
+        # CLAUDE.md 5.3 / 6: narx o'zgarishi — AuditLog + ProductPrice tarixi (BE-104)
+        changes = diff_fields(
+            serializer.instance, Product.PRICE_FIELDS, serializer.validated_data
+        )
+        product = serializer.save()
+        if not changes:
+            return
+        ProductPrice.objects.create(
+            product=product,
+            cost_price=product.cost_price,
+            wholesale_price=product.wholesale_price,
+            retail_price=product.retail_price,
+            min_price=product.min_price,
+            effective_from=timezone.now(),
+            reason="Qo'lda o'zgartirildi",
+            created_by=self.request.user,
+        )
+        write_audit(self.request, "product.price_changed", product, changes)
+
+    def perform_destroy(self, instance: Product) -> None:
+        write_audit(self.request, "product.deleted", instance,
+                    {"sku": instance.sku, "name": instance.name})
+        super().perform_destroy(instance)
 
     @extend_schema(summary="Mahsulot rasmlari (galereya) — yuklash",
                    request=ProductImageUploadSerializer,

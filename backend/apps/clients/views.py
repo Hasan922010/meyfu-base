@@ -12,6 +12,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.audit import diff_fields, write_audit
 from apps.core.branch import (
     acting_branch,
     branch_scope,
@@ -30,7 +31,6 @@ from apps.users.constants import Role
 
 from .models import Client, ClientVisit, Route
 from .route_optimize import apply_route_order, optimize_route
-from .statement import client_statement, statement_pdf
 from .serializers import (
     ClientLiteSerializer,
     ClientOpeningDebtSerializer,
@@ -38,6 +38,7 @@ from .serializers import (
     ClientVisitSerializer,
     RouteSerializer,
 )
+from .statement import client_statement, statement_pdf
 
 _MANAGE = (Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
@@ -147,6 +148,9 @@ class RouteViewSet(BaseModelViewSet):
         return ok(self.get_serializer(qs, many=True).data)
 
 
+_AUDITED_CLIENT_FIELDS = ("is_blocked", "debt_limit", "branch", "route")
+
+
 class ClientViewSet(BaseModelViewSet):
     serializer_class = ClientSerializer
     write_roles = _MANAGE
@@ -189,7 +193,17 @@ class ClientViewSet(BaseModelViewSet):
         self._save_in_branch(serializer, created_by=self.request.user)
 
     def perform_update(self, serializer) -> None:
+        # bloklash va qarz limiti — CLAUDE.md 5.3 bo'yicha audit (BE-112)
+        changes = diff_fields(
+            serializer.instance, _AUDITED_CLIENT_FIELDS, serializer.validated_data
+        )
         self._save_in_branch(serializer)
+        if changes:
+            write_audit(self.request, "client.updated", serializer.instance, changes)
+
+    def perform_destroy(self, instance) -> None:
+        write_audit(self.request, "client.deleted", instance, {"name": instance.name})
+        super().perform_destroy(instance)
 
     @extend_schema(summary="Mijoz tarixi — tashriflar (keyinchalik sotuvlar ham)")
     @action(detail=True, methods=["get"])

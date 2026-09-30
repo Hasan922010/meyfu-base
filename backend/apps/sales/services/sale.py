@@ -456,6 +456,12 @@ def resolve_conflict(sale: Sale, *, accept: bool, user=None) -> Sale:
     if sale.status != SaleStatus.CONFLICT:
         raise BusinessError(message="Bu sotuv ziddiyatli emas.", code="NOT_CONFLICT")
 
+    # admin qarori — qoldiq, qarz va hamyonga ta'sir qiladi (audit BE-111)
+    AuditLog.objects.create(
+        user=user, action="sale.conflict_accepted" if accept else "sale.conflict_rejected",
+        model_name="sales.Sale", object_id=str(sale.id),
+        changes={"number": sale.number, "total": str(sale.total_amount)},
+    )
     if not accept:
         sale.status = SaleStatus.CANCELLED
         sale.cancelled_at = timezone.now()

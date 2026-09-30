@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.audit import write_audit
 from apps.core.branch import NO_BRANCH, branch_scope, ensure_same_branch, staff_branch
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
@@ -144,6 +145,22 @@ class WarehouseViewSet(BaseModelViewSet):
     write_roles = (Role.MANAGER, Role.SUPER_ADMIN)
     central_only_write = True  # filial ochish/yopish — markaz qarori
     search_fields = ("name", "address")
+
+    def perform_destroy(self, instance: Warehouse) -> None:
+        # Qoldig'i yoki yo'ldagi ko'chirishi bor ombor yopilmaydi (audit BE-112)
+        has_stock = Stock.objects.filter(warehouse=instance, quantity__gt=0).exists()
+        open_transfers = Transfer.objects.filter(
+            Q(from_warehouse=instance) | Q(to_warehouse=instance),
+            status__in=(TransferStatus.DRAFT, TransferStatus.SENT),
+        ).exists()
+        if has_stock or open_transfers:
+            raise BusinessError(
+                message="Omborda qoldiq yoki yakunlanmagan ko'chirish bor — "
+                        "avval ularni yoping.",
+                code="WAREHOUSE_NOT_EMPTY",
+            )
+        write_audit(self.request, "warehouse.deleted", instance, {"name": instance.name})
+        super().perform_destroy(instance)
 
 
 class SupplierViewSet(BaseModelViewSet):
