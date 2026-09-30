@@ -58,6 +58,10 @@ export default defineConfig({
           query: ['@tanstack/react-query'],
           offline: ['dexie', 'dexie-react-hooks'],
           i18n: ['i18next', 'react-i18next'],
+          // og'ir kutubxonalar alohida — asosiy chunk 500 kB dan oshmasin (audit ARCH-103)
+          charts: ['recharts'],
+          maps: ['leaflet'],
+          forms: ['react-hook-form', 'zod'],
         },
       },
     },
