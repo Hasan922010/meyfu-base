@@ -26,6 +26,7 @@ from apps.users.constants import Role
 from ..models import Brand, Category, Product, ProductPrice, Unit
 
 MAX_ROWS = 5000
+MAX_SCANNED_ROWS = MAX_ROWS * 4  # bo'sh qatorlar bilan birga
 MAX_FILE_BYTES = 5 * 1024 * 1024
 _ZERO = Decimal("0")
 
@@ -113,6 +114,13 @@ def _read_rows(file: IO[bytes]) -> list[tuple[int, dict[str, Any]]]:
         )
     rows: list[tuple[int, dict[str, Any]]] = []
     for number, values in enumerate(iterator, start=2):
+        # Bo'sh qatorlar ham sanaladi: millionlab bo'sh qatorli siqilgan fayl
+        # serverni band qilmasin (audit SEC-119)
+        if number > MAX_SCANNED_ROWS:
+            raise BusinessError(
+                message=f"Faylda {MAX_SCANNED_ROWS} dan ortiq qator bor.",
+                code="TOO_MANY_ROWS",
+            )
         if values is None or all(v in (None, "") for v in values):
             continue
         rows.append((number, {

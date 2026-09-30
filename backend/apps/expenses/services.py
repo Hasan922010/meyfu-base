@@ -78,9 +78,9 @@ def create_expense(
         raise BusinessError(message="Xarajat summasi musbat bo'lishi kerak.",
                             code="INVALID_AMOUNT")
 
-    if category.requires_receipt and receipt_image is None and not (
-        client_uuid  # offline — rasm keyinroq media_queue orqali keladi
-    ):
+    # Faqat offline sinxronizatsiyada rasm keyinroq media_queue orqali keladi;
+    # onlayn so'rovda client_uuid bilan chek talabini chetlab bo'lmaydi (SEC-123)
+    if category.requires_receipt and receipt_image is None and not offline:
         raise BusinessError(
             message=f"«{category.name}» uchun chek rasmi majburiy.",
             code="RECEIPT_REQUIRED",

@@ -156,7 +156,11 @@ class TelegramLinkCode(BaseModel):
         cls.objects.filter(user=user, used_at__isnull=True).update(
             expires_at=timezone.now()
         )
-        code = f"{secrets.randbelow(900000) + 100000}"
+        # `code` unique — kamdan-kam to'qnashuvda qayta urinamiz (audit BE-118)
+        for _ in range(5):
+            code = f"{secrets.randbelow(900000) + 100000}"
+            if not cls.objects.filter(code=code).exists():
+                break
         return cls.objects.create(
             user=user, code=code,
             expires_at=timezone.now() + LINK_CODE_TTL,
