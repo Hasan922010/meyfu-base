@@ -21,6 +21,7 @@ import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
 import { dateTimeShort, money } from '@/shared/lib/format';
+import { useToast } from '@/shared/lib/toast';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
 
@@ -36,6 +37,7 @@ export function NewSalePage(): ReactElement {
   const navigate = useNavigate();
   const { online, pending } = useSync();
   const distributorName = useAuthStore((s) => s.user?.full_name ?? '');
+  const toast = useToast();
   const [step, setStep] = useState<Step>('client');
   const [receipt, setReceipt] = useState<ReceiptDoc | null>(null);
 
@@ -124,6 +126,10 @@ export function NewSalePage(): ReactElement {
         dueDate: due,
       });
       setStep('done');
+    } catch (err) {
+      // IndexedDB xatosi (kvota, private rejim) — jim o'tmasin (audit FE-115)
+      console.error('[NewSalePage] lokal saqlash', err);
+      toast.push({ kind: 'danger', title: 'Telefonda saqlab bo‘lmadi — xotira to‘lgan bo‘lishi mumkin. Qayta urinib ko‘ring.' });
     } finally {
       setSaving(false);
     }

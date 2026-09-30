@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { saveSaleReturnLocal, type ReturnReason } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { money } from '@/shared/lib/format';
+import { useToast } from '@/shared/lib/toast';
 
 const REASONS: Array<{ v: ReturnReason; label: string }> = [
   { v: 'BRAK', label: 'Brak' },
@@ -19,6 +20,7 @@ export function NewReturnPage(): ReactElement {
   const clients = useLiveQuery(() => db.clients.orderBy('name').toArray(), [], []);
   const products = useLiveQuery(() => db.products.orderBy('name').toArray(), [], []);
 
+  const toast = useToast();
   const [clientId, setClientId] = useState<string>('');
   const [clientSearch, setClientSearch] = useState<string>('');
   const [productSearch, setProductSearch] = useState<string>('');
@@ -61,6 +63,10 @@ export function NewReturnPage(): ReactElement {
         note,
       });
       setDone(true);
+    } catch (err) {
+      // IndexedDB xatosi (kvota, private rejim) — jim o'tmasin (audit FE-115)
+      console.error('[NewReturnPage] lokal saqlash', err);
+      toast.push({ kind: 'danger', title: 'Telefonda saqlab bo‘lmadi — xotira to‘lgan bo‘lishi mumkin. Qayta urinib ko‘ring.' });
     } finally {
       setSaving(false);
     }

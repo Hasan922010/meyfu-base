@@ -35,38 +35,42 @@ function todayISO(): string {
 export async function saveSaleLocal(input: LocalSaleInput): Promise<string> {
   const total = input.lines.reduce((s, l) => s + l.quantity * l.price, 0);
 
-  const uuid = await enqueue(
-    'sale',
-    {
-      client: input.client,
-      payment_type: input.payment_type,
-      date: todayISO(),
-      device_time: new Date().toISOString(),
-      paid_amount:
-        input.payment_type === 'ARALASH' ? String(input.paid_amount ?? 0) : undefined,
-      due_date: input.due_date ?? undefined,
-      latitude: input.latitude,
-      longitude: input.longitude,
-      note: input.note ?? '',
-      items: input.lines.map((l) => ({
-        product: l.product,
-        quantity: String(l.quantity),
-        price: String(l.price),
-      })),
-    },
-    `Sotuv · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
-  );
+  // Navbat yozuvi va lokal qoldiq — bitta tranzaksiya: yarmi yozilib qolmasin (FE-114)
+  const uuid = await db.transaction('rw', db.outbox, db.van_stock, async () => {
+    const id = await enqueue(
+      'sale',
+      {
+        client: input.client,
+        payment_type: input.payment_type,
+        date: todayISO(),
+        device_time: new Date().toISOString(),
+        paid_amount:
+          input.payment_type === 'ARALASH' ? String(input.paid_amount ?? 0) : undefined,
+        due_date: input.due_date ?? undefined,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        note: input.note ?? '',
+        items: input.lines.map((l) => ({
+          product: l.product,
+          quantity: String(l.quantity),
+          price: String(l.price),
+        })),
+      },
+      `Sotuv · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
+    );
 
-  // Lokal mashina qoldig'ini kamaytiramiz
-  await db.transaction('rw', db.van_stock, async () => {
-    for (const line of input.lines) {
-      const vs = await db.van_stock.get(line.product);
-      if (vs) {
-        await db.van_stock.update(line.product, {
-          quantity: Math.max(0, vs.quantity - line.quantity),
-        });
+    // Lokal mashina qoldig'ini kamaytiramiz
+    await db.transaction('rw', db.van_stock, async () => {
+      for (const line of input.lines) {
+        const vs = await db.van_stock.get(line.product);
+        if (vs) {
+          await db.van_stock.update(line.product, {
+            quantity: Math.max(0, vs.quantity - line.quantity),
+          });
+        }
       }
-    }
+    });
+    return id;
   });
 
   void pushOutbox();
@@ -169,34 +173,38 @@ export async function saveSaleReturnLocal(input: {
   note?: string;
 }): Promise<string> {
   const total = input.lines.reduce((s, l) => s + l.quantity * l.price, 0);
-  const uuid = await enqueue(
-    'sale_return',
-    {
-      client: input.client,
-      reason: input.reason,
-      restock: input.restock,
-      date: todayISO(),
-      device_time: new Date().toISOString(),
-      note: input.note ?? '',
-      items: input.lines.map((l) => ({
-        product: l.product,
-        quantity: String(l.quantity),
-        price: String(l.price),
-      })),
-    },
-    `Qaytarish · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
-  );
+  // Navbat yozuvi va lokal qoldiq — bitta tranzaksiya: yarmi yozilib qolmasin (FE-114)
+  const uuid = await db.transaction('rw', db.outbox, db.van_stock, async () => {
+    const id = await enqueue(
+      'sale_return',
+      {
+        client: input.client,
+        reason: input.reason,
+        restock: input.restock,
+        date: todayISO(),
+        device_time: new Date().toISOString(),
+        note: input.note ?? '',
+        items: input.lines.map((l) => ({
+          product: l.product,
+          quantity: String(l.quantity),
+          price: String(l.price),
+        })),
+      },
+      `Qaytarish · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
+    );
 
-  if (input.restock) {
-    await db.transaction('rw', db.van_stock, async () => {
-      for (const line of input.lines) {
-        const vs = await db.van_stock.get(line.product);
-        if (vs) {
-          await db.van_stock.update(line.product, { quantity: vs.quantity + line.quantity });
+    if (input.restock) {
+      await db.transaction('rw', db.van_stock, async () => {
+        for (const line of input.lines) {
+          const vs = await db.van_stock.get(line.product);
+          if (vs) {
+            await db.van_stock.update(line.product, { quantity: vs.quantity + line.quantity });
+          }
         }
-      }
-    });
-  }
+      });
+    }
+    return id;
+  });
 
   void pushOutbox();
   return uuid;
@@ -272,39 +280,43 @@ export async function fulfillOrderLocal(input: {
   );
   const needsDue =
     input.payment_type === 'QARZ' || input.payment_type === 'ARALASH';
-  const uuid = await enqueue(
-    'order_fulfill',
-    {
-      order: input.order,
-      payment_type: input.payment_type,
-      paid_amount:
-        input.payment_type === 'ARALASH' ? String(input.paid_amount ?? 0) : undefined,
-      due_date: needsDue ? (input.due_date ?? undefined) : undefined,
-      note: input.note ?? '',
-      date: todayISO(),
-      device_time: new Date().toISOString(),
-      latitude: input.latitude,
-      longitude: input.longitude,
-      lines: input.lines.map((l) => ({
-        item: l.item,
-        // server e'tiborsiz qoldiradi; lokal qoldiqni qayta hisoblash uchun (FE-102)
-        product: l.product,
-        delivered_quantity: String(l.delivered_quantity),
-        ...(l.price != null ? { price: String(l.price) } : {}),
-      })),
-    },
-    `Yetkazish · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
-  );
+  // Navbat yozuvi va lokal qoldiq — bitta tranzaksiya: yarmi yozilib qolmasin (FE-114)
+  const uuid = await db.transaction('rw', db.outbox, db.van_stock, async () => {
+    const id = await enqueue(
+      'order_fulfill',
+      {
+        order: input.order,
+        payment_type: input.payment_type,
+        paid_amount:
+          input.payment_type === 'ARALASH' ? String(input.paid_amount ?? 0) : undefined,
+        due_date: needsDue ? (input.due_date ?? undefined) : undefined,
+        note: input.note ?? '',
+        date: todayISO(),
+        device_time: new Date().toISOString(),
+        latitude: input.latitude,
+        longitude: input.longitude,
+        lines: input.lines.map((l) => ({
+          item: l.item,
+          // server e'tiborsiz qoldiradi; lokal qoldiqni qayta hisoblash uchun (FE-102)
+          product: l.product,
+          delivered_quantity: String(l.delivered_quantity),
+          ...(l.price != null ? { price: String(l.price) } : {}),
+        })),
+      },
+      `Yetkazish · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
+    );
 
-  await db.transaction('rw', db.van_stock, async () => {
-    for (const line of input.lines) {
-      const vs = await db.van_stock.get(line.product);
-      if (vs) {
-        await db.van_stock.update(line.product, {
-          quantity: Math.max(0, vs.quantity - line.delivered_quantity),
-        });
+    await db.transaction('rw', db.van_stock, async () => {
+      for (const line of input.lines) {
+        const vs = await db.van_stock.get(line.product);
+        if (vs) {
+          await db.van_stock.update(line.product, {
+            quantity: Math.max(0, vs.quantity - line.delivered_quantity),
+          });
+        }
       }
-    }
+    });
+    return id;
   });
 
   void pushOutbox();
