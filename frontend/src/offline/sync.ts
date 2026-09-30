@@ -14,8 +14,15 @@ import { assertApiShape } from '@/shared/lib/validate';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { ApiSuccess } from '@/shared/types/api';
 
-import { db, getMeta, setMeta } from './db';
-import { applyResult, dueOps, markSending, recoverOrphanedSending } from './outbox';
+import { db, getMeta, setMeta, type OutboxOp } from './db';
+import {
+  applyResult,
+  dueOps,
+  markSending,
+  markChunkFailed,
+  recoverOrphanedSending,
+  unsentStockDelta,
+} from './outbox';
 
 interface BulkSyncResult {
   results: Array<{
@@ -122,7 +129,9 @@ async function pullOrdersToDeliver(): Promise<void> {
 export async function pullVanStock(): Promise<void> {
   const van = await warehouseApi.myVanStock();
   assertApiShape(vanStockListShape, van, 'sync/van-stock');
-  await db.transaction('rw', db.van_stock, async () => {
+  await db.transaction('rw', db.van_stock, db.outbox, async () => {
+    // yuborilmagan sotuv/qaytarishlar serverda hali yo'q — ularni qayta qo'llaymiz
+    const pending = await unsentStockDelta();
     await db.van_stock.clear();
     await db.van_stock.bulkPut(
       van.map((v) => ({
@@ -130,50 +139,64 @@ export async function pullVanStock(): Promise<void> {
         product_name: v.product_name,
         product_sku: v.product_sku,
         unit: v.unit,
-        quantity: Number(v.quantity),
+        quantity: Math.max(0, Number(v.quantity) + (pending.get(v.product) ?? 0)),
       })),
     );
   });
+}
+
+/** Bitta so'rovdagi operatsiyalar soni — bir haftalik offline navbat ham
+ * katta javob/413 bilan yiqilmasin (audit FE-105). */
+export const SYNC_CHUNK = 50;
+
+async function sendChunk(ops: OutboxOp[]): Promise<{ sent: number; failed: number }> {
+  await markSending(ops.map((o) => o.client_uuid));
+  const { data } = await api.post<ApiSuccess<BulkSyncResult>>('/sales/bulk-sync/', {
+    operations: ops.map((o) => ({
+      type: o.type,
+      client_uuid: o.client_uuid,
+      payload: o.payload,
+    })),
+  });
+  assertApiShape(bulkSyncDataShape, data.data, 'bulk-sync');
+
+  let sent = 0;
+  let failed = 0;
+  for (const r of data.data.results) {
+    await applyResult(r);
+    if (r.status === 'SENT' || r.status === 'DUPLICATE') sent += 1;
+    else failed += 1;
+  }
+  return { sent, failed };
 }
 
 /** Outbox'ni serverga yuboradi. Onlayn bo'lganda chaqiriladi. */
 export async function pushOutbox(): Promise<{ sent: number; failed: number }> {
   if (syncing || !navigator.onLine) return { sent: 0, failed: 0 };
   syncing = true;
+  let sent = 0;
+  let failed = 0;
   try {
     // Bu tabda yuborish ketmayapti — demak qolgan SENDING'lar oldingi sessiyadan yetim
     await recoverOrphanedSending();
     const ops = await dueOps();
-    if (ops.length === 0) return { sent: 0, failed: 0 };
-
-    await markSending(ops.map((o) => o.client_uuid));
-
-    const { data } = await api.post<ApiSuccess<BulkSyncResult>>(
-      '/sales/bulk-sync/',
-      {
-        operations: ops.map((o) => ({
-          type: o.type,
-          client_uuid: o.client_uuid,
-          payload: o.payload,
-        })),
-      },
-    );
-
-    assertApiShape(bulkSyncDataShape, data.data, 'bulk-sync');
-
-    let sent = 0;
-    let failed = 0;
-    for (const r of data.data.results) {
-      await applyResult(r);
-      if (r.status === 'SENT' || r.status === 'DUPLICATE') sent += 1;
-      else failed += 1;
+    for (let i = 0; i < ops.length; i += SYNC_CHUNK) {
+      const chunk = ops.slice(i, i + SYNC_CHUNK);
+      try {
+        const r = await sendChunk(chunk);
+        sent += r.sent;
+        failed += r.failed;
+      } catch (err) {
+        // Tarmoq/5xx/javob-shakli xatosi — urinish sifatida hisoblanadi, shunda
+        // backoff va "3+ urinish" ogohlantirishi ishlaydi (audit FE-105).
+        // FIFO: keyingi paketlarni bu safar yubormaymiz.
+        console.warn('[pushOutbox]', err);
+        await markChunkFailed(chunk, err);
+        failed += chunk.length;
+        break;
+      }
     }
     return { sent, failed };
-  } catch (err) {
-    // Tarmoq yoki javob-shakli xatosi — SENDING'larni PENDING'ga qaytaramiz
-    console.warn('[pushOutbox]', err);
-    await db.outbox.where('status').equals('SENDING').modify({ status: 'PENDING' });
-    return { sent: 0, failed: 0 };
   } finally {
     syncing = false;
   }

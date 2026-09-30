@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 
+import { newUuid } from '@/offline/outbox';
+import { saveVisitLocal } from '@/offline/actions';
 import { extractApiError } from '@/shared/api/client';
-import { clientsApi } from '@/shared/api/clients';
 import { Modal } from '@/shared/components/Modal';
 import type { Client, VisitResult } from '@/shared/types/clients';
 
@@ -13,10 +14,6 @@ const RESULTS: Array<{ value: VisitResult; label: string; cls: string }> = [
   { value: 'SOTUVSIZ', label: 'Sotuvsiz', cls: 'bg-pending text-white' },
   { value: 'YOPIQ', label: 'Yopiq edi', cls: 'bg-gray-500 text-white' },
 ];
-
-function uuid(): string {
-  return crypto.randomUUID();
-}
 
 export function CheckInSheet({
   client,
@@ -29,16 +26,23 @@ export function CheckInSheet({
   const [note, setNote] = useState<string>('');
   // Oyna ochilganda GPS boshlanadi — tashrif GPS ni 8 s kutmaydi (UX N4)
   const coordsForSave = usePrefetchedCoords(client != null);
+  // Har ochilgan oyna — bitta tashrif: qayta bosish dublikat yaratmaydi (FE-103)
+  const [visitUuid, setVisitUuid] = useState<string>(newUuid);
+  useEffect(() => {
+    if (client) setVisitUuid(newUuid());
+  }, [client]);
 
   const mutation = useMutation({
     mutationFn: async (result: VisitResult) => {
       if (!client) throw new Error('Mijoz tanlanmagan');
       const coords = await coordsForSave();
-      return clientsApi.checkIn({
+      // Offline-first: avval lokal navbat, keyin fonda yuboriladi (CLAUDE.md 4.2)
+      return saveVisitLocal({
         client: client.id,
+        client_name: client.name,
         result,
         note,
-        client_uuid: uuid(),
+        clientUuid: visitUuid,
         ...(coords ?? {}),
       });
     },

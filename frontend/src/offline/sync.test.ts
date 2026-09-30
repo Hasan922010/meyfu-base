@@ -114,3 +114,51 @@ describe('pullReferenceData — zakaz oluvchi', () => {
     expect(myVanStock).not.toHaveBeenCalled();
   });
 });
+
+describe('pullVanStock — audit FE-102', () => {
+  it('yuborilmagan sotuvni server qoldig‘idan ayiradi (ortiqcha sotuv bo‘lmasin)', async () => {
+    // Arrange: offline 5 dona sotilgan, server hali bilmaydi (10 dona deydi)
+    await enqueue('sale', { items: [{ product: 'p1', quantity: '5', price: '1000' }] }, 'Sotuv');
+    myVanStock.mockResolvedValue([
+      { product: 'p1', product_name: 'Kukun', product_sku: 'K1', unit: 'dona', quantity: '10' },
+    ]);
+
+    // Act
+    await pullVanStock();
+
+    // Assert
+    expect((await db.van_stock.get('p1'))?.quantity).toBe(5);
+  });
+});
+
+describe('pushOutbox — audit FE-105', () => {
+  it('butun so‘rov yiqilsa urinish sanaladi (backoff ishlaydi)', async () => {
+    const id = await enqueue('sale', { total: 1 }, 'Sotuv');
+    post.mockRejectedValue(new Error('Network Error'));
+
+    await pushOutbox();
+
+    const op = await db.outbox.get(id);
+    expect(op?.status).toBe('FAILED');
+    expect(op?.attempts).toBe(1);
+  });
+
+  it('katta navbatni 50 talik paketlarda yuboradi', async () => {
+    for (let i = 0; i < 120; i += 1) await enqueue('sale', { i }, `S${i}`);
+    post.mockImplementation((_url: string, body: { operations: { client_uuid: string }[] }) =>
+      Promise.resolve({
+        data: {
+          success: true,
+          data: {
+            results: body.operations.map((o) => ({ client_uuid: o.client_uuid, status: 'SENT' })),
+          },
+        },
+      }),
+    );
+
+    const r = await pushOutbox();
+
+    expect(post).toHaveBeenCalledTimes(3);
+    expect(r.sent).toBe(120);
+  });
+});

@@ -82,6 +82,8 @@ export interface OutboxOp {
   status: OutboxStatus;
   error: string | null;
   summary: string; // UI uchun qisqa tavsif
+  /** Operatsiya egasi (user.id). Boshqa foydalanuvchi tokeni bilan yuborilmaydi (audit FE-101). */
+  owner_id?: string;
 }
 
 export interface MetaRow {

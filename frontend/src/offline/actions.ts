@@ -123,6 +123,36 @@ export async function saveDebtPaymentLocal(input: {
   return uuid;
 }
 
+/**
+ * Mijozga tashrifni AVVAL lokal outbox'ga yozadi (CLAUDE.md 4.2; audit FE-103).
+ * `clientUuid` — oyna ochilganda bir marta yaratiladi, qayta bosishda dublikat bo'lmaydi.
+ */
+export async function saveVisitLocal(input: {
+  client: string;
+  client_name: string;
+  result: 'SOTUV' | 'SOTUVSIZ' | 'YOPIQ';
+  note: string;
+  clientUuid: string;
+  latitude?: string;
+  longitude?: string;
+}): Promise<string> {
+  const uuid = await enqueue(
+    'visit',
+    {
+      client: input.client,
+      result: input.result,
+      note: input.note,
+      checked_in_at: new Date().toISOString(),
+      latitude: input.latitude,
+      longitude: input.longitude,
+    },
+    `Tashrif · ${input.client_name}`,
+    input.clientUuid,
+  );
+  void pushOutbox();
+  return uuid;
+}
+
 export type ReturnReason = 'BRAK' | 'MUDDAT' | 'KELISHMOVCHILIK';
 
 /**
@@ -257,6 +287,8 @@ export async function fulfillOrderLocal(input: {
       longitude: input.longitude,
       lines: input.lines.map((l) => ({
         item: l.item,
+        // server e'tiborsiz qoldiradi; lokal qoldiqni qayta hisoblash uchun (FE-102)
+        product: l.product,
         delivered_quantity: String(l.delivered_quantity),
         ...(l.price != null ? { price: String(l.price) } : {}),
       })),

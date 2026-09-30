@@ -1,9 +1,20 @@
+import { useAuthStore } from '@/shared/store/authStore';
+
 import { db, type OutboxOp, type OutboxType } from './db';
 
 // CLAUDE.md 4.2 — outbox pattern
 
 /** Maksimal avtomatik urinishlar; keyin operatsiya DEAD bo'ladi (audit OFF-001). */
 export const MAX_ATTEMPTS = 20;
+
+/** Joriy foydalanuvchi — navbat faqat uning operatsiyalarini ko'radi (audit FE-101). */
+function currentOwner(): string | undefined {
+  return useAuthStore.getState().user?.id;
+}
+
+function isMine(op: OutboxOp): boolean {
+  return op.owner_id === currentOwner();
+}
 
 export function newUuid(): string {
   return crypto.randomUUID();
@@ -26,13 +37,15 @@ export async function enqueue(
     status: 'PENDING',
     error: null,
   };
+  const owner = currentOwner();
+  if (owner) op.owner_id = owner;
   await db.outbox.put(op);
   return op.client_uuid;
 }
 
 /** Avtomatik yuboriladigan navbat (DEAD sanalmaydi). */
 export async function pendingCount(): Promise<number> {
-  return db.outbox.where('status').anyOf('PENDING', 'FAILED', 'SENDING').count();
+  return db.outbox.where('status').anyOf('PENDING', 'FAILED', 'SENDING').filter(isMine).count();
 }
 
 /** Foydalanuvchiga ko'rsatiladigan muammoli operatsiyalar (3+ urinish yoki DEAD). */
@@ -40,7 +53,7 @@ export async function failedCount(): Promise<number> {
   return db.outbox
     .where('status')
     .anyOf('FAILED', 'DEAD', 'CONFLICT')
-    .filter((o) => o.status !== 'FAILED' || o.attempts >= 3)
+    .filter((o) => isMine(o) && (o.status !== 'FAILED' || o.attempts >= 3))
     .count();
 }
 
@@ -49,12 +62,16 @@ export async function failedCount(): Promise<number> {
  * CONFLICT sanalmaydi: server uni qabul qilgan, admin hal qiladi.
  */
 export async function unsentCount(): Promise<number> {
-  return db.outbox.where('status').anyOf('PENDING', 'SENDING', 'FAILED', 'DEAD').count();
+  return db.outbox
+    .where('status')
+    .anyOf('PENDING', 'SENDING', 'FAILED', 'DEAD')
+    .filter(isMine)
+    .count();
 }
 
 /** 20 urinishdan keyin to'xtatilgan — foydalanuvchi aralashuvi kerak. */
 export async function deadCount(): Promise<number> {
-  return db.outbox.where('status').equals('DEAD').count();
+  return db.outbox.where('status').equals('DEAD').filter(isMine).count();
 }
 
 /** FIFO tartibida yuborilishi kerak bo'lgan operatsiyalar. */
@@ -63,7 +80,7 @@ export async function dueOps(): Promise<OutboxOp[]> {
     .where('status')
     .anyOf('PENDING', 'FAILED')
     .sortBy('created_at');
-  return all.filter((o) => o.attempts < MAX_ATTEMPTS && backoffElapsed(o));
+  return all.filter((o) => isMine(o) && o.attempts < MAX_ATTEMPTS && backoffElapsed(o));
 }
 
 /** Exponential backoff: 5s, 15s, 60s, 5min, 15min, 60min — oxirgi urinishdan (CLAUDE.md 4.2) */
@@ -122,8 +139,26 @@ export async function applyResult(result: {
   });
 }
 
+/** Butun so'rov yiqildi (tarmoq, 5xx): paketdagi har operatsiya bitta urinish. */
+export async function markChunkFailed(ops: OutboxOp[], err: unknown): Promise<void> {
+  const message =
+    err instanceof Error && err.message ? err.message : "Server bilan aloqa bo'lmadi";
+  const now = Date.now();
+  await db.transaction('rw', db.outbox, async () => {
+    for (const op of ops) {
+      const attempts = op.attempts + 1;
+      await db.outbox.update(op.client_uuid, {
+        status: attempts >= MAX_ATTEMPTS ? 'DEAD' : 'FAILED',
+        attempts,
+        last_attempt_at: now,
+        error: message,
+      });
+    }
+  });
+}
+
 export async function listOutbox(): Promise<OutboxOp[]> {
-  return db.outbox.orderBy('created_at').toArray();
+  return db.outbox.orderBy('created_at').filter(isMine).toArray();
 }
 
 /** FAILED / CONFLICT / DEAD operatsiyalarni qaytadan navbatga qo'yadi. */
@@ -131,10 +166,47 @@ export async function retryFailed(): Promise<void> {
   await db.outbox
     .where('status')
     .anyOf('FAILED', 'CONFLICT', 'DEAD')
+    .filter(isMine)
     .modify({ status: 'PENDING', attempts: 0, last_attempt_at: null, error: null });
 }
 
 /** Bitta operatsiyani navbatdan butunlay o'chiradi (DEAD uchun UI'da). */
 export async function deleteOp(clientUuid: string): Promise<void> {
   await db.outbox.delete(clientUuid);
+}
+
+type StockLine = { product?: unknown; quantity?: unknown; delivered_quantity?: unknown };
+
+function lineQty(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Hali serverga yetmagan operatsiyalarning mashina qoldig'iga ta'siri
+ * (mahsulot → delta). Serverdan qoldiq tortilganda shu delta qo'shiladi —
+ * aks holda offline sotilgan tovar yana "bor" bo'lib ko'rinardi (audit FE-102).
+ */
+export async function unsentStockDelta(): Promise<Map<string, number>> {
+  const ops = await db.outbox
+    .where('status')
+    .anyOf('PENDING', 'SENDING', 'FAILED', 'DEAD')
+    .filter(isMine)
+    .toArray();
+  const delta = new Map<string, number>();
+  const add = (product: unknown, qty: number): void => {
+    if (typeof product !== 'string' || qty === 0) return;
+    delta.set(product, (delta.get(product) ?? 0) + qty);
+  };
+  for (const op of ops) {
+    const p = op.payload as { items?: StockLine[]; lines?: StockLine[]; restock?: boolean };
+    if (op.type === 'sale') {
+      for (const l of p.items ?? []) add(l.product, -lineQty(l.quantity));
+    } else if (op.type === 'order_fulfill') {
+      for (const l of p.lines ?? []) add(l.product, -lineQty(l.delivered_quantity));
+    } else if (op.type === 'sale_return' && p.restock) {
+      for (const l of p.items ?? []) add(l.product, lineQty(l.quantity));
+    }
+  }
+  return delta;
 }
