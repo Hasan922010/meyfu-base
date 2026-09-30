@@ -19,7 +19,7 @@ from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializ
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
 
-from .constants import MovementType, SupplierTxType
+from .constants import MovementType, SupplierTxType, TransferStatus
 from .models import (
     InventoryCount,
     Loading,
@@ -116,6 +116,14 @@ class _OwnWarehouseMixin:
     def perform_create(self, serializer) -> None:
         self.check_own_warehouse(serializer.validated_data.get(self.own_warehouse_field))
         super().perform_create(serializer)
+
+    def perform_update(self, serializer) -> None:
+        # PATCH bilan omborni boshqa filialga o'tkazib bo'lmasin (audit SEC-111)
+        self.check_own_warehouse(serializer.validated_data.get(
+            self.own_warehouse_field,
+            getattr(serializer.instance, self.own_warehouse_field),
+        ))
+        super().perform_update(serializer)
 
 
 def _wants_stamp(request: Request) -> bool:
@@ -429,11 +437,21 @@ class TransferViewSet(_OwnWarehouseMixin, BaseModelViewSet):
         # Filial omborchisi — o'zidan chiqqan va o'ziga kelgan ko'chirishlar
         return qs.filter(Q(from_warehouse=own) | Q(to_warehouse=own)) if own else qs
 
+    @transaction.atomic
     def perform_update(self, serializer) -> None:
         data = serializer.validated_data
         self.check_own_warehouse(
             data.get("from_warehouse", serializer.instance.from_warehouse)
         )
+        # Parallel `send` bilan poyga: qulfsiz eski DRAFT holati SENT ustidan
+        # yozilib, transfer ikki marta jo'natilardi (audit BE-105)
+        locked = Transfer.objects.select_for_update().get(pk=serializer.instance.pk)
+        if locked.status != TransferStatus.DRAFT:
+            raise BusinessError(
+                message="Faqat qoralama ko'chirishni tahrirlash mumkin.",
+                code="TRANSFER_NOT_DRAFT",
+            )
+        serializer.instance = locked
         serializer.save()
 
     def _fresh(self, transfer: Transfer) -> Response:
@@ -497,6 +515,15 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
             self.request.user, branch.pk if branch else None, "distributor"
         )
         super().perform_create(serializer)
+
+    def perform_update(self, serializer) -> None:
+        branch = staff_branch(serializer.validated_data.get(
+            "distributor", serializer.instance.distributor
+        ))
+        ensure_same_branch(
+            self.request.user, branch.pk if branch else None, "distributor"
+        )
+        super().perform_update(serializer)
 
     @extend_schema(summary="Yuklamani tarqatuvchiga yuborish (qoldiq band qilinadi)",
                    request=None)

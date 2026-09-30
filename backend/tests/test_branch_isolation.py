@@ -531,3 +531,41 @@ def test_branch_manager_can_edit_staff_without_touching_pay(world):
     }, format="json")
 
     assert resp.status_code == 200, resp.data
+
+
+# ------------------------------------------------ audit SEC-111 (2026-09-30)
+
+def test_branch_manager_cannot_patch_loading_to_other_branch(world, catalog):
+    from apps.warehouse.models import Loading
+
+    a, b = world["a"], world["b"]
+    loading = Loading.objects.create(
+        date=date.today(), distributor=a["distributor"],
+        warehouse=a["branch"],
+    )
+    api = _login(a["manager"].phone)
+
+    resp = api.patch(f"/api/v1/loadings/{loading.pk}/", {
+        "distributor": str(b["distributor"].pk),
+    }, format="json")
+
+    assert resp.status_code == 400
+    loading.refresh_from_db()
+    assert loading.distributor_id == a["distributor"].pk
+
+
+def test_branch_manager_cannot_patch_loading_warehouse_to_other_branch(world, catalog):
+    from apps.warehouse.models import Loading
+
+    a, b = world["a"], world["b"]
+    loading = Loading.objects.create(
+        date=date.today(), distributor=a["distributor"],
+        warehouse=a["branch"],
+    )
+    api = _login(a["manager"].phone)
+
+    resp = api.patch(f"/api/v1/loadings/{loading.pk}/", {
+        "warehouse": str(b["branch"].pk),
+    }, format="json")
+
+    assert resp.status_code == 400
