@@ -423,3 +423,15 @@ def test_integrity_detects_client_debt_drift_and_ignores_cancelled(
     Client.objects.filter(pk=client.pk).update(current_debt=Decimal("999"))
     kinds = {m["kind"] for m in run_integrity_check()["mismatches"]}
     assert "client_debt" in kinds
+
+
+# ---------- SEC-110: tannarx tarqatuvchiga ko'rinmaydi ----------
+
+@pytest.mark.django_db
+def test_distributor_does_not_see_cost_price(auth_api, manager_api, catalog):
+    pid = catalog["product"].pk
+    mine = auth_api.get(f"/api/v1/products/{pid}/").data["data"]
+    managers = manager_api.get(f"/api/v1/products/{pid}/").data["data"]
+
+    assert "cost_price" not in mine and "commission_percent" not in mine
+    assert managers["cost_price"] == "20000.00"

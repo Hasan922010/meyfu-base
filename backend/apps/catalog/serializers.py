@@ -24,7 +24,16 @@ class BranchPricedMixin:
             for field in PRICE_FIELDS:
                 if field in data:
                     data[field] = str(getattr(override, field))
+        # Tannarx va komissiya — kompaniya siri; sotuvchi rollar ko'rmaydi (SEC-110)
+        request = self.context.get("request")
+        if getattr(getattr(request, "user", None), "role", None) in _NO_COST_ROLES:
+            for field in _COST_FIELDS:
+                data.pop(field, None)
         return data
+
+
+_NO_COST_ROLES = {Role.DISTRIBUTOR, Role.ORDER_TAKER}
+_COST_FIELDS = ("cost_price", "commission_percent")
 
 
 class BranchPriceSerializer(serializers.ModelSerializer):
