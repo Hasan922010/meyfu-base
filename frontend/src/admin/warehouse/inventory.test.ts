@@ -60,3 +60,13 @@ describe('inventory helpers', () => {
     expect(rebasedCountedRows(before, after).map((i) => i.id)).toEqual(['a']);
   });
 });
+
+describe('dropSaved — audit FE-111', () => {
+  it('saqlanganlarni olib tashlaydi, keyin kiritilganini qoldiradi', async () => {
+    const { dropSaved } = await import('./inventory');
+    const sent = { a: '5', b: '7' };
+    const current = { a: '5', b: '8', c: '1' }; // b va c saqlash paytida o'zgardi
+
+    expect(dropSaved(current, sent)).toEqual({ b: '8', c: '1' });
+  });
+});

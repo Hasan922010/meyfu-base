@@ -89,3 +89,13 @@ export function filterRows(
     return true;
   });
 }
+
+/**
+ * Saqlangan qoralamalarni olib tashlaydi — saqlash ketayotganda kiritilgan
+ * (yuborilgandan farq qiladigan) qiymatlar qoladi (audit FE-111).
+ */
+export function dropSaved(drafts: Drafts, sent: Drafts): Drafts {
+  return Object.fromEntries(
+    Object.entries(drafts).filter(([id, value]) => sent[id] !== value),
+  );
+}

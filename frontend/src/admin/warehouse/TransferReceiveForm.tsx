@@ -20,10 +20,14 @@ export function TransferReceiveForm({
   );
   const [note, setNote] = useState<string>('');
 
-  const tooMuch = transfer.items.some((i) => Number(received[i.id]) > Number(i.quantity));
-  const empty = transfer.items.some((i) => received[i.id] === '' || Number(received[i.id]) < 0);
+  // "1,5" ham qabul qilinadi; son bo'lmagan qiymat — bo'sh hisoblanadi (FE-112)
+  const valueOf = (id: string): number => Number((received[id] ?? '').replace(',', '.'));
+  const tooMuch = transfer.items.some((i) => valueOf(i.id) > Number(i.quantity));
+  const empty = transfer.items.some(
+    (i) => received[i.id]?.trim() === '' || !Number.isFinite(valueOf(i.id)) || valueOf(i.id) < 0,
+  );
   const hasDifference = transfer.items.some(
-    (i) => Number(received[i.id]) !== Number(i.quantity),
+    (i) => valueOf(i.id) !== Number(i.quantity),
   );
   const invalid = tooMuch || empty || (hasDifference && !note.trim());
 
@@ -32,7 +36,7 @@ export function TransferReceiveForm({
       warehouseApi.receiveTransfer(transfer.id, {
         items: transfer.items.map((i) => ({
           id: i.id,
-          received_quantity: received[i.id] ?? i.quantity,
+          received_quantity: (received[i.id] ?? i.quantity).replace(',', '.'),
         })),
         ...(note.trim() ? { note: note.trim() } : {}),
       }),

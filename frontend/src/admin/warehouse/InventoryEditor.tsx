@@ -11,6 +11,7 @@ import type { InventoryCount } from '@/shared/types/warehouse';
 
 import {
   changedRows,
+  dropSaved,
   filterRows,
   rebasedCountedRows,
   summarize,
@@ -53,10 +54,11 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
   const editable = canWrite && count?.status === 'DRAFT';
   const pending = changedRows(items, drafts);
 
-  const onSaved = (fresh: InventoryCount): void => {
+  const onSaved = (fresh: InventoryCount, sent?: Drafts): void => {
     qc.setQueryData(['inventory-count', countId], fresh);
     void qc.invalidateQueries({ queryKey: ['inventory-counts'] });
-    setDrafts({});
+    // saqlash paytida kiritilganlar yo'qolmasin (FE-111)
+    setDrafts((current) => (sent ? dropSaved(current, sent) : {}));
   };
   // Kiritilganlar yo'qolmasin — har amal oldidan saqlanmaganlar yuboriladi
   const flush = async (): Promise<void> => {
@@ -64,8 +66,9 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
   };
 
   const save = useMutation({
-    mutationFn: () => warehouseApi.saveInventoryItems(countId, pending),
-    onSuccess: onSaved,
+    mutationFn: (snapshot: Drafts) =>
+      warehouseApi.saveInventoryItems(countId, changedRows(items, snapshot)),
+    onSuccess: (fresh, snapshot) => onSaved(fresh, snapshot),
   });
   const refresh = useMutation({
     mutationFn: async () => {
@@ -210,7 +213,7 @@ export function InventoryEditor({ countId, onBack }: Props): ReactElement {
           <button
             className="btn px-4"
             disabled={busy || pending.length === 0}
-            onClick={() => save.mutate()}
+            onClick={() => save.mutate(drafts)}
           >
             Saqlash
           </button>
