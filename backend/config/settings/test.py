@@ -9,6 +9,7 @@ from .base import REST_FRAMEWORK
 
 # Test yuklamalari repo `media/` ni ifloslantirmasin — vaqtinchalik katalog
 MEDIA_ROOT = tempfile.mkdtemp(prefix="meyfu-test-media-")
+BACKUP_DIR = tempfile.mkdtemp(prefix="meyfu-test-backups-")
 
 DEBUG = False
 ALLOWED_HOSTS = ["*"]  # WebSocket AllowedHostsOriginValidator testlarda

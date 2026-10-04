@@ -120,6 +120,7 @@ services:
     volumes:
       - media:/app/media
       - static:/app/staticfiles
+      - backups:/backups
     depends_on:
       db:
         condition: service_healthy
@@ -136,6 +137,7 @@ services:
       RUN_MIGRATIONS: "0"
     volumes:
       - media:/app/media
+      - backups:/backups
     depends_on:
       - web
       - redis

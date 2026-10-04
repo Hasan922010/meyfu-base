@@ -1,3 +1,4 @@
+import { Archive, BookOpen } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -34,10 +35,18 @@ export function SettingsPage(): ReactElement {
         <TelegramConnect />
         <LanguageSwitch />
         <Link
-          to="/admin/help"
-          className="block rounded-xl bg-white p-4 text-sm font-medium shadow-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
+          to="/admin/system?tab=backups"
+          className="flex items-center gap-3 rounded-xl bg-white p-4 text-sm font-medium shadow-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
         >
-          📖 Foydalanish yo'riqnomasi — rol bo'yicha
+          <Archive size={18} className="text-brand shrink-0" aria-hidden />
+          <span>Zaxiralash va tiklash (Backup & Restore)</span>
+        </Link>
+        <Link
+          to="/admin/help"
+          className="flex items-center gap-3 rounded-xl bg-white p-4 text-sm font-medium shadow-sm hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800"
+        >
+          <BookOpen size={18} className="text-brand shrink-0" aria-hidden />
+          <span>Foydalanish yo'riqnomasi — rol bo'yicha</span>
         </Link>
       </div>
 

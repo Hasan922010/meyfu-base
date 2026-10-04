@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { expensesApi } from '@/shared/api/finance';
 import { DataState } from '@/shared/components/DataState';
+import { ExpenseCategoryIcon } from '@/shared/components/ExpenseCategoryIcon';
 import { dateShort, money } from '@/shared/lib/format';
 
 const STATUS_CLASS: Record<string, string> = {
@@ -59,7 +60,9 @@ export function MyExpensesPage(): ReactElement {
               className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900"
             >
               <div className="flex items-center gap-3">
-                <span className="text-xl">{e.category_icon || '💸'}</span>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-brand dark:bg-gray-800">
+                  <ExpenseCategoryIcon icon={e.category_icon} name={e.category_name} size={20} />
+                </div>
                 <div>
                   <div className="font-medium">{e.category_name}</div>
                   <div className="text-xs text-gray-500">

@@ -48,3 +48,7 @@ Thumbs.db
 
 # graphify (generated; rebuilt by git hooks)
 graphify-out/
+
+# Scratch directory
+scratch/
+

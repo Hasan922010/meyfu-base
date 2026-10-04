@@ -30,7 +30,7 @@ function todayISO(): string {
  * Sotuvni AVVAL lokal bazaga yozadi (CLAUDE.md 4.2):
  *  - outbox'ga operatsiya qo'shadi
  *  - mashina qoldig'ini lokal kamaytiradi (4.3)
- *  - darhol qaytadi ("✅ Saqlandi"), server javobini kutmasdan
+ *  - darhol qaytadi ("Saqlandi"), server javobini kutmasdan
  */
 export async function saveSaleLocal(input: LocalSaleInput): Promise<string> {
   const total = input.lines.reduce((s, l) => s + l.quantity * l.price, 0);

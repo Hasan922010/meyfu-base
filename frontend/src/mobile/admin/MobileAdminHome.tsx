@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
+  AlertTriangle,
   BadgeDollarSign,
   CalendarCheck,
   ChartColumn,
@@ -87,9 +88,10 @@ export function MobileAdminHome(): ReactElement {
       {(k?.flagged_sales ?? 0) > 0 && (
         <Link
           to="/m/a/sales"
-          className="block rounded-xl bg-pending/10 p-3 text-sm text-pending"
+          className="flex items-center gap-2 rounded-xl bg-pending/10 p-3 text-sm text-pending"
         >
-          ⚠️ {k?.flagged_sales} ta belgilangan sotuv — ko'rib chiqing
+          <AlertTriangle size={18} className="shrink-0" aria-hidden />
+          <span>{k?.flagged_sales} ta belgilangan sotuv — ko'rib chiqing</span>
         </Link>
       )}
 

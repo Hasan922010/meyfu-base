@@ -72,7 +72,7 @@ const TABS: TabDef[] = [
     title: 'Xarajat kategoriyasi',
     fields: [
       { name: 'name', label: 'Nomi', required: true },
-      { name: 'icon', label: 'Ikona (emoji)', placeholder: '⛽' },
+      { name: 'icon', label: 'Ikona kodi / belgisi', placeholder: 'fuel' },
       { name: 'daily_limit', label: 'Kunlik limit', type: 'number' },
       { name: 'requires_receipt', label: 'Chek majburiy', type: 'checkbox' },
     ],

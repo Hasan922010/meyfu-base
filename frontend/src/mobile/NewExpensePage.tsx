@@ -9,6 +9,7 @@ import { expensesApi } from '@/shared/api/finance';
 import { ocrApi } from '@/shared/api/ocr';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
+import { ExpenseCategoryIcon } from '@/shared/components/ExpenseCategoryIcon';
 import { money } from '@/shared/lib/format';
 
 const QUICK = [10000, 20000, 50000, 100000, 200000];
@@ -107,7 +108,7 @@ export function NewExpensePage(): ReactElement {
                   : 'bg-white shadow-sm dark:bg-gray-900'
               }`}
             >
-              <span className="text-2xl">{c.icon || '💸'}</span>
+              <ExpenseCategoryIcon icon={c.icon} name={c.name} size={24} className="mb-0.5" />
               {c.name}
             </button>
           ))}

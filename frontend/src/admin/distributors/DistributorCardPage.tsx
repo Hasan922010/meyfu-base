@@ -1,5 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import {
+  Coins,
+  Download,
+  HandCoins,
+  Landmark,
+  LayoutDashboard,
+  Package,
+  Store,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -36,14 +46,14 @@ type Tab =
   | 'debts'
   | 'payroll';
 
-const TABS: Array<{ id: Tab; l: string }> = [
-  { id: 'overview', l: 'Umumiy' },
-  { id: 'money', l: '💰 Pul harakati' },
-  { id: 'expenses', l: '💸 Xarajatlar' },
-  { id: 'clients', l: '🏪 Mijozlar' },
-  { id: 'products', l: '📦 Mahsulotlar' },
-  { id: 'debts', l: '💳 Qarzdorlik' },
-  { id: 'payroll', l: '💵 Maosh' },
+const TABS: Array<{ id: Tab; l: string; icon: LucideIcon }> = [
+  { id: 'overview', l: 'Umumiy', icon: LayoutDashboard },
+  { id: 'money', l: 'Pul harakati', icon: Landmark },
+  { id: 'expenses', l: 'Xarajatlar', icon: Wallet },
+  { id: 'clients', l: 'Mijozlar', icon: Store },
+  { id: 'products', l: 'Mahsulotlar', icon: Package },
+  { id: 'debts', l: 'Qarzdorlik', icon: HandCoins },
+  { id: 'payroll', l: 'Maosh', icon: Coins },
 ];
 
 const PIE_COLORS = ['#6366f1', '#22c55e', '#f97316', '#ef4444', '#a855f7'];
@@ -82,19 +92,23 @@ export function DistributorCardPage(): ReactElement {
             <KpiGrid d={d} />
 
             <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  className={`px-3 py-2 text-sm font-medium ${
-                    tab === t.id
-                      ? 'border-b-2 border-brand text-brand'
-                      : 'text-gray-500'
-                  }`}
-                  onClick={() => setTab(t.id)}
-                >
-                  {t.l}
-                </button>
-              ))}
+              {TABS.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <button
+                    key={t.id}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium ${
+                      tab === t.id
+                        ? 'border-b-2 border-brand text-brand'
+                        : 'text-gray-500'
+                    }`}
+                    onClick={() => setTab(t.id)}
+                  >
+                    <Icon size={16} aria-hidden />
+                    <span>{t.l}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {tab === 'overview' && <OverviewTab d={d} />}
@@ -210,7 +224,7 @@ function KpiGrid({ d }: { d: DistributorFull }): ReactElement {
       />
       <Kpi label="Topshirildi" value={money(d.money.handed_to_cashier)} />
       <Kpi
-        label="👛 Qo'lida qolgan"
+        label="Qo'lida qolgan"
         value={money(d.money.wallet_balance)}
         accent={Number(d.money.wallet_balance) < 0 ? 'text-danger' : ''}
       />

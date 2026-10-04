@@ -152,6 +152,10 @@ CELERY_BEAT_SCHEDULE: dict = {
 if _crontab is not None:
     # Vaqtlar UTC da (Asia/Tashkent = UTC+5)
     CELERY_BEAT_SCHEDULE.update({
+        "scheduled-backup-nightly": {  # 02:00 Asia/Tashkent (CLAUDE.md 16)
+            "task": "apps.core.tasks.scheduled_backup_task",
+            "schedule": _crontab(hour=21, minute=0),
+        },
         "integrity-check-nightly": {  # 02:30 Asia/Tashkent — backupdan keyin
             "task": "apps.core.tasks.check_integrity",
             "schedule": _crontab(hour=21, minute=30),
@@ -340,7 +344,8 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 # --- Backup (CLAUDE.md 16) — tizim salomatligi sahifasi shu papkani kuzatadi ---
-BACKUP_DIR = env("BACKUP_DIR", default="/backups")
+_default_backup_dir = "/backups" if Path("/backups").is_dir() else str(BASE_DIR / "backups")
+BACKUP_DIR = env("BACKUP_DIR", default=_default_backup_dir)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

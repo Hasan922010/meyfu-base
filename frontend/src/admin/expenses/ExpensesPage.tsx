@@ -9,6 +9,7 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { expensesApi } from '@/shared/api/finance';
 import { DataState } from '@/shared/components/DataState';
+import { ExpenseCategoryIcon } from '@/shared/components/ExpenseCategoryIcon';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -128,7 +129,10 @@ export function ExpensesPage(): ReactElement {
                   <td className="p-3">{dateShort(e.date)}</td>
                   <td className="p-3">{e.distributor_name}</td>
                   <td className="p-3">
-                    {e.category_icon} {e.category_name}
+                    <span className="inline-flex items-center gap-1.5">
+                      <ExpenseCategoryIcon icon={e.category_icon} name={e.category_name} size={16} className="text-gray-500" />
+                      <span>{e.category_name}</span>
+                    </span>
                     {e.description && (
                       <span className="block text-xs text-gray-400">
                         {e.description}

@@ -38,7 +38,7 @@ def check_integrity() -> dict:
         )
         notify_admins(
             type="integrity.mismatch",
-            title="⚠️ Butunlik farqi topildi",
+            title="Butunlik farqi topildi",
             body=(
                 f"{result['mismatch_count']} ta balans jurnal bilan mos kelmadi:\n"
                 f"{lines}"
@@ -52,3 +52,32 @@ def check_integrity() -> dict:
         )
 
     return result
+
+
+@shared_task(ignore_result=True)
+def scheduled_backup_task() -> dict:
+    """Har kecha avtomatik zaxira nusxasi (CLAUDE.md 16).
+
+    Muvaffaqiyatsiz bo'lsa adminga darhol xabar yuboriladi (jim yiqilish eng xavflisi).
+    """
+    from apps.core.services.backup import create_backup
+
+    try:
+        return create_backup(format_type="auto", note="Celery avtomatik tungi backup")
+    except Exception as exc:
+        from apps.notifications.services import notify_admins
+        from realtime.broadcast import broadcast
+
+        notify_admins(
+            type="backup.failed",
+            title="Zaxira nusxa (backup) xatosi!",
+            body=f"Tungi avtomatik backup muvaffaqiyatsiz bo'ldi:\n{exc}",
+            data={"error": str(exc)},
+        )
+        broadcast(
+            "admin_dashboard",
+            "backup.failed",
+            {"error": str(exc)},
+        )
+        raise
+

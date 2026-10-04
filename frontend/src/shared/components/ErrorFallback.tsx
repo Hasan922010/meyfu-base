@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,9 +21,9 @@ export function ErrorFallback({
 
   return (
     <div className={wrap} role="alert">
-      <p className="text-4xl" aria-hidden>
-        ⚠️
-      </p>
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger/10 text-danger" aria-hidden>
+        <AlertTriangle size={32} />
+      </div>
       <h1 className="text-lg font-semibold">
         {t('errorBoundary.title', 'Nimadir noto‘g‘ri ketdi')}
       </h1>

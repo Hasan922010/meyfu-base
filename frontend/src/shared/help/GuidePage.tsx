@@ -1,3 +1,4 @@
+import { Lightbulb } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
 
 import { useAuthStore } from '@/shared/store/authStore';
@@ -41,8 +42,9 @@ function Block({ b }: { b: GuideBlock }): ReactElement {
       );
     case 'note':
       return (
-        <div className="rounded-lg border border-pending/30 bg-pending/10 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
-          💡 {b.text}
+        <div className="flex items-start gap-2 rounded-lg border border-pending/30 bg-pending/10 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+          <Lightbulb size={16} className="mt-0.5 shrink-0 text-amber-500" aria-hidden />
+          <span>{b.text}</span>
         </div>
       );
     case 'img':

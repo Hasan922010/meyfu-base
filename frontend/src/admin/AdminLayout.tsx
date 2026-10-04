@@ -25,6 +25,7 @@ import {
   Users,
   Wallet,
   Warehouse,
+  Smartphone,
   X,
 } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';
@@ -202,7 +203,7 @@ export function AdminLayout(): ReactElement {
               className="text-brand hover:underline md:hidden"
               aria-label="Mobil versiya"
             >
-              📱
+              <Smartphone size={18} aria-hidden />
             </button>
             <span className="hidden truncate text-gray-500 sm:inline">
               {user?.full_name}

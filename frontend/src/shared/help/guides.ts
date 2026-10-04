@@ -50,14 +50,14 @@ const common: RoleGuide = {
       blocks: [
         {
           k: 'p',
-          text: 'Tarqatuvchi ilovasi internetsiz ham to\'liq ishlaydi. Sotuv, xarajat, qarz to\'lovi darhol saqlanadi — "✅ Saqlandi" chiqadi.',
+          text: 'Tarqatuvchi ilovasi internetsiz ham to\'liq ishlaydi. Sotuv, xarajat, qarz to\'lovi darhol saqlanadi — "Saqlandi" chiqadi.',
         },
         {
           k: 'list',
           items: [
-            '🟢 Online — hammasi serverga yuborildi',
-            '🟡 Yuborilmoqda (N) — N ta operatsiya navbatda',
-            '🔴 Offline · N ta kutmoqda — internet yo\'q, N ta saqlangan',
+            'Online (yashil) — hammasi serverga yuborildi',
+            'Yuborilmoqda (sariq N) — N ta operatsiya navbatda',
+            'Offline (qizil N) — internet yo\'q, N ta saqlangan',
           ],
         },
         {
@@ -121,7 +121,7 @@ const distributor: RoleGuide = {
             'Mijoz — marshrutdagi ro\'yxatdan tanlash.',
             'Tovar — qidirib tanlash → miqdor (katta +/− yoki tez tugmalar) → narx (standart narx avtomatik).',
             'To\'lov — Naqd / Plastik / Qarzga. Aralash bo\'lsa: qancha naqd, qolgani qarzga, muddat.',
-            'Saqlash — "✅ Saqlandi" darhol chiqadi, chekni PDF qilib mijozga yuborish mumkin.',
+            'Saqlash — "Saqlandi" darhol chiqadi, chekni PDF qilib mijozga yuborish mumkin.',
           ],
         },
         { k: 'img', src: IMG('dist-02-sale-client.png'), caption: '1-qadam: mijozni tanlash' },
@@ -144,7 +144,7 @@ const distributor: RoleGuide = {
           items: [
             '"Xarajat" → "Yangi xarajat".',
             'Kategoriya (ikonka) → summa (katta klaviatura, tez tugmalar).',
-            '📷 "Chek rasmidan summani olish" — AI summani o\'zi to\'ldiradi.',
+            'Kamera orqali "Chek rasmidan summani olish" — AI summani o\'zi to\'ldiradi.',
             'Yoqilg\'i uchun: litr, narx, odometr. Saqlash → qo\'lingizdagi pul kamayadi.',
           ],
         },

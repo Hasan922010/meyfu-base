@@ -105,24 +105,29 @@ def _last_integrity() -> dict:
 
 
 def _backup_status() -> dict:
-    backup_dir = Path(settings.BACKUP_DIR)
+    from apps.core.services.backup import list_backups
+
     try:
-        dumps = sorted(backup_dir.glob("db_*.sql.gz"))
+        backups = list_backups()
     except Exception:  # noqa: BLE001
-        dumps = []
-    if not dumps:
+        backups = []
+    if not backups:
         return {"status": "unknown", "last_at": None, "age_hours": None,
                 "size_mb": None, "count": 0}
-    newest = max(dumps, key=lambda p: p.stat().st_mtime)
-    stat = newest.stat()
-    last_dt = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
-    age_hours = round((timezone.now() - last_dt).total_seconds() / 3600, 1)
+    newest = backups[0]
+    created_str = newest.get("created_at")
+    if created_str:
+        last_dt = datetime.fromisoformat(created_str)
+        age_hours = round((timezone.now() - last_dt).total_seconds() / 3600, 1)
+    else:
+        last_dt = timezone.now()
+        age_hours = 0.0
     return {
         "status": "stale" if age_hours > _BACKUP_STALE_HOURS else "ok",
         "last_at": last_dt.isoformat(),
         "age_hours": age_hours,
-        "size_mb": round(stat.st_size / 1024**2, 2),
-        "count": len(dumps),
+        "size_mb": newest.get("size_mb", 0.0),
+        "count": len(backups),
     }
 
 

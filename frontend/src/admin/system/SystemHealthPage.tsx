@@ -1,18 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Activity,
   AlertTriangle,
+  Archive,
   CheckCircle2,
   HelpCircle,
   RefreshCw,
   XCircle,
 } from 'lucide-react';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { systemApi, type IntegrityMismatch } from '@/shared/api/system';
 import { DataState } from '@/shared/components/DataState';
 import { money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
+
+import { BackupsSection } from './BackupsSection';
 
 function ago(iso: string | null): string {
   if (!iso) return "hali yo'q";
@@ -43,22 +47,35 @@ function StatusCard({
   title,
   tone,
   lines,
+  action,
 }: {
   title: string;
   tone: Tone;
   lines: string[];
+  action?: { label: string; onClick: () => void };
 }): ReactElement {
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
-      <div className="flex items-center gap-2">
-        <ToneIcon tone={tone} />
-        <span className="font-semibold">{title}</span>
+    <div className="flex flex-col justify-between rounded-xl bg-white p-4 shadow-sm dark:bg-gray-900">
+      <div>
+        <div className="flex items-center gap-2">
+          <ToneIcon tone={tone} />
+          <span className="font-semibold">{title}</span>
+        </div>
+        <div className="mt-2 space-y-0.5 text-sm text-gray-500">
+          {lines.map((l, i) => (
+            <div key={i}>{l}</div>
+          ))}
+        </div>
       </div>
-      <div className="mt-2 space-y-0.5 text-sm text-gray-500">
-        {lines.map((l, i) => (
-          <div key={i}>{l}</div>
-        ))}
-      </div>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="mt-3 text-left text-xs font-semibold text-brand hover:underline"
+        >
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }
@@ -93,6 +110,25 @@ export function SystemHealthPage(): ReactElement {
     },
   });
 
+  const initialTab =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('tab') === 'backups'
+      ? 'backups'
+      : 'health';
+  const [activeTab, setActiveTab] = useState<'health' | 'backups'>(initialTab);
+  const setTab = (t: 'health' | 'backups') => {
+    setActiveTab(t);
+    if (typeof window !== 'undefined' && window.history?.replaceState) {
+      const url = new URL(window.location.href);
+      if (t === 'health') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', t);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   const s = status.data ?? fast.data;
   const liveMismatches =
     check.data?.mismatches ?? s?.integrity.mismatches ?? [];
@@ -100,7 +136,7 @@ export function SystemHealthPage(): ReactElement {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tizim salomatligi</h1>
+        <h1 className="text-2xl font-bold">Tizim salomatligi va Zaxira</h1>
         <button
           className="btn flex items-center gap-1.5 px-3"
           onClick={() => {
@@ -112,82 +148,112 @@ export function SystemHealthPage(): ReactElement {
         </button>
       </div>
 
-      <DataState
-        isLoading={!s && (fast.isLoading || status.isLoading)}
-        isError={!s && fast.isError && status.isError}
-      >
-        {s && (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <StatusCard
-                title="Xizmatlar"
-                tone={
-                  s.health.healthy
-                    ? s.health.checks.disk.ok && s.health.checks.celery.ok !== false
-                      ? 'ok'
-                      : 'warn'
-                    : 'bad'
-                }
-                lines={[
-                  `Baza: ${s.health.checks.db ? 'ishlayapti' : 'javob bermayapti'}`,
-                  `Redis: ${s.health.checks.redis ? 'ishlayapti' : 'javob bermayapti'}`,
-                  `Celery: ${
-                    celeryPending
-                      ? 'tekshirilmoqda…'
-                      : s.health.checks.celery.ok == null
-                      ? 'noma’lum'
-                      : s.health.checks.celery.ok
-                        ? `${s.health.checks.celery.workers} ishchi`
-                        : 'ishchi yo’q'
-                  }`,
-                  `Disk: ${
-                    s.health.checks.disk.free_percent == null
-                      ? 'noma’lum'
-                      : `${s.health.checks.disk.free_percent}% bo’sh (${s.health.checks.disk.free_gb} GB)`
-                  }`,
-                  `Navbat: ${s.health.queue_length ?? '—'}`,
-                ]}
-              />
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
+        <button
+          className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'health'
+              ? 'border-brand text-brand font-semibold'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+          onClick={() => setTab('health')}
+        >
+          <Activity size={16} aria-hidden /> Tizim holati va Butunlik
+        </button>
+        <button
+          className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'backups'
+              ? 'border-brand text-brand font-semibold'
+              : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+          onClick={() => setTab('backups')}
+        >
+          <Archive size={16} aria-hidden /> Zaxira va Tiklash (Backup & Restore)
+        </button>
+      </div>
 
-              <StatusCard
-                title="Ma'lumot butunligi"
-                tone={
-                  s.integrity.ok == null
-                    ? 'unknown'
-                    : s.integrity.ok
-                      ? 'ok'
+      {activeTab === 'backups' ? (
+        <BackupsSection />
+      ) : (
+        <DataState
+          isLoading={!s && (fast.isLoading || status.isLoading)}
+          isError={!s && fast.isError && status.isError}
+        >
+          {s && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <StatusCard
+                  title="Xizmatlar"
+                  tone={
+                    s.health.healthy
+                      ? s.health.checks.disk.ok && s.health.checks.celery.ok !== false
+                        ? 'ok'
+                        : 'warn'
                       : 'bad'
-                }
-                lines={[
-                  s.integrity.ran_at
-                    ? `Oxirgi tekshiruv: ${ago(s.integrity.ran_at)}`
-                    : 'Hali tekshirilmagan',
-                  s.integrity.ok == null
-                    ? 'Natija yo’q'
-                    : s.integrity.ok
-                      ? 'Barcha balans jurnalga mos'
-                      : `${s.integrity.mismatch_count} ta farq`,
-                ]}
-              />
+                  }
+                  lines={[
+                    `Baza: ${s.health.checks.db ? 'ishlayapti' : 'javob bermayapti'}`,
+                    `Redis: ${s.health.checks.redis ? 'ishlayapti' : 'javob bermayapti'}`,
+                    `Celery: ${
+                      celeryPending
+                        ? 'tekshirilmoqda…'
+                        : s.health.checks.celery.ok == null
+                        ? 'noma’lum'
+                        : s.health.checks.celery.ok
+                          ? `${s.health.checks.celery.workers} ishchi`
+                          : 'ishchi yo’q'
+                    }`,
+                    `Disk: ${
+                      s.health.checks.disk.free_percent == null
+                        ? 'noma’lum'
+                        : `${s.health.checks.disk.free_percent}% bo’sh (${s.health.checks.disk.free_gb} GB)`
+                    }`,
+                    `Navbat: ${s.health.queue_length ?? '—'}`,
+                  ]}
+                />
 
-              <StatusCard
-                title="Zaxira nusxa (backup)"
-                tone={
-                  s.backup.status === 'ok'
-                    ? 'ok'
-                    : s.backup.status === 'stale'
-                      ? 'warn'
-                      : 'unknown'
-                }
-                lines={
-                  s.backup.status === 'unknown'
-                    ? ['Backup fayli topilmadi']
-                    : [
-                        `Oxirgi: ${ago(s.backup.last_at)} (${s.backup.age_hours} soat)`,
-                        `Hajmi: ${s.backup.size_mb} MB · jami ${s.backup.count} ta`,
-                      ]
-                }
-              />
+                <StatusCard
+                  title="Ma'lumot butunligi"
+                  tone={
+                    s.integrity.ok == null
+                      ? 'unknown'
+                      : s.integrity.ok
+                        ? 'ok'
+                        : 'bad'
+                  }
+                  lines={[
+                    s.integrity.ran_at
+                      ? `Oxirgi tekshiruv: ${ago(s.integrity.ran_at)}`
+                      : 'Hali tekshirilmagan',
+                    s.integrity.ok == null
+                      ? 'Natija yo’q'
+                      : s.integrity.ok
+                        ? 'Barcha balans jurnalga mos'
+                        : `${s.integrity.mismatch_count} ta farq`,
+                  ]}
+                />
+
+                <StatusCard
+                  title="Zaxira nusxa (backup)"
+                  tone={
+                    s.backup.status === 'ok'
+                      ? 'ok'
+                      : s.backup.status === 'stale'
+                        ? 'warn'
+                        : 'unknown'
+                  }
+                  lines={
+                    s.backup.status === 'unknown'
+                      ? ['Backup fayli topilmadi']
+                      : [
+                          `Oxirgi: ${ago(s.backup.last_at)} (${s.backup.age_hours} soat)`,
+                          `Hajmi: ${s.backup.size_mb} MB · jami ${s.backup.count} ta`,
+                        ]
+                  }
+                  action={{
+                    label: 'Boshqarish va tiklash →',
+                    onClick: () => setTab('backups'),
+                  }}
+                />
 
               <StatusCard
                 title="Sinxronizatsiya"
@@ -258,8 +324,9 @@ export function SystemHealthPage(): ReactElement {
               )}
 
               {check.data?.ok || (check.isSuccess && liveMismatches.length === 0) ? (
-                <p className="mt-3 text-sm text-success">
-                  ✓ Barcha balans jurnal yig'indisiga mos.
+                <p className="mt-3 flex items-center gap-1.5 text-sm text-success">
+                  <CheckCircle2 size={16} className="shrink-0" aria-hidden />
+                  <span>Barcha balans jurnal yig'indisiga mos.</span>
                 </p>
               ) : liveMismatches.length > 0 ? (
                 <MismatchTable rows={liveMismatches} />
@@ -273,6 +340,7 @@ export function SystemHealthPage(): ReactElement {
           </>
         )}
       </DataState>
+      )}
     </div>
   );
 }

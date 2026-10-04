@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Award } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -11,7 +12,33 @@ import { DataState } from '@/shared/components/DataState';
 import { PeriodSwitcher } from '@/shared/components/PeriodSwitcher';
 import { money } from '@/shared/lib/format';
 
-const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+function RankBadge({ rank }: { rank: number }): ReactElement {
+  if (rank === 1) {
+    return (
+      <span className="inline-flex items-center gap-1 font-bold text-amber-500" title="1-o'rin">
+        <Award size={16} aria-hidden />
+        <span>1</span>
+      </span>
+    );
+  }
+  if (rank === 2) {
+    return (
+      <span className="inline-flex items-center gap-1 font-bold text-slate-400" title="2-o'rin">
+        <Award size={16} aria-hidden />
+        <span>2</span>
+      </span>
+    );
+  }
+  if (rank === 3) {
+    return (
+      <span className="inline-flex items-center gap-1 font-bold text-amber-700 dark:text-amber-600" title="3-o'rin">
+        <Award size={16} aria-hidden />
+        <span>3</span>
+      </span>
+    );
+  }
+  return <span>{rank}</span>;
+}
 
 export function DistributorsPage(): ReactElement {
   const [preset, setPreset] = useState<PeriodPreset>('month');
@@ -58,7 +85,9 @@ export function DistributorsPage(): ReactElement {
                   key={r.id}
                   className="border-b border-gray-100 last:border-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/50"
                 >
-                  <td className="p-3">{MEDAL[r.rank] ?? r.rank}</td>
+                  <td className="p-3">
+                    <RankBadge rank={r.rank} />
+                  </td>
                   <td className="p-3 font-medium">
                     <Link
                       to={`/admin/distributors/${r.id}`}

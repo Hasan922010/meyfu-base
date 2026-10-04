@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { BookOpen, Monitor } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -52,18 +53,20 @@ export function ProfilePage(): ReactElement {
       </label>
 
       <Link to="/m/help" className="btn flex w-full items-center justify-center gap-2">
-        📖 Foydalanish yo'riqnomasi
+        <BookOpen size={18} aria-hidden />
+        <span>Foydalanish yo'riqnomasi</span>
       </Link>
 
       {isAdmin && (
         <button
-          className="btn w-full"
+          className="btn flex w-full items-center justify-center gap-2"
           onClick={() => {
             setDesktopForced(true);
             window.location.href = '/admin';
           }}
         >
-          🖥 To'liq (desktop) versiyaga o'tish
+          <Monitor size={18} aria-hidden />
+          <span>To'liq (desktop) versiyaga o'tish</span>
         </button>
       )}
 
