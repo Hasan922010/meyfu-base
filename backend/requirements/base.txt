@@ -37,3 +37,7 @@ reportlab==4.2.5
 
 # Telegram bot
 httpx==0.28.1
+
+# Security pins
+PyJWT>=2.15.0
+urllib3>=2.8.0

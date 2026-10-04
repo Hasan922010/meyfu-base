@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -172,8 +172,18 @@ class ProductViewSet(BaseModelViewSet):
             status_code=201,
         )
 
-    @extend_schema(summary="Bitta rasmni o'zgartirish / o'chirish",
-                   request=ProductImagePatchSerializer)
+    @extend_schema(
+        summary="Bitta rasmni o'zgartirish / o'chirish",
+        request=ProductImagePatchSerializer,
+        parameters=[
+            OpenApiParameter(
+                name="img_id",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description="Rasm UUID identifikatori",
+            )
+        ],
+    )
     @action(detail=True, methods=["patch", "delete"],
             url_path=r"images/(?P<img_id>[^/.]+)")
     def image_detail(

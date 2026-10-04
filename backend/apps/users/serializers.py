@@ -248,3 +248,11 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate_new_password(self, value: str) -> str:
         validate_password(value)  # audit SEC-120
         return value
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Bekor qilinishi kerak bo'lgan refresh token (ixtiyoriy).",
+    )

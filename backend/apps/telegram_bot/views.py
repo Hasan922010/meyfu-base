@@ -7,7 +7,7 @@ import secrets
 
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -106,6 +106,13 @@ class TelegramStatusView(APIView):
         })
 
 
+class TelegramBotConnectSerializer(serializers.Serializer):
+    token = serializers.CharField(
+        help_text="Telegram bot tokeni (masalan: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)",
+        write_only=True,
+    )
+
+
 class TelegramBotConfigView(APIView):
     permission_classes = [IsAuthenticated, IsSuperAdmin]
     _TOKEN_RE = re.compile(r"^\d{6,12}:[A-Za-z0-9_-]{20,}$")
@@ -120,7 +127,11 @@ class TelegramBotConfigView(APIView):
             "updated_at": credential.updated_at.isoformat() if credential else None,
         })
 
-    @extend_schema(summary="Telegram bot tokenini ulash", responses={200: dict})
+    @extend_schema(
+        summary="Telegram bot tokenini ulash",
+        request=TelegramBotConnectSerializer,
+        responses={200: dict},
+    )
     def post(self, request: Request) -> Response:
         token = str(request.data.get("token", "")).strip()
         if not self._TOKEN_RE.fullmatch(token):

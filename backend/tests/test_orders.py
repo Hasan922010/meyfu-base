@@ -21,8 +21,10 @@ from apps.orders.services import (
 from apps.orders.services.order import FulfillLine
 from apps.payroll.services import calculate_payroll, payroll_matches_formula
 
-PERIOD = datetime.date(2026, 9, 1)
-DAY = datetime.date(2026, 9, 10)
+from apps.core.business_day import business_date
+
+DAY = business_date()
+PERIOD = DAY.replace(day=1)
 
 
 @pytest.fixture

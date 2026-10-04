@@ -32,6 +32,7 @@ from .models import WebSocketTicket
 from .serializers import (
     ChangePasswordSerializer,
     LoginSerializer,
+    LogoutSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     UserSerializer,
@@ -76,7 +77,7 @@ class LogoutView(APIView):
 
     @extend_schema(
         summary="Chiqish",
-        request={"type": "object", "properties": {"refresh": {"type": "string"}}},
+        request=LogoutSerializer,
         responses={200: dict},
     )
     def post(self, request: Request) -> Response:

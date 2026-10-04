@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
+import { sharePdf } from '@/mobile/lib/sharePdf';
 import { clientsApi } from '@/shared/api/clients';
 import { DataState } from '@/shared/components/DataState';
 import { businessDateISO } from '@/shared/lib/businessDay';
@@ -34,6 +35,13 @@ export function ClientStatement({ clientId }: { clientId: string }): ReactElemen
     },
   });
 
+  const share = useMutation({
+    mutationFn: () => clientsApi.statementPdf(clientId, dateFrom, dateTo),
+    onSuccess: (blob) => {
+      void sharePdf(blob, `akt-sverka-${dateFrom}-${dateTo}.pdf`);
+    },
+  });
+
   const data = query.data;
 
   return (
@@ -63,6 +71,13 @@ export function ClientStatement({ clientId }: { clientId: string }): ReactElemen
           onClick={() => pdf.mutate()}
         >
           <Download size={16} aria-hidden /> PDF
+        </button>
+        <button
+          className="btn flex items-center gap-1.5 px-3 border border-brand text-brand hover:bg-brand/5"
+          disabled={!data || share.isPending}
+          onClick={() => share.mutate()}
+        >
+          <Share2 size={16} aria-hidden /> Ulashish
         </button>
       </div>
 

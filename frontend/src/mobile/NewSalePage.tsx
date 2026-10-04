@@ -8,7 +8,7 @@ import {
   Split,
 } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { saveSaleLocal } from '@/offline/actions';
 import { db } from '@/offline/db';
@@ -35,16 +35,18 @@ function plusDays(days: number): string {
 
 export function NewSalePage(): ReactElement {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialClientId = searchParams.get('client') ?? '';
   const { online, pending } = useSync();
   const distributorName = useAuthStore((s) => s.user?.full_name ?? '');
   const toast = useToast();
-  const [step, setStep] = useState<Step>('client');
+  const [step, setStep] = useState<Step>(initialClientId ? 'items' : 'client');
   const [receipt, setReceipt] = useState<ReceiptDoc | null>(null);
 
   const clients = useLiveQuery(() => db.clients.orderBy('name').toArray(), [], []);
   const van = useLiveQuery(() => db.van_stock.toArray(), [], []);
 
-  const [clientId, setClientId] = useState<string>('');
+  const [clientId, setClientId] = useState<string>(initialClientId);
   const [clientSearch, setClientSearch] = useState<string>('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [saving, setSaving] = useState<boolean>(false);

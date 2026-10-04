@@ -259,15 +259,15 @@ paths:
       - auth
       requestBody:
         content:
-          type:
+          application/json:
             schema:
-              type: object
-              additionalProperties: {}
-              description: Unspecified request body
-          properties:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
             schema:
-              refresh:
-                type: string
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
       security:
       - jwtAuth: []
       responses:
@@ -2219,63 +2219,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompanyExpense'
           description: ''
-    patch:
-      operationId: company_expenses_partial_update
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this kompaniya xarajati.
-        required: true
-      tags:
-      - company-expenses
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedCompanyExpenseRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedCompanyExpenseRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedCompanyExpenseRequest'
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompanyExpense'
-          description: ''
-    delete:
-      operationId: company_expenses_destroy
-      description: |-
-        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-
-        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this kompaniya xarajati.
-        required: true
-      tags:
-      - company-expenses
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
   /api/v1/company-settings/:
     get:
       operationId: company_settings_retrieve
@@ -5267,6 +5210,8 @@ paths:
         name: img_id
         schema:
           type: string
+          format: uuid
+        description: Rasm UUID identifikatori
         required: true
       tags:
       - products
@@ -5309,6 +5254,8 @@ paths:
         name: img_id
         schema:
           type: string
+          format: uuid
+        description: Rasm UUID identifikatori
         required: true
       tags:
       - products
@@ -7881,6 +7828,20 @@ paths:
       description: 'Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o''z
         filiali.'
       parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: device_id
+        schema:
+          type: string
       - name: ordering
         required: false
         in: query
@@ -7899,6 +7860,10 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: problems
+        schema:
+          type: boolean
       - name: search
         required: false
         in: query
@@ -8068,6 +8033,18 @@ paths:
       summary: Telegram bot tokenini ulash
       tags:
       - telegram
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramBotConnectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TelegramBotConnectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TelegramBotConnectRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -8083,6 +8060,18 @@ paths:
       summary: Telegram bot tokenini ulash
       tags:
       - telegram
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramBotConnectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TelegramBotConnectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TelegramBotConnectRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -11756,7 +11745,7 @@ components:
           title: Sana
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusBb1Enum'
+          - $ref: '#/components/schemas/StatusF18Enum'
           readOnly: true
           title: Holat
         status_display:
@@ -11891,7 +11880,7 @@ components:
           title: Sana
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusBb1Enum'
+          - $ref: '#/components/schemas/StatusF18Enum'
           readOnly: true
           title: Holat
         status_display:
@@ -12250,14 +12239,13 @@ components:
         image:
           type: string
           format: uri
-          nullable: true
           readOnly: true
           title: Rasm
         processed_image:
           type: string
           format: uri
-          nullable: true
           readOnly: true
+          nullable: true
           title: Qayta ishlangan rasm
         page_number:
           type: integer
@@ -12492,6 +12480,12 @@ components:
       required:
       - password
       - phone
+    LogoutRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          description: Bekor qilinishi kerak bo'lgan refresh token (ixtiyoriy).
     MatchStatusEnum:
       enum:
       - EXACT
@@ -12805,7 +12799,7 @@ components:
         payment_intent:
           default: ''
           oneOf:
-          - $ref: '#/components/schemas/PaymentIntentCc4Enum'
+          - $ref: '#/components/schemas/PaymentIntent8b6Enum'
           - $ref: '#/components/schemas/BlankEnum'
         desired_date:
           type: string
@@ -12841,7 +12835,7 @@ components:
           nullable: true
         payment_type:
           oneOf:
-          - $ref: '#/components/schemas/PaymentTypeCc4Enum'
+          - $ref: '#/components/schemas/PaymentType8b6Enum'
           - $ref: '#/components/schemas/BlankEnum'
         paid_amount:
           type: string
@@ -14128,34 +14122,6 @@ components:
           type: string
           title: Izoh
           maxLength: 255
-    PatchedCompanyExpenseRequest:
-      type: object
-      properties:
-        date:
-          type: string
-          format: date
-        category:
-          allOf:
-          - $ref: '#/components/schemas/CategoryEnum'
-          title: Kategoriya
-        amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,14}(?:\.\d{0,2})?$
-          title: Summa
-        description:
-          type: string
-          title: Izoh
-          maxLength: 500
-        paid_from_cash:
-          type: boolean
-          title: Kassadan to'landimi
-          description: True bo'lsa kassa balansidan chiqadi
-        receipt_image:
-          type: string
-          format: binary
-          nullable: true
-          title: Hujjat
     PatchedCompanySettingsRequest:
       type: object
       properties:
@@ -14553,7 +14519,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role347Enum'
+          - $ref: '#/components/schemas/Role164Enum'
           title: Rol
         passport_series:
           type: string
@@ -14617,7 +14583,7 @@ components:
           format: uuid
           nullable: true
           title: Mas'ul
-    PaymentIntentCc4Enum:
+    PaymentIntent8b6Enum:
       enum:
       - NAQD
       - PLASTIK
@@ -14631,7 +14597,7 @@ components:
         * `OTKAZMA` - OTKAZMA
         * `QARZ` - QARZ
         * `ARALASH` - ARALASH
-    PaymentTypeCc4Enum:
+    PaymentType8b6Enum:
       enum:
       - NAQD
       - PLASTIK
@@ -15248,14 +15214,13 @@ components:
         image:
           type: string
           format: uri
-          nullable: true
           readOnly: true
           title: Rasm
         thumbnail:
           type: string
           format: uri
-          nullable: true
           readOnly: true
+          nullable: true
           title: Eskiz
         sort_order:
           type: integer
@@ -15315,8 +15280,8 @@ components:
         image:
           type: string
           format: uri
-          nullable: true
           readOnly: true
+          nullable: true
           title: Rasm
         image_thumb:
           type: string
@@ -15761,7 +15726,7 @@ components:
         * `SOTUV` - Sotuv bo'ldi
         * `SOTUVSIZ` - Sotuvsiz
         * `YOPIQ` - Yopiq edi
-    Role347Enum:
+    Role164Enum:
       enum:
       - SUPER_ADMIN
       - MANAGER
@@ -16046,7 +16011,7 @@ components:
           type: string
           format: uuid
         payment_type:
-          $ref: '#/components/schemas/PaymentTypeCc4Enum'
+          $ref: '#/components/schemas/PaymentType8b6Enum'
         items:
           type: array
           items:
@@ -16430,7 +16395,7 @@ components:
       description: |-
         * `MANUAL` - Qo'lda
         * `SCAN` - Naklit skani
-    StatusBb1Enum:
+    StatusF18Enum:
       enum:
       - DRAFT
       - CONFIRMED
@@ -16799,6 +16764,16 @@ components:
       - operations_count
       - user
       - user_name
+    TelegramBotConnectRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+          description: 'Telegram bot tokeni (masalan: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)'
+      required:
+      - token
     TokenRefresh:
       type: object
       properties:
@@ -17098,7 +17073,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role347Enum'
+          - $ref: '#/components/schemas/Role164Enum'
           readOnly: true
           title: Rol
         avatar:
@@ -17179,7 +17154,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role347Enum'
+          - $ref: '#/components/schemas/Role164Enum'
           title: Rol
         passport_series:
           type: string
@@ -17236,7 +17211,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role347Enum'
+          - $ref: '#/components/schemas/Role164Enum'
           title: Rol
         passport_series:
           type: string
@@ -17308,7 +17283,6 @@ components:
         image:
           type: string
           format: uri
-          nullable: true
           readOnly: true
         quantity:
           type: string

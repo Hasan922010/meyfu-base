@@ -874,20 +874,10 @@ export interface paths {
         get: operations["company_expenses_retrieve"];
         put?: never;
         post?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
-        delete: operations["company_expenses_destroy"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
-        patch: operations["company_expenses_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/api/v1/company-settings/": {
@@ -5871,7 +5861,7 @@ export interface components {
              */
             date: string;
             /** Holat */
-            readonly status: components["schemas"]["StatusBb1Enum"];
+            readonly status: components["schemas"]["StatusF18Enum"];
             readonly status_display: string;
             /** Izoh */
             note?: string;
@@ -5939,7 +5929,7 @@ export interface components {
              */
             date: string;
             /** Holat */
-            readonly status: components["schemas"]["StatusBb1Enum"];
+            readonly status: components["schemas"]["StatusF18Enum"];
             readonly status_display: string;
             /** Izoh */
             note?: string;
@@ -6125,7 +6115,7 @@ export interface components {
              * Rasm
              * Format: uri
              */
-            readonly image: string | null;
+            readonly image: string;
             /**
              * Qayta ishlangan rasm
              * Format: uri
@@ -6266,6 +6256,10 @@ export interface components {
         LoginRequest: {
             phone: string;
             password: string;
+        };
+        LogoutRequest: {
+            /** @description Bekor qilinishi kerak bo'lgan refresh token (ixtiyoriy). */
+            refresh?: string;
         };
         /**
          * @description * `EXACT` - Aniq moslik
@@ -6435,7 +6429,7 @@ export interface components {
             /** Format: date */
             date?: string;
             /** @default  */
-            payment_intent: components["schemas"]["PaymentIntentCc4Enum"] | components["schemas"]["BlankEnum"];
+            payment_intent: components["schemas"]["PaymentIntent8b6Enum"] | components["schemas"]["BlankEnum"];
             /** Format: date */
             desired_date?: string | null;
             /** @default  */
@@ -6451,7 +6445,7 @@ export interface components {
             lines: components["schemas"]["FulfillLineInputRequest"][];
             /** Format: uuid */
             distributor?: string | null;
-            payment_type?: components["schemas"]["PaymentTypeCc4Enum"] | components["schemas"]["BlankEnum"];
+            payment_type?: components["schemas"]["PaymentType8b6Enum"] | components["schemas"]["BlankEnum"];
             /** Format: decimal */
             paid_amount?: string | null;
             /** Format: date */
@@ -7291,29 +7285,6 @@ export interface components {
             /** Izoh */
             note?: string;
         };
-        PatchedCompanyExpenseRequest: {
-            /** Format: date */
-            date?: string;
-            /** Kategoriya */
-            category?: components["schemas"]["CategoryEnum"];
-            /**
-             * Summa
-             * Format: decimal
-             */
-            amount?: string;
-            /** Izoh */
-            description?: string;
-            /**
-             * Kassadan to'landimi
-             * @description True bo'lsa kassa balansidan chiqadi
-             */
-            paid_from_cash?: boolean;
-            /**
-             * Hujjat
-             * Format: binary
-             */
-            receipt_image?: string | null;
-        };
         PatchedCompanySettingsRequest: {
             /** Nomi */
             name?: string;
@@ -7607,7 +7578,7 @@ export interface components {
             /** F.I.SH. */
             full_name?: string;
             /** Rol */
-            role?: components["schemas"]["Role347Enum"];
+            role?: components["schemas"]["Role164Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -7657,7 +7628,7 @@ export interface components {
          *     * `ARALASH` - ARALASH
          * @enum {string}
          */
-        PaymentIntentCc4Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
+        PaymentIntent8b6Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
         /**
          * @description * `NAQD` - NAQD
          *     * `PLASTIK` - PLASTIK
@@ -7666,7 +7637,7 @@ export interface components {
          *     * `ARALASH` - ARALASH
          * @enum {string}
          */
-        PaymentTypeCc4Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
+        PaymentType8b6Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
         /**
          * @description * `NAQD` - Naqd
          *     * `PLASTIK` - Plastik karta
@@ -8059,7 +8030,7 @@ export interface components {
              * Rasm
              * Format: uri
              */
-            readonly image: string | null;
+            readonly image: string;
             /**
              * Eskiz
              * Format: uri
@@ -8402,7 +8373,7 @@ export interface components {
          *     * `ORDER_TAKER` - Zakaz oluvchi
          * @enum {string}
          */
-        Role347Enum: "SUPER_ADMIN" | "MANAGER" | "BRANCH_MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
+        Role164Enum: "SUPER_ADMIN" | "MANAGER" | "BRANCH_MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
         Route: {
             /** Format: uuid */
             readonly id: string;
@@ -8558,7 +8529,7 @@ export interface components {
         SaleCreateRequest: {
             /** Format: uuid */
             client: string;
-            payment_type: components["schemas"]["PaymentTypeCc4Enum"];
+            payment_type: components["schemas"]["PaymentType8b6Enum"];
             items: components["schemas"]["SaleLineInputRequest"][];
             /** Format: date */
             date?: string;
@@ -8802,7 +8773,7 @@ export interface components {
          *     * `CANCELLED` - Bekor qilingan
          * @enum {string}
          */
-        StatusBb1Enum: "DRAFT" | "CONFIRMED" | "CANCELLED";
+        StatusF18Enum: "DRAFT" | "CONFIRMED" | "CANCELLED";
         Stock: {
             /** Format: uuid */
             readonly id: string;
@@ -8987,6 +8958,10 @@ export interface components {
             /** Davomiyligi (ms) */
             readonly duration_ms: number;
         };
+        TelegramBotConnectRequest: {
+            /** @description Telegram bot tokeni (masalan: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11) */
+            token: string;
+        };
         TokenRefresh: {
             readonly access: string;
             refresh: string;
@@ -9149,7 +9124,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            readonly role: components["schemas"]["Role347Enum"];
+            readonly role: components["schemas"]["Role164Enum"];
             /**
              * Rasm
              * Format: uri
@@ -9199,7 +9174,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role347Enum"];
+            role?: components["schemas"]["Role164Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -9236,7 +9211,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role347Enum"];
+            role?: components["schemas"]["Role164Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -9279,7 +9254,7 @@ export interface components {
             readonly product_sku: string;
             readonly unit: string;
             /** Format: uri */
-            readonly image: string | null;
+            readonly image: string;
             /**
              * Qoldiq
              * Format: decimal
@@ -9615,10 +9590,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                type: {
-                    [key: string]: unknown;
-                };
-                properties: unknown;
+                "application/json": components["schemas"]["LogoutRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoutRequest"];
+                "multipart/form-data": components["schemas"]["LogoutRequest"];
             };
         };
         responses: {
@@ -11104,55 +11078,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyExpense"];
-                };
-            };
-        };
-    };
-    company_expenses_destroy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this kompaniya xarajati. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    company_expenses_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this kompaniya xarajati. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedCompanyExpenseRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanyExpenseRequest"];
-                "multipart/form-data": components["schemas"]["PatchedCompanyExpenseRequest"];
-            };
-        };
         responses: {
             200: {
                 headers: {
@@ -13426,6 +13351,7 @@ export interface operations {
             path: {
                 /** @description A UUID string identifying this mahsulot. */
                 id: string;
+                /** @description Rasm UUID identifikatori */
                 img_id: string;
             };
             cookie?: never;
@@ -13448,6 +13374,7 @@ export interface operations {
             path: {
                 /** @description A UUID string identifying this mahsulot. */
                 id: string;
+                /** @description Rasm UUID identifikatori */
                 img_id: string;
             };
             cookie?: never;
@@ -15362,12 +15289,16 @@ export interface operations {
     sync_logs_list: {
         parameters: {
             query?: {
+                date_from?: string;
+                date_to?: string;
+                device_id?: string;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                problems?: boolean;
                 /** @description A search term. */
                 search?: string;
                 user?: string;
@@ -15543,7 +15474,13 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelegramBotConnectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TelegramBotConnectRequest"];
+                "multipart/form-data": components["schemas"]["TelegramBotConnectRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -15564,7 +15501,13 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelegramBotConnectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TelegramBotConnectRequest"];
+                "multipart/form-data": components["schemas"]["TelegramBotConnectRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

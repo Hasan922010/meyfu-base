@@ -204,8 +204,10 @@ def test_profit_report(manager_api, admin_api, auth_api, van_stocked):
         format="json",
     )
 
+    today = datetime.date.today()
+    start_of_month = today.replace(day=1)
     resp = manager_api.get(
-        "/api/v1/reports/profit/?date_from=2026-09-01&date_to=2026-09-30"
+        f"/api/v1/reports/profit/?date_from={start_of_month.isoformat()}&date_to={today.isoformat()}"
     )
     assert resp.status_code == 200
     d = resp.data["data"]
@@ -227,8 +229,10 @@ def test_expenses_report(
     ).data["data"]
     admin_api.post(f"/api/v1/expenses/{exp['id']}/approve/")
 
+    today = datetime.date.today()
+    start_of_month = today.replace(day=1)
     resp = manager_api.get(
-        "/api/v1/reports/expenses/?date_from=2026-09-01&date_to=2026-09-30"
+        f"/api/v1/reports/expenses/?date_from={start_of_month.isoformat()}&date_to={today.isoformat()}"
     )
     assert resp.status_code == 200
     d = resp.data["data"]

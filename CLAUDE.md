@@ -25,8 +25,8 @@ Sen tajribali **full-stack arxitektor va dasturchisan**. Quyidagi spetsifikatsiy
 7. **Ma'lumot yo'qolmaydi.** Backup 1-kundan, tiklash sinovdan o'tkazilgan.
 
 ### Ishlash tartibi
-Har bosqich uchun: **qisqa reja → kod → migratsiya → testlar → qabul mezonlari (Definition of Done) → README yangilanishi → tasdiq so'rash.**
-Ortiqcha abstraksiya qilma. Noaniqlik bo'lsa — taxmin qilma, **savol ber**.
+Har bosqich uchun: **qisqa reja → kod → migratsiya → testlar → qabul mezonlari (Definition of Done) → README yangilanishi**.
+Ortiqcha abstraksiya qilma. Mayda detallar yoki har bir qadam uchun tasdiq (yes/true/no) so'rab vaqt sarflama: eng maqbul, xavfsiz va to'g'ri texnik qarorni o'zing mustaqil qabul qilib, ishni to'liq oxiriga yetkaz. Faqat ma'lumotlar o'chib ketish xavfi (destructive actions) bo'lgandagina foydalanuvchiga murojaat qil.
 
 ---
 

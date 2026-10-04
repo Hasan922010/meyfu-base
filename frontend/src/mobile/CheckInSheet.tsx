@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { FileText, ShoppingCart } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { ClientStatement } from '@/admin/clients/ClientStatement';
 import { newUuid } from '@/offline/outbox';
 import { saveVisitLocal } from '@/offline/actions';
 import { extractApiError } from '@/shared/api/client';
@@ -23,7 +26,9 @@ export function CheckInSheet({
   onClose: () => void;
 }): ReactElement {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [note, setNote] = useState<string>('');
+  const [showStatement, setShowStatement] = useState<boolean>(false);
   // Oyna ochilganda GPS boshlanadi — tashrif GPS ni 8 s kutmaydi (UX N4)
   const coordsForSave = usePrefetchedCoords(client != null);
   // Har ochilgan oyna — bitta tashrif: qayta bosish dublikat yaratmaydi (FE-103)
@@ -46,23 +51,49 @@ export function CheckInSheet({
         ...(coords ?? {}),
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, result) => {
       void qc.invalidateQueries({ queryKey: ['visits'] });
       setNote('');
       onClose();
+      if (result === 'SOTUV' && client) {
+        void navigate(`/m/sale/new?client=${client.id}`);
+      }
     },
   });
 
   return (
-    <Modal
-      open={client !== null}
-      title={client ? `Tashrif: ${client.name}` : 'Tashrif'}
-      onClose={onClose}
-    >
-      <div className="space-y-4">
-        <p className="text-sm text-gray-500">
-          GPS faqat shu tashrif uchun yoziladi.
-        </p>
+    <>
+      <Modal
+        open={client !== null && !showStatement}
+        title={client ? `Tashrif: ${client.name}` : 'Tashrif'}
+        onClose={onClose}
+      >
+        <div className="space-y-4">
+          {client && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn-brand flex flex-1 items-center justify-center gap-1.5 py-2.5 font-medium"
+                onClick={() => {
+                  onClose();
+                  void navigate(`/m/sale/new?client=${client.id}`);
+                }}
+              >
+                <ShoppingCart size={16} aria-hidden /> Sotuv qilish
+              </button>
+              <button
+                type="button"
+                className="btn flex flex-1 items-center justify-center gap-1.5 border border-brand py-2.5 text-brand hover:bg-brand/5"
+                onClick={() => setShowStatement(true)}
+              >
+                <FileText size={16} aria-hidden /> Akt-sverka
+              </button>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-500">
+            Tashrif natijasini belgilang (GPS shu lahzada yoziladi):
+          </p>
         <textarea
           className="field min-h-[80px] py-2"
           aria-label="Tashrif izohi"
@@ -89,5 +120,16 @@ export function CheckInSheet({
         </div>
       </div>
     </Modal>
-  );
+
+    {client && (
+      <Modal
+        open={showStatement}
+        title={`Akt-sverka: ${client.name}`}
+        onClose={() => setShowStatement(false)}
+      >
+        <ClientStatement clientId={client.id} />
+      </Modal>
+    )}
+  </>
+);
 }
