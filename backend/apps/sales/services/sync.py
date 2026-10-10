@@ -229,8 +229,16 @@ def _handle_expense(payload: dict, client_uuid: str | None, user) -> dict[str, A
 
 def _handle_order_create(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
     from apps.orders.services import OrderLine, create_order
+    from apps.sales.services.sale import _off_route, ensure_client_in_scope
 
-    client = Client.objects.get(pk=payload["client"])
+    client = Client.objects.select_related("route").get(pk=payload["client"])
+    ensure_client_in_scope(user, client)
+    if _off_route(user, client):
+        raise BusinessError(
+            message=f"«{client.name}» sizning marshrutingizda emas.",
+            code="CLIENT_NOT_ON_ROUTE",
+            details={"client_id": str(client.id)},
+        )
     products = {
         str(p.id): p
         for p in Product.objects.select_related("unit").filter(

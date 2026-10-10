@@ -33,14 +33,22 @@ class WarehouseSerializer(serializers.ModelSerializer):
     manager_name = serializers.CharField(
         source="manager.full_name", read_only=True, default=None
     )
+    opening_confirmed_by_name = serializers.CharField(
+        source="opening_confirmed_by.full_name", read_only=True, default=None
+    )
 
     class Meta:
         model = Warehouse
         fields = (
             "id", "name", "address", "phone", "is_active", "is_branch",
-            "manager", "manager_name", "created_at",
+            "manager", "manager_name", "is_opening_locked",
+            "opening_confirmed_at", "opening_confirmed_by", "opening_confirmed_by_name",
+            "created_at",
         )
-        read_only_fields = ("id", "created_at", "manager_name")
+        read_only_fields = (
+            "id", "created_at", "manager_name", "is_opening_locked",
+            "opening_confirmed_at", "opening_confirmed_by", "opening_confirmed_by_name",
+        )
 
 
 class SupplierSerializer(serializers.ModelSerializer):

@@ -113,10 +113,14 @@ def test_order_taker_sees_only_own_route_clients(taker_api, taker_route):
 
 
 @pytest.mark.django_db
-def test_order_taker_cannot_create_clients(taker_api, taker_route):
-    resp = taker_api.post("/api/v1/clients/", {"name": "Yangi"}, format="json")
+def test_order_taker_can_create_clients(taker_api, taker_route):
+    resp = taker_api.post(
+        "/api/v1/clients/",
+        {"name": "Yangi", "route": str(taker_route["my_route"].id)},
+        format="json",
+    )
+    assert resp.status_code == 201
 
-    assert resp.status_code == 403
 
 
 @pytest.mark.django_db
@@ -130,10 +134,8 @@ def test_order_taker_cannot_create_clients(taker_api, taker_route):
         ("get", "/api/v1/loadings/my-today/"),
         ("get", "/api/v1/van-stock/my/"),
         ("get", "/api/v1/day-close/"),
-        ("get", "/api/v1/debts/"),
         ("get", "/api/v1/debt-payments/"),
         ("get", "/api/v1/payrolls/"),
-        ("get", "/api/v1/stock/"),
         ("get", "/api/v1/users/"),
         ("get", "/api/v1/orders/my-to-deliver/"),
         ("get", "/api/v1/orders/for-loading/"),
@@ -144,6 +146,16 @@ def test_order_taker_is_denied_outside_orders(taker_api, method, url):
     resp = getattr(taker_api, method)(url, {}, format="json")
 
     assert resp.status_code == 403, (url, resp.status_code)
+
+
+@pytest.mark.django_db
+def test_order_taker_can_view_stock_and_debts(taker_api):
+    # Zakaz oluvchi ombor qoldig'i va o'z marshruti qarzdorlarini ko'ra oladi
+    stock_resp = taker_api.get("/api/v1/stock/")
+    assert stock_resp.status_code == 200
+
+    debts_resp = taker_api.get("/api/v1/debts/")
+    assert debts_resp.status_code == 200
 
 
 @pytest.mark.django_db
@@ -161,6 +173,15 @@ def test_order_taker_cannot_fulfill_or_approve(
 
     assert approve.status_code == 403
     assert fulfill.status_code == 403
+
+    # Lekin o'zining yangi olgan buyurtmasini bekor qila oladi
+    cancel_resp = taker_api.post(
+        f"/api/v1/orders/{order_id}/cancel/",
+        {"reason": "Mijoz rad etdi"},
+        format="json",
+    )
+    assert cancel_resp.status_code == 200
+    assert cancel_resp.data["data"]["status"] == "CANCELLED"
 
 
 @pytest.mark.django_db

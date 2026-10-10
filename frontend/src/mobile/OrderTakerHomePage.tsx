@@ -1,5 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, Coins, Plus, Store, type LucideIcon } from 'lucide-react';
+import {
+  ClipboardList,
+  Coins,
+  HandCoins,
+  MapPin,
+  Package,
+  Plus,
+  Store,
+  type LucideIcon,
+} from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +20,9 @@ import { useAuthStore } from '@/shared/store/authStore';
 const LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
   { to: '/m/orders', label: 'Buyurtmalarim', Icon: ClipboardList },
   { to: '/m/clients', label: 'Mijozlarim', Icon: Store },
+  { to: '/m/stock', label: 'Ombor qoldig‘i', Icon: Package },
+  { to: '/m/visits', label: 'Tashriflarim', Icon: MapPin },
+  { to: '/m/debts', label: 'Qarzdorlar', Icon: HandCoins },
   { to: '/m/payroll', label: 'Maoshim', Icon: Coins },
 ];
 

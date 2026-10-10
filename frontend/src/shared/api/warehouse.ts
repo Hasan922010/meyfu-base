@@ -49,6 +49,10 @@ export const warehouseApi = {
     quantity: string;
     note?: string;
   }) => postAction<StockMovement>('/stock/opening-balance/', body),
+  lockOpening: (warehouse: string) =>
+    postAction<Warehouse>('/stock/lock-opening/', { warehouse }),
+  unlockOpening: (warehouse: string) =>
+    postAction<Warehouse>('/stock/unlock-opening/', { warehouse }),
 
   purchases: (params?: QueryParams) => listPage<Purchase>('/purchases/', params),
   purchase: (id: string) => retrieve<Purchase>(`/purchases/${id}/`),

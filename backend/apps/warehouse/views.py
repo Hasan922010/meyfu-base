@@ -5,6 +5,7 @@ from uuid import UUID
 from django.db import transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, QuerySet, Sum
 from django.http import HttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -97,6 +98,13 @@ def _own_warehouse_id(user):
         return scope
     if getattr(user, "role", None) == Role.WAREHOUSE and not user.is_superuser:
         return user.warehouse_id
+    role = getattr(user, "role", None)
+    if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+        branch = staff_branch(user)
+        if branch is not None:
+            return branch.pk
+        if getattr(user, "warehouse_id", None):
+            return user.warehouse_id
     return None
 
 
@@ -170,9 +178,9 @@ class SupplierViewSet(BaseModelViewSet):
     central_only_write = True  # ta'minotchi — kompaniya ma'lumotnomasi (SEC-115)
     search_fields = ("name", "phone", "inn")
     action_roles = {
-        "opening_balance": (Role.SUPER_ADMIN,),
-        "opening_sheet": (Role.SUPER_ADMIN,),
-        "opening_balance_bulk": (Role.SUPER_ADMIN,),
+        "opening_balance": (Role.SUPER_ADMIN, Role.ACCOUNTANT),
+        "opening_sheet": (Role.SUPER_ADMIN, Role.ACCOUNTANT),
+        "opening_balance_bulk": (Role.SUPER_ADMIN, Role.ACCOUNTANT),
     }
 
     @extend_schema(
@@ -197,7 +205,7 @@ class SupplierViewSet(BaseModelViewSet):
         ))
 
     @extend_schema(
-        summary="Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)",
+        summary="Ta'minotchi boshlang'ich qoldig'i (SUPER_ADMIN va ACCOUNTANT)",
         request=SupplierOpeningBalanceSerializer,
         responses=SupplierTransactionSerializer,
     )
@@ -221,7 +229,7 @@ class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
         "warehouse__name", "product__name", "pk"
     )
     serializer_class = StockSerializer
-    read_roles = _WH_READ
+    read_roles = (*_WH_READ, Role.DISTRIBUTOR, Role.ORDER_TAKER)
     filterset_fields = ("warehouse", "product")
     search_fields = ("product__name", "product__sku")
     ordering_fields = ("quantity", "updated_at")
@@ -230,10 +238,19 @@ class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
         "opening_balance": _WH_WRITE,
         "opening_sheet": _WH_WRITE,
         "opening_balance_bulk": _WH_WRITE,
+        "lock_opening": (Role.MANAGER, Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
+        "unlock_opening": (Role.SUPER_ADMIN, Role.MANAGER, Role.BRANCH_MANAGER),
     }
 
     def get_queryset(self) -> QuerySet[Stock]:
         return self.scope_to_own(super().get_queryset())
+
+    def check_opening_not_locked(self, warehouse: Warehouse) -> None:
+        if warehouse.is_opening_locked:
+            raise BusinessError(
+                message="Ushbu ombor uchun boshlang'ich qoldiq admin tomonidan tasdiqlangan va uni o'zgartirib bo'lmaydi.",
+                code="OPENING_LOCKED",
+            )
 
     @extend_schema(
         summary="Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)",
@@ -256,14 +273,57 @@ class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
     def opening_balance_bulk(self, request: Request) -> Response:
         target = OpeningWarehouseSerializer(data=request.data)
         target.is_valid(raise_exception=True)
-        self.check_own_warehouse(target.validated_data["warehouse"])
+        warehouse = target.validated_data["warehouse"]
+        self.check_own_warehouse(warehouse)
+        self.check_opening_not_locked(warehouse)
         s = OpeningBulkSerializer(data=request.data, context={"non_negative": True})
         s.is_valid(raise_exception=True)
         return ok(stock_opening_bulk(
-            warehouse=target.validated_data["warehouse"],
+            warehouse=warehouse,
             rows=s.validated_data["rows"], note=s.validated_data["note"],
             user=request.user,
         ))
+
+    @extend_schema(
+        summary="Ombor boshlang'ich qoldig'ini tasdiqlash va qulflash (faqat ADMIN)",
+        request=OpeningWarehouseSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="lock-opening")
+    def lock_opening(self, request: Request) -> Response:
+        target = OpeningWarehouseSerializer(data=request.data)
+        target.is_valid(raise_exception=True)
+        warehouse = target.validated_data["warehouse"]
+        self.check_own_warehouse(warehouse)
+        warehouse.is_opening_locked = True
+        warehouse.opening_confirmed_at = timezone.now()
+        warehouse.opening_confirmed_by = request.user
+        warehouse.save(
+            update_fields=["is_opening_locked", "opening_confirmed_at", "opening_confirmed_by", "updated_at"]
+        )
+        write_audit(request, "warehouse.opening_locked", warehouse, {"is_opening_locked": [False, True]})
+        return ok(WarehouseSerializer(warehouse).data)
+
+    @extend_schema(
+        summary="Ombor boshlang'ich qoldig'ini qayta ochish (SUPER_ADMIN, MANAGER yoki filial rahbari)",
+        request=OpeningWarehouseSerializer,
+    )
+    @action(detail=False, methods=["post"], url_path="unlock-opening")
+    def unlock_opening(self, request: Request) -> Response:
+        allowed = (Role.SUPER_ADMIN, Role.MANAGER, Role.BRANCH_MANAGER)
+        if getattr(request.user, "role", None) not in allowed and not request.user.is_superuser:
+            raise BusinessError(message="Qayta ochishga ruxsat berilmagan.", code="PERMISSION_DENIED")
+        target = OpeningWarehouseSerializer(data=request.data)
+        target.is_valid(raise_exception=True)
+        warehouse = target.validated_data["warehouse"]
+        self.check_own_warehouse(warehouse)
+        warehouse.is_opening_locked = False
+        warehouse.opening_confirmed_at = None
+        warehouse.opening_confirmed_by = None
+        warehouse.save(
+            update_fields=["is_opening_locked", "opening_confirmed_at", "opening_confirmed_by", "updated_at"]
+        )
+        write_audit(request, "warehouse.opening_unlocked", warehouse, {"is_opening_locked": [True, False]})
+        return ok(WarehouseSerializer(warehouse).data)
 
     @extend_schema(summary="Kam qolgan tovarlar (min_stock_alert dan past)")
     @action(detail=False, methods=["get"], url_path="low")
@@ -284,9 +344,11 @@ class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
         s = StockOpeningBalanceSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
-        self.check_own_warehouse(data["warehouse"])
+        warehouse = data["warehouse"]
+        self.check_own_warehouse(warehouse)
+        self.check_opening_not_locked(warehouse)
         movement = apply_movement(
-            warehouse=data["warehouse"],
+            warehouse=warehouse,
             product=data["product"],
             quantity=data["quantity"],
             movement_type=MovementType.OPENING_BALANCE,
@@ -515,7 +577,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     write_roles = _WH_WRITE
     read_roles = _LOADING_READ
     action_roles = {
-        "confirm": (Role.DISTRIBUTOR, Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN),
+        "confirm": (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN),
         "my_today": _LOADING_READ,
     }
     filterset_fields = ("distributor", "warehouse", "status", "date")
@@ -558,10 +620,19 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     @action(detail=True, methods=["post"])
     def confirm(self, request: Request, pk: str | None = None) -> Response:
         loading = self.get_object()
-        if _is_distributor(request.user) and loading.distributor_id != request.user.id:
+        if _is_distributor(request.user):
+            if loading.distributor_id != request.user.id:
+                raise BusinessError(
+                    message="Bu yuklama sizga tegishli emas.",
+                    code="NOT_YOUR_LOADING", status_code=403,
+                )
+        elif not (
+            request.user.is_superuser
+            or getattr(request.user, "role", None) in (Role.MANAGER, Role.SUPER_ADMIN)
+        ):
             raise BusinessError(
-                message="Bu yuklama sizga tegishli emas.",
-                code="NOT_YOUR_LOADING", status_code=403,
+                message="Yuklamani faqat tayinlangan tarqatuvchi yoki rahbar tasdiqlashi mumkin.",
+                code="PERMISSION_DENIED", status_code=403,
             )
         loading = confirm_loading(loading, user=request.user)
         return ok(self.get_serializer(loading).data)

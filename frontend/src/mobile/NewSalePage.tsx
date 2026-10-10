@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft,
@@ -5,19 +6,23 @@ import {
   CalendarClock,
   CircleCheckBig,
   CreditCard,
+  RefreshCw,
   Split,
 } from 'lucide-react';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { saveSaleLocal } from '@/offline/actions';
 import { db } from '@/offline/db';
+import { pullVanStock } from '@/offline/sync';
 import { useSync } from '@/offline/useSync';
 import { usePrefetchedCoords } from '@/mobile/geo';
 import type { CartLine } from '@/mobile/lib/cart';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import { SaleProductList } from '@/mobile/SaleProductList';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
+import { clientsApi } from '@/shared/api/clients';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { useAuthStore } from '@/shared/store/authStore';
 import { dateTimeShort, money } from '@/shared/lib/format';
@@ -57,7 +62,60 @@ export function NewSalePage(): ReactElement {
   // Mijoz tanlanganda GPS boshlanadi — saqlash uni uzoq kutmaydi (UX m3)
   const coordsForSave = usePrefetchedCoords(clientId !== '');
 
-  const client = clients.find((c) => c.id === clientId);
+  const clientQuery = useQuery({
+    queryKey: ['client', clientId],
+    queryFn: async () => {
+      const fetched = await clientsApi.detail(clientId);
+      try {
+        await db.clients.put({
+          id: fetched.id,
+          name: fetched.name,
+          owner_name: fetched.owner_name,
+          phone: fetched.phone,
+          address: fetched.address,
+          route: fetched.route,
+          debt_limit: fetched.debt_limit,
+          current_debt: fetched.current_debt,
+          is_blocked: fetched.is_blocked,
+        });
+      } catch {
+        // ignore
+      }
+      return fetched;
+    },
+    enabled: Boolean(clientId) && !clients.find((c) => c.id === clientId) && online,
+  });
+
+  const client = clients.find((c) => c.id === clientId) ?? clientQuery.data;
+
+  // Sahifa ochilganda mashina qoldig'ini avtomatik yangilash
+  useEffect(() => {
+    if (online) {
+      void pullVanStock().catch(() => undefined);
+    }
+  }, [online]);
+
+  const [refreshingVan, setRefreshingVan] = useState(false);
+  async function handleRefreshVan(): Promise<void> {
+    setRefreshingVan(true);
+    try {
+      await pullVanStock();
+      toast.push({ kind: 'success', title: 'Mashina qoldig‘i yangilandi' });
+    } catch {
+      toast.push({ kind: 'danger', title: 'Qoldiqni yangilab bo‘lmadi' });
+    } finally {
+      setRefreshingVan(false);
+    }
+  }
+
+  // Tasdiqlanmagan yuklamalar (SENT) bormi?
+  const loadingsQuery = useQuery({
+    queryKey: ['loadings', 'my-today'],
+    queryFn: () => warehouseApi.myTodayLoadings(),
+    enabled: online,
+  });
+  const awaitingLoadings = (loadingsQuery.data ?? []).filter((l) => l.status === 'SENT');
+
   const total = useMemo(
     () => cart.reduce((s, l) => s + l.quantity * l.price, 0),
     [cart],
@@ -226,10 +284,42 @@ export function NewSalePage(): ReactElement {
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">
-              Mijoz: <span className="font-medium text-gray-900 dark:text-gray-100">{client?.name}</span>
+              Mijoz:{' '}
+              <span className="font-medium text-gray-900 dark:text-gray-100">
+                {client?.name || (clientQuery.isLoading ? 'Mijoz yuklanmoqda…' : '—')}
+              </span>
             </span>
             <button className="text-brand underline" onClick={() => setStep('client')}>
               Mijozni almashtirish
+            </button>
+          </div>
+
+          {awaitingLoadings.length > 0 && (
+            <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-warning-800 dark:text-warning-200">
+              <div className="font-semibold">⚠️ Tasdiqlanmagan yuklama mavjud!</div>
+              <div className="mt-0.5 text-gray-600 dark:text-gray-300">
+                Mashinaga tovar tushishi uchun ombor yuborgan yuklamani tasdiqlang.
+              </div>
+              <button
+                type="button"
+                onClick={() => void navigate('/m/loading')}
+                className="btn-brand mt-2 inline-block px-3 py-1 text-xs"
+              >
+                Yuklamalarga o‘tish →
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs text-gray-500">Mashinadagi tovarlar ({van.length})</span>
+            <button
+              type="button"
+              onClick={() => void handleRefreshVan()}
+              disabled={refreshingVan}
+              className="flex items-center gap-1 text-xs text-brand hover:underline"
+            >
+              <RefreshCw size={13} className={refreshingVan ? 'animate-spin' : ''} />
+              {refreshingVan ? 'Yangilanmoqda…' : 'Qoldiqni yangilash'}
             </button>
           </div>
 

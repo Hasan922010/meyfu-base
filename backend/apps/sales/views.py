@@ -14,6 +14,7 @@ from apps.clients.models import Client
 from apps.core.business_day import business_date
 from apps.core.formatting import fmt_money
 from apps.core.models import SyncLog
+from apps.core.permissions import is_order_taker
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
@@ -42,6 +43,7 @@ from .services import (
 
 _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
+_SALE_MANAGE = (*_ADMIN, Role.ACCOUNTANT)
 
 
 def _is_distributor(user) -> bool:
@@ -63,8 +65,8 @@ class SaleViewSet(BaseModelViewSet):
     read_roles = _READ
     write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)
     action_roles = {
-        "cancel": _ADMIN,
-        "resolve": _ADMIN,
+        "cancel": _SALE_MANAGE,
+        "resolve": _SALE_MANAGE,
         "bulk_sync": (Role.DISTRIBUTOR,),
         "my_today": _READ,
     }
@@ -209,7 +211,7 @@ class SaleViewSet(BaseModelViewSet):
 class DebtViewSet(BaseReadOnlyViewSet):
     serializer_class = DebtSerializer
     branch_lookup = "client__branch"
-    read_roles = _READ
+    read_roles = (*_READ, Role.ORDER_TAKER)
     filterset_fields = ("client", "status")
     search_fields = ("client__name", "sale__number")
     ordering_fields = ("created_at", "due_date", "remaining")
@@ -218,6 +220,8 @@ class DebtViewSet(BaseReadOnlyViewSet):
         qs = Debt.objects.select_related("client", "sale")
         if _is_distributor(self.request.user):
             return qs.filter(client__route__distributor=self.request.user)
+        if is_order_taker(self.request.user):
+            return qs.filter(client__route__order_taker=self.request.user)
         return qs
 
     @extend_schema(summary="Marshrutimdagi qarzdorlar")
@@ -226,11 +230,14 @@ class DebtViewSet(BaseReadOnlyViewSet):
         qs = (
             Debt.objects.select_related("client", "sale")
             .filter(
-                client__route__distributor=request.user,
                 status__in=["ACTIVE", "PARTIAL", "OVERDUE"],
             )
             .order_by("due_date")
         )
+        if _is_distributor(request.user):
+            qs = qs.filter(client__route__distributor=request.user)
+        elif is_order_taker(request.user):
+            qs = qs.filter(client__route__order_taker=request.user)
         return ok(DebtSerializer(qs, many=True).data)
 
 
@@ -275,7 +282,7 @@ class SaleReturnViewSet(BaseModelViewSet):
     serializer_class = SaleReturnSerializer
     branch_lookup = "branch"
     http_method_names = ["get", "post", "head", "options"]
-    read_roles = _READ
+    read_roles = (*_READ, Role.WAREHOUSE)
     write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)
     filterset_fields = ("distributor", "client", "reason")
     ordering_fields = ("date", "created_at")

@@ -50,9 +50,9 @@ class CashTransactionViewSet(
     branch_lookup = "account__branch"
     # Filial rahbari — faqat o'z filiali kassasining boshlang'ich qoldig'i
     action_roles = {
-        "opening_balance": (Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
-        "opening_sheet": (Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
-        "opening_balance_bulk": (Role.SUPER_ADMIN, Role.BRANCH_MANAGER),
+        "opening_balance": (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER),
+        "opening_sheet": (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER),
+        "opening_balance_bulk": (Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER),
     }
     filterset_fields = ("transaction_type", "date")
     ordering = ("-created_at",)

@@ -215,6 +215,7 @@ const router = createBrowserRouter([
       { path: 'orders', element: <MyOrdersPage /> },
       { path: 'order/new', element: <NewOrderPage /> },
       { path: 'sale', element: <NewSalePage /> },
+      { path: 'sale/new', element: <NewSalePage /> },
       { path: 'wallet', element: <WalletPage /> },
       { path: 'expenses', element: <MyExpensesPage /> },
       { path: 'expense/new', element: <NewExpensePage /> },

@@ -40,9 +40,15 @@ export function SaleProductList({
   const [search, setSearch] = useState<string>('');
   const [editing, setEditing] = useState<Editing>(null);
 
-  const rows = van.filter(
-    (v) => v.quantity > 0 && v.product_name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const q = search.trim().toLowerCase();
+  const normQ = q.replace(/[‘'’`]/g, "'");
+  const rows = van.filter((v) => {
+    if (v.quantity <= 0) return false;
+    if (!normQ) return true;
+    const name = (v.product_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+    const sku = (v.product_sku || '').toLowerCase();
+    return name.includes(normQ) || sku.includes(normQ);
+  });
 
   function emit(res: AddResult, unit: string): void {
     onChange(res.cart, res.clampedTo != null ? `Mashinada faqat ${res.clampedTo} ${unit} bor` : '');

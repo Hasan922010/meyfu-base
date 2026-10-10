@@ -218,3 +218,28 @@ def test_receipt_scan(auth_api):
 @pytest.mark.django_db
 def test_distributor_cannot_list_scans(auth_api):
     assert auth_api.get("/api/v1/invoice-scans/").status_code == 403
+
+
+@pytest.mark.django_db
+def test_edit_line_rejects_negative_quantity_and_price(manager_api, catalog, warehouse):
+    scan_id = _upload(
+        manager_api, warehouse["warehouse"], warehouse["supplier"]
+    ).data["data"]["id"]
+    line = InvoiceScanLine.objects.get(scan_id=scan_id, raw_name__icontains="XYZ")
+
+    resp1 = manager_api.patch(
+        f"/api/v1/invoice-scans/{scan_id}/lines/{line.id}/",
+        {"final_product": str(catalog["product"].id), "final_quantity": "-10", "final_price": "5000"},
+        format="json",
+    )
+    assert resp1.status_code == 400
+    assert "final_quantity" in resp1.data["error"]["details"]
+
+    resp2 = manager_api.patch(
+        f"/api/v1/invoice-scans/{scan_id}/lines/{line.id}/",
+        {"final_product": str(catalog["product"].id), "final_quantity": "10", "final_price": "-500"},
+        format="json",
+    )
+    assert resp2.status_code == 400
+    assert "final_price" in resp2.data["error"]["details"]
+

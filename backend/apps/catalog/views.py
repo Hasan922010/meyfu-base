@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
@@ -13,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.audit import diff_fields, write_audit
-from apps.core.branch import user_branch
+from apps.core.branch import branch_scope, ensure_same_branch, user_branch
 from apps.core.exceptions import BusinessError
 from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
@@ -93,12 +94,51 @@ class ProductViewSet(BaseModelViewSet):
     write_roles = _CATALOG_WRITE
     central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
     filterset_class = ProductFilter
-    search_fields = ("name", "sku", "barcode")
+    search_fields = (
+        "name",
+        "sku",
+        "barcode",
+        "category__name",
+        "brand__name",
+    )
     # Admin jadvalidagi har bir ustun (UI: shared/table)
     ordering_fields = (
         "name", "sku", "category__name", "retail_price", "wholesale_price", "min_price",
         "is_active", "created_at",
     )
+
+    def filter_queryset(self, queryset):
+        search_val = (
+            self.request.query_params.get("search")
+            or self.request.query_params.get("q")
+        )
+        if search_val:
+            val = search_val.strip()
+            apostrophes = ("\u2018", "\u2019", "`", "'")
+            clean = val
+            for a in apostrophes:
+                clean = clean.replace(a, "'")
+            variants = {clean, clean.replace("'", "\u2018"), clean.replace("'", "\u2019")}
+            q_filter = Q()
+            for var in variants:
+                q_filter |= (
+                    Q(name__icontains=var)
+                    | Q(sku__icontains=var)
+                    | Q(barcode__icontains=var)
+                    | Q(category__name__icontains=var)
+                    | Q(brand__name__icontains=var)
+                )
+            queryset = queryset.filter(q_filter)
+
+        original_backends = self.filter_backends
+        if search_val:
+            self.filter_backends = [
+                b for b in original_backends if getattr(b, "__name__", "") != "SearchFilter"
+            ]
+        try:
+            return super().filter_queryset(queryset)
+        finally:
+            self.filter_backends = original_backends
     action_roles = {
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
@@ -312,15 +352,26 @@ class BranchPriceViewSet(BaseModelViewSet):
     pagination_class = None
 
     def perform_create(self, serializer) -> None:
-        price = serializer.save(created_by=self.request.user)
+        user = self.request.user
+        branch = serializer.validated_data.get("branch")
+        if branch_scope(user) is not None:
+            ensure_same_branch(user, branch.pk if branch else None, "branch")
+        price = serializer.save(created_by=user)
         self._audit("branch_price.create", price, {})
 
     def perform_update(self, serializer) -> None:
+        user = self.request.user
+        branch = serializer.validated_data.get("branch", serializer.instance.branch)
+        if branch_scope(user) is not None:
+            ensure_same_branch(user, branch.pk if branch else None, "branch")
         before = {f: str(getattr(serializer.instance, f)) for f in PRICE_FIELDS}
         price = serializer.save()
         self._audit("branch_price.update", price, {"before": before})
 
     def perform_destroy(self, instance) -> None:
+        user = self.request.user
+        if branch_scope(user) is not None:
+            ensure_same_branch(user, instance.branch_id, "branch")
         self._audit("branch_price.delete", instance, {})
         instance.hard_delete()
 

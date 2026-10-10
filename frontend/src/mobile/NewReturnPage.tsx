@@ -137,9 +137,14 @@ export function NewReturnPage(): ReactElement {
     );
   }
 
-  const shown = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()),
-  );
+  const productQ = productSearch.trim().toLowerCase().replace(/[‘'’`]/g, "'");
+  const shown = products.filter((p) => {
+    if (!productQ) return true;
+    const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+    const sku = (p.sku || '').toLowerCase();
+    const barcode = (p.barcode || '').toLowerCase();
+    return name.includes(productQ) || sku.includes(productQ) || barcode.includes(productQ);
+  });
 
   return (
     <div className="space-y-4">

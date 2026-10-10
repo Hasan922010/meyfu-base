@@ -17,6 +17,7 @@ interface Props {
   rules: GridRules;
   /** Ishora ma'nosi va cheklovlar — foydalanuvchiga tushuntirish */
   hint: string;
+  locked?: boolean;
   onSaved?: () => void;
 }
 
@@ -43,6 +44,7 @@ export function BalanceGrid({
   valueKind = 'money',
   rules,
   hint,
+  locked = false,
   onSaved,
 }: Props): ReactElement {
   const qc = useQueryClient();
@@ -86,6 +88,11 @@ export function BalanceGrid({
 
   return (
     <div className="space-y-3">
+      {locked && (
+        <div className="flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm text-warning-800 dark:text-warning-200">
+          <span>🔒 Ushbu ombor uchun boshlang'ich qoldiq admin tomonidan tasdiqlangan va o'zgartirish uchun yopilgan.</span>
+        </div>
+      )}
       <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800">
         {hint}
       </p>
@@ -131,11 +138,12 @@ export function BalanceGrid({
                     <td className="p-3 text-right">{fmt(row.current)}</td>
                     <td className="p-3 text-right">
                       <input
-                        className={`field ml-auto w-36 text-right ${issue ? 'border-danger' : ''}`}
+                        className={`field ml-auto w-36 text-right ${issue ? 'border-danger' : ''} ${locked ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-800' : ''}`}
                         inputMode="decimal"
                         data-opening-target
                         aria-label={`${row.name} — yangi qoldiq`}
                         aria-invalid={issue !== null}
+                        disabled={locked}
                         placeholder="—"
                         value={draft}
                         onChange={(e) =>
@@ -167,13 +175,14 @@ export function BalanceGrid({
           className="field max-w-xs"
           placeholder="Izoh (ixtiyoriy)"
           aria-label="Izoh"
+          disabled={locked}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
         <span className="text-sm text-gray-500">O'zgargan: {changes.length} ta</span>
         <button
           className="btn-brand px-6"
-          disabled={changes.length === 0 || blocked || mutation.isPending}
+          disabled={locked || changes.length === 0 || blocked || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
           Saqlash

@@ -23,6 +23,8 @@ export const PERMISSIONS = {
   payrollManage: ['SUPER_ADMIN', 'ACCOUNTANT'],
   /** payroll/views.py approve, CommissionRuleViewSet */
   payrollApprove: ['SUPER_ADMIN'],
+  /** catalog/views.py BranchPriceViewSet */
+  branchPriceWrite: ['SUPER_ADMIN', 'BRANCH_MANAGER'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

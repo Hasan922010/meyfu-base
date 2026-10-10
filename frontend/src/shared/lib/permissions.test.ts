@@ -11,6 +11,9 @@ describe('can (audit K3b)', () => {
     expect(can('MANAGER', 'payrollManage')).toBe(false);
     expect(can('ACCOUNTANT', 'payrollApprove')).toBe(false);
     expect(can('SUPER_ADMIN', 'payrollApprove')).toBe(true);
+    expect(can('BRANCH_MANAGER', 'branchPriceWrite')).toBe(true);
+    expect(can('SUPER_ADMIN', 'branchPriceWrite')).toBe(true);
+    expect(can('ACCOUNTANT', 'branchPriceWrite')).toBe(false);
   });
 
   it('rol noma’lum bo‘lsa ruxsat yo‘q', () => {

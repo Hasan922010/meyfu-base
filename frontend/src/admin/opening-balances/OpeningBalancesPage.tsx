@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   useContext,
@@ -14,6 +14,7 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money, qty } from '@/shared/lib/format';
 import { ROLE_LABELS } from '@/shared/lib/labels';
+import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role } from '@/shared/types/api';
 
@@ -167,6 +168,9 @@ function HistoryTable({
 
 function ProductsTab(): ReactElement {
   const qc = useQueryClient();
+  const toast = useToast();
+  const role = useAuthStore((s) => s.user?.role);
+  const isAdmin = role === 'SUPER_ADMIN' || role === 'MANAGER';
   const [warehouse, setWarehouse] = useState<string>('');
 
   const warehouses = useQuery({
@@ -183,31 +187,99 @@ function ProductsTab(): ReactElement {
       }),
   });
 
+  const selectedWh = warehouses.data?.results.find((w) => w.id === warehouse);
+  const isLocked = Boolean(selectedWh?.is_opening_locked);
+
+  const lockMutation = useMutation({
+    mutationFn: () => warehouseApi.lockOpening(warehouse),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['warehouses'] });
+      toast.push({ kind: 'success', title: 'Boshlang‘ich qoldiq tasdiqlandi va qulflandi' });
+    },
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: () => warehouseApi.unlockOpening(warehouse),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['warehouses'] });
+      toast.push({ kind: 'success', title: 'Boshlang‘ich qoldiq qayta ochildi' });
+    },
+  });
+
   return (
     <div className="space-y-4">
       <WriteGate>
         <div className="space-y-3">
-          <label className="block max-w-xs space-y-1">
-            <span className="text-sm font-medium">Ombor</span>
-            <select
-              className="field"
-              value={warehouse}
-              onChange={(e) => setWarehouse(e.target.value)}
-            >
-              <option value="">— tanlang —</option>
-              {warehouses.data?.results.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <label className="block max-w-xs flex-1 space-y-1">
+              <span className="text-sm font-medium">Ombor</span>
+              <select
+                className="field"
+                value={warehouse}
+                onChange={(e) => setWarehouse(e.target.value)}
+              >
+                <option value="">— tanlang —</option>
+                {warehouses.data?.results.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} {w.is_opening_locked ? '🔒 (yopilgan)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {warehouse && selectedWh && (
+              <div className="flex items-center gap-2 pb-0.5">
+                {isLocked ? (
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-lg bg-success/10 px-3 py-1.5 text-xs font-semibold text-success">
+                      ✅ Admin tasdiqlagan {selectedWh.opening_confirmed_at ? `(${dateShort(selectedWh.opening_confirmed_at)})` : ''}
+                    </span>
+                    {role === 'SUPER_ADMIN' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("Boshlang'ich qoldiqni qayta ochishni xohlaysizmi?")) {
+                            unlockMutation.mutate();
+                          }
+                        }}
+                        disabled={unlockMutation.isPending}
+                        className="btn px-2.5 py-1 text-xs text-danger hover:bg-danger/10"
+                      >
+                        Qayta ochish
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Boshlang'ich qoldiqni tasdiqlaysizmi? Tasdiqlangandan so'ng bosh qoldiqni o'zgartirish bekor bo'ladi."
+                          )
+                        ) {
+                          lockMutation.mutate();
+                        }
+                      }}
+                      disabled={lockMutation.isPending}
+                      className="btn-brand flex items-center gap-1 px-3 py-1.5 text-xs font-medium"
+                    >
+                      🔒 Boshlang'ich qoldiqni tasdiqlash
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
           {/* key — ombor almashsa kiritilganlar boshqa omborga o'tib ketmasin */}
           <BalanceGrid
             key={warehouse}
             kind="stock"
             warehouse={warehouse}
             valueKind="qty"
+            locked={isLocked}
             rules={{ allowNegative: false, increaseOnly: false }}
             hint="Ombordagi barcha tovarlar ro'yxati. Haqiqiy miqdorni yozing — farq boshlang'ich qoldiq sifatida yoziladi."
             onSaved={() => {

@@ -42,9 +42,11 @@ export function hasIssues(
 }
 
 export function searchRows(rows: OpeningSheetRow[], search: string): OpeningSheetRow[] {
-  const needle = search.trim().toLowerCase();
+  const needle = search.trim().toLowerCase().replace(/[‘'’`]/g, "'");
   if (!needle) return rows;
-  return rows.filter(
-    (row) => row.name.toLowerCase().includes(needle) || row.code.toLowerCase().includes(needle),
-  );
+  return rows.filter((row) => {
+    const name = (row.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+    const code = (row.code || '').toLowerCase();
+    return name.includes(needle) || code.includes(needle);
+  });
 }

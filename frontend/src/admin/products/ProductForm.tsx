@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { catalogApi } from '@/shared/api/catalog';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
-import { plainQty } from '@/shared/lib/format';
+import { money, plainQty } from '@/shared/lib/format';
 import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
@@ -88,7 +88,7 @@ function ProductFormFields({
   const canEditPrice = !product || role === 'SUPER_ADMIN';
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const { register, control, handleSubmit, setError, formState } = useForm<ProductInput>({
+  const { register, control, handleSubmit, setError, formState, watch } = useForm<ProductInput>({
     defaultValues: product
       ? {
           name: product.name,
@@ -244,20 +244,87 @@ function ProductFormFields({
         </p>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        <label className="block space-y-1">
-          <span className="text-sm">Qadoq soni</span>
-          <input className="field" type="number" step="0.001" {...register('pack_quantity')} />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Kam qoldiq</span>
-          <input className="field" type="number" step="0.001" {...register('min_stock_alert')} />
-        </label>
-        <label className="flex items-center gap-2 pt-6">
-          <input type="checkbox" {...register('is_active')} />
-          <span className="text-sm">Faol</span>
-        </label>
-      </div>
+      {(() => {
+        const selectedUnitId = watch('unit');
+        const selectedUnit = units.find((u) => u.id === selectedUnitId);
+        const costPrice = watch('cost_price');
+        const packQuantity = watch('pack_quantity');
+        const packQtyNum = parseInt(String(packQuantity || '0'), 10);
+        const costPriceNum = Number(costPrice || 0);
+        const boxCost = packQtyNum * costPriceNum;
+
+        const unitText = (selectedUnit?.name || selectedUnit?.short_name || '').toLowerCase();
+        const isBag =
+          unitText.includes('kg') ||
+          unitText.includes('kilo') ||
+          unitText.includes('xalta') ||
+          unitText.includes('qop');
+
+        return (
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-3">
+              <label className="block space-y-1">
+                <span className="text-sm">Qadoq soni</span>
+                <input
+                  className="field"
+                  type="number"
+                  step="1"
+                  min="1"
+                  onKeyDown={(e) => {
+                    if (e.key === '.' || e.key === ',') e.preventDefault();
+                  }}
+                  {...register('pack_quantity', {
+                    validate: (v) =>
+                      !v || Number.isInteger(Number(v)) || 'Butun son kiriting',
+                  })}
+                />
+                {formState.errors.pack_quantity?.message && (
+                  <span className="text-xs text-danger">
+                    {formState.errors.pack_quantity.message}
+                  </span>
+                )}
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Kam qoldiq</span>
+                <input
+                  className="field"
+                  type="number"
+                  step="1"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '.' || e.key === ',') e.preventDefault();
+                  }}
+                  {...register('min_stock_alert', {
+                    validate: (v) =>
+                      !v || Number.isInteger(Number(v)) || 'Butun son kiriting',
+                  })}
+                />
+                {formState.errors.min_stock_alert?.message && (
+                  <span className="text-xs text-danger">
+                    {formState.errors.min_stock_alert.message}
+                  </span>
+                )}
+              </label>
+              <label className="flex items-center gap-2 pt-6">
+                <input type="checkbox" {...register('is_active')} />
+                <span className="text-sm">Faol</span>
+              </label>
+            </div>
+
+            {packQtyNum > 0 && costPriceNum > 0 && (
+              <div className="rounded-lg border border-brand/30 bg-brand/5 p-2.5 text-xs text-brand-700 dark:text-brand-300">
+                <span className="font-semibold">
+                  {isBag ? '🛍️ 1 xalta narxi:' : '📦 1 quti narxi:'}
+                </span>{' '}
+                <span className="text-sm font-bold text-brand">{money(boxCost)}</span>{' '}
+                <span className="text-gray-500">
+                  ({packQtyNum} {selectedUnit?.short_name || 'dona'} × {money(costPriceNum)})
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {product ? (
         <ProductImages productId={product.id} />

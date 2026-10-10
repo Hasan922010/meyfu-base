@@ -44,6 +44,7 @@ _MANAGE = (Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
 # Zakaz oluvchi — faqat marshrut va mijozlarni o'qiydi (tashrif/yozish yo'q)
 _CLIENTS_READ = (*_READ, Role.ORDER_TAKER)
+_CLIENTS_CREATE = (*_MANAGE, Role.DISTRIBUTOR, Role.ORDER_TAKER)
 
 
 def _is_distributor(user) -> bool:
@@ -151,9 +152,12 @@ class RouteViewSet(BaseModelViewSet):
 _AUDITED_CLIENT_FIELDS = ("is_blocked", "debt_limit", "branch", "route")
 
 
+_CLIENTS_WRITE = (*_MANAGE, Role.DISTRIBUTOR, Role.ORDER_TAKER)
+
+
 class ClientViewSet(BaseModelViewSet):
     serializer_class = ClientSerializer
-    write_roles = _MANAGE
+    write_roles = _CLIENTS_WRITE
     read_roles = _CLIENTS_READ
     filterset_fields = ("route", "client_type", "is_blocked")
     search_fields = ("name", "owner_name", "phone", "phone2", "inn")
@@ -163,10 +167,11 @@ class ClientViewSet(BaseModelViewSet):
         "debt_limit", "is_blocked", "created_at",
     )
     action_roles = {
-        "opening_balance": _MANAGE,
-        "opening_sheet": _MANAGE,
-        "opening_balance_bulk": _MANAGE,
-        "statement": _READ,
+        "create": _CLIENTS_CREATE,
+        "opening_balance": (*_MANAGE, Role.ACCOUNTANT),
+        "opening_sheet": (*_MANAGE, Role.ACCOUNTANT),
+        "opening_balance_bulk": (*_MANAGE, Role.ACCOUNTANT),
+        "statement": _CLIENTS_READ,
     }
     branch_lookup = "branch"
 
@@ -190,9 +195,57 @@ class ClientViewSet(BaseModelViewSet):
         serializer.save(**extra)
 
     def perform_create(self, serializer) -> None:
+        user = self.request.user
+        role = getattr(user, "role", None)
+        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+            route = serializer.validated_data.get("route")
+            if route is None:
+                own_filter = _own_routes(user)
+                own_qs = Route.objects.filter(own_filter, is_active=True) if own_filter else Route.objects.none()
+                if own_qs.count() == 1:
+                    serializer.validated_data["route"] = own_qs.first()
+                else:
+                    raise BusinessError(
+                        message="Marshrutingizni tanlang.",
+                        code="ROUTE_REQUIRED",
+                    )
+            else:
+                if role == Role.DISTRIBUTOR and route.distributor_id != user.id:
+                    raise BusinessError(
+                        message="Faqat o'zingizga biriktirilgan marshrutga mijoz qo'shishingiz mumkin.",
+                        code="PERMISSION_DENIED",
+                    )
+                if role == Role.ORDER_TAKER and route.order_taker_id != user.id:
+                    raise BusinessError(
+                        message="Faqat o'zingizga biriktirilgan marshrutga mijoz qo'shishingiz mumkin.",
+                        code="PERMISSION_DENIED",
+                    )
         self._save_in_branch(serializer, created_by=self.request.user)
 
     def perform_update(self, serializer) -> None:
+        user = self.request.user
+        role = getattr(user, "role", None)
+        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+            instance = serializer.instance
+            if role == Role.DISTRIBUTOR and (not instance.route or instance.route.distributor_id != user.id):
+                raise BusinessError(
+                    message="Faqat o'zingizga biriktirilgan marshrutdagi mijozni tahrirlashingiz mumkin.",
+                    code="PERMISSION_DENIED",
+                    status_code=403,
+                )
+            if role == Role.ORDER_TAKER and (not instance.route or instance.route.order_taker_id != user.id):
+                raise BusinessError(
+                    message="Faqat o'zingizga biriktirilgan marshrutdagi mijozni tahrirlashingiz mumkin.",
+                    code="PERMISSION_DENIED",
+                    status_code=403,
+                )
+            for field in ("debt_limit", "is_blocked", "branch", "route"):
+                if field in serializer.validated_data and serializer.validated_data[field] != getattr(instance, field):
+                    raise BusinessError(
+                        message=f"{field} maydonini o'zgartirishga ruxsat yo'q.",
+                        code="PERMISSION_DENIED",
+                        status_code=403,
+                    )
         # bloklash va qarz limiti — CLAUDE.md 5.3 bo'yicha audit (BE-112)
         changes = diff_fields(
             serializer.instance, _AUDITED_CLIENT_FIELDS, serializer.validated_data
@@ -202,6 +255,13 @@ class ClientViewSet(BaseModelViewSet):
             write_audit(self.request, "client.updated", serializer.instance, changes)
 
     def perform_destroy(self, instance) -> None:
+        user = self.request.user
+        if getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+            raise BusinessError(
+                message="Mijozni o'chirishga ruxsat yo'q.",
+                code="PERMISSION_DENIED",
+                status_code=403,
+            )
         write_audit(self.request, "client.deleted", instance, {"name": instance.name})
         super().perform_destroy(instance)
 
@@ -317,23 +377,36 @@ class ClientVisitViewSet(
 ):
     serializer_class = ClientVisitSerializer
     permission_classes = [IsAuthenticated, RolePermission]
-    read_roles = _READ
-    write_roles = (Role.DISTRIBUTOR,)
+    read_roles = _CLIENTS_READ
+    write_roles = (Role.DISTRIBUTOR, Role.ORDER_TAKER)
     branch_lookup = "distributor__warehouse"
     filterset_fields = ("client", "result")
     ordering = ("-checked_in_at",)
 
     def get_queryset(self) -> QuerySet[ClientVisit]:
         qs = ClientVisit.objects.select_related("client", "distributor")
-        if _is_distributor(self.request.user):
-            return qs.filter(distributor=self.request.user)
+        user = self.request.user
+        if _is_distributor(user) or is_order_taker(user):
+            return qs.filter(distributor=user)
         return qs
 
     def perform_create(self, serializer: ClientVisitSerializer) -> None:
         client = serializer.validated_data["client"]
-        if _is_distributor(self.request.user) and (
+        user = self.request.user
+        from apps.sales.services.sale import ensure_client_in_scope
+        ensure_client_in_scope(user, client)
+        if _is_distributor(user) and (
             client.route_id is None
-            or client.route.distributor_id != self.request.user.id
+            or client.route.distributor_id != user.id
+        ):
+            raise BusinessError(
+                message="Bu mijoz sizning marshrutingizda emas.",
+                code="CLIENT_NOT_ON_ROUTE",
+                status_code=403,
+            )
+        if is_order_taker(user) and (
+            client.route_id is None
+            or client.route.order_taker_id != user.id
         ):
             raise BusinessError(
                 message="Bu mijoz sizning marshrutingizda emas.",
@@ -341,8 +414,8 @@ class ClientVisitViewSet(
                 status_code=403,
             )
         serializer.save(
-            distributor=self.request.user,
-            created_by=self.request.user,
+            distributor=user,
+            created_by=user,
             checked_in_at=serializer.validated_data.get("checked_in_at")
             or timezone.now(),
         )

@@ -197,3 +197,20 @@ def test_my_today_hides_old_confirmed_loadings(auth_api, stocked, distributor):
     resp = auth_api.get("/api/v1/loadings/my-today/")
 
     assert old.number not in [row["number"] for row in resp.data["data"]]
+
+
+@pytest.mark.django_db
+def test_warehouse_operator_cannot_confirm_loading(stocked, distributor):
+    wh, prod = stocked["warehouse"], stocked["product"]
+    loading = _make_loading(distributor, wh, prod)
+    send_loading(loading)
+
+    from tests.conftest import User, _bearer
+    User.objects.create_user(
+        phone="+998901239999", password="pass12345", full_name="Omborchi Test",
+        role="WAREHOUSE", warehouse=wh,
+    )
+    wh_api = _bearer("+998901239999")
+    resp = wh_api.post(f"/api/v1/loadings/{loading.id}/confirm/")
+    assert resp.status_code == 403
+

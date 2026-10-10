@@ -101,3 +101,28 @@ def test_patch_checks_min_price_against_stored_retail(admin_api, catalog):
     assert resp.status_code == 400
     product.refresh_from_db()
     assert product.min_price <= product.retail_price
+
+
+@pytest.mark.django_db
+def test_product_search_by_category_and_brand_and_q(manager_api, catalog):
+    # Search by category name
+    resp_cat = manager_api.get("/api/v1/products/?search=Kir yuvish")
+    assert resp_cat.status_code == 200
+    assert resp_cat.data["data"]["count"] == 1
+    assert resp_cat.data["data"]["results"][0]["sku"] == "PWD-3KG"
+
+    # Search by brand name
+    resp_b = manager_api.get("/api/v1/products/?search=Test Brand")
+    assert resp_b.status_code == 200
+    assert resp_b.data["data"]["count"] == 1
+
+    # Search by q param
+    resp_q = manager_api.get("/api/v1/products/?q=kukun")
+    assert resp_q.status_code == 200
+    assert resp_q.data["data"]["count"] == 1
+
+    # Search with no match
+    resp_nomatch = manager_api.get("/api/v1/products/?search=topilmaydigan_narsa")
+    assert resp_nomatch.status_code == 200
+    assert resp_nomatch.data["data"]["count"] == 0
+

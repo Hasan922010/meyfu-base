@@ -59,14 +59,23 @@ export function MobileReceivePage(): ReactElement {
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
+    const normQ = q.replace(/[‘'’`]/g, "'");
     return (products.data?.results ?? [])
-      .filter(
-        (p) =>
-          !chosen.has(p.id) &&
-          (p.name.toLowerCase().includes(q) ||
-            p.sku.toLowerCase().includes(q) ||
-            p.barcode.toLowerCase().includes(q)),
-      )
+      .filter((p) => {
+        if (chosen.has(p.id)) return false;
+        const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        const sku = (p.sku || '').toLowerCase();
+        const barcode = (p.barcode || '').toLowerCase();
+        const category = (p.category_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        const brand = (p.brand_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        return (
+          name.includes(normQ) ||
+          sku.includes(normQ) ||
+          barcode.includes(normQ) ||
+          category.includes(normQ) ||
+          brand.includes(normQ)
+        );
+      })
       .slice(0, 8);
   }, [products.data, search, chosen]);
 
@@ -178,44 +187,60 @@ export function MobileReceivePage(): ReactElement {
           aria-hidden
         />
         <input
-          className="field pl-9"
+          className="field pl-9 pr-8"
           placeholder="Mahsulot qidirish — nom, SKU, shtrix-kod"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {results.length > 0 && (
+        {search && (
+          <button
+            type="button"
+            className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+            onClick={() => setSearch('')}
+            aria-label="Tozalash"
+          >
+            <X size={16} />
+          </button>
+        )}
+        {search.trim() !== '' && (
           <ul className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-            {results.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => {
-                    setRows((prev) => [
-                      ...prev,
-                      {
-                        product: p.id,
-                        name: p.name,
-                        unit: p.unit_name,
-                        quantity: '1',
-                        price: p.cost_price
-                          ? String(Math.round(Number(p.cost_price)))
-                          : '',
-                      },
-                    ]);
-                    setSearch('');
-                  }}
-                >
-                  <span>
-                    {p.name}
-                    <span className="ml-1 text-xs text-gray-400">{p.sku}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-gray-400">
-                    {money(p.cost_price)}
-                  </span>
-                </button>
+            {results.length > 0 ? (
+              results.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => {
+                      setRows((prev) => [
+                        ...prev,
+                        {
+                          product: p.id,
+                          name: p.name,
+                          unit: p.unit_name,
+                          quantity: '1',
+                          price: p.cost_price
+                            ? String(Math.round(Number(p.cost_price)))
+                            : '',
+                        },
+                      ]);
+                      setSearch('');
+                    }}
+                  >
+                    <span>
+                      {p.name}
+                      <span className="ml-1 text-xs text-gray-400">{p.sku}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-gray-400">
+                      {money(p.cost_price)}
+                    </span>
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="px-3 py-4 text-center text-xs text-gray-400">
+                Mahsulot topilmadi
               </li>
-            ))}
+            )}
           </ul>
         )}
       </div>

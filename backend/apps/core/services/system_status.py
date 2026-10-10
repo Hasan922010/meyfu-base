@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import shutil
 import time
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 from django.conf import settings

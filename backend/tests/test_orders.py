@@ -5,11 +5,11 @@ legacy fallback, bekor qilish, rol ruxsatlari.
 """
 from __future__ import annotations
 
-import datetime
 from decimal import Decimal
 
 import pytest
 
+from apps.core.business_day import business_date
 from apps.orders.constants import OrderStatus
 from apps.orders.models import Order
 from apps.orders.services import (
@@ -20,8 +20,6 @@ from apps.orders.services import (
 )
 from apps.orders.services.order import FulfillLine
 from apps.payroll.services import calculate_payroll, payroll_matches_formula
-
-from apps.core.business_day import business_date
 
 DAY = business_date()
 PERIOD = DAY.replace(day=1)
@@ -438,3 +436,22 @@ def test_fulfill_distributor_override_ignored_for_distributor(
     sale = Sale.objects.get(order_id=order_id)
     assert sale.distributor_id == distributor.id
     assert sale.distributor_id != routed_clients["other_distributor"].id
+
+
+@pytest.mark.django_db
+def test_distributor_cannot_order_for_client_off_own_route(
+    auth_api, van_stocked, routed_clients
+):
+    product = _product(van_stocked["product"])
+    resp = auth_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(routed_clients["other_client"].id),
+            "items": [{"product": str(product.id), "quantity": "5", "price": "27000"}],
+            "payment_intent": "NAQD",
+        },
+        format="json",
+    )
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
+

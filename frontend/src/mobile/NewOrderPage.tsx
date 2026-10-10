@@ -62,12 +62,15 @@ export function NewOrderPage(): ReactElement {
   const filteredClients = clients.filter((c) =>
     c.name.toLowerCase().includes(clientSearch.toLowerCase()),
   );
-  const filteredProducts = products.filter(
-    (p) =>
-      p.is_active &&
-      (p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        p.sku.toLowerCase().includes(productSearch.toLowerCase())),
-  );
+  const productQ = productSearch.trim().toLowerCase().replace(/[‘'’`]/g, "'");
+  const filteredProducts = products.filter((p) => {
+    if (!p.is_active) return false;
+    if (!productQ) return true;
+    const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+    const sku = (p.sku || '').toLowerCase();
+    const barcode = (p.barcode || '').toLowerCase();
+    return name.includes(productQ) || sku.includes(productQ) || barcode.includes(productQ);
+  });
 
   function suggestedPrice(productId: string): string {
     return products.find((x) => x.id === productId)?.wholesale_price ?? '';

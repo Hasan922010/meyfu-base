@@ -93,11 +93,31 @@ def test_distributor_sees_only_own_route_clients(auth_api, routed_clients):
 
 
 @pytest.mark.django_db
-def test_distributor_cannot_create_client(auth_api, routed_clients):
+def test_distributor_can_create_client_in_own_route(auth_api, routed_clients):
+    # O'z marshrutiga mijoz qo'shishi mumkin
     resp = auth_api.post(
-        "/api/v1/clients/", {"name": "hack"}, format="json"
+        "/api/v1/clients/",
+        {
+            "name": "Yangi Do'kon",
+            "phone": "+998901112233",
+            "route": str(routed_clients["my_route"].id),
+        },
+        format="json",
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 201
+
+    # Begona marshrutga qo'shish rad etiladi
+    other_route = routed_clients["other_client"].route
+    resp_other = auth_api.post(
+        "/api/v1/clients/",
+        {
+            "name": "Begona Do'kon",
+            "phone": "+998909998877",
+            "route": str(other_route.id),
+        },
+        format="json",
+    )
+    assert resp_other.status_code == 409
 
 
 @pytest.mark.django_db

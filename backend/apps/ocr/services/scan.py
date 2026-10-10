@@ -208,9 +208,22 @@ def confirm_scan(scan_id: str, user=None) -> InvoiceScan:
         raise BusinessError(message="Yetkazib beruvchi tanlanmagan.",
                             code="SUPPLIER_REQUIRED")
 
+    for ln in scan.lines.select_related("final_product"):
+        if ln.final_quantity is not None and ln.final_quantity <= _ZERO:
+            raise BusinessError(
+                message=f"«{ln.raw_name or ln.line_number}» miqdori noldan katta bo'lishi kerak.",
+                code="INVALID_QUANTITY",
+            )
+        if ln.final_price is not None and ln.final_price < _ZERO:
+            raise BusinessError(
+                message=f"«{ln.raw_name or ln.line_number}» narxi manfiy bo'lishi mumkin emas.",
+                code="INVALID_PRICE",
+            )
+
     usable = [
         ln for ln in scan.lines.select_related("final_product")
-        if ln.final_product_id and ln.final_quantity and ln.final_price is not None
+        if ln.final_product_id and ln.final_quantity and ln.final_quantity > _ZERO
+        and ln.final_price is not None and ln.final_price >= _ZERO
     ]
     if not usable:
         raise BusinessError(

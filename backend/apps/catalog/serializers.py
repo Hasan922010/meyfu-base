@@ -177,6 +177,16 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
     def get_image_thumb(self, obj: Product) -> str | None:
         return _primary_thumb_url(obj, self.context)
 
+    def validate_pack_quantity(self, value):
+        if value is not None and value % 1 != 0:
+            raise serializers.ValidationError("Qadoqdagi soni butun son bo'lishi kerak.")
+        return value
+
+    def validate_min_stock_alert(self, value):
+        if value is not None and value % 1 != 0:
+            raise serializers.ValidationError("Kam qoldiq butun son bo'lishi kerak.")
+        return value
+
     def validate(self, attrs: dict) -> dict:
         if (
             attrs.get("initial_stock_quantity")

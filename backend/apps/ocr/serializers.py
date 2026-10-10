@@ -1,4 +1,4 @@
-from __future__ import annotations
+from decimal import Decimal
 
 from rest_framework import serializers
 
@@ -46,6 +46,15 @@ class InvoiceScanLineSerializer(serializers.ModelSerializer):
 
 
 class InvoiceScanLineUpdateSerializer(serializers.ModelSerializer):
+    final_quantity = serializers.DecimalField(
+        max_digits=14, decimal_places=3, min_value=Decimal("0.001"),
+        required=False, allow_null=True
+    )
+    final_price = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0.00"),
+        required=False, allow_null=True
+    )
+
     class Meta:
         model = InvoiceScanLine
         fields = ("final_product", "final_quantity", "final_price")

@@ -261,3 +261,33 @@ def test_stock_list_has_stable_order(manager_api, stocked):
         warnings.simplefilter("error", UnorderedObjectListWarning)
         resp = manager_api.get("/api/v1/stock/")
     assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_admin_lock_opening_balance_blocks_further_changes(manager_api, warehouse, catalog):
+    wh, prod = warehouse["warehouse"], catalog["product"]
+    # 1. Boshlang'ich qoldiq kiritamiz
+    resp = manager_api.post(
+        "/api/v1/stock/opening-balance/",
+        {"warehouse": str(wh.id), "product": str(prod.id), "quantity": "100"},
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    # 2. Admin boshlang'ich qoldiqni tasdiqlaydi va qulflaydi
+    lock_resp = manager_api.post(
+        "/api/v1/stock/lock-opening/",
+        {"warehouse": str(wh.id)},
+        format="json",
+    )
+    assert lock_resp.status_code == 200
+    assert lock_resp.data["data"]["is_opening_locked"] is True
+
+    # 3. Tasdiqlangandan keyin qayta kiritish yoki o'zgartirish urinishi bloklanadi (409)
+    blocked_resp = manager_api.post(
+        "/api/v1/stock/opening-balance/",
+        {"warehouse": str(wh.id), "product": str(prod.id), "quantity": "150"},
+        format="json",
+    )
+    assert blocked_resp.status_code == 409
+    assert blocked_resp.data["error"]["code"] == "OPENING_LOCKED"

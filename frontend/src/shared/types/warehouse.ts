@@ -8,6 +8,10 @@ export interface Warehouse {
   is_branch?: boolean;
   manager?: string | null;
   manager_name?: string | null;
+  is_opening_locked?: boolean;
+  opening_confirmed_at?: string | null;
+  opening_confirmed_by?: string | null;
+  opening_confirmed_by_name?: string | null;
   created_at: string;
 }
 

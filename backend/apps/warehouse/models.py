@@ -4,6 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -37,6 +38,16 @@ class Warehouse(BaseModel):
         related_name="managed_warehouses", verbose_name=_("mas'ul"),
     )
     phone = models.CharField(_("telefon"), max_length=20, blank=True)
+    is_opening_locked = models.BooleanField(
+        _("boshlang'ich qoldiq tasdiqlangan"), default=False, db_index=True
+    )
+    opening_confirmed_at = models.DateTimeField(
+        _("tasdiqlangan vaqt"), null=True, blank=True
+    )
+    opening_confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="confirmed_warehouse_openings", verbose_name=_("tasdiqlagan admin"),
+    )
 
     class Meta:
         verbose_name = _("ombor")
@@ -254,11 +265,40 @@ class PurchaseItem(BaseModel):
         verbose_name = _("qabul qatori")
         verbose_name_plural = _("qabul qatorlari")
         ordering = ("created_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="purchase_item_quantity_gt_zero",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(cost_price__gte=0),
+                name="purchase_item_cost_price_gte_zero",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.product.sku} × {self.quantity}"
 
+    def clean(self):
+        super().clean()
+        if self.quantity is not None and self.quantity <= _ZERO:
+            raise ValidationError({"quantity": _("Miqdor noldan katta bo'lishi kerak.")})
+        if self.cost_price is not None and self.cost_price < _ZERO:
+            raise ValidationError({"cost_price": _("Narx manfiy bo'lishi mumkin emas.")})
+
     def save(self, *args, **kwargs):
+        if self.quantity is not None and self.quantity <= _ZERO:
+            from apps.core.exceptions import BusinessError
+            raise BusinessError(
+                message="Qabul miqdori noldan katta bo'lishi kerak.",
+                code="INVALID_QUANTITY",
+            )
+        if self.cost_price is not None and self.cost_price < _ZERO:
+            from apps.core.exceptions import BusinessError
+            raise BusinessError(
+                message="Qabul narxi manfiy bo'lishi mumkin emas.",
+                code="INVALID_PRICE",
+            )
         self.amount = (self.quantity or _ZERO) * (self.cost_price or _ZERO)
         super().save(*args, **kwargs)
 

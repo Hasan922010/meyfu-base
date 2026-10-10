@@ -11,7 +11,6 @@ Admin paneli orqali:
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from django.http import FileResponse, Http404
 from drf_spectacular.utils import extend_schema

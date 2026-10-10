@@ -87,4 +87,14 @@ describe('SaleProductList (UX M4)', () => {
     expect(screen.queryByText('Yuvish geli 1L')).not.toBeInTheDocument();
     expect(screen.getByText('Bio kukun 3kg')).toBeInTheDocument();
   });
+
+  it('artikul (SKU) bo‘yicha ham to‘g‘ri filtrlaydi', () => {
+    setup();
+
+    fireEvent.change(screen.getByPlaceholderText('Tovar qidirish…'), { target: { value: '  GEL-1L  ' } });
+
+    expect(screen.getByText('Yuvish geli 1L')).toBeInTheDocument();
+    expect(screen.queryByText('Bio kukun 3kg')).not.toBeInTheDocument();
+  });
 });
+

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,10 +10,12 @@ import { useAuthStore } from '@/shared/store/authStore';
 import type { Client } from '@/shared/types/clients';
 
 import { CheckInSheet } from './CheckInSheet';
+import { NewClientModal } from './NewClientModal';
 
 export function MyClientsPage(): ReactElement {
   const [search, setSearch] = useState<string>('');
   const [selected, setSelected] = useState<Client | null>(null);
+  const [showNewModal, setShowNewModal] = useState<boolean>(false);
   const navigate = useNavigate();
   // Zakaz oluvchida tashrif (check-in) yo'q — mijozni bossa buyurtma ochiladi
   const isOrderTaker = useAuthStore((s) => s.user?.role) === 'ORDER_TAKER';
@@ -36,7 +39,16 @@ export function MyClientsPage(): ReactElement {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-xl font-bold">Mening mijozlarim</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">Mening mijozlarim</h1>
+        <button
+          type="button"
+          onClick={() => setShowNewModal(true)}
+          className="btn-brand flex items-center gap-1 px-3 py-1.5 text-xs font-medium"
+        >
+          <Plus size={16} aria-hidden /> Yangi mijoz
+        </button>
+      </div>
       <input
         className="field"
         placeholder="Qidirish…"
@@ -78,6 +90,13 @@ export function MyClientsPage(): ReactElement {
       </DataState>
 
       <CheckInSheet client={selected} onClose={() => setSelected(null)} />
+      <NewClientModal
+        open={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        onCreated={(created) => {
+          pick(created);
+        }}
+      />
     </div>
   );
 }

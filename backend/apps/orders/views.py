@@ -63,7 +63,7 @@ class OrderViewSet(BaseModelViewSet):
     write_roles = _WRITE
     action_roles = {
         "approve": _ADMIN,
-        "cancel": _ADMIN,
+        "cancel": (Role.DISTRIBUTOR, Role.ORDER_TAKER, *_ADMIN),
         "build_loading": _WAREHOUSE,
         "for_loading": _WAREHOUSE,
         # Yetkazish (Sale yaratadi) — faqat tarqatuvchi; zakaz oluvchi pul ushlamaydi
@@ -101,11 +101,19 @@ class OrderViewSet(BaseModelViewSet):
         data = s.validated_data
 
         client = Client.objects.select_related("route").get(pk=data["client"])
-        # Zakaz oluvchi faqat o'z marshruti mijozlaridan buyurtma oladi (xavfsizlik
+        # Zakaz oluvchi va tarqatuvchi faqat o'z marshruti mijozlaridan buyurtma oladi (xavfsizlik
         # tekshiruvi: aks holda istalgan mijoz UUID'iga buyurtma yozish mumkin edi)
+        from apps.sales.services.sale import _off_route, ensure_client_in_scope
+        ensure_client_in_scope(request.user, client)
         if is_order_taker(request.user) and (
             client.route is None or client.route.order_taker_id != request.user.id
         ):
+            raise BusinessError(
+                message=f"«{client.name}» sizning marshrutingizda emas.",
+                code="CLIENT_NOT_ON_ROUTE",
+                details={"client_id": str(client.id)},
+            )
+        if _is_distributor(request.user) and _off_route(request.user, client):
             raise BusinessError(
                 message=f"«{client.name}» sizning marshrutingizda emas.",
                 code="CLIENT_NOT_ON_ROUTE",
@@ -161,10 +169,26 @@ class OrderViewSet(BaseModelViewSet):
     @extend_schema(summary="Buyurtmani bekor qilish", request=OrderCancelSerializer)
     @action(detail=True, methods=["post"])
     def cancel(self, request: Request, pk: str | None = None) -> Response:
+        order = self.get_object()
+        user = request.user
+        role = getattr(user, "role", None)
+        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+            if order.taken_by_id != user.id and order.assigned_to_id != user.id:
+                raise BusinessError(
+                    message="Faqat o'zingiz olgan buyurtmani bekor qila olasiz.",
+                    code="NOT_YOUR_ORDER",
+                    status_code=403,
+                )
+            if order.status not in (OrderStatus.DRAFT, OrderStatus.PLACED):
+                raise BusinessError(
+                    message="Faqat qoralama yoki kutilayotgan buyurtmani bekor qilish mumkin.",
+                    code="ORDER_CANNOT_BE_CANCELLED",
+                    status_code=400,
+                )
         s = OrderCancelSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         order = cancel_order(
-            self.get_object(), user=request.user,
+            order, user=request.user,
             reason=s.validated_data.get("reason", ""),
         )
         return ok(OrderSerializer(order).data)

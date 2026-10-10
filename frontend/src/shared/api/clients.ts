@@ -61,6 +61,7 @@ interface ClientHistory {
 
 export const clientsApi = {
   list: (params?: QueryParams) => listPage<Client>('/clients/', params),
+  detail: (id: string) => retrieve<Client>(`/clients/${id}/`),
   create: (body: ClientInput) => create<Client, ClientInput>('/clients/', body),
   update: (id: string, body: Partial<ClientInput>) =>
     patch<Client, ClientInput>(`/clients/${id}/`, body),
