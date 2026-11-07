@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
+import { fetchWsTicket } from '@/shared/api/auth';
 import { env } from '@/shared/config/env';
-import { issueWebSocketTicket } from '@/shared/api/auth';
 import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 
@@ -37,17 +37,18 @@ export function useEventStream(): { connected: boolean } {
 
     const connect = async (): Promise<void> => {
       if (closed) return;
+      // Bir martalik ticket — access JWT URL'da (proxy loglarida) qolmaydi.
+      // Prod'da `?token=` umuman qabul qilinmaydi (audit FE-110).
       let ticket: string;
       try {
-        ticket = await issueWebSocketTicket();
+        ticket = await fetchWsTicket();
       } catch {
         scheduleReconnect();
         return;
       }
       if (closed) return;
-      const url = `${env.wsUrl}?ticket=${encodeURIComponent(ticket)}`;
       try {
-        ws = new WebSocket(url);
+        ws = new WebSocket(`${env.wsUrl}?ticket=${encodeURIComponent(ticket)}`);
       } catch {
         scheduleReconnect();
         return;
@@ -75,7 +76,7 @@ export function useEventStream(): { connected: boolean } {
       if (closed) return;
       const delay = Math.min(30_000, 2 ** retryRef.current * 1000);
       retryRef.current += 1;
-      reconnectTimer = window.setTimeout(connect, delay);
+      reconnectTimer = window.setTimeout(() => void connect(), delay);
     };
 
     const handleEvent = (msg: ServerEvent): void => {
@@ -167,7 +168,7 @@ export function useEventStream(): { connected: boolean } {
       }
     };
 
-    connect();
+    void connect();
     return () => {
       closed = true;
       if (reconnectTimer) window.clearTimeout(reconnectTimer);

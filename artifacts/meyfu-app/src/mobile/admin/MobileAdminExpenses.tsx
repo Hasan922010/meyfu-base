@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, X } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { expensesApi } from '@/shared/api/finance';
 import { DataState } from '@/shared/components/DataState';
+import { ExpenseCategoryIcon } from '@/shared/components/ExpenseCategoryIcon';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 import type { Expense } from '@/shared/types/finance';
@@ -86,8 +88,9 @@ export function MobileAdminExpenses(): ReactElement {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="font-medium">
-                    {e.category_icon} {e.category_name}
+                  <div className="flex items-center gap-1.5 font-medium">
+                    <ExpenseCategoryIcon icon={e.category_icon} name={e.category_name} size={16} className="text-gray-500" />
+                    <span>{e.category_name}</span>
                   </div>
                   <div className="text-xs text-gray-500">
                     {e.distributor_name} · {dateShort(e.date)} ·{' '}
@@ -105,17 +108,19 @@ export function MobileAdminExpenses(): ReactElement {
               {e.status === 'PENDING' ? (
                 <div className="flex gap-2">
                   <button
-                    className="btn flex-1 bg-success text-white"
+                    className="btn flex-1 bg-success text-white flex items-center justify-center gap-1"
                     disabled={approve.isPending}
                     onClick={() => approve.mutate(e.id)}
                   >
-                    ✅ Tasdiqlash
+                    <Check size={16} aria-hidden />
+                    <span>Tasdiqlash</span>
                   </button>
                   <button
-                    className="btn flex-1 text-danger"
+                    className="btn flex-1 text-danger flex items-center justify-center gap-1"
                     onClick={() => setRejecting(e)}
                   >
-                    ❌ Rad etish
+                    <X size={16} aria-hidden />
+                    <span>Rad etish</span>
                   </button>
                 </div>
               ) : (

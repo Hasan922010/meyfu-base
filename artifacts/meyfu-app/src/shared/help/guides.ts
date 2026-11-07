@@ -50,14 +50,14 @@ const common: RoleGuide = {
       blocks: [
         {
           k: 'p',
-          text: 'Tarqatuvchi ilovasi internetsiz ham to\'liq ishlaydi. Sotuv, xarajat, qarz to\'lovi darhol saqlanadi — "✅ Saqlandi" chiqadi.',
+          text: 'Tarqatuvchi ilovasi internetsiz ham to\'liq ishlaydi. Sotuv, xarajat, qarz to\'lovi darhol saqlanadi — "Saqlandi" chiqadi.',
         },
         {
           k: 'list',
           items: [
-            '🟢 Online — hammasi serverga yuborildi',
-            '🟡 Yuborilmoqda (N) — N ta operatsiya navbatda',
-            '🔴 Offline · N ta kutmoqda — internet yo\'q, N ta saqlangan',
+            'Online (yashil) — hammasi serverga yuborildi',
+            'Yuborilmoqda (sariq N) — N ta operatsiya navbatda',
+            'Offline (qizil N) — internet yo\'q, N ta saqlangan',
           ],
         },
         {
@@ -121,7 +121,7 @@ const distributor: RoleGuide = {
             'Mijoz — marshrutdagi ro\'yxatdan tanlash.',
             'Tovar — qidirib tanlash → miqdor (katta +/− yoki tez tugmalar) → narx (standart narx avtomatik).',
             'To\'lov — Naqd / Plastik / Qarzga. Aralash bo\'lsa: qancha naqd, qolgani qarzga, muddat.',
-            'Saqlash — "✅ Saqlandi" darhol chiqadi, chekni PDF qilib mijozga yuborish mumkin.',
+            'Saqlash — "Saqlandi" darhol chiqadi, chekni PDF qilib mijozga yuborish mumkin.',
           ],
         },
         { k: 'img', src: IMG('dist-02-sale-client.png'), caption: '1-qadam: mijozni tanlash' },
@@ -144,7 +144,7 @@ const distributor: RoleGuide = {
           items: [
             '"Xarajat" → "Yangi xarajat".',
             'Kategoriya (ikonka) → summa (katta klaviatura, tez tugmalar).',
-            '📷 "Chek rasmidan summani olish" — AI summani o\'zi to\'ldiradi.',
+            'Kamera orqali "Chek rasmidan summani olish" — AI summani o\'zi to\'ldiradi.',
             'Yoqilg\'i uchun: litr, narx, odometr. Saqlash → qo\'lingizdagi pul kamayadi.',
           ],
         },
@@ -242,6 +242,7 @@ const warehouse: RoleGuide = {
             'Tovar qabuli — yetkazib beruvchi, nakladnoy №, sana → tovarlar → "Qabulni saqlash".',
             'Naklit skani — nakladnoyni kamera bilan suratga oling, AI o\'qiydi, admin panelda tekshiriladi.',
             'Ombor qoldig\'i — har tovarning joriy qoldig\'i.',
+            'Boshlang\'ich qoldiq — omborni tanlang, har tovarning haqiqiy miqdorini yozing va saqlang.',
           ],
         },
         {
@@ -253,7 +254,10 @@ const warehouse: RoleGuide = {
     {
       title: 'Kompyuterda — Ombor bo\'limi',
       blocks: [
-        { k: 'p', text: 'Uch bo\'lim: Qoldiq · Tovar qabullari (Kirim) · Yuklamalar.' },
+        {
+          k: 'p',
+          text: 'To\'rt bo\'lim: Qoldiq · Tovar qabullari (Kirim) · Yuklamalar · Inventarizatsiya. Inventarizatsiyada hujjat barcha tovarlar bilan to\'ldiriladi — sanab, haqiqiy qoldiqni kiriting va saqlang; tasdiqlashni menejer qiladi.',
+        },
         { k: 'img', src: IMG('admin-06-warehouse.jpg'), caption: 'Ombor — qoldiq' },
         {
           k: 'p',
@@ -288,6 +292,44 @@ const warehouse: RoleGuide = {
             'Tarqatuvchi telefonida qaytarish ro\'yxatini tuzadi (yaxshi / brak / muddat alohida).',
             'Siz omborda tovarni sanab, qabul qilasiz.',
             'Yaxshi tovar omborga qaytadi, brak alohida hisoblanadi. Tovar farqi avtomatik chiqadi.',
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+const orderTaker: RoleGuide = {
+  id: 'ORDER_TAKER',
+  label: 'Zakaz oluvchi',
+  summary: 'Mijozlardan buyurtma olish',
+  sections: [
+    {
+      title: 'Buyurtma olish',
+      blocks: [
+        {
+          k: 'steps',
+          items: [
+            '"Yangi buyurtma" yoki Mijozlar ro\'yxatidan mijozni bosing.',
+            'Tovar va miqdorlarni kiriting, to\'lov turini tanlang.',
+            'Saqlang — internet bo\'lmasa ham saqlanadi, keyin o\'zi yuboriladi.',
+          ],
+        },
+        {
+          k: 'note',
+          text: 'Buyurtmani menejer tasdiqlaydi, tovarni tarqatuvchi yetkazadi. Siz pul va tovar ushlamaysiz.',
+        },
+      ],
+    },
+    {
+      title: 'Natijangiz',
+      blocks: [
+        {
+          k: 'list',
+          items: [
+            'Bosh sahifa — bugungi buyurtmalar soni va summasi.',
+            'Buyurtmalar — siz olgan buyurtmalar va ularning holati.',
+            'Maosh — zakaz olgani uchun foizingiz bilan taxminiy maosh.',
           ],
         },
       ],
@@ -555,10 +597,12 @@ const accountant: RoleGuide = {
 /** Hamma uchun umumiy bo'lim — hech qachon undefined bo'lmaydi. */
 export const COMMON_GUIDE: RoleGuide = common;
 
-export const GUIDES: RoleGuide[] = [common, distributor, warehouse, admin, accountant];
+export const GUIDES: RoleGuide[] = [
+  common, distributor, orderTaker, warehouse, admin, accountant,
+];
 
 /** Rol uchun mos yo'riqnoma id'si (admin rollari birlashtirilgan). */
 export function guideIdForRole(role: Role): RoleGuide['id'] {
-  if (role === 'MANAGER') return 'SUPER_ADMIN';
+  if (role === 'MANAGER' || role === 'BRANCH_MANAGER') return 'SUPER_ADMIN';
   return role;
 }

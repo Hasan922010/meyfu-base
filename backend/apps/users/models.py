@@ -59,7 +59,9 @@ class User(AbstractUser):
     # shuning uchun yumshoq o'chirish uchun bu maydon alohida qo'shilgan
     # (CLAUDE.md 5 — "ma'lumot yo'qolmaydi": FK'lar PROTECT bo'lgani uchun
     # xodimni qattiq o'chirish ko'p hollarda xatolik beradi).
-    is_deleted = models.BooleanField(_("o'chirilgan"), default=False, db_index=True)
+    is_deleted = models.BooleanField(
+        _("o'chirilgan"), default=False, db_default=False, db_index=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

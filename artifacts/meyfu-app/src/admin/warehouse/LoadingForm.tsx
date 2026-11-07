@@ -1,18 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
 import { authApi } from '@/shared/api/users';
 import { warehouseApi } from '@/shared/api/warehouse';
+import type { Loading } from '@/shared/types/warehouse';
 
 import { ProductLineEditor, type LineRow } from './ProductLineEditor';
+import { businessDateISO } from '@/shared/lib/businessDay';
+import { plainQty } from '@/shared/lib/format';
+import { withOnlyOption } from '@/shared/lib/select';
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
-export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
+interface Props {
+  /** Berilsa — shu qoralama tahrirlanadi */
+  loading?: Loading | null;
+  onDone: () => void;
+}
+
+export function LoadingForm({ loading = null, onDone }: Props): ReactElement {
   const qc = useQueryClient();
 
   const distributors = useQuery({
@@ -28,10 +38,33 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
     queryFn: () => catalogApi.products({ page_size: 1000, is_active: true }),
   });
 
-  const [distributor, setDistributor] = useState<string>('');
-  const [warehouse, setWarehouse] = useState<string>('');
-  const [date, setDate] = useState<string>(today());
-  const [rows, setRows] = useState<LineRow[]>([]);
+  const [chosenDistributor, setDistributor] = useState<string>(loading?.distributor ?? '');
+  const [chosenWarehouse, setWarehouse] = useState<string>(loading?.warehouse ?? '');
+  const distributor = withOnlyOption(chosenDistributor, distributors.data);
+  const warehouse = withOnlyOption(chosenWarehouse, warehouses.data?.results);
+  const [date, setDate] = useState<string>(loading?.date ?? today());
+  const [rows, setRows] = useState<LineRow[]>(
+    () =>
+      loading?.items.map((i) => ({
+        product: i.product,
+        quantity: plainQty(i.quantity),
+        price: i.price ?? '',
+      })) ?? [],
+  );
+
+  // Tanlangan ombordagi bo'sh qoldiq — qatorda ko'rinadi, oshsa ogohlantiradi (audit K5)
+  const stock = useQuery({
+    queryKey: ['stock', 'by-warehouse', warehouse],
+    queryFn: () => warehouseApi.stock({ warehouse, page_size: 1000 }),
+    enabled: warehouse !== '',
+  });
+  const available = useMemo(
+    () =>
+      stock.data
+        ? new Map(stock.data.results.map((s) => [s.product, Number(s.available_quantity)]))
+        : undefined,
+    [stock.data],
+  );
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -42,7 +75,10 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
           quantity: r.quantity,
           ...(r.price ? { price: r.price } : {}),
         }));
-      return warehouseApi.createLoading({ distributor, warehouse, date, items });
+      const body = { distributor, warehouse, date, items };
+      return loading
+        ? warehouseApi.updateLoading(loading.id, body)
+        : warehouseApi.createLoading(body);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['loadings'] });
@@ -109,6 +145,7 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
         priceSource="wholesale_price"
         priceLabel="Narx"
         priceHint="optom"
+        available={available}
       />
 
       {mutation.isError && (
@@ -127,7 +164,7 @@ export function LoadingForm({ onDone }: { onDone: () => void }): ReactElement {
           disabled={!valid || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
-          Qoralama saqlash
+          {loading ? 'Saqlash' : 'Qoralama saqlash'}
         </button>
       </div>
     </div>

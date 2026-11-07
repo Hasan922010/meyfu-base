@@ -51,6 +51,10 @@ export interface Product {
   commission_percent: string;
   min_stock_alert: string;
   is_active: boolean;
+  total_stock: number;
+  reserved_stock: number;
+  available_stock: number;
+  stock_status: 'out' | 'low' | 'ok';
   created_at: string;
   updated_at: string;
 }
@@ -70,4 +74,7 @@ export interface ProductInput {
   commission_percent?: string;
   min_stock_alert?: string;
   is_active?: boolean;
+  /** Faqat yaratishda: boshlang'ich qoldiq (CLAUDE.md 6 — Ombor) */
+  initial_stock_warehouse?: string;
+  initial_stock_quantity?: string;
 }

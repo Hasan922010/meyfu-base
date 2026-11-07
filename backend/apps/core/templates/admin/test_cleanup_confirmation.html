@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block content %}
+<div id="content-main">
+  <p class="errornote">
+    Faqat soxta ma’lumotlar uchun. Bu amal tanlangan yozuvlar bilan birga quyida
+    ko‘rsatilgan bog‘liq hujjatlarni ham faol hisoblardan chiqaradi.
+    Oddiy qayta tiklash tugmasi yo‘q. Mahsulotlar, foydalanuvchilar va mijozlar
+    o‘chirilmaydi. Audit nusxasi va hujjatlarning texnik tarixi saqlanadi.
+  </p>
+  <p>
+    Boshqa haqiqiy operatsiyalar tarixini buzmaslik uchun faqat balansdagi oxirgi
+    soxta operatsiyalar guruhi tozalanadi. Naqd topshirishda kassa va hamyon juftligi
+    birga tozalanadi, kun yopishning pul ko‘rsatkichlari moslanadi; uning tovar
+    qaytarishlari va yopilgan holati o‘zgarmaydi. Maosh, buyurtma, qaytarish,
+    qabul yoki keyingi kun yopishga xavfli bog‘lanish bo‘lsa amal bloklanadi.
+    Boshqa qurilmalarda ishni to‘xtating, tozalashdan so‘ng sahifalarni yangilang.
+    Tasdiqlash vaqtida boshqa hujjatlarni yozish qisqa muddat kutishi mumkin.
+  </p>
+  <h2>Faol hisoblardan chiqariladigan yozuvlar: {{ rows|length }}</h2>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Tur</th><th>Yozuv</th><th>ID</th></tr></thead>
+      <tbody>{% for row in rows %}
+        <tr><td>{{ row.model }}</td><td>{{ row.label }}</td><td>{{ row.id }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+  <h2>Balans va qoldiqqa ta’siri</h2>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Hisob</th><th>Maydon</th><th>Hozir</th><th>Tozalangandan keyin</th></tr></thead>
+      <tbody>{% for effect in effects %}{% for change in effect.changes %}
+        <tr><td>{{ effect.label }}</td><td>{{ change.field }}</td>
+          <td>{{ change.old }}</td><td>{{ change.new }}</td></tr>
+      {% endfor %}{% endfor %}</tbody>
+    </table>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{{ action_name }}">
+    <input type="hidden" name="select_across" value="0">
+    <input type="hidden" name="cleanup_token" value="{{ cleanup_token }}">
+    {% for id in selected_ids %}
+      <input type="hidden" name="_selected_action" value="{{ id }}">
+    {% endfor %}
+    {{ form.as_p }}
+    <div class="submit-row">
+      <a href="{{ request.path }}">Bekor qilish</a>
+      <button type="submit" name="apply_cleanup" value="yes">Tasdiqlab tozalash</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

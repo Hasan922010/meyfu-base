@@ -78,7 +78,66 @@ function toQ(params?: QueryParams): string {
     : '';
 }
 
+export interface ReorderRow {
+  product: string;
+  name: string;
+  sku: string;
+  avg_daily: string;
+  stock: string;
+  on_vans: string;
+  days_left: string | null;
+  suggested: string;
+  status: 'URGENT' | 'SOON' | 'OK';
+}
+
+export interface ReorderResult {
+  days: number;
+  cover_days: number;
+  since: string;
+  rows: ReorderRow[];
+}
+
+export interface ExpenseAnomalyRow {
+  id: string;
+  date: string;
+  distributor: string;
+  category: string;
+  amount: string;
+  typical: string;
+  times_typical: number | null;
+  z_score: number;
+  status: string;
+  description: string;
+}
+
+export interface DistributorLocation {
+  id: string;
+  name: string;
+  latitude: string | null;
+  longitude: string | null;
+  at: string | null;
+  place: string | null;
+  sales_count: number;
+  sales_amount: string;
+}
+
 export const reportsAdvancedApi = {
+  /** v5 B2: tarqatuvchilarning bugungi oxirgi tashrif/sotuv nuqtasi */
+  distributorLocations: () =>
+    retrieve<{ date: string; rows: DistributorLocation[] }>('/reports/distributor-locations/'),
+  /** v5 C6: 1C uchun XML/CSV fayl */
+  export1c: async (params: QueryParams): Promise<Blob> => {
+    const resp = await api.get(`/reports/export-1c/${toQ(params)}`, { responseType: 'blob' });
+    return resp.data as Blob;
+  },
+  /** v5 C5: odatdagidan katta xarajatlar (z-score) */
+  expenseAnomalies: (params: QueryParams) =>
+    retrieve<{ threshold: number; rows: ExpenseAnomalyRow[] }>(
+      `/reports/expense-anomalies/${toQ(params)}`,
+    ),
+  /** v5 C1: qoldiq prognozi va buyurtma tavsiyasi */
+  reorder: (params: QueryParams) =>
+    retrieve<ReorderResult>(`/reports/reorder/${toQ(params)}`),
   query: (params: QueryParams) =>
     retrieve<ReportQueryResult>(`/reports/query/${toQ(params)}`),
   abc: (params: QueryParams) => retrieve<AbcResult>(`/reports/abc/${toQ(params)}`),

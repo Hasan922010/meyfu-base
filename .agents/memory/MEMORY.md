@@ -1,0 +1,3 @@
+- [GitHub frontend sync](github-frontend-sync.md) — GitHub frontend changes must be mirrored into the Replit web artifact before validation and publishing.
+- [PIT restore and schema sync](pit-restore-schema-sync.md) — after a production restore, inspect the publish diff; ORM defaults alone may lead to destructive table truncation.
+- [Selected test-data cleanup](selected-test-data-cleanup.md) — user chose selected fake operations, never a global transaction/balance reset.

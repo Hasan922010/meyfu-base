@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "E3gGuiXHBx27kTs6wgTj-"
+uri = "file://recovery/production-products-2026-09-24.csv"
+type = "table"
+title = "Tiklangan 21 ta mahsulot ro‘yxati"
+description = "Public bazadan olingan xavfsiz nusxa; mahsulotlar va ularning kategoriya/brend nomlari."
+logical_id = "31d46f65-f27a-4be5-bd24-6437f3fbc76d"
+content_hash = "sha256:292018294bf666201e6685ebc60d89b94413514ea7adc22f9eef58b2f326e79b"
+size = 7223
+mtime_ms = 1790268901866
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:72fccc38-09d1-49ea-967a-258edd0f7a6d/31d46f65-f27a-4be5-bd24-6437f3fbc76d/748216b4-0a97-4d72-99fb-4f856376a2aa"
+storage_version_token = "1790268903152192"
+content_type = "text/csv"
+
+[[outputs]]
+id = "GK05bpyzc8sjOgeeb5sHQ"
+uri = "file://recovery/production-products-before-publish-2026-10-04.csv"
+type = "table"
+title = "Publishdan oldingi mahsulotlar nusxasi"
+description = "Public bazadagi 21 mahsulotning joriy CSV nusxasi. Bu butun bazaning backup’i emas."
+logical_id = "7c2d3ffa-0ad9-4a80-859a-323662b97055"
+content_hash = "sha256:292018294bf666201e6685ebc60d89b94413514ea7adc22f9eef58b2f326e79b"
+size = 7223
+mtime_ms = 1791090602420
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:72fccc38-09d1-49ea-967a-258edd0f7a6d/7c2d3ffa-0ad9-4a80-859a-323662b97055/b406fe16-2534-49d8-80ce-500c2a7d6dba"
+storage_version_token = "1791090604087937"
+content_type = "text/csv"
+
+[[outputs]]
+id = "4qp70J0MQG2If6inmAezU"
+uri = "file://recovery/production-products-before-publish-2026-10-10.csv"
+type = "table"
+title = "Publishdan oldingi mahsulotlar nusxasi"
+description = "Production bazadagi joriy 33 mahsulotning CSV nusxasi. Bu butun bazaning backup’i emas."
+logical_id = "e09b10f8-500d-4eff-8beb-2a3b26fb6bc5"
+content_hash = "sha256:df901e9ea281d5ccd9d7b2fb53550c72a2b4d7284b406fe1d8984be17f0264a9"
+size = 11609
+mtime_ms = 1791636423312
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:72fccc38-09d1-49ea-967a-258edd0f7a6d/e09b10f8-500d-4eff-8beb-2a3b26fb6bc5/192980d1-45f3-430d-9103-009754829f8e"
+storage_version_token = "1791636425152726"
+content_type = "text/csv"

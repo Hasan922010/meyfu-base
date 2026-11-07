@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
-import { extractApiError } from '@/shared/api/client';
 import { AmountInput } from '@/shared/components/AmountInput';
-import { applyServerFieldErrors } from '@/shared/lib/formErrors';
+import { applyServerErrors } from '@/shared/lib/formErrors';
+import { money, plainQty } from '@/shared/lib/format';
+import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
-import type { Product, ProductInput } from '@/shared/types/catalog';
+import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
 
 import { ProductImages } from './ProductImages';
 
@@ -24,11 +25,14 @@ const PRICE_KEYS = [
   'commission_percent',
 ] as const;
 
-export function ProductForm({ product, onDone }: Props): ReactElement {
-  const qc = useQueryClient();
-  const role = useAuthStore((s) => s.user?.role);
-  const canEditPrice = !product || role === 'SUPER_ADMIN';
+const PRICE_FIELDS = [
+  { name: 'cost_price', label: 'Tannarx' },
+  { name: 'wholesale_price', label: 'Optom narx' },
+  { name: 'retail_price', label: 'Chakana narx' },
+  { name: 'min_price', label: 'Minimal narx' },
+] as const;
 
+export function ProductForm({ product, onDone }: Props): ReactElement {
   const categories = useQuery({
     queryKey: ['categories'],
     queryFn: () => catalogApi.categories({ page_size: 200 }),
@@ -42,8 +46,49 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
     queryFn: () => catalogApi.brands({ page_size: 200 }),
   });
 
-  const { control, register, handleSubmit, setError, formState } =
-    useForm<ProductInput>({
+  // Forma ma'lumotnomalar kelgandan keyin mount qilinadi: aks holda select'da hali
+  // option yo'qligida defaultValue qo'yilmay qoladi va birlik/brend bo'sh ko'rinadi.
+  if (categories.isError || units.isError || brands.isError) {
+    return (
+      <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+        Ma'lumotnomalarni yuklab bo'lmadi. Oynani yopib, qayta oching.
+      </p>
+    );
+  }
+  if (!categories.data || !units.data || !brands.data) {
+    return <p className="py-6 text-center text-sm text-gray-500">Yuklanmoqda…</p>;
+  }
+  return (
+    <ProductFormFields
+      product={product}
+      onDone={onDone}
+      categories={categories.data.results}
+      units={units.data.results}
+      brands={brands.data.results}
+    />
+  );
+}
+
+interface FieldsProps extends Props {
+  categories: Category[];
+  units: Unit[];
+  brands: Brand[];
+}
+
+function ProductFormFields({
+  product,
+  onDone,
+  categories,
+  units,
+  brands,
+}: FieldsProps): ReactElement {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const role = useAuthStore((s) => s.user?.role);
+  const canEditPrice = !product || role === 'SUPER_ADMIN';
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  const { register, control, handleSubmit, setError, formState, watch } = useForm<ProductInput>({
     defaultValues: product
       ? {
           name: product.name,
@@ -56,9 +101,9 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
           wholesale_price: product.wholesale_price,
           retail_price: product.retail_price,
           min_price: product.min_price,
-          pack_quantity: product.pack_quantity,
+          pack_quantity: plainQty(product.pack_quantity),
           commission_percent: product.commission_percent,
-          min_stock_alert: product.min_stock_alert,
+          min_stock_alert: plainQty(product.min_stock_alert),
           is_active: product.is_active,
         }
       : { is_active: true, pack_quantity: '1' },
@@ -70,15 +115,24 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       if (product && !canEditPrice) {
         for (const k of PRICE_KEYS) delete body[k];
       }
+      // Ixtiyoriy raqamli maydon — bo'sh qoldirilsa backendga umuman yubormaymiz
+      // (bo'sh satr "" "raqam emas" xatosiga sabab bo'ladi, chunki bu register()
+      // orqali ulangan, AmountInput'lardan farqli ravishda ular tegilmasa
+      // `undefined` bo'lib avtomatik tushib qoladi).
+      if (!body.min_stock_alert) {
+        delete body.min_stock_alert;
+      }
       return product
         ? catalogApi.updateProduct(product.id, body)
         : catalogApi.createProduct(body);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['products'] });
+      toast.push({ kind: 'success', title: 'Mahsulot saqlandi' });
       onDone();
     },
-    onError: (err) => applyServerFieldErrors(err, setError),
+    onMutate: () => setGeneralError(null),
+    onError: (err) => setGeneralError(applyServerErrors(err, setError)),
   });
 
   return (
@@ -91,14 +145,14 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       <div className="grid grid-cols-2 gap-3">
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Nomi *</span>
-          <input className="field" {...register('name', { required: true })} />
+          <input className="field" {...register('name', { required: 'Nomini kiriting' })} />
           {formState.errors.name?.message && (
             <span className="text-xs text-danger">{formState.errors.name.message}</span>
           )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">SKU *</span>
-          <input className="field" {...register('sku', { required: true })} />
+          <input className="field" {...register('sku', { required: 'SKU kiriting' })} />
           {formState.errors.sku?.message && (
             <span className="text-xs text-danger">{formState.errors.sku.message}</span>
           )}
@@ -109,31 +163,43 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">Kategoriya *</span>
-          <select className="field" {...register('category', { required: true })}>
+          <select
+            className="field"
+            {...register('category', { required: 'Kategoriyani tanlang' })}
+          >
             <option value="">—</option>
-            {categories.data?.results.map((c) => (
+            {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
+          {formState.errors.category?.message && (
+            <span className="text-xs text-danger">{formState.errors.category.message}</span>
+          )}
         </label>
         <label className="block space-y-1">
           <span className="text-sm font-medium">O'lchov birligi *</span>
-          <select className="field" {...register('unit', { required: true })}>
+          <select
+            className="field"
+            {...register('unit', { required: "O'lchov birligini tanlang" })}
+          >
             <option value="">—</option>
-            {units.data?.results.map((u) => (
+            {units.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.short_name}
               </option>
             ))}
           </select>
+          {formState.errors.unit?.message && (
+            <span className="text-xs text-danger">{formState.errors.unit.message}</span>
+          )}
         </label>
         <label className="col-span-2 block space-y-1">
           <span className="text-sm font-medium">Brend</span>
           <select className="field" {...register('brand')}>
             <option value="">—</option>
-            {brands.data?.results.map((b) => (
+            {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
               </option>
@@ -147,80 +213,118 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         disabled={!canEditPrice}
       >
         <legend className="px-1 text-xs text-gray-500">
-          Narxlar {canEditPrice ? '' : '(faqat bosh administrator tahrirlaydi)'}
+          Narxlar {canEditPrice ? '' : '(faqat SUPER_ADMIN)'}
         </legend>
-        <label className="block space-y-1">
-          <span className="text-sm">Tannarx</span>
-          <Controller
-            name="cost_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-              />
+        {PRICE_FIELDS.map(({ name, label }) => (
+          <label key={name} className="block space-y-1">
+            <span className="text-sm">{label}</span>
+            <Controller
+              name={name}
+              control={control}
+              render={({ field }) => (
+                <AmountInput
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  showWords={false}
+                  disabled={!canEditPrice}
+                />
+              )}
+            />
+            {formState.errors[name]?.message && (
+              <span className="text-xs text-danger">{formState.errors[name].message}</span>
             )}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Optom narx</span>
-          <Controller
-            name="wholesale_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-              />
-            )}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Chakana narx</span>
-          <Controller
-            name="retail_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-              />
-            )}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Minimal narx</span>
-          <Controller
-            name="min_price"
-            control={control}
-            render={({ field }) => (
-              <AmountInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                showWords={false}
-              />
-            )}
-          />
-        </label>
+          </label>
+        ))}
       </fieldset>
 
-      <div className="grid grid-cols-3 gap-3">
-        <label className="block space-y-1">
-          <span className="text-sm">Qadoq soni</span>
-          <input className="field" type="number" step="0.001" {...register('pack_quantity')} />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">Kam qoldiq</span>
-          <input className="field" type="number" step="0.001" {...register('min_stock_alert')} />
-        </label>
-        <label className="flex items-center gap-2 pt-6">
-          <input type="checkbox" {...register('is_active')} />
-          <span className="text-sm">Faol</span>
-        </label>
-      </div>
+      {!product && (
+        <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800">
+          Boshlang'ich qoldiqni saqlangandan keyin «Boshlang'ich qoldiqlar»
+          bo'limidan kiritasiz.
+        </p>
+      )}
+
+      {(() => {
+        const selectedUnitId = watch('unit');
+        const selectedUnit = units.find((u) => u.id === selectedUnitId);
+        const costPrice = watch('cost_price');
+        const packQuantity = watch('pack_quantity');
+        const packQtyNum = parseInt(String(packQuantity || '0'), 10);
+        const costPriceNum = Number(costPrice || 0);
+        const boxCost = packQtyNum * costPriceNum;
+
+        const unitText = (selectedUnit?.name || selectedUnit?.short_name || '').toLowerCase();
+        const isBag =
+          unitText.includes('kg') ||
+          unitText.includes('kilo') ||
+          unitText.includes('xalta') ||
+          unitText.includes('qop');
+
+        return (
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-3">
+              <label className="block space-y-1">
+                <span className="text-sm">Qadoq soni</span>
+                <input
+                  className="field"
+                  type="number"
+                  step="1"
+                  min="1"
+                  onKeyDown={(e) => {
+                    if (e.key === '.' || e.key === ',') e.preventDefault();
+                  }}
+                  {...register('pack_quantity', {
+                    validate: (v) =>
+                      !v || Number.isInteger(Number(v)) || 'Butun son kiriting',
+                  })}
+                />
+                {formState.errors.pack_quantity?.message && (
+                  <span className="text-xs text-danger">
+                    {formState.errors.pack_quantity.message}
+                  </span>
+                )}
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm">Kam qoldiq</span>
+                <input
+                  className="field"
+                  type="number"
+                  step="1"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '.' || e.key === ',') e.preventDefault();
+                  }}
+                  {...register('min_stock_alert', {
+                    validate: (v) =>
+                      !v || Number.isInteger(Number(v)) || 'Butun son kiriting',
+                  })}
+                />
+                {formState.errors.min_stock_alert?.message && (
+                  <span className="text-xs text-danger">
+                    {formState.errors.min_stock_alert.message}
+                  </span>
+                )}
+              </label>
+              <label className="flex items-center gap-2 pt-6">
+                <input type="checkbox" {...register('is_active')} />
+                <span className="text-sm">Faol</span>
+              </label>
+            </div>
+
+            {packQtyNum > 0 && costPriceNum > 0 && (
+              <div className="rounded-lg border border-brand/30 bg-brand/5 p-2.5 text-xs text-brand-700 dark:text-brand-300">
+                <span className="font-semibold">
+                  {isBag ? '🛍️ 1 xalta narxi:' : '📦 1 quti narxi:'}
+                </span>{' '}
+                <span className="text-sm font-bold text-brand">{money(boxCost)}</span>{' '}
+                <span className="text-gray-500">
+                  ({packQtyNum} {selectedUnit?.short_name || 'dona'} × {money(costPriceNum)})
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {product ? (
         <ProductImages productId={product.id} />
@@ -230,9 +334,9 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
         </p>
       )}
 
-      {mutation.isError && (
+      {generalError && (
         <p className="whitespace-pre-line rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          {extractApiError(mutation.error)}
+          {generalError}
         </p>
       )}
 

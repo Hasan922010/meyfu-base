@@ -2,7 +2,7 @@ import { Search, X } from 'lucide-react';
 import { useMemo, useRef, useState, type ReactElement } from 'react';
 
 import { AmountInput } from '@/shared/components/AmountInput';
-import { money, numberToWordsUz } from '@/shared/lib/format';
+import { money, numberToWordsUz, qty } from '@/shared/lib/format';
 import type { Product } from '@/shared/types/catalog';
 
 export interface LineRow {
@@ -19,6 +19,8 @@ interface Props {
   priceSource: 'cost_price' | 'wholesale_price';
   priceLabel: string;
   priceHint?: string;
+  /** Mahsulot ID → ombordagi bo'sh qoldiq. Berilsa qidiruvda va qatorda ko'rsatiladi. */
+  available?: Map<string, number> | undefined;
 }
 
 const MAX_RESULTS = 8;
@@ -30,6 +32,7 @@ export function ProductLineEditor({
   priceSource,
   priceLabel,
   priceHint,
+  available,
 }: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -43,14 +46,23 @@ export function ProductLineEditor({
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
+    const normQ = q.replace(/[‘'’`]/g, "'");
     return products
-      .filter(
-        (p) =>
-          !chosen.has(p.id) &&
-          (p.name.toLowerCase().includes(q) ||
-            p.sku.toLowerCase().includes(q) ||
-            p.barcode.toLowerCase().includes(q)),
-      )
+      .filter((p) => {
+        if (chosen.has(p.id)) return false;
+        const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        const sku = (p.sku || '').toLowerCase();
+        const barcode = (p.barcode || '').toLowerCase();
+        const category = (p.category_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        const brand = (p.brand_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        return (
+          name.includes(normQ) ||
+          sku.includes(normQ) ||
+          barcode.includes(normQ) ||
+          category.includes(normQ) ||
+          brand.includes(normQ)
+        );
+      })
       .slice(0, MAX_RESULTS);
   }, [products, search, chosen]);
 
@@ -91,7 +103,7 @@ export function ProductLineEditor({
         />
         <input
           ref={searchRef}
-          className="field pl-9"
+          className="field pl-9 pr-8"
           placeholder="Mahsulot qidirish — nom, SKU yoki shtrix-kod"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -99,28 +111,52 @@ export function ProductLineEditor({
             if (e.key === 'Enter' && results[0]) {
               e.preventDefault();
               add(results[0]);
+            } else if (e.key === 'Escape') {
+              setSearch('');
             }
           }}
         />
-        {results.length > 0 && (
+        {search && (
+          <button
+            type="button"
+            className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+            onClick={() => setSearch('')}
+            aria-label="Tozalash"
+          >
+            <X size={16} />
+          </button>
+        )}
+        {search.trim() !== '' && (
           <ul className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-            {results.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => add(p)}
-                >
-                  <span>
-                    {p.name}
-                    <span className="ml-2 text-xs text-gray-400">{p.sku}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-gray-400">
-                    {money(p[priceSource])} / {p.unit_name}
-                  </span>
-                </button>
+            {results.length > 0 ? (
+              results.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => add(p)}
+                  >
+                    <span>
+                      {p.name}
+                      <span className="ml-2 text-xs text-gray-400">{p.sku}</span>
+                      {p.category_name && (
+                        <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-500 dark:bg-gray-800">
+                          {p.category_name}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-xs text-gray-400">
+                      {available && `omborda ${qty(available.get(p.id) ?? 0)} · `}
+                      {money(p[priceSource])} / {p.unit_name}
+                    </span>
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="px-3 py-4 text-center text-xs text-gray-400">
+                Mahsulot topilmadi
               </li>
-            ))}
+            )}
           </ul>
         )}
       </div>
@@ -146,6 +182,8 @@ export function ProductLineEditor({
                 const p = byId.get(r.product);
                 const line =
                   (Number(r.quantity) || 0) * (Number(r.price) || 0);
+                const free = available?.get(r.product);
+                const over = free !== undefined && Number(r.quantity) > free;
                 return (
                   <tr
                     key={r.product}
@@ -158,12 +196,21 @@ export function ProductLineEditor({
                           {p.unit_name}
                         </span>
                       )}
+                      {free !== undefined && (
+                        <span
+                          className={`block text-xs ${over ? 'text-danger' : 'text-gray-400'}`}
+                        >
+                          {over ? `Omborda faqat ${qty(free)} bor` : `omborda ${qty(free)}`}
+                        </span>
+                      )}
                     </td>
                     <td className="px-2 py-2">
                       <input
                         className="field h-8 w-20 px-2 py-1"
                         type="number"
                         step="0.001"
+                        aria-label={`${p?.name ?? 'Mahsulot'} — soni`}
+                        aria-invalid={over || undefined}
                         value={r.quantity}
                         onChange={(e) =>
                           patch(idx, { quantity: e.target.value })

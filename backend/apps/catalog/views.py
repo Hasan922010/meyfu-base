@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import csv
+
 from django.db import transaction
-from django.db.models import Q, QuerySet
+from django.db.models import Case, CharField, DecimalField, F, Q, QuerySet, Sum, Value, When
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.request import Request
@@ -44,6 +46,8 @@ from .serializers import (
     ProductImageSerializer,
     ProductImageUploadSerializer,
     ProductLiteSerializer,
+    ProductBulkResultSerializer,
+    ProductBulkSerializer,
     ProductPriceSerializer,
     ProductSerializer,
     UnitSerializer,
@@ -87,9 +91,7 @@ class UnitViewSet(BaseModelViewSet):
 
 
 class ProductViewSet(BaseModelViewSet):
-    queryset = Product.objects.select_related(
-        "category", "brand", "unit"
-    ).prefetch_related("images")
+    queryset = Product.objects.select_related("category", "brand", "unit")
     serializer_class = ProductSerializer
     write_roles = _CATALOG_WRITE
     central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
@@ -104,7 +106,7 @@ class ProductViewSet(BaseModelViewSet):
     # Admin jadvalidagi har bir ustun (UI: shared/table)
     ordering_fields = (
         "name", "sku", "category__name", "retail_price", "wholesale_price", "min_price",
-        "is_active", "created_at",
+        "is_active", "created_at", "available_stock", "updated_at",
     )
 
     def filter_queryset(self, queryset):
@@ -142,10 +144,32 @@ class ProductViewSet(BaseModelViewSet):
     action_roles = {
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
+        "bulk": _CATALOG_WRITE,
         "import_excel": _CATALOG_WRITE,
         "import_template": _CATALOG_WRITE,
     }
 
+    def get_queryset(self):
+        stock_q = Q(stocks__is_deleted=False)
+        return super().get_queryset().annotate(
+            total_stock=Sum(
+                "stocks__quantity", filter=stock_q,
+                default=Value(0), output_field=DecimalField(max_digits=14, decimal_places=3),
+            ),
+            reserved_stock=Sum(
+                "stocks__reserved_quantity", filter=stock_q,
+                default=Value(0), output_field=DecimalField(max_digits=14, decimal_places=3),
+            ),
+        ).annotate(
+            available_stock=F("total_stock") - F("reserved_stock"),
+        ).annotate(
+            stock_status=Case(
+                When(available_stock__lte=0, then=Value("out")),
+                When(available_stock__lte=F("min_stock_alert"), then=Value("low")),
+                default=Value("ok"),
+                output_field=CharField(max_length=3),
+            )
+        ).prefetch_related("images").order_by("name", "id")
     def get_serializer_context(self) -> dict:
         # Filial xodimi — o'z filiali narxini ko'radi (v5: A7)
         context = super().get_serializer_context()
@@ -253,6 +277,66 @@ class ProductViewSet(BaseModelViewSet):
                 image, context=self.get_serializer_context()
             ).data
         )
+
+    @extend_schema(
+        summary="Mahsulotlar ustida ommaviy amal",
+        request=ProductBulkSerializer,
+        responses={200: ProductBulkResultSerializer},
+    )
+    @action(detail=False, methods=["post"], url_path="bulk")
+    def bulk(self, request: Request) -> Response:
+        serializer = ProductBulkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+        action_name = serializer.validated_data["action"]
+        qs = Product.all_objects.filter(id__in=ids)
+        found = set(qs.values_list("id", flat=True))
+        missing = [value for value in ids if value not in found]
+        errors = []
+        if action_name in ("delete", "soft-delete"):
+            updated = qs.filter(is_deleted=False).update(
+                is_deleted=True, updated_at=timezone.now()
+            )
+        else:
+            updated = qs.filter(is_deleted=False).update(
+                is_active=(action_name == "activate"), updated_at=timezone.now()
+            )
+        result = {
+            "action": action_name,
+            "requested": len(ids),
+            "updated": updated,
+            "missing_ids": missing,
+            "errors": errors,
+        }
+        return ok(ProductBulkResultSerializer(result).data)
+
+    @extend_schema(
+        summary="Mahsulotlar ro'yxatini CSV eksport qilish",
+        responses={200: OpenApiResponse(
+            response=OpenApiTypes.BINARY, description="UTF-8 BOM bilan CSV fayl."
+        )},
+    )
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request: Request) -> HttpResponse:
+        queryset = self.filter_queryset(self.get_queryset())
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="products.csv"'
+        response.write("\ufeff")
+        writer = csv.writer(response)
+        writer.writerow([
+            "id", "name", "sku", "barcode", "category", "brand", "is_active",
+            "cost_price", "wholesale_price", "retail_price", "min_price",
+            "total_stock", "reserved_stock", "available_stock", "stock_status",
+        ])
+        for product in queryset.iterator(chunk_size=500):
+            writer.writerow([
+                product.id, product.name, product.sku, product.barcode,
+                product.category.name, product.brand.name if product.brand_id else "",
+                product.is_active, product.cost_price, product.wholesale_price,
+                product.retail_price, product.min_price, product.total_stock,
+                product.reserved_stock, product.available_stock, product.stock_status,
+            ])
+        return response
 
     @extend_schema(summary="Mahsulot omborlardagi qoldig'i")
     @action(detail=True, methods=["get"])

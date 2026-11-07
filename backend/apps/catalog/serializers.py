@@ -148,17 +148,29 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
     unit_name = serializers.CharField(source="unit.short_name", read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     image_thumb = serializers.SerializerMethodField()
-
-    # Faqat yaratishda: boshlang'ich qoldiqni shu yerdan kiritish mumkin
-    # (CLAUDE.md 6 — Ombor). ProductViewSet.perform_create'da ishlatiladi,
-    # Product modelida saqlanmaydi.
+    total_stock = serializers.DecimalField(
+        max_digits=14, decimal_places=3, read_only=True
+    )
+    reserved_stock = serializers.DecimalField(
+        max_digits=14, decimal_places=3, read_only=True
+    )
+    available_stock = serializers.DecimalField(
+        max_digits=14, decimal_places=3, read_only=True
+    )
+    stock_status = serializers.CharField(read_only=True)
     initial_stock_warehouse = serializers.PrimaryKeyRelatedField(
         queryset=Warehouse.objects.filter(is_active=True),
-        write_only=True, required=False, allow_null=True,
+        write_only=True,
+        required=False,
+        allow_null=True,
     )
     initial_stock_quantity = serializers.DecimalField(
-        max_digits=14, decimal_places=3, write_only=True,
-        required=False, allow_null=True, min_value=Decimal("0"),
+        max_digits=14,
+        decimal_places=3,
+        write_only=True,
+        required=False,
+        allow_null=True,
+        min_value=Decimal("0"),
     )
 
     class Meta:
@@ -169,6 +181,7 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
             "unit", "unit_name", "image", "images", "image_thumb",
             "cost_price", "wholesale_price", "retail_price", "min_price",
             "pack_quantity", "commission_percent", "min_stock_alert",
+            "total_stock", "reserved_stock", "available_stock", "stock_status",
             "is_active", "created_at", "updated_at",
             "initial_stock_warehouse", "initial_stock_quantity",
         )
@@ -196,12 +209,12 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
                 {"initial_stock_warehouse": "Boshlang'ich qoldiq uchun ombor tanlang."}
             )
         self._validate_min_not_above_retail(attrs)
-        # CLAUDE.md 2: MANAGER narx/foizni o'zgartirmaydi — faqat SUPER_ADMIN
+        # MANAGER narx/foizni o'zgartirmaydi — faqat SUPER_ADMIN.
         request = self.context.get("request")
         if request is None or self.instance is None:
             return attrs
         user = request.user
-        if user.is_superuser or getattr(user, "role", None) == Role.SUPER_ADMIN:
+        if user.is_superuser or str(getattr(user, "role", "")) == Role.SUPER_ADMIN.value:
             return attrs
         changed = [
             f for f in Product.PRICE_FIELDS
@@ -230,6 +243,26 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"min_price": "Minimal narx chakana narxdan katta bo'lmasligi kerak."}
             )
+
+
+class ProductBulkSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=False,
+        max_length=100,
+        help_text="Ko'pi bilan 100 ta mahsulot IDsi.",
+    )
+    action = serializers.ChoiceField(
+        choices=("activate", "deactivate", "delete", "soft-delete")
+    )
+
+
+class ProductBulkResultSerializer(serializers.Serializer):
+    action = serializers.CharField()
+    requested = serializers.IntegerField()
+    updated = serializers.IntegerField()
+    missing_ids = serializers.ListField(child=serializers.UUIDField())
+    errors = serializers.ListField(child=serializers.CharField())
 
 
 class ProductLiteSerializer(BranchPricedMixin, serializers.ModelSerializer):

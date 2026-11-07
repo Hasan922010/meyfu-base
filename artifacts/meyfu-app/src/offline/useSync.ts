@@ -16,9 +16,7 @@ export interface SyncState {
 }
 
 export function useSync(): SyncState {
-  const [online, setOnline] = useState<boolean>(
-    () => typeof navigator === 'undefined' || navigator.onLine,
-  );
+  const [online, setOnline] = useState<boolean>(navigator.onLine);
   const [syncing, setSyncing] = useState<boolean>(false);
 
   const pending =
@@ -39,7 +37,6 @@ export function useSync(): SyncState {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
     const on = (): void => {
       setOnline(true);
       void pushOutbox();
@@ -49,7 +46,7 @@ export function useSync(): SyncState {
     window.addEventListener('offline', off);
 
     const timer = window.setInterval(() => {
-      if (typeof navigator === 'undefined' || navigator.onLine) void pushOutbox();
+      if (navigator.onLine) void pushOutbox();
     }, 20_000);
 
     return () => {

@@ -16,12 +16,18 @@ type Status = 'online' | 'offline' | 'server-down';
  */
 export function ConnectionBadge(): ReactElement {
   const { t } = useTranslation();
+  // Using true initially and testing immediately so it doesn't blink falsely, but
+  // actually wait we can just start with navigator.onLine and wait for backend check
   const [browserOnline, setBrowserOnline] = useState<boolean>(navigator.onLine);
   const [backendUp, setBackendUp] = useState<boolean>(true);
   const timer = useRef<number | undefined>(undefined);
+  const isMounted = useRef(true);
 
   const checkBackend = useCallback(async (): Promise<void> => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+      if (isMounted.current) setBackendUp(true); // Don't show server down if offline
+      return;
+    }
     try {
       const ctrl = new AbortController();
       const to = window.setTimeout(() => ctrl.abort(), 8000);
@@ -31,14 +37,18 @@ export function ConnectionBadge(): ReactElement {
         signal: ctrl.signal,
       });
       window.clearTimeout(to);
-      // 200 = sog'lom, 503 = xizmat qisman ishlamayapti — lekin server o'zi javob beryapti
-      setBackendUp(resp.ok || resp.status === 503);
+      if (isMounted.current) {
+        setBackendUp(resp.ok || resp.status === 503);
+      }
     } catch {
-      setBackendUp(false);
+      if (isMounted.current) {
+        setBackendUp(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    isMounted.current = true;
     const on = (): void => {
       setBrowserOnline(true);
       void checkBackend();
@@ -54,6 +64,7 @@ export function ConnectionBadge(): ReactElement {
     timer.current = window.setInterval(() => void checkBackend(), POLL_MS);
 
     return () => {
+      isMounted.current = false;
       window.removeEventListener('online', on);
       window.removeEventListener('offline', off);
       window.removeEventListener('focus', onFocus);
@@ -89,6 +100,8 @@ export function ConnectionBadge(): ReactElement {
 
   return (
     <span
+      role="status"
+      aria-live="polite"
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}
       title={status === 'server-down' ? t('common.serverDown') : undefined}
     >

@@ -3,12 +3,13 @@ import { Camera, CircleCheckBig } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { getCurrentCoords } from '@/mobile/geo';
+import { usePrefetchedCoords } from '@/mobile/geo';
 import { saveExpenseLocal } from '@/offline/actions';
 import { expensesApi } from '@/shared/api/finance';
 import { ocrApi } from '@/shared/api/ocr';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
+import { ExpenseCategoryIcon } from '@/shared/components/ExpenseCategoryIcon';
 import { money } from '@/shared/lib/format';
 
 const QUICK = [10000, 20000, 50000, 100000, 200000];
@@ -37,6 +38,9 @@ export function NewExpensePage(): ReactElement {
 
   const selectedCat = categories.data?.results.find((c) => c.id === category);
 
+  // Sahifa ochilganda GPS boshlanadi — saqlash uni 8 s kutmaydi (UX N4)
+  const coordsForSave = usePrefetchedCoords(true);
+
   const receipt = useMutation({
     mutationFn: (file: File) => ocrApi.receiptScan(file),
     onSuccess: (r) => {
@@ -47,7 +51,7 @@ export function NewExpensePage(): ReactElement {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const coords = await getCurrentCoords();
+      const coords = await coordsForSave();
       return saveExpenseLocal({
         category,
         category_name: selectedCat?.name ?? '',
@@ -104,7 +108,7 @@ export function NewExpensePage(): ReactElement {
                   : 'bg-white shadow-sm dark:bg-gray-900'
               }`}
             >
-              <span className="text-2xl">{c.icon || '💸'}</span>
+              <ExpenseCategoryIcon icon={c.icon} name={c.name} size={24} className="mb-0.5" />
               {c.name}
             </button>
           ))}
@@ -170,8 +174,7 @@ export function NewExpensePage(): ReactElement {
 
       {selectedCat?.requires_receipt && (
         <p className="rounded-lg bg-pending/10 px-3 py-2 text-xs text-pending">
-          Bu kategoriya uchun chek rasmi kerak — hozir yoki keyinroq shu yerdan
-          qo'shing.
+          Bu kategoriya uchun chek rasmi kerak — keyinroq admin panelda qo'shing.
         </p>
       )}
 

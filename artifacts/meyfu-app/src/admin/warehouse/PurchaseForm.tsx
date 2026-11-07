@@ -6,9 +6,10 @@ import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
 
 import { ProductLineEditor, type LineRow } from './ProductLineEditor';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function PurchaseForm({ onDone }: { onDone: () => void }): ReactElement {

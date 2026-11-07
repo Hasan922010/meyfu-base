@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from apps.core.admin import AppendOnlyAdmin
+from apps.core.cleanup_admin import TestCleanupAdminMixin
 
 from .constants import InventoryStatus
 from .models import (
@@ -13,6 +14,7 @@ from .models import (
     Stock,
     StockMovement,
     Supplier,
+    SupplierTransaction,
     VanStock,
     Warehouse,
 )
@@ -42,7 +44,7 @@ class StockAdmin(admin.ModelAdmin):
 
 
 @admin.register(StockMovement)
-class StockMovementAdmin(AppendOnlyAdmin):
+class StockMovementAdmin(TestCleanupAdminMixin, AppendOnlyAdmin):
     list_display = (
         "created_at", "movement_type", "product", "warehouse",
         "quantity", "balance_after", "user",
@@ -50,6 +52,14 @@ class StockMovementAdmin(AppendOnlyAdmin):
     list_filter = ("movement_type", "warehouse")
     search_fields = ("product__name", "product__sku", "reference_id")
     date_hierarchy = "created_at"
+
+
+@admin.register(SupplierTransaction)
+class SupplierTransactionAdmin(TestCleanupAdminMixin, AppendOnlyAdmin):
+    list_display = ("created_at", "supplier", "transaction_type", "amount", "balance_after")
+    list_filter = ("transaction_type", "date", "supplier")
+    search_fields = ("supplier__name", "note")
+    date_hierarchy = "date"
 
 
 class PurchaseItemInline(admin.TabularInline):

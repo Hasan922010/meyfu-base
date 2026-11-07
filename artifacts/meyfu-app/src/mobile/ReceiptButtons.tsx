@@ -1,4 +1,4 @@
-import { Download, Share2 } from 'lucide-react';
+import { Download, Printer, Share2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import type { ReceiptDoc } from './lib/receiptPdf';
@@ -14,7 +14,10 @@ interface Props {
  * dinamik import qilinadi — asosiy mobil bundle'ga tushmaydi.
  */
 export function ReceiptButtons({ getDoc, filename }: Props): ReactElement {
-  const [busy, setBusy] = useState<'save' | 'share' | null>(null);
+  const [busy, setBusy] = useState<'save' | 'share' | 'print' | null>(null);
+  const [canPrint] = useState<boolean>(
+    () => typeof navigator !== 'undefined' && 'bluetooth' in navigator,
+  );
   const [err, setErr] = useState<string | null>(null);
   const [stale, setStale] = useState<boolean>(false);
 
@@ -34,6 +37,28 @@ export function ReceiptButtons({ getDoc, filename }: Props): ReactElement {
       else share.downloadPdf(blob, filename);
     } catch {
       setErr('PDF yaratib bo‘lmadi.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  // v5 C3: Bluetooth termal printer (ESC/POS) — Android Chrome
+  async function print(): Promise<void> {
+    setBusy('print');
+    setErr(null);
+    try {
+      const [escpos, bt, cache] = await Promise.all([
+        import('./lib/escpos'),
+        import('./lib/btPrinter'),
+        import('./lib/companyCache'),
+      ]);
+      const { company } = await cache.getCompanyCache();
+      await bt.printBytes(escpos.encodeReceipt(getDoc(), company, bt.getPaperWidth()));
+    } catch (e) {
+      // Foydalanuvchi printer tanlashni bekor qilsa — xato ko'rsatmaymiz
+      if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+        setErr(e instanceof Error ? e.message : 'Chop etib bo‘lmadi.');
+      }
     } finally {
       setBusy(null);
     }
@@ -59,6 +84,16 @@ export function ReceiptButtons({ getDoc, filename }: Props): ReactElement {
           {busy === 'share' ? '…' : 'Ulashish'}
         </button>
       </div>
+      {canPrint && (
+        <button
+          className="btn flex w-full items-center justify-center gap-1.5"
+          disabled={busy !== null}
+          onClick={() => void print()}
+        >
+          <Printer size={16} aria-hidden />
+          {busy === 'print' ? 'Chop etilmoqda…' : 'Printerda chop etish'}
+        </button>
+      )}
       {stale && (
         <p className="text-center text-xs text-gray-400">
           Kompaniya rekvizitlari eskirgan — internet bo‘lganda yangilanadi.

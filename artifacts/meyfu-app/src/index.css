@@ -28,6 +28,21 @@ body {
   .field {
     @apply min-h-[48px] w-full rounded-xl border border-gray-300 bg-white px-3
       text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/30
-      dark:border-gray-700 dark:bg-gray-900;
+      dark:border-gray-700 dark:bg-gray-900
+      aria-[invalid=true]:border-danger aria-[invalid=true]:focus:ring-danger/30;
   }
+}
+
+/* v5 B2: xaritadagi tartib raqami (marshrut) — fon va o'q ko'rinmasin */
+.leaflet-tooltip.map-num {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 0;
+}
+.leaflet-tooltip.map-num::before {
+  display: none;
 }

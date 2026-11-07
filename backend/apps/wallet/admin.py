@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from apps.core.admin import AppendOnlyAdmin
+from apps.core.cleanup_admin import TestCleanupAdminMixin
 
 from .models import DistributorWallet, WalletTransaction
 
@@ -16,7 +17,7 @@ class DistributorWalletAdmin(admin.ModelAdmin):
 
 
 @admin.register(WalletTransaction)
-class WalletTransactionAdmin(AppendOnlyAdmin):
+class WalletTransactionAdmin(TestCleanupAdminMixin, AppendOnlyAdmin):
     list_display = (
         "created_at", "wallet", "transaction_type", "amount", "balance_after",
         "reference_type",

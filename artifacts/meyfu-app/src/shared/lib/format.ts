@@ -5,6 +5,14 @@ export function groupThousands(intPart: string): string {
   return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/**
+ * Pul qiymatining butun so'm raqamlari: "30000.00" -> "30000", "1 250 000" -> "1250000".
+ * Kasr qismi avval kesiladi — aks holda nuqta o'chib, summa 100 barobar bo'lib qoladi.
+ */
+export function amountDigits(value: string): string {
+  return value.split('.')[0]!.replace(/\D/g, '');
+}
+
 const _ONES = [
   '', 'bir', 'ikki', 'uch', "to'rt", 'besh', 'olti', 'yetti', 'sakkiz', "to'qqiz",
 ];
@@ -57,6 +65,15 @@ export function money(value: string | number): string {
   return `${sign}${groupThousands(String(Math.round(Math.abs(n))))} so'm`;
 }
 
+/**
+ * Input maydoni uchun miqdor: "1.000" -> "1", "2.500" -> "2.5". Number input
+ * "1.000" ni lokalga qarab "1,000" ko'rsatadi — bu "ming" deb o'qiladi (audit m4).
+ */
+export function plainQty(value: string): string {
+  const n = Number(value);
+  return value === '' || Number.isNaN(n) ? value : String(n);
+}
+
 /** Miqdor — kasr qism bo'lsa saqlanadi (masalan kg): 3 -> "3", 2.5 -> "2.5". */
 export function qty(value: string | number): string {
   const n = typeof value === 'string' ? Number(value) : value;
@@ -68,12 +85,43 @@ export function qty(value: string | number): string {
   return `${sign}${groupThousands(int)}${frac ? `.${frac}` : ''}`;
 }
 
+/** Barcha sana/vaqtlar Toshkent vaqtida (CLAUDE.md 5.4) — qurilma zonasidan qat'i nazar. */
+export const TIME_ZONE = 'Asia/Tashkent';
+
+const dateFmt = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+const timeFmt = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** `dd.MM.yyyy`. Faqat sana ("2026-09-30") vaqt zonasiga bog'lanmaydi —
+ * `new Date()` uni UTC yarim tunda o'qib, g'arbiy zonalarda kechagi kunni berardi. */
 export function dateShort(iso: string): string {
+  const m = DATE_ONLY.exec(iso);
+  if (m) return `${m[3]}.${m[2]}.${m[1]}`;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  return dateFmt.format(d);
+}
+
+/** `HH:mm` Toshkent vaqtida. */
+export function timeShort(iso: string | Date): string {
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return timeFmt.format(d);
+}
+
+/** `dd.MM.yyyy HH:mm` Toshkent vaqtida. */
+export function dateTimeShort(iso: string | Date): string {
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return `${dateFmt.format(d)} ${timeFmt.format(d)}`;
 }

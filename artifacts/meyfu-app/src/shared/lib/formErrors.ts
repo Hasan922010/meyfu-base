@@ -1,6 +1,6 @@
 import type { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form';
 
-import { extractFieldErrors } from '@/shared/api/client';
+import { extractApiError, extractFieldErrors } from '@/shared/api/client';
 
 // Audit UX-001: backend (DRF) maydon xatolarini react-hook-form ga bog'lash.
 
@@ -28,4 +28,19 @@ export function applyServerFieldErrors<T extends FieldValues>(
     }
   }
   return leftover;
+}
+
+/**
+ * Server xatosini formaga bog'laydi va umumiy blokda ko'rsatiladigan matnni
+ * qaytaradi: maydon xatolari o'z maydoni ostida chiqadi, bu yerda faqat
+ * qolgani (yoki maydon xatosi bo'lmasa — umumiy xabar). `null` — blok kerak emas.
+ */
+export function applyServerErrors<T extends FieldValues>(
+  error: unknown,
+  setError: UseFormSetError<T>,
+  fieldMap: Record<string, string> = {},
+): string | null {
+  const leftover = applyServerFieldErrors(error, setError, fieldMap);
+  if (Object.keys(extractFieldErrors(error)).length === 0) return extractApiError(error);
+  return leftover.join(' · ') || null;
 }

@@ -12,12 +12,14 @@ import {
   RefreshCw,
   ScanLine,
   Truck,
+  Undo2,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
 import { clientsApi } from '@/shared/api/clients';
 import { dayCloseApi } from '@/shared/api/reports';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 
@@ -28,6 +30,7 @@ const LINKS: { to: string; label: string; Icon: LucideIcon }[] = [
   { to: '/m/loading', label: 'Yuklama', Icon: PackageOpen },
   { to: '/m/van', label: 'Mashina qoldig‘i', Icon: Truck },
   { to: '/m/debts', label: 'Qarz undirish', Icon: HandCoins },
+  { to: '/m/return/new', label: 'Tovar qaytarish', Icon: Undo2 },
   { to: '/m/expenses', label: 'Xarajatlar', Icon: Receipt },
   { to: '/m/scan', label: 'Naklit skani', Icon: ScanLine },
   { to: '/m/visits', label: 'Tashriflar', Icon: MapPin },
@@ -47,6 +50,12 @@ export function MobileHomePage(): ReactElement {
     queryKey: ['day-close', 'my-today'],
     queryFn: () => dayCloseApi.myToday(),
   });
+  // MyLoadingPage bilan bir xil kalit — tasdiqlangach karta o'zi yo'qoladi (UX M7)
+  const loadings = useQuery({
+    queryKey: ['loadings', 'my-today'],
+    queryFn: () => warehouseApi.myTodayLoadings(),
+  });
+  const awaitingLoadings = (loadings.data ?? []).filter((l) => l.status === 'SENT');
 
   return (
     <div className="space-y-4">
@@ -74,11 +83,30 @@ export function MobileHomePage(): ReactElement {
         </div>
       )}
 
+      {awaitingLoadings.length > 0 && (
+        <Link
+          to="/m/loading"
+          className="flex items-center gap-3 rounded-xl border border-brand/30 bg-brand/10 p-3 text-sm"
+        >
+          <PackageOpen size={28} className="shrink-0 text-brand" aria-hidden />
+          <span className="flex-1">
+            <span className="block font-semibold">Yuklama tasdiqlanishini kutmoqda</span>
+            <span className="text-gray-600 dark:text-gray-300">
+              {awaitingLoadings.map((l) => l.number).join(', ')} · tovarni sanab, qabul qiling
+            </span>
+          </span>
+          <span aria-hidden className="text-brand">
+            →
+          </span>
+        </Link>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <Link to="/m/sale" className="btn-brand">
           + Yangi sotuv
         </Link>
-        <Link to="/m/close" className="btn bg-pending text-white">
+        {/* Ikkinchi darajali: ertalab "Yangi sotuv" bilan teng raqobatlashmasin (UX m7) */}
+        <Link to="/m/close" className="btn border-2 border-pending bg-transparent text-pending">
           {today.data?.submitted ? 'Kun yopilgan' : 'Kunni yopish'}
         </Link>
       </div>
@@ -115,9 +143,7 @@ export function MobileHomePage(): ReactElement {
             </Link>
           ))
         ) : (
-          <p className="text-sm text-gray-400">
-            Marshrut biriktirilmagan — adminga murojaat qiling.
-          </p>
+          <p className="text-sm text-gray-400">Marshrut biriktirilmagan.</p>
         )}
       </section>
     </div>

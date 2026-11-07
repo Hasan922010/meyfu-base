@@ -8,9 +8,11 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { staffApi } from '@/shared/api/users';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { ROLE_LABEL } from '@/shared/lib/labels';
+import { ROLE_LABELS } from '@/shared/lib/labels';
+import { can } from '@/shared/lib/permissions';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role, User } from '@/shared/types/api';
 
@@ -19,7 +21,7 @@ import { StaffForm } from './StaffForm';
 export function StaffPage(): ReactElement {
   const qc = useQueryClient();
   const me = useAuthStore((s) => s.user);
-  const canWrite = me?.role === 'SUPER_ADMIN';
+  const canWrite = can(me?.role, 'staffWrite');
 
   const [role, setRole] = useState<string>('');
   const [active, setActive] = useState<string>('');
@@ -46,6 +48,15 @@ export function StaffPage(): ReactElement {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['staff'] }),
   });
 
+  const [deleting, setDeleting] = useState<User | null>(null);
+  const del = useMutation({
+    mutationFn: (id: string) => staffApi.remove(id),
+    onSuccess: () => {
+      setDeleting(null);
+      void qc.invalidateQueries({ queryKey: ['staff'] });
+    },
+  });
+
   const rows = query.data?.results ?? [];
 
   return (
@@ -61,7 +72,13 @@ export function StaffPage(): ReactElement {
 
       {!canWrite && (
         <p className="text-sm text-gray-500">
-          Xodim qo'shish/tahrirlash faqat Super admin uchun.
+          Xodim qo'shish/tahrirlash — Super admin va filial rahbari uchun.
+        </p>
+      )}
+      {me?.role === 'BRANCH_MANAGER' && (
+        <p className="text-sm text-gray-500">
+          Faqat o'z filialingiz xodimlari ko'rinadi; yangi xodim avtomatik filialingizga
+          qo'shiladi.
         </p>
       )}
 
@@ -84,9 +101,9 @@ export function StaffPage(): ReactElement {
           }}
         >
           <option value="">Barcha rollar</option>
-          {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
+          {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
             <option key={r} value={r}>
-              {ROLE_LABEL[r]}
+              {ROLE_LABELS[r]}
             </option>
           ))}
         </select>
@@ -107,6 +124,11 @@ export function StaffPage(): ReactElement {
       {toggle.isError && (
         <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {extractApiError(toggle.error)}
+        </p>
+      )}
+      {del.isError && (
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          {extractApiError(del.error)}
         </p>
       )}
 
@@ -136,7 +158,7 @@ export function StaffPage(): ReactElement {
                 >
                   <td className="p-3 font-medium">{u.full_name}</td>
                   <td className="p-3 font-mono text-xs">{u.phone}</td>
-                  <td className="p-3">{ROLE_LABEL[u.role]}</td>
+                  <td className="p-3">{ROLE_LABELS[u.role]}</td>
                   <td className="p-3">
                     {u.distributor_profile
                       ? `${u.distributor_profile.commission_percent}%`
@@ -155,17 +177,26 @@ export function StaffPage(): ReactElement {
                           Tahrir
                         </button>
                         {u.id !== me?.id && (
-                          <button
-                            className={
-                              u.is_active
-                                ? 'text-danger hover:underline'
-                                : 'text-success hover:underline'
-                            }
-                            disabled={toggle.isPending}
-                            onClick={() => toggle.mutate(u.id)}
-                          >
-                            {u.is_active ? 'Bloklash' : 'Faollashtirish'}
-                          </button>
+                          <>
+                            <button
+                              className={
+                                u.is_active
+                                  ? 'text-danger hover:underline'
+                                  : 'text-success hover:underline'
+                              }
+                              disabled={toggle.isPending}
+                              onClick={() => toggle.mutate(u.id)}
+                            >
+                              {u.is_active ? 'Bloklash' : 'Faollashtirish'}
+                            </button>
+                            <button
+                              className="text-danger hover:underline"
+                              disabled={del.isPending}
+                              onClick={() => setDeleting(u)}
+                            >
+                              O'chirish
+                            </button>
+                          </>
                         )}
                       </span>
                     </td>
@@ -183,7 +214,6 @@ export function StaffPage(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -194,7 +224,6 @@ export function StaffPage(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
-            aria-label="Keyingi sahifa"
           >
             ›
           </button>
@@ -217,6 +246,17 @@ export function StaffPage(): ReactElement {
           }}
         />
       </Modal>
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Xodimni o'chirish"
+        confirmLabel="O'chirish"
+        danger
+        isPending={del.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && del.mutate(deleting.id)}
+      >
+        «{deleting?.full_name}» xodimi o'chiriladi.
+      </ConfirmDialog>
     </div>
   );
 }

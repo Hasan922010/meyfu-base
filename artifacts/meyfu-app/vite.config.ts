@@ -1,6 +1,6 @@
 import path from 'path';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type UserConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 import { fileURLToPath, URL } from 'node:url';
@@ -27,7 +27,7 @@ if (!basePath) {
   );
 }
 
-export default defineConfig(async () => {
+export default defineConfig(async (): Promise<UserConfig> => {
   return {
     base: basePath,
     plugins: [
@@ -101,6 +101,9 @@ export default defineConfig(async () => {
       rollupOptions: {
         output: {
           manualChunks: {
+            charts: ['recharts'],
+            maps: ['leaflet'],
+            forms: ['react-hook-form', 'zod'],
             react: ['react', 'react-dom', 'react-router-dom'],
             query: ['@tanstack/react-query'],
             offline: ['dexie', 'dexie-react-hooks'],

@@ -14,6 +14,9 @@ export interface DailyReturn {
   id: string;
   number: string;
   date: string;
+  distributor_name?: string;
+  warehouse_name?: string;
+  note?: string;
   total_amount: string;
   items: DailyReturnItem[];
 }

@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from apps.core.admin import AppendOnlyAdmin
+from apps.core.cleanup_admin import TestCleanupAdminMixin
 
 from .models import CashAccount, CashTransaction, CompanyExpense
 
@@ -12,7 +13,7 @@ class CashAccountAdmin(admin.ModelAdmin):
 
 
 @admin.register(CashTransaction)
-class CashTransactionAdmin(AppendOnlyAdmin):
+class CashTransactionAdmin(TestCleanupAdminMixin, AppendOnlyAdmin):
     list_display = (
         "created_at", "transaction_type", "amount", "balance_after",
         "counterparty", "reference_type",

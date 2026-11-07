@@ -7,19 +7,16 @@ import { Link } from 'react-router-dom';
 import { fulfillOrderLocal } from '@/offline/actions';
 import { db, type CachedOrder } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
-import { getCurrentCoords } from '@/mobile/geo';
+import { usePrefetchedCoords } from '@/mobile/geo';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
+import { orderToReceipt } from '@/mobile/lib/orderReceipt';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
-import { ordersApi, type Order } from '@/shared/api/orders';
+import { ordersApi } from '@/shared/api/orders';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
-import { money } from '@/shared/lib/format';
-
-const PAY_LABEL: Record<string, string> = {
-  NAQD: 'Naqd',
-  PLASTIK: 'Plastik',
-  QARZ: 'Qarzga',
-};
+import { dateTimeShort, money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
+import { paymentLabel } from '@/shared/lib/labels';
 
 type Tab = 'taken' | 'deliver';
 type PayType = 'NAQD' | 'PLASTIK' | 'QARZ';
@@ -35,13 +32,13 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 function plusDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return businessDateISO(days);
 }
 
 export function MyOrdersPage(): ReactElement {
-  const [tab, setTab] = useState<Tab>('deliver');
+  // Zakaz oluvchi yetkazmaydi — faqat o'zi olgan buyurtmalar
+  const isOrderTaker = useAuthStore((s) => s.user?.role) === 'ORDER_TAKER';
+  const [tab, setTab] = useState<Tab>(isOrderTaker ? 'taken' : 'deliver');
   const [fulfilling, setFulfilling] = useState<CachedOrder | null>(null);
 
   if (fulfilling) {
@@ -59,6 +56,7 @@ export function MyOrdersPage(): ReactElement {
         </Link>
       </div>
 
+      {!isOrderTaker && (
       <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
         {(
           [
@@ -77,6 +75,7 @@ export function MyOrdersPage(): ReactElement {
           </button>
         ))}
       </div>
+      )}
 
       {tab === 'deliver' ? (
         <DeliverTab onPick={setFulfilling} />
@@ -125,28 +124,6 @@ function DeliverTab({
       ))}
     </ul>
   );
-}
-
-function orderToReceipt(o: Order): ReceiptDoc {
-  return {
-    kind: 'order',
-    numberOrRef: o.number,
-    synced: true,
-    date: new Date(o.created_at).toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }),
-    distributorName: o.taken_by_name,
-    clientName: o.client_name,
-    paymentLabel: o.payment_intent ? PAY_LABEL[o.payment_intent] : undefined,
-    lines: o.items.map((it) => ({
-      name: it.product_name,
-      qty: Number(it.quantity),
-      price: Number(it.price),
-    })),
-    total: Number(o.total_amount),
-  };
 }
 
 function TakenTab(): ReactElement {
@@ -212,6 +189,8 @@ function FulfillScreen({
   );
   const [due, setDue] = useState<string>(plusDays(14));
   const [saving, setSaving] = useState<boolean>(false);
+  // Yetkazish oynasi ochilganda GPS boshlanadi — saqlash uni 8 s kutmaydi (UX N4)
+  const coordsForSave = usePrefetchedCoords(true);
   const [done, setDone] = useState<boolean>(false);
 
   const total = order.items.reduce(
@@ -222,7 +201,7 @@ function FulfillScreen({
   async function save(paymentType: PayType): Promise<void> {
     setSaving(true);
     try {
-      const coords = await getCurrentCoords();
+      const coords = await coordsForSave();
       const lines = order.items
         .map((it) => ({
           item: it.id,
@@ -245,16 +224,10 @@ function FulfillScreen({
         kind: 'sale',
         numberOrRef: order.number,
         synced: false,
-        date: new Date().toLocaleString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        date: dateTimeShort(new Date()),
         distributorName,
         clientName: order.client_name,
-        paymentLabel: PAY_LABEL[paymentType],
+        paymentLabel: paymentLabel(paymentType),
         lines: lines.map((l) => {
           const it = order.items.find((x) => x.id === l.item);
           return {

@@ -12,7 +12,9 @@ import {
   markSending,
   newUuid,
   pendingCount,
+  recoverOrphanedSending,
   retryFailed,
+  unsentCount,
 } from './outbox';
 
 async function failNTimes(uuid: string, n: number): Promise<void> {
@@ -144,5 +146,73 @@ describe('markSending', () => {
     const [row] = await listOutbox();
     expect(row?.status).toBe('SENDING');
     expect(typeof row?.last_attempt_at).toBe('number');
+  });
+});
+
+describe('unsentCount (UX M6)', () => {
+  it('serverga yetmagan PENDING/SENDING/FAILED/DEAD ni sanaydi, CONFLICT ni emas', async () => {
+    await enqueue('sale', {}, 'pending');
+    const sending = await enqueue('sale', {}, 'sending');
+    await markSending([sending]);
+    const failed = await enqueue('sale', {}, 'failed');
+    await failNTimes(failed, 1);
+    const dead = await enqueue('sale', {}, 'dead');
+    await failNTimes(dead, MAX_ATTEMPTS);
+    const conflict = await enqueue('sale', {}, 'conflict');
+    await applyResult({ client_uuid: conflict, status: 'CONFLICT' });
+
+    expect(await unsentCount()).toBe(4);
+  });
+
+  it('navbat bo‘sh bo‘lsa 0', async () => {
+    expect(await unsentCount()).toBe(0);
+  });
+});
+
+describe('recoverOrphanedSending (UX B1)', () => {
+  it('yetim SENDING yozuvni PENDING ga qaytaradi, attempts o‘zgarmaydi', async () => {
+    const id = await enqueue('sale', {}, 'x');
+    await markSending([id]);
+
+    const recovered = await recoverOrphanedSending();
+
+    expect(recovered).toBe(1);
+    const [row] = await listOutbox();
+    expect(row?.status).toBe('PENDING');
+    expect(row?.attempts).toBe(0);
+  });
+
+  it('boshqa statuslarga tegmaydi', async () => {
+    const failed = await enqueue('sale', {}, 'f');
+    await failNTimes(failed, 1);
+    const conflict = await enqueue('sale', {}, 'c');
+    await applyResult({ client_uuid: conflict, status: 'CONFLICT' });
+
+    expect(await recoverOrphanedSending()).toBe(0);
+    const statuses = (await listOutbox()).map((o) => o.status).sort();
+    expect(statuses).toEqual(['CONFLICT', 'FAILED']);
+  });
+});
+
+describe('applyResult — audit FE-106', () => {
+  it('tuzalmaydigan xato darhol DEAD, server xabari saqlanadi', async () => {
+    const uuid = await enqueue('sale', { x: 1 }, 'Sotuv');
+
+    await applyResult({
+      client_uuid: uuid, status: 'FAILED',
+      error: { code: 'BRANCH_MISMATCH', message: 'Boshqa filial mijozi' },
+    });
+
+    const op = await db.outbox.get(uuid);
+    expect(op?.status).toBe('DEAD');
+    expect(op?.error).toBe('Boshqa filial mijozi');
+  });
+
+  it('CONFLICT uchun server xabari ko‘rsatiladi', async () => {
+    const uuid = await enqueue('sale_return', { x: 1 }, 'Qaytarish');
+
+    await applyResult({ client_uuid: uuid, status: 'CONFLICT', error: { message: 'Qaytarish ziddiyati' } });
+
+    expect((await db.outbox.get(uuid))?.error).toBe('Qaytarish ziddiyati');
   });
 });

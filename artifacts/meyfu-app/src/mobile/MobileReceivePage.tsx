@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CircleCheckBig, Search, X } from 'lucide-react';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { catalogApi } from '@/shared/api/catalog';
@@ -9,17 +9,18 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { money, numberToWordsUz } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
+import { withOnlyOption } from '@/shared/lib/select';
 
-interface Row {
-  product: string;
-  name: string;
-  unit: string;
-  quantity: string;
-  price: string;
-}
+import {
+  clearReceiveDraft,
+  loadReceiveDraft,
+  saveReceiveDraft,
+  type ReceiveDraftRow as Row,
+} from './receiveDraft';
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function MobileReceivePage(): ReactElement {
@@ -39,25 +40,42 @@ export function MobileReceivePage(): ReactElement {
     queryFn: () => catalogApi.products({ page_size: 1000, is_active: true }),
   });
 
-  const [supplier, setSupplier] = useState<string>('');
-  const [warehouse, setWarehouse] = useState<string>('');
-  const [invoice, setInvoice] = useState<string>('');
+  const [draft] = useState(loadReceiveDraft);
+  const [chosenSupplier, setSupplier] = useState<string>(draft?.supplier ?? '');
+  const [chosenWarehouse, setWarehouse] = useState<string>(draft?.warehouse ?? '');
+  const supplier = withOnlyOption(chosenSupplier, suppliers.data?.results);
+  const warehouse = withOnlyOption(chosenWarehouse, warehouses.data?.results);
+  const [invoice, setInvoice] = useState<string>(draft?.invoice ?? '');
   const [search, setSearch] = useState<string>('');
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<Row[]>(draft?.rows ?? []);
   const [done, setDone] = useState<string>('');
+
+  // Kiritilganlar sahifadan chiqib ketganda yo'qolmasin (audit K6)
+  useEffect(() => {
+    if (!done) saveReceiveDraft({ supplier, warehouse, invoice, rows });
+  }, [supplier, warehouse, invoice, rows, done]);
 
   const chosen = useMemo(() => new Set(rows.map((r) => r.product)), [rows]);
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
+    const normQ = q.replace(/[‘'’`]/g, "'");
     return (products.data?.results ?? [])
-      .filter(
-        (p) =>
-          !chosen.has(p.id) &&
-          (p.name.toLowerCase().includes(q) ||
-            p.sku.toLowerCase().includes(q) ||
-            p.barcode.toLowerCase().includes(q)),
-      )
+      .filter((p) => {
+        if (chosen.has(p.id)) return false;
+        const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        const sku = (p.sku || '').toLowerCase();
+        const barcode = (p.barcode || '').toLowerCase();
+        const category = (p.category_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        const brand = (p.brand_name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+        return (
+          name.includes(normQ) ||
+          sku.includes(normQ) ||
+          barcode.includes(normQ) ||
+          category.includes(normQ) ||
+          brand.includes(normQ)
+        );
+      })
       .slice(0, 8);
   }, [products.data, search, chosen]);
 
@@ -83,6 +101,7 @@ export function MobileReceivePage(): ReactElement {
       }),
     onSuccess: (p) => {
       void qc.invalidateQueries({ queryKey: ['purchases'] });
+      clearReceiveDraft();
       setDone(p.number);
     },
   });
@@ -128,6 +147,7 @@ export function MobileReceivePage(): ReactElement {
         <div className="space-y-2">
           <select
             className="field"
+            aria-label="Yetkazib beruvchi"
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
           >
@@ -140,6 +160,7 @@ export function MobileReceivePage(): ReactElement {
           </select>
           <select
             className="field"
+            aria-label="Ombor"
             value={warehouse}
             onChange={(e) => setWarehouse(e.target.value)}
           >
@@ -166,44 +187,60 @@ export function MobileReceivePage(): ReactElement {
           aria-hidden
         />
         <input
-          className="field pl-9"
+          className="field pl-9 pr-8"
           placeholder="Mahsulot qidirish — nom, SKU, shtrix-kod"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {results.length > 0 && (
+        {search && (
+          <button
+            type="button"
+            className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+            onClick={() => setSearch('')}
+            aria-label="Tozalash"
+          >
+            <X size={16} />
+          </button>
+        )}
+        {search.trim() !== '' && (
           <ul className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-            {results.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                  onClick={() => {
-                    setRows((prev) => [
-                      ...prev,
-                      {
-                        product: p.id,
-                        name: p.name,
-                        unit: p.unit_name,
-                        quantity: '1',
-                        price: p.cost_price
-                          ? String(Math.round(Number(p.cost_price)))
-                          : '',
-                      },
-                    ]);
-                    setSearch('');
-                  }}
-                >
-                  <span>
-                    {p.name}
-                    <span className="ml-1 text-xs text-gray-400">{p.sku}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-gray-400">
-                    {money(p.cost_price)}
-                  </span>
-                </button>
+            {results.length > 0 ? (
+              results.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                    onClick={() => {
+                      setRows((prev) => [
+                        ...prev,
+                        {
+                          product: p.id,
+                          name: p.name,
+                          unit: p.unit_name,
+                          quantity: '1',
+                          price: p.cost_price
+                            ? String(Math.round(Number(p.cost_price)))
+                            : '',
+                        },
+                      ]);
+                      setSearch('');
+                    }}
+                  >
+                    <span>
+                      {p.name}
+                      <span className="ml-1 text-xs text-gray-400">{p.sku}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-gray-400">
+                      {money(p.cost_price)}
+                    </span>
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="px-3 py-4 text-center text-xs text-gray-400">
+                Mahsulot topilmadi
               </li>
-            ))}
+            )}
           </ul>
         )}
       </div>
@@ -294,13 +331,17 @@ export function MobileReceivePage(): ReactElement {
         </p>
       )}
 
-      <button
-        className="btn-brand w-full"
-        disabled={!valid || save.isPending}
-        onClick={() => save.mutate()}
-      >
-        Qabulni saqlash
-      </button>
+      {/* Pastki menyu ustida yopishib turadi — aks holda tugma menyu orqasida qolib,
+          bosish menyuga tushar va kiritilgan qabul yo'qolar edi (audit K6) */}
+      <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-10 -mx-4 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+        <button
+          className="btn-brand w-full"
+          disabled={!valid || save.isPending}
+          onClick={() => save.mutate()}
+        >
+          Qabulni saqlash
+        </button>
+      </div>
     </div>
   );
 }

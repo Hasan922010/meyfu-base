@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   BookOpen,
+  Building2,
   CalendarCheck,
   ClipboardList,
   Coins,
@@ -12,8 +13,11 @@ import {
   type LucideIcon,
   Menu,
   Package,
+  PiggyBank,
   Route,
   ScanLine,
+  RefreshCw,
+  ScrollText,
   Settings,
   ShoppingCart,
   Store,
@@ -21,6 +25,7 @@ import {
   Users,
   Wallet,
   Warehouse,
+  Smartphone,
   X,
 } from 'lucide-react';
 import { useEffect, useState, type ReactElement } from 'react';
@@ -28,17 +33,31 @@ import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { logout } from '@/shared/api/auth';
-import { ConnectionBadge } from '@/shared/components/ConnectionBadge';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
+import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { setDesktopForced } from '@/shared/lib/useIsMobile';
 import { useAuthStore } from '@/shared/store/authStore';
+import { SyncBadge } from '@/offline/SyncBadge';
+import { useSync } from '@/offline/useSync';
+import { canAccessRoute } from '@/shared/lib/rolePolicy';
+import { useFocusMain } from '@/shared/hooks/useFocusMain';
 
-const NAV: { to: string; key: string; end: boolean; Icon: LucideIcon }[] = [
+const NAV: {
+  to: string;
+  key: string;
+  end: boolean;
+  Icon: LucideIcon;
+  /** Markaz sozlamasi — filial rahbariga ko'rsatilmaydi */
+  centralOnly?: boolean;
+  /** Backend ruxsat bermaydigan rollar uchun yashiriladi */
+  hiddenFor?: string[];
+}[] = [
   { to: '/admin', key: 'nav.dashboard', end: true, Icon: LayoutDashboard },
   { to: '/admin/products', key: 'nav.products', end: false, Icon: Package },
   { to: '/admin/warehouse', key: 'nav.warehouse', end: false, Icon: Warehouse },
+  { to: '/admin/branches', key: 'nav.branches', end: false, Icon: Building2 },
   { to: '/admin/ocr', key: 'nav.ocr', end: false, Icon: ScanLine },
   { to: '/admin/clients', key: 'nav.clients', end: false, Icon: Store },
   { to: '/admin/routes', key: 'nav.routes', end: false, Icon: Route },
@@ -52,9 +71,35 @@ const NAV: { to: string; key: string; end: boolean; Icon: LucideIcon }[] = [
   { to: '/admin/distributors', key: 'nav.distributors', end: false, Icon: Users },
   { to: '/admin/payroll', key: 'nav.payroll', end: false, Icon: Coins },
   { to: '/admin/reports', key: 'nav.reports', end: false, Icon: BarChart3 },
-  { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity },
-  { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library },
-  { to: '/admin/settings', key: 'nav.settings', end: false, Icon: Settings },
+  { to: '/admin/system', key: 'nav.system', end: false, Icon: Activity, centralOnly: true },
+  {
+    to: '/admin/audit',
+    key: 'nav.audit',
+    end: false,
+    Icon: ScrollText,
+    hiddenFor: ['WAREHOUSE'],
+  },
+  {
+    to: '/admin/sync-log',
+    key: 'nav.syncLog',
+    end: false,
+    Icon: RefreshCw,
+    hiddenFor: ['WAREHOUSE'],
+  },
+  { to: '/admin/refdata', key: 'nav.refdata', end: false, Icon: Library, centralOnly: true },
+  {
+    to: '/admin/opening-balances',
+    key: 'nav.openingBalances',
+    end: false,
+    Icon: PiggyBank,
+  },
+  {
+    to: '/admin/settings',
+    key: 'nav.settings',
+    end: false,
+    Icon: Settings,
+    centralOnly: true,
+  },
   { to: '/admin/help', key: 'nav.help', end: false, Icon: BookOpen },
 ];
 
@@ -65,6 +110,8 @@ export function AdminLayout(): ReactElement {
   const user = useAuthStore((s) => s.user);
   const clear = useAuthStore((s) => s.clear);
   const [drawer, setDrawer] = useState<boolean>(false);
+  const sync = useSync();
+  useFocusMain();
 
   // Sahifa almashganda mobil menyu yopiladi
   useEffect(() => {
@@ -72,14 +119,25 @@ export function AdminLayout(): ReactElement {
   }, [location.pathname]);
 
   async function handleLogout(): Promise<void> {
-    await logout();
-    clear();
-    void navigate('/login', { replace: true });
+    try {
+      await logout();
+    } finally {
+      clear();
+      void navigate('/login', { replace: true });
+    }
   }
+
+  const isBranchManager = user?.role === 'BRANCH_MANAGER';
+  const items = NAV.filter(
+    (item) =>
+      canAccessRoute(item.to, user?.role) &&
+      !(isBranchManager && item.centralOnly) &&
+      !(user?.role && item.hiddenFor?.includes(user.role)),
+  );
 
   const nav = (
     <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-      {NAV.map((item) => (
+      {items.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
@@ -101,6 +159,9 @@ export function AdminLayout(): ReactElement {
 
   return (
     <div className="flex min-h-full md:grid md:grid-cols-[220px_1fr]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-brand">
+        Asosiy kontentga o'tish
+      </a>
       {/* Desktop sidebar */}
       <aside className="hidden flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 md:flex">
         <div className="px-5 pt-4 text-lg font-bold text-brand">{t('app.name')}</div>
@@ -109,10 +170,11 @@ export function AdminLayout(): ReactElement {
 
       {/* Mobil drawer */}
       {drawer && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Asosiy menyu">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setDrawer(false)}
+            aria-hidden="true"
           />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl dark:bg-gray-900">
             <div className="flex items-center justify-between px-5 pt-4">
@@ -141,9 +203,10 @@ export function AdminLayout(): ReactElement {
             >
               <Menu size={22} aria-hidden />
             </button>
-            <ConnectionBadge />
           </div>
           <div className="flex items-center gap-2 text-sm sm:gap-3">
+            <SyncBadge state={sync} />
+            <ThemeToggle />
             <NotificationBell />
             <button
               onClick={() => {
@@ -153,7 +216,7 @@ export function AdminLayout(): ReactElement {
               className="text-brand hover:underline md:hidden"
               aria-label="Mobil versiya"
             >
-              📱
+              <Smartphone size={18} aria-hidden />
             </button>
             <span className="hidden truncate text-gray-500 sm:inline">
               {user?.full_name}
@@ -166,7 +229,7 @@ export function AdminLayout(): ReactElement {
             </button>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 md:p-6 outline-none">
           <ErrorBoundary key={location.pathname} variant="page">
             <Outlet />
           </ErrorBoundary>

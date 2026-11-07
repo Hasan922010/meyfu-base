@@ -1,6 +1,6 @@
 import { forwardRef, type ReactElement } from 'react';
 
-import { groupThousands, numberToWordsUz } from '@/shared/lib/format';
+import { amountDigits, groupThousands, numberToWordsUz } from '@/shared/lib/format';
 
 interface Props {
   /** Xom qiymat — faqat raqamlar (masalan "1250000") */
@@ -32,7 +32,7 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(function AmountIn
   },
   ref,
 ): ReactElement {
-  const digits = String(value ?? '').replace(/\D/g, '');
+  const digits = amountDigits(String(value ?? ''));
   const n = Number(digits || 0);
   return (
     <div>

@@ -12,7 +12,7 @@ import type { DayClose } from '@/shared/types/dayclose';
 export function DayClosePage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [onlyDiff, setOnlyDiff] = useState<boolean>(false);
   const [detail, setDetail] = useState<DayClose | null>(null);
@@ -151,6 +151,13 @@ export function DayClosePage(): ReactElement {
               <Row label="Sotuvlar / tashriflar" value={`${detail.sales_count} / ${detail.visits_count}`} />
             </div>
 
+            {detail.note && (
+              <div className="rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
+                <div className="text-xs text-gray-500">Tarqatuvchi izohi</div>
+                <div>{detail.note}</div>
+              </div>
+            )}
+
             {detail.daily_returns[0]?.items.length ? (
               <div>
                 <div className="mb-1 font-medium">Qaytarilgan tovarlar</div>
@@ -160,9 +167,7 @@ export function DayClosePage(): ReactElement {
                       <span>
                         {it.product_name}{' '}
                         {it.condition !== 'GOOD' && (
-                          <span className="text-danger">
-                            ({it.condition === 'DAMAGED' ? 'brak' : "muddati o'tgan"})
-                          </span>
+                          <span className="text-danger">({it.condition})</span>
                         )}
                       </span>
                       <span>{qty(it.quantity)}</span>

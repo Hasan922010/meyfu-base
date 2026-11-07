@@ -6,8 +6,12 @@ export type QueryParams = Record<string, string | number | boolean | undefined>;
 export async function listPage<T>(
   path: string,
   params?: QueryParams,
+  signal?: AbortSignal,
 ): Promise<PaginatedData<T>> {
-  const { data } = await api.get<ApiSuccess<PaginatedData<T>>>(path, { params });
+  const { data } = await api.get<ApiSuccess<PaginatedData<T>>>(path, {
+    ...(params !== undefined ? { params } : {}),
+    ...(signal !== undefined ? { signal } : {}),
+  });
   return data.data;
 }
 

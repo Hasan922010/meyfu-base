@@ -1,23 +1,47 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
+import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
+import { SortableTh } from '@/shared/table/SortableTh';
+import { TableToolbar, type TableFilter } from '@/shared/table/TableToolbar';
+import { useServerTable } from '@/shared/table/useServerTable';
 import type { Client } from '@/shared/types/clients';
 
 import { ClientForm } from './ClientForm';
+import { ClientsMap } from './ClientsMap';
+import { ClientStatement } from './ClientStatement';
 
 export function ClientsPage(): ReactElement {
+  const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canWrite = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
-  const [search, setSearch] = useState<string>('');
-  const [blocked, setBlocked] = useState<'' | 'true' | 'false'>('');
-  const [page, setPage] = useState<number>(1);
+  const [deleting, setDeleting] = useState<Client | null>(null);
+  const del = useMutation({
+    mutationFn: (id: string) => clientsApi.remove(id),
+    onSuccess: () => {
+      setDeleting(null);
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+
+  // Saralash/qidiruv/filtr serverda — barcha mijozlar ustida
+  const table = useServerTable({ initialSort: { key: 'name', dir: 'asc' } });
+  const { page, setPage } = table;
   const [editing, setEditing] = useState<Client | null>(null);
+  const [statementOf, setStatementOf] = useState<Client | null>(null);
+  const [view, setView] = useState<'list' | 'map'>('list');
   const [creating, setCreating] = useState<boolean>(false);
 
   const routes = useQuery({
@@ -25,91 +49,91 @@ export function ClientsPage(): ReactElement {
     queryFn: () => clientsApi.routes({ page_size: 200 }),
   });
 
-  const [route, setRoute] = useState<string>('');
-
   const query = useQuery({
-    queryKey: ['clients', { search, blocked, route, page }],
-    queryFn: () =>
-      clientsApi.list({
-        search: search || undefined,
-        is_blocked: blocked || undefined,
-        route: route || undefined,
-        page,
-        page_size: 20,
-      }),
+    queryKey: ['clients', table.params],
+    queryFn: () => clientsApi.list({ ...table.params, page_size: 20 }),
     placeholderData: keepPreviousData,
   });
 
   const rows = query.data?.results ?? [];
+  const th = { sort: table.sort, onSort: table.onSort };
+  const filters: TableFilter[] = [
+    {
+      key: 'route',
+      label: 'Marshrut',
+      options: (routes.data?.results ?? []).map((r) => ({ value: r.id, label: r.name })),
+    },
+    {
+      key: 'is_blocked',
+      label: 'Holat',
+      options: [
+        { value: 'false', label: 'Faol' },
+        { value: 'true', label: 'Bloklangan' },
+      ],
+    },
+  ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Mijozlar</h1>
-        {canWrite && (
-          <button className="btn-brand px-4" onClick={() => setCreating(true)}>
-            + Mijoz
+        <div className="flex gap-2">
+          <button
+            className="btn px-4"
+            aria-pressed={view === 'map'}
+            onClick={() => setView(view === 'map' ? 'list' : 'map')}
+          >
+            {view === 'map' ? "Ro'yxat" : 'Xarita'}
           </button>
-        )}
+          {canWrite && (
+            <button className="btn-brand px-4" onClick={() => setCreating(true)}>
+              + Mijoz
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <input
-          className="field max-w-xs"
-          placeholder="Nomi / egasi / telefon / INN"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <select
-          className="field max-w-[180px]"
-          value={route}
-          onChange={(e) => {
-            setRoute(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Barcha marshrutlar</option>
-          {routes.data?.results.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="field max-w-[160px]"
-          value={blocked}
-          onChange={(e) => {
-            setBlocked(e.target.value as '' | 'true' | 'false');
-            setPage(1);
-          }}
-        >
-          <option value="">Hammasi</option>
-          <option value="false">Faol</option>
-          <option value="true">Bloklangan</option>
-        </select>
-      </div>
+      <TableToolbar
+        search={table.search}
+        onSearch={table.setSearch}
+        filters={filters}
+        values={table.filterValues}
+        onFilter={table.setFilter}
+        onReset={table.reset}
+        count={query.data?.count}
+      />
 
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
+      {del.isError && (
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          {extractApiError(del.error)}
+        </p>
+      )}
+
+      {view === 'map' && <ClientsMap search={table.search} />}
+
+      <div
+        className={`overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900 ${
+          view === 'map' ? 'hidden' : ''
+        }`}
+      >
         <DataState
           isLoading={query.isLoading}
           isError={query.isError}
           isEmpty={!query.isLoading && rows.length === 0}
           emptyText="Mijoz topilmadi"
-          emptyHint="Yangi mijoz qo'shish uchun yuqoridagi tugmani bosing."
         >
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
-                <th className="p-3">Do'kon</th>
-                <th className="p-3">Egasi</th>
-                <th className="p-3">Telefon</th>
-                <th className="p-3">Marshrut</th>
-                <th className="p-3 text-right">Qarz / limit</th>
-                <th className="p-3">Holat</th>
-                {canWrite && <th className="p-3" />}
+                <SortableTh sortKey="name" {...th}>Do'kon</SortableTh>
+                <SortableTh sortKey="owner_name" {...th}>Egasi</SortableTh>
+                <SortableTh sortKey="phone" {...th}>Telefon</SortableTh>
+                <SortableTh sortKey="route__name" {...th}>Marshrut</SortableTh>
+                <SortableTh sortKey="current_debt" align="right" className="p-3 text-right" {...th}>
+                  Qarz / limit
+                </SortableTh>
+                <SortableTh sortKey="is_blocked" {...th}>Holat</SortableTh>
+                <th className="p-3" />
               </tr>
             </thead>
             <tbody>
@@ -135,16 +159,33 @@ export function ClientsPage(): ReactElement {
                       <span className="text-success">Faol</span>
                     )}
                   </td>
-                  {canWrite && (
-                    <td className="p-3 text-right">
+                  <td className="p-3 text-right">
+                    <span className="flex justify-end gap-3">
                       <button
                         className="text-brand hover:underline"
-                        onClick={() => setEditing(c)}
+                        onClick={() => setStatementOf(c)}
                       >
-                        Tahrirlash
+                        Akt-sverka
                       </button>
-                    </td>
-                  )}
+                      {canWrite && (
+                        <>
+                          <button
+                            className="text-brand hover:underline"
+                            onClick={() => setEditing(c)}
+                          >
+                            Tahrirlash
+                          </button>
+                          <button
+                            className="text-danger hover:underline"
+                            disabled={del.isPending}
+                            onClick={() => setDeleting(c)}
+                          >
+                            O'chirish
+                          </button>
+                        </>
+                      )}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -152,13 +193,12 @@ export function ClientsPage(): ReactElement {
         </DataState>
       </div>
 
-      {query.data && query.data.pages > 1 && (
+      {view === 'list' && query.data && query.data.pages > 1 && (
         <div className="flex items-center gap-2 text-sm">
           <button
             className="btn px-3"
             disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            aria-label="Oldingi sahifa"
+            onClick={() => setPage(page - 1)}
           >
             ‹
           </button>
@@ -168,13 +208,24 @@ export function ClientsPage(): ReactElement {
           <button
             className="btn px-3"
             disabled={page >= query.data.pages}
-            onClick={() => setPage((p) => p + 1)}
-            aria-label="Keyingi sahifa"
+            onClick={() => setPage(page + 1)}
           >
             ›
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Mijozni o'chirish"
+        confirmLabel="O'chirish"
+        danger
+        isPending={del.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => deleting && del.mutate(deleting.id)}
+      >
+        «{deleting?.name}» mijozi ro'yxatdan o'chiriladi. Sotuv va qarz tarixi saqlanib qoladi.
+      </ConfirmDialog>
 
       <Modal
         open={creating || editing !== null}
@@ -191,6 +242,15 @@ export function ClientsPage(): ReactElement {
             setEditing(null);
           }}
         />
+      </Modal>
+
+      <Modal
+        open={statementOf !== null}
+        title={`Akt-sverka — ${statementOf?.name ?? ''}`}
+        size="xl"
+        onClose={() => setStatementOf(null)}
+      >
+        {statementOf && <ClientStatement clientId={statementOf.id} />}
       </Modal>
     </div>
   );

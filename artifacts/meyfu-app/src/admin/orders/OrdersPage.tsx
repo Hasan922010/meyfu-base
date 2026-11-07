@@ -8,6 +8,7 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { useCan } from '@/shared/lib/permissions';
 
 type Tab = 'list' | 'build';
 
@@ -33,6 +34,8 @@ const STATUS_FILTERS: Array<{ v: string; l: string }> = [
 
 export function OrdersPage(): ReactElement {
   const [tab, setTab] = useState<Tab>('list');
+  // "Yuklamaga yig'ish" ni o'qish ham faqat omborchi/menejer/admin'ga ochiq (audit K3b)
+  const canBuild = useCan('orderBuildLoading');
 
   return (
     <div className="space-y-4">
@@ -44,7 +47,9 @@ export function OrdersPage(): ReactElement {
             { id: 'list', l: 'Ro‘yxat' },
             { id: 'build', l: 'Yuklamaga yig‘ish' },
           ] as const
-        ).map((t) => (
+        )
+          .filter((t) => t.id !== 'build' || canBuild)
+          .map((t) => (
           <button
             key={t.id}
             className={`px-4 py-2 text-sm font-medium ${
@@ -57,7 +62,7 @@ export function OrdersPage(): ReactElement {
         ))}
       </div>
 
-      {tab === 'list' ? <ListTab /> : <BuildLoadingTab />}
+      {tab === 'build' && canBuild ? <BuildLoadingTab /> : <ListTab />}
     </div>
   );
 }
@@ -173,10 +178,10 @@ function OrderModal({
 
   const o = q.data;
   const err = approve.error ?? cancel.error;
-  const canApprove = o?.status === 'DRAFT' || o?.status === 'PLACED';
+  const canManage = useCan('orderManage');
+  const canApprove = canManage && (o?.status === 'DRAFT' || o?.status === 'PLACED');
   const canCancel =
-    o != null &&
-    ['DRAFT', 'PLACED', 'APPROVED', 'LOADED'].includes(o.status);
+    canManage && o != null && ['DRAFT', 'PLACED', 'APPROVED', 'LOADED'].includes(o.status);
 
   return (
     <Modal open title="Buyurtma" onClose={onClose}>

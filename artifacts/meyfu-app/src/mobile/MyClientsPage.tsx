@@ -1,28 +1,54 @@
 import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { clientsApi } from '@/shared/api/clients';
 import { DataState } from '@/shared/components/DataState';
 import { money } from '@/shared/lib/format';
+import { useAuthStore } from '@/shared/store/authStore';
 import type { Client } from '@/shared/types/clients';
 
 import { CheckInSheet } from './CheckInSheet';
+import { NewClientModal } from './NewClientModal';
 
 export function MyClientsPage(): ReactElement {
   const [search, setSearch] = useState<string>('');
   const [selected, setSelected] = useState<Client | null>(null);
+  const [showNewModal, setShowNewModal] = useState<boolean>(false);
+  const navigate = useNavigate();
+  // Zakaz oluvchida tashrif (check-in) yo'q — mijozni bossa buyurtma ochiladi
+  const isOrderTaker = useAuthStore((s) => s.user?.role) === 'ORDER_TAKER';
+  const pick = (c: Client): void => {
+    if (isOrderTaker) void navigate(`/m/order/new?client=${c.id}`);
+    else setSelected(c);
+  };
 
   const query = useQuery({
     queryKey: ['clients', 'mine', search],
     queryFn: () =>
-      clientsApi.list({ search: search || undefined, page_size: 100 }),
+      // Marshrut tartibida (v5 C4 — optimallashtirilgan tashrif ketma-ketligi)
+      clientsApi.list({
+        search: search || undefined,
+        page_size: 100,
+        ordering: 'route__name,route_order,name',
+      }),
   });
 
   const rows = query.data?.results ?? [];
 
   return (
     <div className="space-y-3">
-      <h1 className="text-xl font-bold">Mening mijozlarim</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">Mening mijozlarim</h1>
+        <button
+          type="button"
+          onClick={() => setShowNewModal(true)}
+          className="btn-brand flex items-center gap-1 px-3 py-1.5 text-xs font-medium"
+        >
+          <Plus size={16} aria-hidden /> Yangi mijoz
+        </button>
+      </div>
       <input
         className="field"
         placeholder="Qidirish…"
@@ -40,7 +66,7 @@ export function MyClientsPage(): ReactElement {
           {rows.map((c) => (
             <li key={c.id}>
               <button
-                onClick={() => setSelected(c)}
+                onClick={() => pick(c)}
                 className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left shadow-sm active:scale-[0.99] dark:bg-gray-900"
               >
                 <div>
@@ -51,12 +77,7 @@ export function MyClientsPage(): ReactElement {
                 </div>
                 <div className="text-right text-xs">
                   {c.is_blocked && (
-                    <div
-                      className="font-medium text-danger"
-                      title="Faqat naqd sotish mumkin — qarzga berish yopiq"
-                    >
-                      Bloklangan (faqat naqd)
-                    </div>
+                    <div className="font-medium text-danger">Bloklangan</div>
                   )}
                   {Number(c.current_debt) > 0 && (
                     <div className="text-danger">Qarz: {money(c.current_debt)}</div>
@@ -69,6 +90,13 @@ export function MyClientsPage(): ReactElement {
       </DataState>
 
       <CheckInSheet client={selected} onClose={() => setSelected(null)} />
+      <NewClientModal
+        open={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        onCreated={(created) => {
+          pick(created);
+        }}
+      />
     </div>
   );
 }

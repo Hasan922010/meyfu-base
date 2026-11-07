@@ -8,6 +8,9 @@ from .base import *  # noqa: F401,F403
 from .base import BASE_DIR, env, validate_telegram_credential_keys
 
 DEBUG = env.bool("DEBUG", default=False)
+# /admin belongs to the React app; Django admin must use the API proxy path.
+ADMIN_URL = "api/django-admin/"
+LOGIN_URL = "admin:login"
 SECRET_KEY = os.environ.get("SESSION_SECRET") or env(
     "SECRET_KEY",
     default="insecure-replit-preview-key-change-before-production",

@@ -72,7 +72,9 @@ export interface SystemStatus {
 }
 
 export const systemApi = {
-  status: () => retrieve<SystemStatus>('/system/status/'),
+  /** `deep=false` — celery ping'siz tezkor javob (audit m8) */
+  status: (deep = true) =>
+    retrieve<SystemStatus>(`/system/status/${deep ? '' : '?deep=0'}`),
   integrityCheck: () => retrieve<IntegrityResult>('/system/integrity/'),
   integrityFix: () =>
     postAction<IntegrityResult & { fixed_count: number }>('/system/integrity/'),

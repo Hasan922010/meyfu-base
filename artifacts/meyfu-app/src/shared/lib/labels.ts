@@ -1,14 +1,18 @@
+// Server kodlari uchun o'zbekcha nomlar — UI'da xom enum ("ACCOUNTANT",
+// "OTKAZMA") ko'rinmasin (audit m5, CLAUDE.md 20).
 import type { Role } from '@/shared/types/api';
 
-export const ROLE_LABEL: Record<Role, string> = {
+export const ROLE_LABELS: Record<Role, string> = {
   SUPER_ADMIN: 'Super admin',
   MANAGER: 'Menejer',
+  BRANCH_MANAGER: 'Filial rahbari',
   WAREHOUSE: 'Omborchi',
   DISTRIBUTOR: 'Tarqatuvchi',
   ACCOUNTANT: 'Buxgalter',
+  ORDER_TAKER: 'Zakaz oluvchi',
 };
 
-export const PAYMENT_TYPE_LABEL: Record<string, string> = {
+export const PAYMENT_LABELS: Record<string, string> = {
   NAQD: 'Naqd',
   PLASTIK: 'Plastik',
   OTKAZMA: "O'tkazma",
@@ -16,15 +20,11 @@ export const PAYMENT_TYPE_LABEL: Record<string, string> = {
   ARALASH: 'Aralash',
 };
 
-export const DAYCLOSE_STATUS_LABEL: Record<string, string> = {
-  OPEN: 'Ochiq',
-  PENDING: 'Tasdiq kutilmoqda',
-  CLOSED: 'Yopilgan',
-};
+export function roleLabel(role: string | null | undefined): string {
+  if (!role) return '—';
+  return ROLE_LABELS[role as Role] ?? role;
+}
 
-export const PAYROLL_STATUS_LABEL: Record<string, string> = {
-  ESTIMATE: 'taxminiy',
-  DRAFT: 'qoralama',
-  APPROVED: 'tasdiqlangan',
-  PAID: "to'langan",
-};
+export function paymentLabel(value: string): string {
+  return PAYMENT_LABELS[value] ?? value;
+}

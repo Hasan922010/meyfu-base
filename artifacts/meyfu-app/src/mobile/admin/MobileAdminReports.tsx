@@ -4,14 +4,14 @@ import { useState, type ReactElement } from 'react';
 import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
 import { reportsApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money } from '@/shared/lib/format';
+import { money } from '@/shared/lib/format';
+import { businessDateISO } from '@/shared/lib/businessDay';
 
 function firstOfMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  return `${businessDateISO().slice(0, 8)}01`;
 }
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateISO();
 }
 
 export function MobileAdminReports(): ReactElement {
@@ -31,7 +31,7 @@ export function MobileAdminReports(): ReactElement {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Hisobotlar</h1>
       <p className="text-xs text-gray-500">
-        Davr: {dateShort(range.date_from)} — {dateShort(range.date_to)}
+        Davr: {range.date_from} — {range.date_to}
       </p>
 
       <DataState isLoading={pnl.isLoading} isError={pnl.isError}>
@@ -79,7 +79,7 @@ export function MobileAdminReports(): ReactElement {
                 key={i}
                 className="flex items-center justify-between rounded-xl bg-white p-3 text-sm shadow-sm dark:bg-gray-900"
               >
-                <span>{dateShort(String(r.day ?? r.date ?? ''))}</span>
+                <span>{String(r.day ?? r.date ?? '')}</span>
                 <span className="text-right">
                   <span className="font-medium">{money(String(r.amount))}</span>
                   {r.count != null && (

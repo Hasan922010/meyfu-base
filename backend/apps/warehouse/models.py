@@ -32,14 +32,16 @@ class Warehouse(BaseModel):
     address = models.CharField(_("manzil"), max_length=255, blank=True)
     is_active = models.BooleanField(_("faol"), default=True)
     # Filial — asosiy ombordan tovar oladigan alohida ombor (Filiallar bo'limi)
-    is_branch = models.BooleanField(_("filial"), default=False, db_index=True)
+    is_branch = models.BooleanField(
+        _("filial"), default=False, db_default=False, db_index=True
+    )
     manager = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="managed_warehouses", verbose_name=_("mas'ul"),
     )
-    phone = models.CharField(_("telefon"), max_length=20, blank=True)
+    phone = models.CharField(_("telefon"), max_length=20, blank=True, db_default="")
     is_opening_locked = models.BooleanField(
-        _("boshlang'ich qoldiq tasdiqlangan"), default=False, db_index=True
+        _("boshlang'ich qoldiq tasdiqlangan"), default=False, db_default=False, db_index=True
     )
     opening_confirmed_at = models.DateTimeField(
         _("tasdiqlangan vaqt"), null=True, blank=True
@@ -68,7 +70,9 @@ class Supplier(BaseModel):
     # Denormalized — haqiqat manbai SupplierTransaction (CLAUDE.md 5.2).
     # Faqat boshlang'ich qoldiq uchun — xaridlar/to'lovlar bu balansga
     # avtomatik ta'sir qilmaydi (CLAUDE.md — Boshlang'ich qoldiqlar bo'limi).
-    balance = models.DecimalField(_("balans"), **_MONEY, default=_ZERO)
+    balance = models.DecimalField(
+        _("balans"), **_MONEY, default=_ZERO, db_default=_ZERO
+    )
 
     class Meta:
         verbose_name = _("yetkazib beruvchi")

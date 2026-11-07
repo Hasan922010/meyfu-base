@@ -148,9 +148,7 @@ export function ProductImages({ productId }: Props): ReactElement {
                 <button
                   type="button"
                   className="text-white"
-                  onClick={() => {
-                    if (window.confirm("Rasmni o'chirasizmi?")) remove.mutate(img.id);
-                  }}
+                  onClick={() => remove.mutate(img.id)}
                   aria-label="O'chirish"
                 >
                   <Trash2 size={15} aria-hidden />

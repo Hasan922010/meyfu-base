@@ -19,3 +19,5 @@ export type Sale = Omit<Schemas['Sale'], 'order_number'> & {
 export type Debt = Omit<Schemas['Debt'], 'sale_number'> & {
   readonly sale_number: string | null;
 };
+
+export type SaleReturn = Schemas['SaleReturn'] & { distributor_name?: string };

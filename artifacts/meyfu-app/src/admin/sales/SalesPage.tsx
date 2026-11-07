@@ -9,9 +9,14 @@ import { useState, type ReactElement } from 'react';
 
 import { reportsApi, salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
-import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { paymentLabel } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
+import { SortableTh } from '@/shared/table/SortableTh';
+import { TableToolbar, type TableFilter } from '@/shared/table/TableToolbar';
+import { useServerTable } from '@/shared/table/useServerTable';
+
+import { SaleReturnsTable } from './SaleReturnsTable';
 
 const STATUS_CLASS: Record<string, string> = {
   COMPLETED: 'text-success',
@@ -19,6 +24,29 @@ const STATUS_CLASS: Record<string, string> = {
   CONFLICT: 'text-danger',
   CANCELLED: 'text-gray-400',
 };
+
+const FILTERS: TableFilter[] = [
+  {
+    key: 'status',
+    label: 'Holat',
+    options: [
+      { value: 'COMPLETED', label: 'Yakunlangan' },
+      { value: 'FLAGGED', label: 'Belgilangan' },
+      { value: 'CONFLICT', label: 'Ziddiyat' },
+      { value: 'CANCELLED', label: 'Bekor qilingan' },
+    ],
+  },
+  {
+    key: 'payment_type',
+    label: "To'lov",
+    options: ['NAQD', 'PLASTIK', 'QARZ', 'ARALASH'].map((v) => ({
+      value: v,
+      label: paymentLabel(v),
+    })),
+  },
+  { key: 'date__gte', label: 'Sanadan', type: 'date' },
+  { key: 'date__lte', label: 'Sanagacha', type: 'date' },
+];
 
 async function downloadExport(): Promise<void> {
   const blob = await reportsApi.exportBlob({ type: 'sales' });
@@ -33,35 +61,23 @@ async function downloadExport(): Promise<void> {
 export function SalesPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
+  const [tab, setTab] = useState<'sales' | 'returns'>('sales');
 
-  const [status, setStatus] = useState<string>('');
-  const [search, setSearch] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
-  const [cancelId, setCancelId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState<string>('');
+  // Saralash/qidiruv/filtr serverda — barcha sotuvlar ustida, faqat joriy sahifada emas
+  const table = useServerTable({ initialSort: { key: 'date', dir: 'desc' } });
+  const { page, setPage } = table;
 
   const query = useQuery({
-    queryKey: ['admin-sales', { status, search, page }],
+    queryKey: ['admin-sales', table.params],
     queryFn: () =>
-      salesApi.list({
-        status: status || undefined,
-        search: search || undefined,
-        page,
-        page_size: 25,
-        ordering: '-created_at',
-      }),
+      salesApi.list({ ...table.params, page_size: 25, ordering: table.params.ordering ?? '-created_at' }),
     placeholderData: keepPreviousData,
   });
 
   const cancel = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      salesApi.cancel(id, reason || 'Admin bekor qildi'),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['admin-sales'] });
-      setCancelId(null);
-      setCancelReason('');
-    },
+    mutationFn: (id: string) => salesApi.cancel(id, 'Admin bekor qildi'),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['admin-sales'] }),
   });
   const resolve = useMutation({
     mutationFn: ({ id, accept }: { id: string; accept: boolean }) =>
@@ -70,6 +86,7 @@ export function SalesPage(): ReactElement {
   });
 
   const rows = query.data?.results ?? [];
+  const th = { sort: table.sort, onSort: table.onSort };
 
   return (
     <div className="space-y-4">
@@ -83,50 +100,64 @@ export function SalesPage(): ReactElement {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <input
-          className="field max-w-xs"
-          placeholder="Raqam / mijoz"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-        />
-        <select
-          className="field max-w-[180px]"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Barcha holatlar</option>
-          <option value="COMPLETED">Yakunlangan</option>
-          <option value="FLAGGED">Belgilangan</option>
-          <option value="CONFLICT">Ziddiyat</option>
-          <option value="CANCELLED">Bekor qilingan</option>
-        </select>
+      <div className="flex gap-2" role="tablist">
+        {(
+          [
+            ['sales', 'Sotuvlar'],
+            ['returns', 'Qaytarishlar'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            className={`rounded-lg px-4 py-1.5 text-sm ${
+              tab === key ? 'bg-brand text-brand-fg' : 'bg-gray-100 dark:bg-gray-800'
+            }`}
+            onClick={() => setTab(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
+      {tab === 'returns' ? (
+        <SaleReturnsTable />
+      ) : (
+      <>
+      <TableToolbar
+        search={table.search}
+        onSearch={table.setSearch}
+        filters={FILTERS}
+        values={table.filterValues}
+        onFilter={table.setFilter}
+        onReset={table.reset}
+        count={query.data?.count}
+      />
 
       <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
         <DataState
           isLoading={query.isLoading}
           isError={query.isError}
+          error={query.error}
           isEmpty={!query.isLoading && rows.length === 0}
           emptyText="Sotuv topilmadi"
         >
           <table className="w-full text-sm">
             <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
               <tr>
-                <th className="p-3">Raqam</th>
-                <th className="p-3">Sana</th>
-                <th className="p-3">Mijoz</th>
-                <th className="p-3">Tarqatuvchi</th>
-                <th className="p-3">To'lov</th>
-                <th className="p-3 text-right">Jami</th>
-                <th className="p-3 text-right">Qarz</th>
-                <th className="p-3">Holat</th>
+                <SortableTh sortKey="number" {...th}>Raqam</SortableTh>
+                <SortableTh sortKey="date" {...th}>Sana</SortableTh>
+                <SortableTh sortKey="client__name" {...th}>Mijoz</SortableTh>
+                <SortableTh sortKey="distributor__full_name" {...th}>Tarqatuvchi</SortableTh>
+                <SortableTh sortKey="payment_type" {...th}>To'lov</SortableTh>
+                <SortableTh sortKey="total_amount" align="right" className="p-3 text-right" {...th}>
+                  Jami
+                </SortableTh>
+                <SortableTh sortKey="debt_amount" align="right" className="p-3 text-right" {...th}>
+                  Qarz
+                </SortableTh>
+                <SortableTh sortKey="status" {...th}>Holat</SortableTh>
                 {isAdmin && <th className="p-3" />}
               </tr>
             </thead>
@@ -173,7 +204,7 @@ export function SalesPage(): ReactElement {
                         <button
                           className="text-danger hover:underline"
                           disabled={cancel.isPending}
-                          onClick={() => setCancelId(s.id)}
+                          onClick={() => cancel.mutate(s.id)}
                         >
                           Bekor qilish
                         </button>
@@ -189,12 +220,7 @@ export function SalesPage(): ReactElement {
 
       {query.data && query.data.pages > 1 && (
         <div className="flex items-center gap-2 text-sm">
-          <button
-            className="btn px-3"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            aria-label="Oldingi sahifa"
-          >
+          <button className="btn px-3" disabled={page <= 1} onClick={() => setPage(page - 1)}>
             ‹
           </button>
           <span>
@@ -203,41 +229,14 @@ export function SalesPage(): ReactElement {
           <button
             className="btn px-3"
             disabled={page >= query.data.pages}
-            onClick={() => setPage((p) => p + 1)}
-            aria-label="Keyingi sahifa"
+            onClick={() => setPage(page + 1)}
           >
             ›
           </button>
         </div>
       )}
-
-      <Modal
-        open={cancelId !== null}
-        title="Sotuvni bekor qilish"
-        onClose={() => setCancelId(null)}
-      >
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500">
-            Bu amal tovar qoldig'i, hamyon va qarz balansini avtomatik qaytaradi. Davom
-            etasizmi?
-          </p>
-          <textarea
-            className="field min-h-[80px] py-2"
-            placeholder="Bekor qilish sababi (ixtiyoriy)"
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-          />
-          <button
-            className="btn-brand w-full"
-            disabled={cancel.isPending}
-            onClick={() => {
-              if (cancelId) cancel.mutate({ id: cancelId, reason: cancelReason });
-            }}
-          >
-            Ha, bekor qilish
-          </button>
-        </div>
-      </Modal>
+      </>
+      )}
     </div>
   );
 }

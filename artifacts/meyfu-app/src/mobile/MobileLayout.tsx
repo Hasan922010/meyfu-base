@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   ChartColumn,
   ClipboardList,
+  Coins,
   House,
   type LucideIcon,
   PackagePlus,
@@ -15,13 +16,15 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEffect, type ReactElement } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { SyncBadge } from '@/offline/SyncBadge';
 import { useSync } from '@/offline/useSync';
-import { pullReferenceData } from '@/offline/sync';
+import { fullSync } from '@/offline/sync';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { NotificationBell } from '@/shared/components/NotificationBell';
+import { PinLockGate } from '@/shared/components/PinLockGate';
+import { ThemeToggle } from '@/shared/components/ThemeToggle';
 import { RealtimeBridge } from '@/shared/realtime/RealtimeBridge';
 import { useAuthStore } from '@/shared/store/authStore';
 
@@ -30,7 +33,7 @@ type Tab = { to: string; label: string; Icon: LucideIcon; end: boolean };
 const DISTRIBUTOR_TABS: Tab[] = [
   { to: '/m', label: 'Bosh', Icon: House, end: true },
   { to: '/m/sale', label: 'Sotuv', Icon: Plus, end: false },
-  { to: '/m/orders', label: 'Zakaz', Icon: ClipboardList, end: false },
+  { to: '/m/orders', label: 'Buyurtma', Icon: ClipboardList, end: false },
   { to: '/m/wallet', label: 'Hamyon', Icon: Wallet, end: false },
   { to: '/m/expenses', label: 'Xarajat', Icon: Receipt, end: false },
   { to: '/m/clients', label: 'Mijozlar', Icon: Store, end: false },
@@ -43,6 +46,19 @@ const WAREHOUSE_TABS: Tab[] = [
   { to: '/m/stock', label: 'Qoldiq', Icon: Boxes, end: false },
 ];
 
+const ORDER_TAKER_TABS: Tab[] = [
+  { to: '/m', label: 'Bosh', Icon: House, end: true },
+  { to: '/m/orders', label: 'Buyurtma', Icon: ClipboardList, end: false },
+  { to: '/m/clients', label: 'Mijozlar', Icon: Store, end: false },
+  { to: '/m/payroll', label: 'Maosh', Icon: Coins, end: false },
+];
+
+/** Zakaz oluvchiga ochiq sahifalar — qolganlari (sotuv, hamyon...) backendda ham yopiq */
+const ORDER_TAKER_PATHS = [
+  '/m', '/m/orders', '/m/order/new', '/m/clients', '/m/payroll',
+  '/m/sync', '/m/profile', '/m/help',
+];
+
 const ADMIN_TABS: Tab[] = [
   { to: '/m', label: 'Bosh', Icon: House, end: true },
   { to: '/m/a/expenses', label: 'Xarajat', Icon: BadgeDollarSign, end: false },
@@ -51,7 +67,7 @@ const ADMIN_TABS: Tab[] = [
   { to: '/m/a/reports', label: 'Hisobot', Icon: ChartColumn, end: false },
 ];
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'ACCOUNTANT'];
+const ADMIN_ROLES = ['SUPER_ADMIN', 'MANAGER', 'BRANCH_MANAGER', 'ACCOUNTANT'];
 
 export function MobileLayout(): ReactElement {
   const user = useAuthStore((s) => s.user);
@@ -61,50 +77,61 @@ export function MobileLayout(): ReactElement {
   const tabs =
     role === 'WAREHOUSE'
       ? WAREHOUSE_TABS
-      : role != null && ADMIN_ROLES.includes(role)
-        ? ADMIN_TABS
-        : DISTRIBUTOR_TABS;
+      : role === 'ORDER_TAKER'
+        ? ORDER_TAKER_TABS
+        : role != null && ADMIN_ROLES.includes(role)
+          ? ADMIN_TABS
+          : DISTRIBUTOR_TABS;
+  const pathname = location.pathname.replace(/\/+$/, '') || '/m';
+  const blocked = role === 'ORDER_TAKER' && !ORDER_TAKER_PATHS.includes(pathname);
 
+  // Ochilishda avval navbatni yuboramiz, keyin tortamiz (UX N3): faqat tortish
+  // navbatni 20 s kechiktirardi va server bilmagan sotuvni lokal qoldiqdan "qaytarardi"
   useEffect(() => {
-    if (navigator.onLine) void pullReferenceData().catch(() => undefined);
+    if (navigator.onLine) void fullSync().catch(() => undefined);
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col">
-      <RealtimeBridge />
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-        <Link to="/m/profile" className="truncate text-sm font-semibold">
-          {user?.full_name} ›
-        </Link>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <SyncBadge state={sync} />
-        </div>
-      </header>
+    // Qulf butun ekranni yopadi — ism, bildirishnomalar, toast'lar ham (audit FE-109).
+    // Sinxronizatsiya (yuqoridagi effektlar) qulf ostida ham davom etadi.
+    <PinLockGate>
+      <div className="mx-auto flex min-h-full max-w-md flex-col">
+        <RealtimeBridge />
+        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+          <Link to="/m/profile" className="truncate text-sm font-semibold">
+            {user?.full_name} ›
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <NotificationBell />
+            <SyncBadge state={sync} />
+          </div>
+        </header>
 
-      <main className="flex-1 p-4 pb-24">
-        <ErrorBoundary key={location.pathname} variant="page">
-          <Outlet />
-        </ErrorBoundary>
-      </main>
+        <main className="flex-1 p-4 pb-24">
+          <ErrorBoundary key={location.pathname} variant="page">
+            {blocked ? <Navigate to="/m" replace /> : <Outlet />}
+          </ErrorBoundary>
+        </main>
 
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md justify-around border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-gray-800 dark:bg-gray-900">
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={tab.to}
-            end={tab.end}
-            className={({ isActive }) =>
-              `flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs ${
-                isActive ? 'text-brand' : 'text-gray-500'
-              }`
-            }
-          >
-            <tab.Icon size={22} aria-hidden />
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+        <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md justify-around border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-gray-800 dark:bg-gray-900">
+          {tabs.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              end={tab.end}
+              className={({ isActive }) =>
+                `flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs ${
+                  isActive ? 'text-brand' : 'text-gray-500'
+                }`
+              }
+            >
+              <tab.Icon size={22} aria-hidden />
+              {tab.label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </PinLockGate>
   );
 }

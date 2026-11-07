@@ -4,45 +4,39 @@ import { persist } from 'zustand/middleware';
 import type { User } from '@/shared/types/api';
 
 interface AuthState {
-  hasHydrated: boolean;
-  authStatus: 'hydrating' | 'authenticated' | 'anonymous';
   access: string | null;
   refresh: string | null;
   user: User | null;
   setSession: (payload: { access: string; refresh: string; user: User }) => void;
-  setTokens: (payload: { access: string; refresh: string }) => void;
+  /** Refresh javobi: backend ROTATE_REFRESH_TOKENS bilan yangi refresh ham qaytaradi. */
+  setAccess: (access: string, refresh?: string) => void;
   setUser: (user: User) => void;
   clear: () => void;
-  setHasHydrated: (value: boolean) => void;
-  setAuthStatus: (value: AuthState['authStatus']) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      hasHydrated: false,
-      authStatus: 'hydrating',
       access: null,
       refresh: null,
       user: null,
-      setSession: ({ access, refresh, user }) =>
-        set({ access, refresh, user, authStatus: 'authenticated' }),
-      setTokens: ({ access, refresh }) => set({ access, refresh }),
+      setSession: ({ access, refresh, user }) => set({ access, refresh, user }),
+      setAccess: (access, refresh) => set(refresh ? { access, refresh } : { access }),
       setUser: (user) => set({ user }),
-      clear: () =>
-        set({ access: null, refresh: null, user: null, authStatus: 'anonymous' }),
-      setHasHydrated: (value) => set({ hasHydrated: value }),
-      setAuthStatus: (authStatus) => set({ authStatus }),
+      clear: () => set({ access: null, refresh: null, user: null }),
     }),
-    {
-      name: 'meyfu-auth',
-      partialize: ({ access, refresh, user }) => ({ access, refresh, user }),
-      onRehydrateStorage: () => (state) => state?.setHasHydrated(true),
-    },
+    { name: 'meyfu-auth' },
   ),
 );
 
+// Boshqa tab tokenni almashtirsa (rotatsiya) yoki chiqsa — bu tab ham darhol biladi.
+// Aks holda bu tab eski, qora ro'yxatdagi refresh bilan urinib, hammani chiqarib yuborardi.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'meyfu-auth') void useAuthStore.persist.rehydrate();
+  });
+}
+
 export const authSelectors = {
-  isAuthenticated: (s: AuthState): boolean =>
-    s.authStatus === 'authenticated' && Boolean(s.access) && Boolean(s.user),
+  isAuthenticated: (s: AuthState): boolean => Boolean(s.access),
 };

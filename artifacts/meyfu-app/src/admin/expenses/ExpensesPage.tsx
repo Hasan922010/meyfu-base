@@ -9,10 +9,13 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { expensesApi } from '@/shared/api/finance';
 import { DataState } from '@/shared/components/DataState';
+import { ExpenseCategoryIcon } from '@/shared/components/ExpenseCategoryIcon';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Expense } from '@/shared/types/finance';
+
+import { ExpenseAnomalies } from './ExpenseAnomalies';
 
 const STATUS_CLASS: Record<string, string> = {
   PENDING: 'text-pending',
@@ -23,7 +26,7 @@ const STATUS_CLASS: Record<string, string> = {
 export function ExpensesPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
-  const isAdmin = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const isAdmin = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [status, setStatus] = useState<string>('PENDING');
   const [page, setPage] = useState<number>(1);
@@ -75,6 +78,8 @@ export function ExpensesPage(): ReactElement {
         )}
       </div>
 
+      <ExpenseAnomalies />
+
       {(approve.isError || reject.isError) && (
         <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {extractApiError(approve.error ?? reject.error)}
@@ -124,7 +129,10 @@ export function ExpensesPage(): ReactElement {
                   <td className="p-3">{dateShort(e.date)}</td>
                   <td className="p-3">{e.distributor_name}</td>
                   <td className="p-3">
-                    {e.category_icon} {e.category_name}
+                    <span className="inline-flex items-center gap-1.5">
+                      <ExpenseCategoryIcon icon={e.category_icon} name={e.category_name} size={16} className="text-gray-500" />
+                      <span>{e.category_name}</span>
+                    </span>
                     {e.description && (
                       <span className="block text-xs text-gray-400">
                         {e.description}
@@ -184,7 +192,6 @@ export function ExpensesPage(): ReactElement {
             className="btn px-3"
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            aria-label="Oldingi sahifa"
           >
             ‹
           </button>
@@ -195,7 +202,6 @@ export function ExpensesPage(): ReactElement {
             className="btn px-3"
             disabled={page >= query.data.pages}
             onClick={() => setPage((p) => p + 1)}
-            aria-label="Keyingi sahifa"
           >
             ›
           </button>
@@ -209,7 +215,7 @@ export function ExpensesPage(): ReactElement {
       >
         <div className="space-y-3">
           <p className="text-sm text-gray-500">
-            Sabab tarqatuvchiga ko'rsatiladi — iltimos, aniq va hurmatli yozing.
+            Sabab tarqatuvchiga ko'rsatiladi — ayblovsiz yozing.
           </p>
           <textarea
             className="field min-h-[80px] py-2"

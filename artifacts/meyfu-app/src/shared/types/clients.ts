@@ -12,9 +12,14 @@ export interface Route {
   name: string;
   distributor: string | null;
   distributor_name: string | null;
+  order_taker: string | null;
+  order_taker_name: string | null;
   days_of_week: number[];
   days_display: string[];
   is_active: boolean;
+  /** Filial (bo'sh — markaz) */
+  branch?: string | null;
+  branch_name?: string | null;
   clients_count: number;
   created_at: string;
 }
@@ -22,6 +27,8 @@ export interface Route {
 export interface RouteInput {
   name: string;
   distributor?: string | null;
+  order_taker?: string | null;
+  branch?: string | null;
   days_of_week: number[];
   is_active?: boolean;
 }

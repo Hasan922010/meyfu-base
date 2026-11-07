@@ -17,9 +17,11 @@ export interface ApiErrorBody {
 export type Role =
   | 'SUPER_ADMIN'
   | 'MANAGER'
+  | 'BRANCH_MANAGER'
   | 'WAREHOUSE'
   | 'DISTRIBUTOR'
-  | 'ACCOUNTANT';
+  | 'ACCOUNTANT'
+  | 'ORDER_TAKER';
 
 export interface DistributorProfile {
   vehicle_number: string;
@@ -47,6 +49,9 @@ export interface User {
   hire_date?: string | null;
   telegram_chat_id?: string;
   distributor_profile?: DistributorProfile | null;
+  /** Omborchi biriktirilgan ombor/filial (bo'sh — barcha omborlar) */
+  warehouse?: string | null;
+  warehouse_name?: string | null;
 }
 
 export interface LoginResponse {

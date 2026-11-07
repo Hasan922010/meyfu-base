@@ -4,19 +4,22 @@ import { useState, type ReactElement } from 'react';
 import { authApi } from '@/shared/api/users';
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Route } from '@/shared/types/clients';
 
-const WEEKDAYS: Array<{ n: number; label: string; full: string }> = [
-  { n: 1, label: 'Du', full: 'Dushanba' },
-  { n: 2, label: 'Se', full: 'Seshanba' },
-  { n: 3, label: 'Ch', full: 'Chorshanba' },
-  { n: 4, label: 'Pa', full: 'Payshanba' },
-  { n: 5, label: 'Ju', full: 'Juma' },
-  { n: 6, label: 'Sh', full: 'Shanba' },
-  { n: 7, label: 'Ya', full: 'Yakshanba' },
+import { RouteOptimizer } from './RouteOptimizer';
+
+const WEEKDAYS: Array<{ n: number; label: string }> = [
+  { n: 1, label: 'Du' },
+  { n: 2, label: 'Se' },
+  { n: 3, label: 'Ch' },
+  { n: 4, label: 'Pa' },
+  { n: 5, label: 'Ju' },
+  { n: 6, label: 'Sh' },
+  { n: 7, label: 'Ya' },
 ];
 
 function RouteForm({
@@ -29,11 +32,24 @@ function RouteForm({
   const qc = useQueryClient();
   const [name, setName] = useState<string>(route?.name ?? '');
   const [distributor, setDistributor] = useState<string>(route?.distributor ?? '');
+  const [orderTaker, setOrderTaker] = useState<string>(route?.order_taker ?? '');
   const [days, setDays] = useState<number[]>(route?.days_of_week ?? []);
+  const [branch, setBranch] = useState<string>(route?.branch ?? '');
+  // Markaz marshrutni filialga biriktiradi; filial rahbari uchun server o'zi qo'yadi
+  const isCentral = useAuthStore((s) => s.user?.role) !== 'BRANCH_MANAGER';
+  const branches = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
+    enabled: isCentral,
+  });
 
   const distributors = useQuery({
     queryKey: ['distributors'],
     queryFn: () => authApi.distributors(),
+  });
+  const orderTakers = useQuery({
+    queryKey: ['order-takers'],
+    queryFn: () => authApi.orderTakers(),
   });
 
   const mutation = useMutation({
@@ -42,6 +58,8 @@ function RouteForm({
         name,
         days_of_week: [...days].sort((a, b) => a - b),
         distributor: distributor || null,
+        order_taker: orderTaker || null,
+        ...(isCentral ? { branch: branch || null } : {}),
       };
       return route
         ? clientsApi.updateRoute(route.id, body)
@@ -78,6 +96,39 @@ function RouteForm({
           ))}
         </select>
       </label>
+      <label className="block space-y-1">
+        <span className="text-sm font-medium">Zakaz oluvchi</span>
+        <select
+          className="field"
+          value={orderTaker}
+          onChange={(e) => setOrderTaker(e.target.value)}
+        >
+          <option value="">—</option>
+          {orderTakers.data?.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.full_name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {isCentral && (
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Filial</span>
+          <select className="field" value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <option value="">— Markaz</option>
+            {(branches.data?.results ?? [])
+              .filter((w) => w.is_branch)
+              .map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+          </select>
+          <span className="block text-xs text-gray-500">
+            Filial o'zgartirilsa, marshrutdagi barcha mijozlar ham shu filialga o'tadi.
+          </span>
+        </label>
+      )}
       <div className="space-y-1">
         <span className="text-sm font-medium">Hafta kunlari</span>
         <div className="flex gap-1">
@@ -87,8 +138,6 @@ function RouteForm({
               <button
                 key={w.n}
                 type="button"
-                title={w.full}
-                aria-label={w.full}
                 onClick={() =>
                   setDays((prev) =>
                     active ? prev.filter((d) => d !== w.n) : [...prev, w.n],
@@ -132,10 +181,11 @@ function RouteForm({
 
 export function RoutesPage(): ReactElement {
   const role = useAuthStore((s) => s.user?.role);
-  const canWrite = role === 'MANAGER' || role === 'SUPER_ADMIN';
+  const canWrite = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
 
   const [editing, setEditing] = useState<Route | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
+  const [optimizing, setOptimizing] = useState<Route | null>(null);
 
   const query = useQuery({
     queryKey: ['routes'],
@@ -167,7 +217,9 @@ export function RoutesPage(): ReactElement {
               <tr>
                 <th className="p-3">Nomi</th>
                 <th className="p-3">Tarqatuvchi</th>
+                <th className="p-3">Zakaz oluvchi</th>
                 <th className="p-3">Kunlar</th>
+                <th className="p-3">Filial</th>
                 <th className="p-3 text-right">Mijozlar</th>
                 {canWrite && <th className="p-3" />}
               </tr>
@@ -180,16 +232,27 @@ export function RoutesPage(): ReactElement {
                 >
                   <td className="p-3 font-medium">{r.name}</td>
                   <td className="p-3">{r.distributor_name ?? '—'}</td>
+                  <td className="p-3">{r.order_taker_name ?? '—'}</td>
                   <td className="p-3">{r.days_display.join(', ') || '—'}</td>
+                  <td className="p-3">{r.branch_name ?? 'Markaz'}</td>
                   <td className="p-3 text-right">{r.clients_count}</td>
                   {canWrite && (
                     <td className="p-3 text-right">
-                      <button
-                        className="text-brand hover:underline"
-                        onClick={() => setEditing(r)}
-                      >
-                        Tahrirlash
-                      </button>
+                      <span className="flex justify-end gap-3">
+                        <button
+                          className="text-brand hover:underline"
+                          disabled={r.clients_count < 2}
+                          onClick={() => setOptimizing(r)}
+                        >
+                          Tartibni optimallash
+                        </button>
+                        <button
+                          className="text-brand hover:underline"
+                          onClick={() => setEditing(r)}
+                        >
+                          Tahrirlash
+                        </button>
+                      </span>
                     </td>
                   )}
                 </tr>
@@ -214,6 +277,17 @@ export function RoutesPage(): ReactElement {
             setEditing(null);
           }}
         />
+      </Modal>
+
+      <Modal
+        open={optimizing !== null}
+        title={`Marshrut tartibi — ${optimizing?.name ?? ''}`}
+        size="lg"
+        onClose={() => setOptimizing(null)}
+      >
+        {optimizing && (
+          <RouteOptimizer routeId={optimizing.id} onDone={() => setOptimizing(null)} />
+        )}
       </Modal>
     </div>
   );

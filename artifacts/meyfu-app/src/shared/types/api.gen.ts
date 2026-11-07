@@ -12,18 +12,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["advances_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["advances_create"];
         delete?: never;
@@ -40,12 +36,44 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["advances_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-logs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kim, qachon, nimani o'zgartirdi. Filial rahbari — o'z filiali xodimlari. */
+        get: operations["audit_logs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-logs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kim, qachon, nimani o'zgartirdi. Filial rahbari — o'z filiali xodimlari. */
+        get: operations["audit_logs_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -122,6 +150,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password-reset/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parolni tiklash — kod va yangi parol */
+        post: operations["auth_password_reset_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Parolni tiklash — kod so'rash
+         * @description Telegram'ga bog'langan xodimga tiklash kodini yuboradi.
+         *
+         *     Javob har doim bir xil — raqam tizimda bor-yo'qligi oshkor qilinmaydi.
+         */
+        post: operations["auth_password_reset_request_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/refresh/": {
         parameters: {
             query?: never;
@@ -137,6 +204,64 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/ws-ticket/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * WebSocket ticket
+         * @description Issue a short-lived, one-time credential for the event WebSocket.
+         */
+        post: operations["auth_ws_ticket_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branch-prices/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        get: operations["branch_prices_list"];
+        put?: never;
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        post: operations["branch_prices_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branch-prices/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        get: operations["branch_prices_retrieve"];
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        put: operations["branch_prices_update"];
+        post?: never;
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        delete: operations["branch_prices_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Filial narxlari — markaz belgilaydi, filial o'z narxlarini o'qiydi (v5: A7). */
+        patch: operations["branch_prices_partial_update"];
         trace?: never;
     };
     "/api/v1/brands/": {
@@ -209,10 +334,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_handovers_list"];
         put?: never;
@@ -231,10 +354,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_handovers_retrieve"];
         put?: never;
@@ -253,18 +374,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["cash_transactions_create"];
         delete?: never;
@@ -281,10 +398,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_retrieve"];
         put?: never;
@@ -304,14 +419,96 @@ export interface paths {
         };
         /**
          * Kassa balansi
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["cash_transactions_account_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kassa boshlang'ich qoldig'ini kiritish (faqat SUPER_ADMIN)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        post: operations["cash_transactions_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kassa balansini ro'yxatdan kiritish (yakuniy qiymat, ±)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        post: operations["cash_transactions_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qoldiq uchun kassalar ro'yxati (joriy balans bilan)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        get: operations["cash_transactions_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cash-transactions/to-center/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Filial kassasidan markazga pul topshirish (inkassatsiya)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        post: operations["cash_transactions_to_center_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -388,18 +585,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["client_visits_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["client_visits_create"];
         delete?: never;
@@ -514,6 +707,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clients/{id}/statement/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Solishtirma dalolatnoma (akt-sverka) — v5: C2
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["clients_statement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mijoz boshlang'ich qarzi (sotuvsiz)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["clients_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mijozlar qarzini ro'yxatdan kiritish (yakuniy qarz, faqat oshirish)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["clients_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qarz uchun mijozlar ro'yxati (joriy qarzi bilan)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["clients_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/commission-rules/": {
         parameters: {
             query?: never;
@@ -593,20 +874,10 @@ export interface paths {
         get: operations["company_expenses_retrieve"];
         put?: never;
         post?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
-        delete: operations["company_expenses_destroy"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
-        patch: operations["company_expenses_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/api/v1/company-settings/": {
@@ -654,6 +925,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/daily-returns/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun. */
+        get: operations["daily_returns_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/daily-returns/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Kechki qaytarish hujjati — filial hisobotidagi hujjat oynasi uchun. */
+        get: operations["daily_returns_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/day-close/": {
         parameters: {
             query?: never;
@@ -662,10 +967,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["day_close_list"];
         put?: never;
@@ -684,10 +987,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["day_close_retrieve"];
         put?: never;
@@ -709,10 +1010,8 @@ export interface paths {
         put?: never;
         /**
          * Kun yopishni tasdiqlash (admin)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["day_close_confirm_create"];
         delete?: never;
@@ -730,10 +1029,8 @@ export interface paths {
         };
         /**
          * Bugungi kun holati (jonli hisob)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["day_close_my_today_retrieve"];
         put?: never;
@@ -755,10 +1052,8 @@ export interface paths {
         put?: never;
         /**
          * Kunni yopish (3 qadam yakuni)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["day_close_submit_create"];
         delete?: never;
@@ -822,10 +1117,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["debts_list"];
         put?: never;
@@ -844,10 +1137,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["debts_retrieve"];
         put?: never;
@@ -867,10 +1158,8 @@ export interface paths {
         };
         /**
          * Marshrutimdagi qarzdorlar
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["debts_my_retrieve"];
         put?: never;
@@ -1103,6 +1392,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inventory-counts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        get: operations["inventory_counts_list"];
+        put?: never;
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        post: operations["inventory_counts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        get: operations["inventory_counts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi. */
+        patch: operations["inventory_counts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qoralamani bekor qilish
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        post: operations["inventory_counts_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tasdiqlash — farq qoldiqqa tuzatish bo'lib yoziladi
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        post: operations["inventory_counts_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/fill/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qatorlarni joriy qoldiq bilan qayta to'ldirish
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        post: operations["inventory_counts_fill_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-counts/{id}/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Haqiqiy qoldiqlarni saqlash (bo'sh — sanalmagan)
+         * @description Inventarizatsiya: yaratilganda tovarlar avtomatik to'ldiriladi.
+         */
+        patch: operations["inventory_counts_items_partial_update"];
+        trace?: never;
+    };
     "/api/v1/invoice-scans/": {
         parameters: {
             query?: never;
@@ -1111,18 +1516,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["invoice_scans_list"];
         put?: never;
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_create"];
         delete?: never;
@@ -1139,10 +1540,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["invoice_scans_retrieve"];
         put?: never;
@@ -1164,10 +1563,8 @@ export interface paths {
         put?: never;
         /**
          * Skanni bekor qilish
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_cancel_create"];
         delete?: never;
@@ -1187,10 +1584,8 @@ export interface paths {
         put?: never;
         /**
          * Skanni tasdiqlash — Purchase yaratadi
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_confirm_create"];
         delete?: never;
@@ -1214,10 +1609,8 @@ export interface paths {
         head?: never;
         /**
          * Sarlavha ma'lumotini tuzatish
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         patch: operations["invoice_scans_header_partial_update"];
         trace?: never;
@@ -1237,10 +1630,8 @@ export interface paths {
         head?: never;
         /**
          * Qatorni tahrirlash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         patch: operations["invoice_scans_lines_partial_update"];
         trace?: never;
@@ -1256,10 +1647,8 @@ export interface paths {
         put?: never;
         /**
          * Skanni qayta ishlash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["invoice_scans_reprocess_create"];
         delete?: never;
@@ -1277,10 +1666,8 @@ export interface paths {
         };
         /**
          * OCR metrikalari (CLAUDE.md 9)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["invoice_scans_metrics_retrieve"];
         put?: never;
@@ -1298,18 +1685,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["loadings_list"];
         put?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         post: operations["loadings_create"];
         delete?: never;
         options?: never;
@@ -1324,32 +1703,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["loadings_retrieve"];
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         put: operations["loadings_update"];
         post?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         delete: operations["loadings_destroy"];
         options?: never;
         head?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         patch: operations["loadings_partial_update"];
         trace?: never;
     };
@@ -1364,9 +1727,7 @@ export interface paths {
         put?: never;
         /**
          * Yuklamani bekor qilish / qaytarish
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["loadings_cancel_create"];
         delete?: never;
@@ -1386,9 +1747,7 @@ export interface paths {
         put?: never;
         /**
          * Yuklamani tasdiqlash (VanStock oshadi)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["loadings_confirm_create"];
         delete?: never;
@@ -1406,9 +1765,7 @@ export interface paths {
         };
         /**
          * Yuklama varag'i PDF (rasm + rekvizit; ?stamp=1 — muhr bilan)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["loadings_pdf_retrieve"];
         put?: never;
@@ -1430,9 +1787,7 @@ export interface paths {
         put?: never;
         /**
          * Yuklamani tarqatuvchiga yuborish (qoldiq band qilinadi)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["loadings_send_create"];
         delete?: never;
@@ -1449,10 +1804,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Bugungi yuklamam (tarqatuvchi uchun)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * Bugungi yuklamam + hali tasdiqlanmaganlari (tarqatuvchi uchun)
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["loadings_my_today_retrieve"];
         put?: never;
@@ -1471,10 +1824,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["notifications_list"];
         put?: never;
@@ -1493,10 +1844,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["notifications_retrieve"];
         put?: never;
@@ -1518,10 +1867,8 @@ export interface paths {
         put?: never;
         /**
          * Bildirishnomani o'qilgan deb belgilash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["notifications_read_create"];
         delete?: never;
@@ -1541,10 +1888,8 @@ export interface paths {
         put?: never;
         /**
          * Barchasini o'qilgan deb belgilash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["notifications_read_all_create"];
         delete?: never;
@@ -1562,10 +1907,8 @@ export interface paths {
         };
         /**
          * O'qilmagan bildirishnomalar soni
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["notifications_unread_count_retrieve"];
         put?: never;
@@ -1807,10 +2150,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["payrolls_list"];
         put?: never;
@@ -1829,10 +2170,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["payrolls_retrieve"];
         put?: never;
@@ -1854,10 +2193,8 @@ export interface paths {
         put?: never;
         /**
          * Maoshni tasdiqlash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_approve_create"];
         delete?: never;
@@ -1877,10 +2214,8 @@ export interface paths {
         put?: never;
         /**
          * Qo'lda tuzatish (bonus, ushlanma, izoh)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_edit_create"];
         delete?: never;
@@ -1900,10 +2235,8 @@ export interface paths {
         put?: never;
         /**
          * Maoshni to'langan deb belgilash
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_pay_create"];
         delete?: never;
@@ -1923,10 +2256,8 @@ export interface paths {
         put?: never;
         /**
          * Maoshni hisoblash (qayta hisoblash — DRAFT bo'lsa)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         post: operations["payrolls_calculate_create"];
         delete?: never;
@@ -1944,10 +2275,8 @@ export interface paths {
         };
         /**
          * Mening maoshlarim (tarqatuvchi)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["payrolls_my_list"];
         put?: never;
@@ -2114,6 +2443,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/import/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mahsulotlarni Excel'dan import (v5: B1)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["products_import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/import-template/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Import uchun Excel shablon
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["products_import_template_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/search/": {
         parameters: {
             query?: never;
@@ -2143,18 +2516,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["purchases_list"];
         put?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         post: operations["purchases_create"];
         delete?: never;
         options?: never;
@@ -2169,32 +2534,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["purchases_retrieve"];
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         put: operations["purchases_update"];
         post?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         delete: operations["purchases_destroy"];
         options?: never;
         head?: never;
-        /**
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         patch: operations["purchases_partial_update"];
         trace?: never;
     };
@@ -2209,9 +2558,7 @@ export interface paths {
         put?: never;
         /**
          * Qabulni tasdiqlash — qoldiqqa kirim qiladi
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["purchases_confirm_create"];
         delete?: never;
@@ -2231,9 +2578,7 @@ export interface paths {
         put?: never;
         /**
          * To'lovni yangilash
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         post: operations["purchases_pay_create"];
         delete?: never;
@@ -2251,9 +2596,7 @@ export interface paths {
         };
         /**
          * Nakladnoy PDF (rasm + rekvizit; ?stamp=1 — muhr bilan)
-         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
-         *
-         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["purchases_pdf_retrieve"];
         put?: never;
@@ -2290,6 +2633,77 @@ export interface paths {
         };
         /** ABC (Pareto) tahlil */
         get: operations["reports_abc_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filiallar (omborlar) kartochkalari */
+        get: operations["reports_branches_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/{id}/activity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filial faoliyati — batafsil hisobot (hujjatlar bilan) */
+        get: operations["reports_branches_activity_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/{id}/cards/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Filial faoliyati — kartalar */
+        get: operations["reports_branches_cards_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/branches/comparison/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Filiallar kesimida solishtirish va hisob-kitob
+         * @description Filiallarni solishtirish + markaz bilan hisob-kitob. Filial xodimi — o'z qatori.
+         */
+        get: operations["reports_branches_comparison_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2349,6 +2763,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/distributor-locations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tarqatuvchilar xaritasi (oxirgi tashrif/sotuv nuqtasi)
+         * @description Tarqatuvchilarning bugungi oxirgi nuqtasi (faqat tashrif/sotuv paytida) — v5: B2.
+         */
+        get: operations["reports_distributor_locations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/distributor/{id}/full/": {
         parameters: {
             query?: never;
@@ -2381,6 +2815,26 @@ export interface paths {
          * @description MANAGER/ADMIN/ACCOUNTANT — istalgan tarqatuvchi; DISTRIBUTOR — faqat o'zi.
          */
         get: operations["reports_distributor_timeline_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/expense-anomalies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Xarajat anomaliyalari (z-score)
+         * @description Odatdagidan ancha katta xarajatlar (v5: C5) — ko'rib chiqish uchun signal.
+         */
+        get: operations["reports_expense_anomalies_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2423,6 +2877,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/export-1c/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 1C uchun eksport (sotuv, qaytarish, to'lov)
+         * @description 1C uchun fayl eksporti — XML yoki CSV (v5: C6).
+         */
+        get: operations["reports_export_1c_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/profit/": {
         parameters: {
             query?: never;
@@ -2449,6 +2923,26 @@ export interface paths {
         };
         /** Hisobot konstruktori — o'lcham bo'yicha agregatsiya */
         get: operations["reports_query_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Qoldiq prognozi va buyurtma tavsiyasi
+         * @description Buyurtma tavsiyasi (v5: C1) — omborchi ham ko'radi, o'z filiali bo'yicha.
+         */
+        get: operations["reports_reorder_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2534,6 +3028,50 @@ export interface paths {
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
          */
         patch: operations["routes_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/routes/{id}/optimize/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Marshrutni optimallashtirish taklifi (v5: C4) — yozmaydi
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["routes_optimize_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/routes/{id}/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marshrutdagi tashrif tartibini saqlash (v5: C4)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["routes_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/routes/my/": {
@@ -2769,12 +3307,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_list"];
         put?: never;
         post?: never;
@@ -2791,12 +3324,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_movements_list"];
         put?: never;
         post?: never;
@@ -2813,12 +3341,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_movements_retrieve"];
         put?: never;
         post?: never;
@@ -2835,12 +3358,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
-         */
+        /** @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi. */
         get: operations["stock_retrieve"];
         put?: never;
         post?: never;
@@ -2859,12 +3377,109 @@ export interface paths {
         };
         /**
          * Kam qolgan tovarlar (min_stock_alert dan past)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
          */
         get: operations["stock_low_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stock/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mavjud mahsulot uchun boshlang'ich qoldiq
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+         */
+        post: operations["stock_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stock/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tovar qoldiqlarini ommaviy kiritish (yakuniy miqdor)
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+         */
+        post: operations["stock_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stock/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qoldiq uchun ombordagi barcha tovarlar (qoldiqsizi ham)
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+         */
+        get: operations["stock_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supplier-transactions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        get: operations["supplier_transactions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supplier-transactions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        get: operations["supplier_transactions_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2935,6 +3550,106 @@ export interface paths {
         patch: operations["suppliers_partial_update"];
         trace?: never;
     };
+    "/api/v1/suppliers/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["suppliers_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suppliers/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ta'minotchilar balansini ommaviy kiritish (yakuniy qiymat, ±)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["suppliers_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suppliers/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich qoldiq uchun barcha faol ta'minotchilar balansi
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["suppliers_opening_sheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync-logs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o'z filiali. */
+        get: operations["sync_logs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync-logs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Offline sinxronizatsiya jurnali (v5: B6). Filial rahbari — o'z filiali. */
+        get: operations["sync_logs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sync/catalog/": {
         parameters: {
             query?: never;
@@ -2967,7 +3682,7 @@ export interface paths {
         };
         /**
          * Mijozlar sinxronizatsiyasi (delta)
-         * @description Offline mijoz delta (CLAUDE.md 4.1, 10). Tarqatuvchi — faqat o'z marshruti.
+         * @description Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z marshruti.
          */
         get: operations["sync_clients_list"];
         put?: never;
@@ -3022,6 +3737,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/telegram/bot-config/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Telegram bot sozlamasi */
+        get: operations["telegram_bot_config_retrieve"];
+        /** Telegram bot tokenini ulash */
+        put: operations["telegram_bot_config_update"];
+        /** Telegram bot tokenini ulash */
+        post: operations["telegram_bot_config_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/telegram/link/": {
         parameters: {
             query?: never;
@@ -3067,6 +3801,102 @@ export interface paths {
         put?: never;
         /** Telegram akkauntdan uzish */
         post: operations["telegram_unlink_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        get: operations["transfers_list"];
+        put?: never;
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        post: operations["transfers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        get: operations["transfers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan. */
+        patch: operations["transfers_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bekor qilish (yo'ldagi tovar manbaga qaytadi)
+         * @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan.
+         */
+        post: operations["transfers_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/receive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qabul qilish — qabul qilingan miqdor filialga kirim
+         * @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan.
+         */
+        post: operations["transfers_receive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/send/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Yuborish — manba ombordan chiqim
+         * @description Ombor/filiallar orasida ko'chirish: qoralama → yo'lda → qabul qilingan.
+         */
+        post: operations["transfers_send_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3143,20 +3973,24 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         get: operations["users_list"];
         put?: never;
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         post: operations["users_create"];
         delete?: never;
@@ -3173,24 +4007,37 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         get: operations["users_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
+         *
+         *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
+         */
+        delete: operations["users_destroy"];
         options?: never;
         head?: never;
         /**
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         patch: operations["users_partial_update"];
         trace?: never;
@@ -3206,11 +4053,13 @@ export interface paths {
         put?: never;
         /**
          * Xodimni bloklash / blokdan chiqarish
-         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 6).
+         * @description Xodimlar boshqaruvi (CLAUDE.md 2, 5, 6).
          *
          *     O'qish — MANAGER/ADMIN/ACCOUNTANT (marshrutga tarqatuvchi biriktirish uchun).
-         *     Yaratish/tahrirlash/bloklash — faqat SUPER_ADMIN.
-         *     O'chirish yo'q — `is_active=False` (bloklash), tarix saqlanadi.
+         *     Yaratish/tahrirlash/bloklash/o'chirish — faqat SUPER_ADMIN.
+         *     O'chirish — yumshoq (`is_deleted=True`, `BaseModel.delete()`), tarix
+         *     (sotuv, hamyon, maosh yozuvlari) saqlanadi — bloklash (`toggle_active`)
+         *     vaqtinchalik, o'chirish esa xodimni ro'yxatdan butunlay olib tashlaydi.
          */
         post: operations["users_toggle_active_create"];
         delete?: never;
@@ -3227,10 +4076,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["van_stock_list"];
         put?: never;
@@ -3249,10 +4096,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["van_stock_retrieve"];
         put?: never;
@@ -3272,10 +4117,8 @@ export interface paths {
         };
         /**
          * Mening mashina qoldig'im
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["van_stock_my_retrieve"];
         put?: never;
@@ -3294,10 +4137,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_list"];
         put?: never;
@@ -3316,10 +4157,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_transactions_list"];
         put?: never;
@@ -3338,10 +4177,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_transactions_retrieve"];
         put?: never;
@@ -3360,10 +4197,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_retrieve"];
         put?: never;
@@ -3383,10 +4218,8 @@ export interface paths {
         };
         /**
          * Mening hamyonim (jonli balans bilan)
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_my_retrieve"];
         put?: never;
@@ -3406,12 +4239,73 @@ export interface paths {
         };
         /**
          * Hamyon tranzaksiyalari
-         * @description Barcha muvaffaqiyatli javoblarni {success, data} ga keltiradi (CLAUDE.md 10).
-         *
-         *     Xatolar `exceptions.api_exception_handler` da o'raladi; pagination
-         *     `DefaultPagination` da. Bu yerda qolgan holatlar (retrieve/create/custom action).
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
          */
         get: operations["wallet_my_transactions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallet/opening-balance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Xodim boshlang'ich balansi (faqat SUPER_ADMIN, mavjud xodim uchun)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        post: operations["wallet_opening_balance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallet/opening-balance/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Xodimlar balansini ro'yxatdan kiritish (yakuniy qiymat, ±)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        post: operations["wallet_opening_balance_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wallet/opening-sheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Boshlang'ich balans uchun xodimlar ro'yxati (hamyon balansi bilan)
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        get: operations["wallet_opening_sheet_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3528,8 +4422,111 @@ export interface components {
             /** @default  */
             note: string;
         };
+        AuditLog: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            /**
+             * Foydalanuvchi
+             * Format: uuid
+             */
+            readonly user: string | null;
+            readonly user_name: string;
+            /** Harakat */
+            readonly action: string;
+            /** Model */
+            readonly model_name: string;
+            /** Obyekt ID */
+            readonly object_id: string;
+            /** O'zgarishlar */
+            readonly changes: unknown;
+            readonly ip: string | null;
+            /** Qurilma / brauzer */
+            readonly user_agent: string;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
+        /** @description Filialdan markazga topshirish. `branch` — faqat markaz xodimi uchun. */
+        BranchCashTransferRequest: {
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
+            /** Format: uuid */
+            branch?: string | null;
+        };
+        /** @description Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1). */
+        BranchPrice: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch: string;
+            readonly branch_name: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            readonly product_name: string;
+            readonly product_sku: string;
+            /**
+             * Optom narx
+             * Format: decimal
+             */
+            wholesale_price: string;
+            /**
+             * Chakana narx
+             * Format: decimal
+             */
+            retail_price: string;
+            /**
+             * Minimal narx
+             * Format: decimal
+             */
+            min_price: string;
+            /** Format: decimal */
+            readonly base_wholesale_price: string;
+            /**
+             * Yangilangan vaqti
+             * Format: date-time
+             */
+            readonly updated_at: string;
+        };
+        /** @description Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1). */
+        BranchPriceRequest: {
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Optom narx
+             * Format: decimal
+             */
+            wholesale_price: string;
+            /**
+             * Chakana narx
+             * Format: decimal
+             */
+            retail_price: string;
+            /**
+             * Minimal narx
+             * Format: decimal
+             */
+            min_price: string;
+        };
         Brand: {
             /** Format: uuid */
             readonly id: string;
@@ -3602,6 +4599,15 @@ export interface components {
              */
             readonly created_at: string;
         };
+        /** @description Kassa boshlang'ich qoldig'i — ishorali (musbat/manfiy) bo'lishi mumkin. */
+        CashOpeningBalanceRequest: {
+            /** Format: decimal */
+            amount: string;
+            /** Format: date */
+            date?: string;
+            /** @default  */
+            note: string;
+        };
         CashTransaction: {
             /** Format: uuid */
             readonly id: string;
@@ -3631,6 +4637,8 @@ export interface components {
             readonly reference_id: string;
             /** Izoh */
             readonly note: string;
+            /** @default  */
+            readonly created_by_name: string;
             /**
              * Yaratilgan vaqti
              * Format: date-time
@@ -3664,9 +4672,12 @@ export interface components {
          *     * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
          *     * `OTHER_OUT` - Boshqa chiqim (−)
          *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+         *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+         *     * `BRANCH_OUT` - Markazga topshirildi (−)
+         *     * `CENTER_IN` - Filialdan qabul qilindi (+)
          * @enum {string}
          */
-        CashTransactionTransactionTypeEnum: "HANDOVER_IN" | "OTHER_IN" | "BANK_DEPOSIT" | "SUPPLIER_PAYMENT" | "COMPANY_EXPENSE" | "OTHER_OUT" | "CORRECTION";
+        CashTransactionTransactionTypeEnum: "HANDOVER_IN" | "OTHER_IN" | "BANK_DEPOSIT" | "SUPPLIER_PAYMENT" | "COMPANY_EXPENSE" | "OTHER_OUT" | "CORRECTION" | "OPENING_BALANCE" | "BRANCH_OUT" | "CENTER_IN";
         Category: {
             /** Format: uuid */
             readonly id: string;
@@ -3740,6 +4751,8 @@ export interface components {
              */
             route?: string | null;
             readonly route_name: string;
+            /** Marshrutdagi tartib */
+            readonly route_order: number;
             /** Turi */
             client_type?: components["schemas"]["ClientTypeEnum"];
             readonly client_type_display: string;
@@ -3767,6 +4780,12 @@ export interface components {
             is_blocked?: boolean;
             /** Izoh */
             note?: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
+            readonly branch_name: string;
             /**
              * Yaratilgan vaqti
              * Format: date-time
@@ -3828,6 +4847,15 @@ export interface components {
              */
             readonly updated_at: string;
         };
+        /** @description Mijoz boshlang'ich qarzi (CLAUDE.md 6 — Boshlang'ich qoldiqlar). */
+        ClientOpeningDebtRequest: {
+            /** Format: uuid */
+            client: string;
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
+        };
         ClientRequest: {
             /** Do'kon nomi */
             name: string;
@@ -3872,6 +4900,11 @@ export interface components {
             is_blocked?: boolean;
             /** Izoh */
             note?: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         /**
          * @description * `SHOP` - Do'kon
@@ -4181,11 +5214,13 @@ export interface components {
              * Format: uuid
              */
             readonly distributor: string;
+            readonly distributor_name: string;
             /**
              * Ombor
              * Format: uuid
              */
             readonly warehouse: string;
+            readonly warehouse_name: string;
             /**
              * Kun yopish
              * Format: uuid
@@ -4808,6 +5843,132 @@ export interface components {
             /** Format: decimal */
             price?: string | null;
         };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        InventoryCount: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Raqam */
+            readonly number: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse: string;
+            readonly warehouse_name: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Holat */
+            readonly status: components["schemas"]["StatusF18Enum"];
+            readonly status_display: string;
+            /** Izoh */
+            note?: string;
+            /**
+             * Tasdiqlangan vaqti
+             * Format: date-time
+             */
+            readonly confirmed_at: string | null;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            readonly items_count: number;
+            readonly counted_count: number;
+            readonly difference_amount: string;
+            readonly items: components["schemas"]["InventoryCountItem"][];
+        };
+        InventoryCountItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            readonly product: string;
+            readonly product_name: string;
+            readonly product_sku: string;
+            readonly product_unit: string;
+            /**
+             * Hisobda
+             * Format: decimal
+             */
+            readonly expected_qty: string;
+            /**
+             * Haqiqiy
+             * Format: decimal
+             */
+            readonly actual_qty: string | null;
+            /** Format: decimal */
+            readonly difference: string | null;
+            /**
+             * Tannarx
+             * Format: decimal
+             */
+            readonly cost_price: string;
+            /** Izoh */
+            readonly note: string;
+        };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        InventoryCountList: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Raqam */
+            readonly number: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse: string;
+            readonly warehouse_name: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Holat */
+            readonly status: components["schemas"]["StatusF18Enum"];
+            readonly status_display: string;
+            /** Izoh */
+            note?: string;
+            /**
+             * Tasdiqlangan vaqti
+             * Format: date-time
+             */
+            readonly confirmed_at: string | null;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            readonly items_count: number;
+            readonly counted_count: number;
+            readonly difference_amount: string;
+        };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        InventoryCountRequest: {
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Izoh */
+            note?: string;
+        };
+        InventoryItemInputRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            actual_qty: string | null;
+            note?: string;
+        };
         InvoiceScan: {
             /** Format: uuid */
             readonly id: string;
@@ -4954,7 +6115,7 @@ export interface components {
              * Rasm
              * Format: uri
              */
-            readonly image: string | null;
+            readonly image: string;
             /**
              * Qayta ishlangan rasm
              * Format: uri
@@ -5096,6 +6257,10 @@ export interface components {
             phone: string;
             password: string;
         };
+        LogoutRequest: {
+            /** @description Bekor qilinishi kerak bo'lgan refresh token (ixtiyoriy). */
+            refresh?: string;
+        };
         /**
          * @description * `EXACT` - Aniq moslik
          *     * `FUZZY` - O'xshash (tasdiq kerak)
@@ -5113,9 +6278,10 @@ export interface components {
          *     * `WRITE_OFF` - Hisobdan chiqarish (brak)
          *     * `TRANSFER` - Ko'chirish
          *     * `CORRECTION` - Xatoni tuzatuvchi yozuv
+         *     * `OPENING_BALANCE` - Boshlang'ich qoldiq
          * @enum {string}
          */
-        MovementTypeEnum: "IN_PURCHASE" | "OUT_LOADING" | "IN_RETURN" | "OUT_SALE" | "ADJUSTMENT" | "WRITE_OFF" | "TRANSFER" | "CORRECTION";
+        MovementTypeEnum: "IN_PURCHASE" | "OUT_LOADING" | "IN_RETURN" | "OUT_SALE" | "ADJUSTMENT" | "WRITE_OFF" | "TRANSFER" | "CORRECTION" | "OPENING_BALANCE";
         Notification: {
             /** Format: uuid */
             readonly id: string;
@@ -5156,6 +6322,26 @@ export interface components {
          * @enum {string}
          */
         NotificationTypeEnum: "sale.flagged" | "expense.limit_exceeded" | "expense.approved" | "expense.rejected" | "cash.difference" | "stock.low" | "loading.confirmed" | "dayclose.submitted" | "debt.overdue" | "sync.conflict" | "general";
+        /** @description Ommaviy boshlang'ich qoldiq. context: `non_negative`, `decimal_places`. */
+        OpeningBulkRequest: {
+            rows: components["schemas"]["OpeningRowRequest"][];
+            /** @default  */
+            note: string;
+        };
+        OpeningRowRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            target: string;
+        };
+        /** @description Boshlang'ich qoldiqlar ro'yxati qatori — joriy balans bilan. */
+        OpeningSheetRow: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            code: string;
+            current: string;
+        };
         Order: {
             /** Format: uuid */
             readonly id: string;
@@ -5243,7 +6429,7 @@ export interface components {
             /** Format: date */
             date?: string;
             /** @default  */
-            payment_intent: components["schemas"]["PaymentIntentCc4Enum"] | components["schemas"]["BlankEnum"];
+            payment_intent: components["schemas"]["PaymentIntent8b6Enum"] | components["schemas"]["BlankEnum"];
             /** Format: date */
             desired_date?: string | null;
             /** @default  */
@@ -5259,7 +6445,7 @@ export interface components {
             lines: components["schemas"]["FulfillLineInputRequest"][];
             /** Format: uuid */
             distributor?: string | null;
-            payment_type?: components["schemas"]["PaymentTypeCc4Enum"] | components["schemas"]["BlankEnum"];
+            payment_type?: components["schemas"]["PaymentType8b6Enum"] | components["schemas"]["BlankEnum"];
             /** Format: decimal */
             paid_amount?: string | null;
             /** Format: date */
@@ -5339,6 +6525,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Advance"][];
+        };
+        PaginatedAuditLogList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AuditLog"][];
         };
         PaginatedBrandList: {
             /** @example 123 */
@@ -5460,6 +6661,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["CompanyExpense"][];
         };
+        PaginatedDailyReturnList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["DailyReturn"][];
+        };
         PaginatedDayCloseList: {
             /** @example 123 */
             count: number;
@@ -5535,6 +6751,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["ExpenseCategory"][];
         };
+        PaginatedInventoryCountListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["InventoryCountList"][];
+        };
         PaginatedInvoiceScanList: {
             /** @example 123 */
             count: number;
@@ -5579,6 +6810,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Notification"][];
+        };
+        PaginatedOpeningSheetRowList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["OpeningSheetRow"][];
         };
         PaginatedOrderList: {
             /** @example 123 */
@@ -5760,6 +7006,51 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Supplier"][];
         };
+        PaginatedSupplierTransactionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SupplierTransaction"][];
+        };
+        PaginatedSyncLogList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SyncLog"][];
+        };
+        PaginatedTransferList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Transfer"][];
+        };
         PaginatedUnitList: {
             /** @example 123 */
             count: number;
@@ -5856,6 +7147,42 @@ export interface components {
          * @enum {string}
          */
         PaidByEnum: "COMPANY" | "DISTRIBUTOR";
+        PasswordResetConfirmRequest: {
+            phone: string;
+            code: string;
+            new_password: string;
+        };
+        PasswordResetRequestRequest: {
+            phone: string;
+        };
+        /** @description Filial narxi (markaz belgilaydi). Minimal narx chakanadan oshmasin (CLAUDE.md 7.1). */
+        PatchedBranchPriceRequest: {
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product?: string;
+            /**
+             * Optom narx
+             * Format: decimal
+             */
+            wholesale_price?: string;
+            /**
+             * Chakana narx
+             * Format: decimal
+             */
+            retail_price?: string;
+            /**
+             * Minimal narx
+             * Format: decimal
+             */
+            min_price?: string;
+        };
         PatchedBrandRequest: {
             /** Nomi */
             name?: string;
@@ -5917,6 +7244,11 @@ export interface components {
             is_blocked?: boolean;
             /** Izoh */
             note?: string;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         PatchedCommissionRuleRequest: {
             /** Qamrov */
@@ -5952,29 +7284,6 @@ export interface components {
             is_active?: boolean;
             /** Izoh */
             note?: string;
-        };
-        PatchedCompanyExpenseRequest: {
-            /** Format: date */
-            date?: string;
-            /** Kategoriya */
-            category?: components["schemas"]["CategoryEnum"];
-            /**
-             * Summa
-             * Format: decimal
-             */
-            amount?: string;
-            /** Izoh */
-            description?: string;
-            /**
-             * Kassadan to'landimi
-             * @description True bo'lsa kassa balansidan chiqadi
-             */
-            paid_from_cash?: boolean;
-            /**
-             * Hujjat
-             * Format: binary
-             */
-            receipt_image?: string | null;
         };
         PatchedCompanySettingsRequest: {
             /** Nomi */
@@ -6021,6 +7330,24 @@ export interface components {
             paid_by?: components["schemas"]["PaidByEnum"];
             /** Faol */
             is_active?: boolean;
+        };
+        /** @description Ro'yxatda annotatsiyadan, detalda qatorlardan hisoblanadi. */
+        PatchedInventoryCountRequest: {
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse?: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date?: string;
+            /** Izoh */
+            note?: string;
+        };
+        PatchedInventoryItemsUpdateRequest: {
+            items?: components["schemas"]["InventoryItemInputRequest"][];
         };
         PatchedInvoiceScanLineUpdateRequest: {
             /**
@@ -6071,6 +7398,11 @@ export interface components {
             sort_order?: number;
             is_primary?: boolean;
         };
+        /**
+         * @description Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+         *
+         *     View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+         */
         PatchedProductRequest: {
             /** Nomi */
             name?: string;
@@ -6135,6 +7467,10 @@ export interface components {
             min_stock_alert?: string;
             /** Faol */
             is_active?: boolean;
+            /** Format: uuid */
+            initial_stock_warehouse?: string | null;
+            /** Format: decimal */
+            initial_stock_quantity?: string | null;
         };
         PatchedPurchaseRequest: {
             /**
@@ -6173,10 +7509,20 @@ export interface components {
              * Format: uuid
              */
             distributor?: string | null;
+            /**
+             * Zakaz oluvchi
+             * Format: uuid
+             */
+            order_taker?: string | null;
             /** Hafta kunlari */
             days_of_week?: unknown;
             /** Faol */
             is_active?: boolean;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         PatchedSupplierRequest: {
             /** Nomi */
@@ -6192,20 +7538,47 @@ export interface components {
             /** Faol */
             is_active?: boolean;
         };
+        PatchedTransferRequest: {
+            /**
+             * Qayerdan
+             * Format: uuid
+             */
+            from_warehouse?: string;
+            /**
+             * Qayerga
+             * Format: uuid
+             */
+            to_warehouse?: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date?: string;
+            /** Izoh */
+            note?: string;
+            items?: components["schemas"]["TransferItemRequest"][];
+        };
         PatchedUnitRequest: {
             /** Nomi */
             name?: string;
             /** Qisqa nomi */
             short_name?: string;
         };
-        /** @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6. */
+        /**
+         * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+         *
+         *     `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+         *     (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+         *     musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+         *     uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+         */
         PatchedUserWriteRequest: {
             /** Telefon */
             phone?: string;
             /** F.I.SH. */
             full_name?: string;
             /** Rol */
-            role?: components["schemas"]["Role38bEnum"];
+            role?: components["schemas"]["Role164Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -6222,14 +7595,30 @@ export interface components {
             is_active?: boolean;
             password?: string;
             distributor_profile?: components["schemas"]["DistributorProfileRequest"];
+            /** Format: decimal */
+            opening_balance?: string | null;
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            warehouse?: string | null;
         };
         PatchedWarehouseRequest: {
             /** Nomi */
             name?: string;
             /** Manzil */
             address?: string;
+            /** Telefon */
+            phone?: string;
             /** Faol */
             is_active?: boolean;
+            /** Filial */
+            is_branch?: boolean;
+            /**
+             * Mas'ul
+             * Format: uuid
+             */
+            manager?: string | null;
         };
         /**
          * @description * `NAQD` - NAQD
@@ -6239,7 +7628,7 @@ export interface components {
          *     * `ARALASH` - ARALASH
          * @enum {string}
          */
-        PaymentIntentCc4Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
+        PaymentIntent8b6Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
         /**
          * @description * `NAQD` - NAQD
          *     * `PLASTIK` - PLASTIK
@@ -6248,7 +7637,7 @@ export interface components {
          *     * `ARALASH` - ARALASH
          * @enum {string}
          */
-        PaymentTypeCc4Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
+        PaymentType8b6Enum: "NAQD" | "PLASTIK" | "OTKAZMA" | "QARZ" | "ARALASH";
         /**
          * @description * `NAQD` - Naqd
          *     * `PLASTIK` - Plastik karta
@@ -6547,6 +7936,11 @@ export interface components {
             readonly created_at: string;
             readonly details: components["schemas"]["PayrollDetail"][];
         };
+        /**
+         * @description Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+         *
+         *     View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+         */
         Product: {
             /** Format: uuid */
             readonly id: string;
@@ -6636,7 +8030,7 @@ export interface components {
              * Rasm
              * Format: uri
              */
-            readonly image: string | null;
+            readonly image: string;
             /**
              * Eskiz
              * Format: uri
@@ -6738,6 +8132,11 @@ export interface components {
              */
             readonly created_at: string;
         };
+        /**
+         * @description Filial xodimiga o'z filiali narxini ko'rsatadi (v5: A7).
+         *
+         *     View `branch_price_map` ni kontekstga qo'yadi ({product_id: BranchPrice}).
+         */
         ProductRequest: {
             /** Nomi */
             name: string;
@@ -6802,6 +8201,10 @@ export interface components {
             min_stock_alert?: string;
             /** Faol */
             is_active?: boolean;
+            /** Format: uuid */
+            initial_stock_warehouse?: string | null;
+            /** Format: decimal */
+            initial_stock_quantity?: string | null;
         };
         /**
          * @description * `claude` - Claude vision
@@ -6963,12 +8366,14 @@ export interface components {
         /**
          * @description * `SUPER_ADMIN` - Super admin
          *     * `MANAGER` - Menejer
+         *     * `BRANCH_MANAGER` - Filial rahbari
          *     * `WAREHOUSE` - Omborchi
          *     * `DISTRIBUTOR` - Tarqatuvchi
          *     * `ACCOUNTANT` - Buxgalter
+         *     * `ORDER_TAKER` - Zakaz oluvchi
          * @enum {string}
          */
-        Role38bEnum: "SUPER_ADMIN" | "MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT";
+        Role164Enum: "SUPER_ADMIN" | "MANAGER" | "BRANCH_MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
         Route: {
             /** Format: uuid */
             readonly id: string;
@@ -6980,11 +8385,23 @@ export interface components {
              */
             distributor?: string | null;
             readonly distributor_name: string;
+            /**
+             * Zakaz oluvchi
+             * Format: uuid
+             */
+            order_taker?: string | null;
+            readonly order_taker_name: string;
             /** Hafta kunlari */
             days_of_week?: unknown;
             readonly days_display: string[];
             /** Faol */
             is_active?: boolean;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
+            readonly branch_name: string;
             readonly clients_count: number;
             /**
              * Yaratilgan vaqti
@@ -7000,10 +8417,20 @@ export interface components {
              * Format: uuid
              */
             distributor?: string | null;
+            /**
+             * Zakaz oluvchi
+             * Format: uuid
+             */
+            order_taker?: string | null;
             /** Hafta kunlari */
             days_of_week?: unknown;
             /** Faol */
             is_active?: boolean;
+            /**
+             * Filial
+             * Format: uuid
+             */
+            branch?: string | null;
         };
         Sale: {
             /** Format: uuid */
@@ -7102,7 +8529,7 @@ export interface components {
         SaleCreateRequest: {
             /** Format: uuid */
             client: string;
-            payment_type: components["schemas"]["PaymentTypeCc4Enum"];
+            payment_type: components["schemas"]["PaymentType8b6Enum"];
             items: components["schemas"]["SaleLineInputRequest"][];
             /** Format: date */
             date?: string;
@@ -7219,6 +8646,7 @@ export interface components {
              * Format: uuid
              */
             readonly distributor: string;
+            readonly distributor_name: string;
             /**
              * Mijoz
              * Format: uuid
@@ -7339,6 +8767,13 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "MANUAL" | "SCAN";
+        /**
+         * @description * `DRAFT` - Qoralama
+         *     * `CONFIRMED` - Tasdiqlangan
+         *     * `CANCELLED` - Bekor qilingan
+         * @enum {string}
+         */
+        StatusF18Enum: "DRAFT" | "CONFIRMED" | "CANCELLED";
         Stock: {
             /** Format: uuid */
             readonly id: string;
@@ -7355,6 +8790,9 @@ export interface components {
             readonly product: string;
             readonly product_name: string;
             readonly product_sku: string;
+            readonly product_unit: string;
+            /** Format: decimal */
+            readonly min_stock_alert: string;
             /**
              * Qoldiq
              * Format: decimal
@@ -7421,6 +8859,17 @@ export interface components {
              */
             readonly created_at: string;
         };
+        /** @description Mavjud mahsulot uchun boshlang'ich qoldiq (CLAUDE.md 6 — Ombor). */
+        StockOpeningBalanceRequest: {
+            /** Format: uuid */
+            product: string;
+            /** Format: uuid */
+            warehouse: string;
+            /** Format: decimal */
+            quantity: string;
+            /** @default  */
+            note: string;
+        };
         Supplier: {
             /** Format: uuid */
             readonly id: string;
@@ -7437,10 +8886,24 @@ export interface components {
             /** Faol */
             is_active?: boolean;
             /**
+             * Balans
+             * Format: decimal
+             */
+            readonly balance: string;
+            /**
              * Yaratilgan vaqti
              * Format: date-time
              */
             readonly created_at: string;
+        };
+        /** @description Ta'minotchi boshlang'ich qoldig'i — ishorali (musbat/manfiy). */
+        SupplierOpeningBalanceRequest: {
+            /** Format: uuid */
+            supplier: string;
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
         };
         SupplierRequest: {
             /** Nomi */
@@ -7456,6 +8919,49 @@ export interface components {
             /** Faol */
             is_active?: boolean;
         };
+        SupplierTransaction: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date */
+            readonly date: string;
+            readonly transaction_type: string;
+            /** Format: decimal */
+            readonly amount: string;
+            /** Format: decimal */
+            readonly balance_after: string;
+            readonly note: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        SyncLog: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+            /**
+             * Foydalanuvchi
+             * Format: uuid
+             */
+            readonly user: string | null;
+            readonly user_name: string;
+            /** Qurilma */
+            readonly device_id: string;
+            /** Operatsiyalar */
+            readonly operations_count: number;
+            /** Konfliktlar */
+            readonly conflicts_count: number;
+            /** Xatolar */
+            readonly errors_count: number;
+            /** Davomiyligi (ms) */
+            readonly duration_ms: number;
+        };
+        TelegramBotConnectRequest: {
+            /** @description Telegram bot tokeni (masalan: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11) */
+            token: string;
+        };
         TokenRefresh: {
             readonly access: string;
             refresh: string;
@@ -7463,6 +8969,134 @@ export interface components {
         TokenRefreshRequest: {
             refresh: string;
         };
+        Transfer: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Raqam */
+            readonly number: string;
+            /**
+             * Qayerdan
+             * Format: uuid
+             */
+            from_warehouse: string;
+            readonly from_warehouse_name: string;
+            /**
+             * Qayerga
+             * Format: uuid
+             */
+            to_warehouse: string;
+            readonly to_warehouse_name: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Holat */
+            readonly status: components["schemas"]["TransferStatusEnum"];
+            readonly status_display: string;
+            /** Izoh */
+            note?: string;
+            /** Qabul izohi */
+            readonly receive_note: string;
+            /**
+             * Yuborilgan vaqti
+             * Format: date-time
+             */
+            readonly sent_at: string | null;
+            readonly sent_by_name: string;
+            /**
+             * Qabul vaqti
+             * Format: date-time
+             */
+            readonly received_at: string | null;
+            readonly received_by_name: string;
+            items: components["schemas"]["TransferItem"][];
+            /**
+             * Yaratilgan vaqti
+             * Format: date-time
+             */
+            readonly created_at: string;
+        };
+        TransferItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            readonly product_name: string;
+            readonly product_sku: string;
+            readonly product_unit: string;
+            /**
+             * Jo'natilgan
+             * Format: decimal
+             */
+            quantity: string;
+            /**
+             * Qabul qilingan
+             * Format: decimal
+             */
+            readonly received_quantity: string | null;
+            /** Format: decimal */
+            readonly difference: string | null;
+            /**
+             * Tannarx
+             * Format: decimal
+             */
+            readonly cost_price: string;
+        };
+        TransferItemRequest: {
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Jo'natilgan
+             * Format: decimal
+             */
+            quantity: string;
+        };
+        TransferReceiveRequest: {
+            items?: components["schemas"]["TransferReceiveRowRequest"][];
+            /** @default  */
+            note: string;
+        };
+        TransferReceiveRowRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: decimal */
+            received_quantity: string;
+        };
+        TransferRequest: {
+            /**
+             * Qayerdan
+             * Format: uuid
+             */
+            from_warehouse: string;
+            /**
+             * Qayerga
+             * Format: uuid
+             */
+            to_warehouse: string;
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Izoh */
+            note?: string;
+            items: components["schemas"]["TransferItemRequest"][];
+        };
+        /**
+         * @description * `DRAFT` - Qoralama
+         *     * `SENT` - Yo'lda
+         *     * `RECEIVED` - Qabul qilingan
+         *     * `CANCELLED` - Bekor qilingan
+         * @enum {string}
+         */
+        TransferStatusEnum: "DRAFT" | "SENT" | "RECEIVED" | "CANCELLED";
         Unit: {
             /** Format: uuid */
             readonly id: string;
@@ -7490,7 +9124,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            readonly role: components["schemas"]["Role38bEnum"];
+            readonly role: components["schemas"]["Role164Enum"];
             /**
              * Rasm
              * Format: uri
@@ -7517,8 +9151,21 @@ export interface components {
             readonly last_seen_at: string | null;
             telegram_chat_id?: string;
             readonly distributor_profile: components["schemas"]["DistributorProfile"];
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            readonly warehouse: string | null;
+            readonly warehouse_name: string;
         };
-        /** @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6. */
+        /**
+         * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+         *
+         *     `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+         *     (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+         *     musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+         *     uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+         */
         UserWrite: {
             /** Format: uuid */
             readonly id: string;
@@ -7527,7 +9174,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role38bEnum"];
+            role?: components["schemas"]["Role164Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -7543,15 +9190,28 @@ export interface components {
              */
             is_active?: boolean;
             distributor_profile?: components["schemas"]["DistributorProfile"];
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            warehouse?: string | null;
+            readonly warehouse_name: string;
         };
-        /** @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 6. */
+        /**
+         * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
+         *
+         *     `distributor_profile` (asosiy maosh va h.k.) va `opening_balance`
+         *     (dastlabki hisob-kitob — kompaniya xodimga qarzdor/avans bergan bo'lsa
+         *     musbat, xodim kompaniyaga qarzdor bo'lsa manfiy) endi barcha rol turlari
+         *     uchun ishlatiladi, nafaqat DISTRIBUTOR — talab: "barcha xodim turlari".
+         */
         UserWriteRequest: {
             /** Telefon */
             phone: string;
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role38bEnum"];
+            role?: components["schemas"]["Role164Enum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -7568,6 +9228,13 @@ export interface components {
             is_active?: boolean;
             password?: string;
             distributor_profile?: components["schemas"]["DistributorProfileRequest"];
+            /** Format: decimal */
+            opening_balance?: string | null;
+            /**
+             * Ombor / filial
+             * Format: uuid
+             */
+            warehouse?: string | null;
         };
         VanStock: {
             /** Format: uuid */
@@ -7587,7 +9254,7 @@ export interface components {
             readonly product_sku: string;
             readonly unit: string;
             /** Format: uri */
-            readonly image: string | null;
+            readonly image: string;
             /**
              * Qoldiq
              * Format: decimal
@@ -7622,6 +9289,18 @@ export interface components {
              * Format: date-time
              */
             readonly updated_at: string;
+        };
+        /**
+         * @description Xodim boshlang'ich balansi — ishorali (CLAUDE.md 6 — Boshlang'ich
+         *     qoldiqlar). Mavjud xodimlar uchun (yaratish oqimidan mustaqil).
+         */
+        WalletOpeningBalanceRequest: {
+            /** Format: uuid */
+            distributor: string;
+            /** Format: decimal */
+            amount: string;
+            /** @default  */
+            note: string;
         };
         WalletTransaction: {
             /** Format: uuid */
@@ -7663,9 +9342,10 @@ export interface components {
          *     * `HANDOVER` - Kassaga topshirildi (−)
          *     * `ADVANCE` - Avans (+)
          *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+         *     * `OPENING_BALANCE` - Boshlang'ich balans (±)
          * @enum {string}
          */
-        WalletTransactionTransactionTypeEnum: "SALE_CASH" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "ADVANCE" | "CORRECTION";
+        WalletTransactionTransactionTypeEnum: "SALE_CASH" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "ADVANCE" | "CORRECTION" | "OPENING_BALANCE";
         Warehouse: {
             /** Format: uuid */
             readonly id: string;
@@ -7673,8 +9353,18 @@ export interface components {
             name: string;
             /** Manzil */
             address?: string;
+            /** Telefon */
+            phone?: string;
             /** Faol */
             is_active?: boolean;
+            /** Filial */
+            is_branch?: boolean;
+            /**
+             * Mas'ul
+             * Format: uuid
+             */
+            manager?: string | null;
+            readonly manager_name: string;
             /**
              * Yaratilgan vaqti
              * Format: date-time
@@ -7686,8 +9376,17 @@ export interface components {
             name: string;
             /** Manzil */
             address?: string;
+            /** Telefon */
+            phone?: string;
             /** Faol */
             is_active?: boolean;
+            /** Filial */
+            is_branch?: boolean;
+            /**
+             * Mas'ul
+             * Format: uuid
+             */
+            manager?: string | null;
         };
     };
     responses: never;
@@ -7776,6 +9475,61 @@ export interface operations {
             };
         };
     };
+    audit_logs_list: {
+        parameters: {
+            query?: {
+                action?: string;
+                date_from?: string;
+                date_to?: string;
+                model_name?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAuditLogList"];
+                };
+            };
+        };
+    };
+    audit_logs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this audit yozuvi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLog"];
+                };
+            };
+        };
+    };
     auth_change_password_create: {
         parameters: {
             query?: never;
@@ -7834,7 +9588,13 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LogoutRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoutRequest"];
+                "multipart/form-data": components["schemas"]["LogoutRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -7867,6 +9627,60 @@ export interface operations {
             };
         };
     };
+    auth_password_reset_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirmRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetConfirmRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetConfirmRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    auth_password_reset_request_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PasswordResetRequestRequest"];
+                "multipart/form-data": components["schemas"]["PasswordResetRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     auth_refresh_create: {
         parameters: {
             query?: never;
@@ -7888,6 +9702,177 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenRefresh"];
+                };
+            };
+        };
+    };
+    auth_ws_ticket_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    branch_prices_list: {
+        parameters: {
+            query?: {
+                branch?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                product?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"][];
+                };
+            };
+        };
+    };
+    branch_prices_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchPriceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BranchPriceRequest"];
+                "multipart/form-data": components["schemas"]["BranchPriceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
+                };
+            };
+        };
+    };
+    branch_prices_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
+                };
+            };
+        };
+    };
+    branch_prices_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchPriceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BranchPriceRequest"];
+                "multipart/form-data": components["schemas"]["BranchPriceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
+                };
+            };
+        };
+    };
+    branch_prices_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    branch_prices_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this filial narxi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedBranchPriceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedBranchPriceRequest"];
+                "multipart/form-data": components["schemas"]["PatchedBranchPriceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BranchPrice"];
                 };
             };
         };
@@ -8117,8 +10102,11 @@ export interface operations {
                  *     * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
                  *     * `OTHER_OUT` - Boshqa chiqim (−)
                  *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 *     * `BRANCH_OUT` - Markazga topshirildi (−)
+                 *     * `CENTER_IN` - Filialdan qabul qilindi (+)
                  */
-                transaction_type?: "BANK_DEPOSIT" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
+                transaction_type?: "BANK_DEPOSIT" | "BRANCH_OUT" | "CENTER_IN" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
             };
             header?: never;
             path?: never;
@@ -8191,6 +10179,123 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashTransaction"];
+                };
+            };
+        };
+    };
+    cash_transactions_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CashOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["CashOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashTransaction"];
+                };
+            };
+        };
+    };
+    cash_transactions_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashTransaction"];
+                };
+            };
+        };
+    };
+    cash_transactions_opening_sheet_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `HANDOVER_IN` - Tarqatuvchidan naqd (+)
+                 *     * `OTHER_IN` - Boshqa kirim (+)
+                 *     * `BANK_DEPOSIT` - Bankka topshirildi (−)
+                 *     * `SUPPLIER_PAYMENT` - Yetkazib beruvchiga to'lov (−)
+                 *     * `COMPANY_EXPENSE` - Kompaniya xarajati (−)
+                 *     * `OTHER_OUT` - Boshqa chiqim (−)
+                 *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 *     * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 *     * `BRANCH_OUT` - Markazga topshirildi (−)
+                 *     * `CENTER_IN` - Filialdan qabul qilindi (+)
+                 */
+                transaction_type?: "BANK_DEPOSIT" | "BRANCH_OUT" | "CENTER_IN" | "COMPANY_EXPENSE" | "CORRECTION" | "HANDOVER_IN" | "OPENING_BALANCE" | "OTHER_IN" | "OTHER_OUT" | "SUPPLIER_PAYMENT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    cash_transactions_to_center_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BranchCashTransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BranchCashTransferRequest"];
+                "multipart/form-data": components["schemas"]["BranchCashTransferRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -8620,6 +10725,122 @@ export interface operations {
             };
         };
     };
+    clients_statement_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                fmt?: "json" | "pdf";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this mijoz. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    clients_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientOpeningDebtRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientOpeningDebtRequest"];
+                "multipart/form-data": components["schemas"]["ClientOpeningDebtRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
+    clients_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
+    clients_opening_sheet_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `SHOP` - Do'kon
+                 *     * `MARKET` - Bozor
+                 *     * `SUPERMARKET` - Supermarket
+                 *     * `PHARMACY` - Dorixona
+                 *     * `OTHER` - Boshqa
+                 */
+                client_type?: "MARKET" | "OTHER" | "PHARMACY" | "SHOP" | "SUPERMARKET";
+                is_blocked?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                route?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
     commission_rules_list: {
         parameters: {
             query?: {
@@ -8868,55 +11089,6 @@ export interface operations {
             };
         };
     };
-    company_expenses_destroy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this kompaniya xarajati. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    company_expenses_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this kompaniya xarajati. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["PatchedCompanyExpenseRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedCompanyExpenseRequest"];
-                "multipart/form-data": components["schemas"]["PatchedCompanyExpenseRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompanyExpense"];
-                };
-            };
-        };
-    };
     company_settings_retrieve: {
         parameters: {
             query?: never;
@@ -8976,6 +11148,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompanyPublic"];
+                };
+            };
+        };
+    };
+    daily_returns_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                distributor?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                warehouse?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDailyReturnList"];
+                };
+            };
+        };
+    };
+    daily_returns_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this kunlik qaytarish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyReturn"];
                 };
             };
         };
@@ -9624,6 +11849,211 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    inventory_counts_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `DRAFT` - Qoralama
+                 *     * `CONFIRMED` - Tasdiqlangan
+                 *     * `CANCELLED` - Bekor qilingan
+                 */
+                status?: "CANCELLED" | "CONFIRMED" | "DRAFT";
+                warehouse?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedInventoryCountListList"];
+                };
+            };
+        };
+    };
+    inventory_counts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InventoryCountRequest"];
+                "multipart/form-data": components["schemas"]["InventoryCountRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedInventoryCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedInventoryCountRequest"];
+                "multipart/form-data": components["schemas"]["PatchedInventoryCountRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_fill_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
+                };
+            };
+        };
+    };
+    inventory_counts_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this inventarizatsiya. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedInventoryItemsUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedInventoryItemsUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedInventoryItemsUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryCount"];
                 };
             };
         };
@@ -10921,6 +13351,7 @@ export interface operations {
             path: {
                 /** @description A UUID string identifying this mahsulot. */
                 id: string;
+                /** @description Rasm UUID identifikatori */
                 img_id: string;
             };
             cookie?: never;
@@ -10943,6 +13374,7 @@ export interface operations {
             path: {
                 /** @description A UUID string identifying this mahsulot. */
                 id: string;
+                /** @description Rasm UUID identifikatori */
                 img_id: string;
             };
             cookie?: never;
@@ -11020,6 +13452,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    products_import_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                    dry_run?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    products_import_template_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
         };
@@ -11335,6 +13815,107 @@ export interface operations {
             };
         };
     };
+    reports_branches_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_branches_activity_retrieve: {
+        parameters: {
+            query: {
+                date_from?: string;
+                date_to?: string;
+                kind: "in_transit" | "inventory" | "loadings" | "opening" | "other" | "purchases" | "returns" | "stock" | "transfers_in" | "transfers_out" | "write_offs";
+                preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_branches_cards_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_branches_comparison_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     reports_dashboard_retrieve: {
         parameters: {
             query?: {
@@ -11385,6 +13966,29 @@ export interface operations {
                 date_from?: string;
                 date_to?: string;
                 preset?: "custom" | "last_month" | "month" | "quarter" | "today" | "week" | "year" | "yesterday";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_distributor_locations_retrieve: {
+        parameters: {
+            query?: {
+                date?: string;
             };
             header?: never;
             path?: never;
@@ -11458,6 +14062,30 @@ export interface operations {
             };
         };
     };
+    reports_expense_anomalies_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     reports_expenses_retrieve: {
         parameters: {
             query?: {
@@ -11510,6 +14138,30 @@ export interface operations {
             };
         };
     };
+    reports_export_1c_retrieve: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                fmt?: "csv" | "xml";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xml": string;
+                    "text/csv": string;
+                };
+            };
+        };
+    };
     reports_profit_retrieve: {
         parameters: {
             query?: {
@@ -11546,6 +14198,32 @@ export interface operations {
                 payment_type?: string;
                 product?: string;
                 route?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_reorder_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Necha kunlik zaxira kerak (1–90, default 14) */
+                cover?: number;
+                /** @description O'rtacha sotuv davri (7–180, default 28) */
+                days?: number;
             };
             header?: never;
             path?: never;
@@ -11742,6 +14420,63 @@ export interface operations {
             };
         };
     };
+    routes_optimize_retrieve: {
+        parameters: {
+            query?: {
+                start_lat?: number;
+                start_lng?: number;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this marshrut. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    routes_reorder_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this marshrut. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    clients?: string[];
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     routes_my_retrieve: {
         parameters: {
             query?: never;
@@ -11848,6 +14583,8 @@ export interface operations {
         parameters: {
             query?: {
                 client?: string;
+                date__gte?: string;
+                date__lte?: string;
                 distributor?: string;
                 flagged?: boolean;
                 /** @description Which field to use when ordering the results. */
@@ -12089,8 +14826,9 @@ export interface operations {
                  *     * `WRITE_OFF` - Hisobdan chiqarish (brak)
                  *     * `TRANSFER` - Ko'chirish
                  *     * `CORRECTION` - Xatoni tuzatuvchi yozuv
+                 *     * `OPENING_BALANCE` - Boshlang'ich qoldiq
                  */
-                movement_type?: "ADJUSTMENT" | "CORRECTION" | "IN_PURCHASE" | "IN_RETURN" | "OUT_LOADING" | "OUT_SALE" | "TRANSFER" | "WRITE_OFF";
+                movement_type?: "ADJUSTMENT" | "CORRECTION" | "IN_PURCHASE" | "IN_RETURN" | "OPENING_BALANCE" | "OUT_LOADING" | "OUT_SALE" | "TRANSFER" | "WRITE_OFF";
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -12178,6 +14916,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Stock"];
+                };
+            };
+        };
+    };
+    stock_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StockOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["StockOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockMovement"];
+                };
+            };
+        };
+    };
+    stock_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stock"];
+                };
+            };
+        };
+    };
+    stock_opening_sheet_list: {
+        parameters: {
+            query: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                product?: string;
+                /** @description A search term. */
+                search?: string;
+                warehouse: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    supplier_transactions_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                supplier?: string;
+                /**
+                 * @description * `OPENING_BALANCE` - Boshlang'ich qoldiq (±)
+                 *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 */
+                transaction_type?: "CORRECTION" | "OPENING_BALANCE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupplierTransactionList"];
+                };
+            };
+        };
+    };
+    supplier_transactions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ta'minotchi tranzaksiyasi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierTransaction"];
                 };
             };
         };
@@ -12334,6 +15208,139 @@ export interface operations {
             };
         };
     };
+    suppliers_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["SupplierOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierTransaction"];
+                };
+            };
+        };
+    };
+    suppliers_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Supplier"];
+                };
+            };
+        };
+    };
+    suppliers_opening_sheet_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    sync_logs_list: {
+        parameters: {
+            query?: {
+                date_from?: string;
+                date_to?: string;
+                device_id?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                problems?: boolean;
+                /** @description A search term. */
+                search?: string;
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSyncLogList"];
+                };
+            };
+        };
+    };
+    sync_logs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this sinxronizatsiya jurnali. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncLog"];
+                };
+            };
+        };
+    };
     sync_catalog_list: {
         parameters: {
             query?: {
@@ -12439,6 +15446,81 @@ export interface operations {
             };
         };
     };
+    telegram_bot_config_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    telegram_bot_config_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelegramBotConnectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TelegramBotConnectRequest"];
+                "multipart/form-data": components["schemas"]["TelegramBotConnectRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    telegram_bot_config_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelegramBotConnectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TelegramBotConnectRequest"];
+                "multipart/form-data": components["schemas"]["TelegramBotConnectRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     telegram_link_create: {
         parameters: {
             query?: never;
@@ -12498,6 +15580,191 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    transfers_list: {
+        parameters: {
+            query?: {
+                date?: string;
+                from_warehouse?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `DRAFT` - Qoralama
+                 *     * `SENT` - Yo'lda
+                 *     * `RECEIVED` - Qabul qilingan
+                 *     * `CANCELLED` - Bekor qilingan
+                 */
+                status?: "CANCELLED" | "DRAFT" | "RECEIVED" | "SENT";
+                to_warehouse?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTransferList"];
+                };
+            };
+        };
+    };
+    transfers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferRequest"];
+                "multipart/form-data": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTransferRequest"];
+                "multipart/form-data": components["schemas"]["PatchedTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_receive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TransferReceiveRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferReceiveRequest"];
+                "multipart/form-data": components["schemas"]["TransferReceiveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+        };
+    };
+    transfers_send_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ko'chirish. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
                 };
             };
         };
@@ -12667,11 +15934,13 @@ export interface operations {
                 /**
                  * @description * `SUPER_ADMIN` - Super admin
                  *     * `MANAGER` - Menejer
+                 *     * `BRANCH_MANAGER` - Filial rahbari
                  *     * `WAREHOUSE` - Omborchi
                  *     * `DISTRIBUTOR` - Tarqatuvchi
                  *     * `ACCOUNTANT` - Buxgalter
+                 *     * `ORDER_TAKER` - Zakaz oluvchi
                  */
-                role?: "ACCOUNTANT" | "DISTRIBUTOR" | "MANAGER" | "SUPER_ADMIN" | "WAREHOUSE";
+                role?: "ACCOUNTANT" | "BRANCH_MANAGER" | "DISTRIBUTOR" | "MANAGER" | "ORDER_TAKER" | "SUPER_ADMIN" | "WAREHOUSE";
                 /** @description A search term. */
                 search?: string;
             };
@@ -12735,6 +16004,27 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["User"];
                 };
+            };
+        };
+    };
+    users_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this foydalanuvchi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -12907,8 +16197,9 @@ export interface operations {
                  *     * `HANDOVER` - Kassaga topshirildi (−)
                  *     * `ADVANCE` - Avans (+)
                  *     * `CORRECTION` - Tuzatuvchi yozuv (±)
+                 *     * `OPENING_BALANCE` - Boshlang'ich balans (±)
                  */
-                transaction_type?: "ADVANCE" | "CORRECTION" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "SALE_CASH";
+                transaction_type?: "ADVANCE" | "CORRECTION" | "DEBT_COLLECTED" | "EXPENSE" | "HANDOVER" | "OPENING_BALANCE" | "SALE_CASH";
                 wallet?: string;
             };
             header?: never;
@@ -13005,6 +16296,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Wallet"];
+                };
+            };
+        };
+    };
+    wallet_opening_balance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalletOpeningBalanceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WalletOpeningBalanceRequest"];
+                "multipart/form-data": components["schemas"]["WalletOpeningBalanceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletTransaction"];
+                };
+            };
+        };
+    };
+    wallet_opening_balance_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningBulkRequest"];
+                "multipart/form-data": components["schemas"]["OpeningBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wallet"];
+                };
+            };
+        };
+    };
+    wallet_opening_sheet_list: {
+        parameters: {
+            query?: {
+                distributor?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
                 };
             };
         };
