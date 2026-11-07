@@ -21,6 +21,8 @@ from django.db.models.fields.files import FieldFile
 from django.utils import timezone
 
 ZERO = Decimal("0")
+SETTING_ALLOW_TEST_CLEANUP = "system.allow_test_cleanup"
+
 LEDGERS = {
     "finance.cashtransaction": ("finance.CashAccount", ("account_id",), "amount", "balance"),
     "wallet.wallettransaction": ("wallet.DistributorWallet", ("wallet_id",), "amount", "balance"),
@@ -43,9 +45,47 @@ class CleanupBlocked(ValueError):
     pass
 
 
+def is_test_cleanup_enabled() -> bool:
+    """Sozlamada soxta operatsiyalarni tozalash yoqilganmi? Standart: True."""
+    from apps.core.models import Setting
+
+    val = Setting.get(SETTING_ALLOW_TEST_CLEANUP, True)
+    if isinstance(val, dict):
+        return bool(val.get("enabled", True))
+    return bool(val)
+
+
+def set_test_cleanup_enabled(enabled: bool, *, user=None) -> bool:
+    """Soxta operatsiyalarni tozalash ruxsatini yoqish yoki o'chirish."""
+    from apps.core.models import Setting
+
+    obj, _ = Setting.objects.update_or_create(
+        key=SETTING_ALLOW_TEST_CLEANUP,
+        defaults={
+            "value": bool(enabled),
+            "description": "Soxta operatsiyalarni (tranzaksiyalarni) tozalashga ruxsat berish",
+            **({"created_by": user} if user and getattr(user, "is_authenticated", False) else {}),
+        },
+    )
+    return bool(obj.value)
+
+
 def require_superuser(user):
-    if not user.is_active or not user.is_superuser or not user.is_staff:
+    if not user or not getattr(user, "is_active", False):
         raise PermissionDenied
+    is_super = bool(getattr(user, "is_superuser", False) and getattr(user, "is_staff", False))
+    is_super_admin_role = getattr(user, "role", None) == "SUPER_ADMIN" and not getattr(user, "warehouse_id", None)
+    if not (is_super or is_super_admin_role):
+        raise PermissionDenied
+
+
+def ensure_cleanup_allowed(user):
+    require_superuser(user)
+    if not is_test_cleanup_enabled():
+        raise CleanupBlocked(
+            "Soxta operatsiyalarni tozalash sozlamalarda o‘chirilgan. "
+            "Avval Sozlamalar bo‘limidan ruxsatni yoqing."
+        )
 
 
 def _json(value):
@@ -216,7 +256,7 @@ def _check_handover(handover):
 
 
 def build_plan(label, ids, *, user):
-    require_superuser(user)
+    ensure_cleanup_allowed(user)
     if label not in LEDGERS:
         raise CleanupBlocked("Bu jurnal uchun tozalash ruxsat etilmagan.")
     ids = {str(pk) for pk in ids}
@@ -361,7 +401,7 @@ def _document_effects(plan):
 
 @transaction.atomic
 def execute_cleanup(label, ids, *, user, expected_digest, reason):
-    require_superuser(user)
+    ensure_cleanup_allowed(user)
     if not reason.strip():
         raise CleanupBlocked("Tozalash sababini kiriting.")
     # Rare maintenance action: briefly exclude concurrent business writes,
@@ -409,3 +449,134 @@ def execute_cleanup(label, ids, *, user, expected_digest, reason):
 
     transaction.on_commit(cache.clear, robust=True)
     return len(plan.rows)
+
+
+def list_cleanup_entries(label: str, *, limit: int = 50) -> list[dict]:
+    """Tanlangan jurnal bo'yicha oxirgi faol operatsiyalar ro'yxati."""
+    if label not in LEDGERS:
+        raise CleanupBlocked("Bu jurnal uchun tozalash ruxsat etilmagan.")
+    limit = max(1, min(int(limit or 50), 200))
+    model = _model(label)
+
+    if label == "finance.cashtransaction":
+        qs = model.objects.select_related("account", "account__branch", "created_by").order_by(
+            "-created_at", "-pk"
+        )[:limit]
+        return [
+            {
+                "id": str(row.pk),
+                "date": str(row.date),
+                "created_at": row.created_at.isoformat(),
+                "type_code": row.transaction_type,
+                "type_display": row.get_transaction_type_display(),
+                "target_name": row.account.name if row.account_id else "Asosiy kassa",
+                "counterparty": row.counterparty or "",
+                "amount": str(row.amount),
+                "balance_after": str(row.balance_after),
+                "reference_type": row.reference_type or "",
+                "reference_id": str(row.reference_id or ""),
+                "note": row.note or "",
+                "actor_name": row.created_by.full_name if row.created_by_id else "",
+            }
+            for row in qs
+        ]
+
+    if label == "wallet.wallettransaction":
+        qs = model.objects.select_related(
+            "wallet", "wallet__distributor", "created_by"
+        ).order_by("-created_at", "-pk")[:limit]
+        return [
+            {
+                "id": str(row.pk),
+                "date": str(row.date),
+                "created_at": row.created_at.isoformat(),
+                "type_code": row.transaction_type,
+                "type_display": row.get_transaction_type_display(),
+                "target_name": (
+                    row.wallet.distributor.full_name
+                    if row.wallet_id and row.wallet.distributor_id
+                    else str(row.wallet_id)
+                ),
+                "counterparty": "",
+                "amount": str(row.amount),
+                "balance_after": str(row.balance_after),
+                "reference_type": row.reference_type or "",
+                "reference_id": str(row.reference_id or ""),
+                "note": row.note or "",
+                "actor_name": row.created_by.full_name if row.created_by_id else "",
+            }
+            for row in qs
+        ]
+
+    if label == "warehouse.suppliertransaction":
+        qs = model.objects.select_related("supplier", "created_by").order_by(
+            "-created_at", "-pk"
+        )[:limit]
+        return [
+            {
+                "id": str(row.pk),
+                "date": str(row.date),
+                "created_at": row.created_at.isoformat(),
+                "type_code": row.transaction_type,
+                "type_display": row.get_transaction_type_display(),
+                "target_name": row.supplier.name if row.supplier_id else "",
+                "counterparty": "",
+                "amount": str(row.amount),
+                "balance_after": str(row.balance_after),
+                "reference_type": "",
+                "reference_id": "",
+                "note": row.note or "",
+                "actor_name": row.created_by.full_name if row.created_by_id else "",
+            }
+            for row in qs
+        ]
+
+    if label == "warehouse.stockmovement":
+        qs = model.objects.select_related("warehouse", "product", "user", "created_by").order_by(
+            "-created_at", "-pk"
+        )[:limit]
+        return [
+            {
+                "id": str(row.pk),
+                "date": row.created_at.date().isoformat(),
+                "created_at": row.created_at.isoformat(),
+                "type_code": row.movement_type,
+                "type_display": row.get_movement_type_display(),
+                "target_name": f"{row.warehouse.name} · {row.product.name} ({row.product.sku})",
+                "counterparty": row.to_location or row.from_location or "",
+                "amount": str(row.quantity),
+                "balance_after": str(row.balance_after),
+                "reference_type": row.reference_type or "",
+                "reference_id": str(row.reference_id or ""),
+                "note": row.note or "",
+                "actor_name": (
+                    row.user.full_name
+                    if row.user_id
+                    else (row.created_by.full_name if row.created_by_id else "")
+                ),
+            }
+            for row in qs
+        ]
+
+    return []
+
+
+def format_plan_effects(plan: CleanupPlan) -> list[dict]:
+    """UI va Admin uchun balans o'zgarishlarini o'qilishi qulay ro'yxatga aylantiradi."""
+    return _json([
+        {
+            "model": obj._meta.label_lower,
+            "id": str(obj.pk),
+            "label": str(obj),
+            "changes": [
+                {
+                    "field": str(obj._meta.get_field(field).verbose_name),
+                    "field_name": field,
+                    "old": str(getattr(obj, field)),
+                    "new": str(value),
+                }
+                for field, value in changes.items()
+            ],
+        }
+        for obj, changes in plan.effects.values()
+    ])

@@ -305,3 +305,121 @@ def test_admin_tampered_selection_and_missing_token_blocked(client, admin_user):
     request["cleanup_token"] = token + "-tampered"
     assert client.post(url, request).status_code == 302
     assert CashTransaction.objects.filter(pk=fake.pk).exists()
+
+
+def test_setting_toggle_blocks_and_re_enables_cleanup(admin_user):
+    from apps.core.services.test_cleanup import (
+        is_test_cleanup_enabled,
+        set_test_cleanup_enabled,
+    )
+
+    entry = cash(40)
+    assert is_test_cleanup_enabled() is True
+    set_test_cleanup_enabled(False, user=admin_user)
+    assert is_test_cleanup_enabled() is False
+
+    with pytest.raises(CleanupBlocked, match="sozlamalarda o‘chirilgan"):
+        build_plan("finance.cashtransaction", [entry.pk], user=admin_user)
+
+    from django.contrib import admin
+    from django.test import RequestFactory
+
+    model_admin = admin.site._registry[CashTransaction]
+    request = RequestFactory().get("/")
+    request.user = admin_user
+    assert "cleanup_selected_test_operations" not in model_admin.get_actions(request)
+
+    set_test_cleanup_enabled(True, user=admin_user)
+    assert is_test_cleanup_enabled() is True
+    assert "cleanup_selected_test_operations" in model_admin.get_actions(request)
+    assert clean(entry, admin_user) == 1
+    assert not CashTransaction.objects.filter(pk=entry.pk).exists()
+
+
+def test_api_system_settings_and_test_cleanup_flow(admin_api, manager_api):
+    fake = cash(55)
+
+    # 1. Manager can read settings but cannot toggle or run cleanup
+    r_mgr = manager_api.get("/api/v1/system/settings/")
+    assert r_mgr.status_code == 200
+    assert r_mgr.data["data"]["allow_test_cleanup"] is True
+    assert manager_api.patch(
+        "/api/v1/system/settings/", {"allow_test_cleanup": False}, format="json"
+    ).status_code == 403
+    assert manager_api.get(
+        "/api/v1/system/test-cleanup/entries/?ledger=finance.cashtransaction"
+    ).status_code == 403
+
+    # 2. Admin disables cleanup via settings API -> preview blocked
+    r_off = admin_api.patch(
+        "/api/v1/system/settings/", {"allow_test_cleanup": False}, format="json"
+    )
+    assert r_off.status_code == 200
+    assert r_off.data["data"]["allow_test_cleanup"] is False
+
+    r_blocked = admin_api.post(
+        "/api/v1/system/test-cleanup/preview/",
+        {"ledger": "finance.cashtransaction", "ids": [str(fake.pk)]},
+        format="json",
+    )
+    assert r_blocked.status_code == 400
+    assert "o‘chirilgan" in r_blocked.data["error"]["message"]
+
+    # 3. Admin re-enables cleanup via settings API
+    r_on = admin_api.patch(
+        "/api/v1/system/settings/", {"allow_test_cleanup": True}, format="json"
+    )
+    assert r_on.status_code == 200
+    assert r_on.data["data"]["allow_test_cleanup"] is True
+
+    # 4. List entries, preview, then execute
+    r_entries = admin_api.get(
+        "/api/v1/system/test-cleanup/entries/?ledger=finance.cashtransaction"
+    )
+    assert r_entries.status_code == 200
+    assert any(row["id"] == str(fake.pk) for row in r_entries.data["data"]["entries"])
+
+    r_preview = admin_api.post(
+        "/api/v1/system/test-cleanup/preview/",
+        {"ledger": "finance.cashtransaction", "ids": [str(fake.pk)]},
+        format="json",
+    )
+    assert r_preview.status_code == 200
+    token = r_preview.data["data"]["cleanup_token"]
+    assert len(r_preview.data["data"]["rows"]) == 1
+
+    # Wrong password rejected
+    r_bad_pw = admin_api.post(
+        "/api/v1/system/test-cleanup/execute/",
+        {
+            "ledger": "finance.cashtransaction",
+            "ids": [str(fake.pk)],
+            "cleanup_token": token,
+            "reason": "API test soxta yozuv",
+            "confirmation": "TOZALASH",
+            "password": "wrong-password",
+            "acknowledged": True,
+        },
+        format="json",
+    )
+    assert r_bad_pw.status_code == 400
+    assert CashTransaction.objects.filter(pk=fake.pk).exists()
+
+    # Valid confirmation executes cleanup
+    r_exec = admin_api.post(
+        "/api/v1/system/test-cleanup/execute/",
+        {
+            "ledger": "finance.cashtransaction",
+            "ids": [str(fake.pk)],
+            "cleanup_token": token,
+            "reason": "API test soxta yozuv",
+            "confirmation": "TOZALASH",
+            "password": "admin12345",
+            "acknowledged": True,
+        },
+        format="json",
+    )
+    assert r_exec.status_code == 200
+    assert r_exec.data["data"]["cleaned_count"] == 1
+    assert not CashTransaction.objects.filter(pk=fake.pk).exists()
+    assert CashAccount.objects.get(pk=fake.account_id).balance == 0

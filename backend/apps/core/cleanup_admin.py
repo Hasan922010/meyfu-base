@@ -11,6 +11,7 @@ from .services.test_cleanup import (
     CleanupBlocked,
     build_plan,
     execute_cleanup,
+    is_test_cleanup_enabled,
     require_superuser,
 )
 
@@ -51,7 +52,7 @@ class TestCleanupAdminMixin:
 
     def has_test_cleanup_permission(self, request):
         u = request.user
-        return u.is_active and u.is_staff and u.is_superuser
+        return bool(u.is_active and u.is_staff and u.is_superuser and is_test_cleanup_enabled())
 
     @admin.action(
         description="Tanlangan soxta operatsiyalarni tozalash…",

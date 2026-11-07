@@ -1,4 +1,6 @@
+import { api } from '@/shared/api/client';
 import { postAction, retrieve } from '@/shared/api/crud';
+import type { ApiSuccess } from '@/shared/types/api';
 
 export interface IntegrityMismatch {
   kind: 'wallet' | 'stock' | 'van_stock' | 'cash_account' | 'order_total';
@@ -21,6 +23,83 @@ export interface IntegrityResult {
   };
   mismatch_count: number;
   mismatches: IntegrityMismatch[];
+}
+
+export type CleanupLedgerKey =
+  | 'finance.cashtransaction'
+  | 'wallet.wallettransaction'
+  | 'warehouse.suppliertransaction'
+  | 'warehouse.stockmovement';
+
+export interface SystemSettings {
+  allow_test_cleanup: boolean;
+}
+
+export interface TestCleanupEntry {
+  id: string;
+  date: string;
+  created_at: string;
+  type_code: string;
+  type_display: string;
+  target_name: string;
+  counterparty: string;
+  amount: string;
+  balance_after: string;
+  reference_type: string;
+  reference_id: string;
+  note: string;
+  actor_name: string;
+}
+
+export interface TestCleanupEntriesResponse {
+  ledger: CleanupLedgerKey;
+  allow_test_cleanup: boolean;
+  entries: TestCleanupEntry[];
+}
+
+export interface TestCleanupRowSnapshot {
+  model: string;
+  id: string;
+  label: string;
+  fields: Record<string, unknown>;
+}
+
+export interface TestCleanupEffectChange {
+  field: string;
+  field_name: string;
+  old: string;
+  new: string;
+}
+
+export interface TestCleanupEffect {
+  model: string;
+  id: string;
+  label: string;
+  changes: TestCleanupEffectChange[];
+}
+
+export interface TestCleanupPreviewResponse {
+  ledger: CleanupLedgerKey;
+  selected_ids: string[];
+  rows: TestCleanupRowSnapshot[];
+  effects: TestCleanupEffect[];
+  digest: string;
+  cleanup_token: string;
+}
+
+export interface TestCleanupExecuteInput {
+  ledger: CleanupLedgerKey;
+  ids: string[];
+  cleanup_token: string;
+  reason: string;
+  confirmation: string;
+  password: string;
+  acknowledged: boolean;
+}
+
+export interface TestCleanupExecuteResponse {
+  cleaned_count: number;
+  message: string;
 }
 
 interface DiskCheck {
@@ -78,4 +157,17 @@ export const systemApi = {
   integrityCheck: () => retrieve<IntegrityResult>('/system/integrity/'),
   integrityFix: () =>
     postAction<IntegrityResult & { fixed_count: number }>('/system/integrity/'),
+  getSettings: () => retrieve<SystemSettings>('/system/settings/'),
+  updateSettings: (body: Partial<SystemSettings>) =>
+    api
+      .patch<ApiSuccess<SystemSettings>>('/system/settings/', body)
+      .then((r) => r.data.data),
+  cleanupEntries: (ledger: CleanupLedgerKey, limit = 50) =>
+    retrieve<TestCleanupEntriesResponse>(
+      `/system/test-cleanup/entries/?ledger=${encodeURIComponent(ledger)}&limit=${limit}`,
+    ),
+  cleanupPreview: (body: { ledger: CleanupLedgerKey; ids: string[] }) =>
+    postAction<TestCleanupPreviewResponse>('/system/test-cleanup/preview/', body),
+  cleanupExecute: (body: TestCleanupExecuteInput) =>
+    postAction<TestCleanupExecuteResponse>('/system/test-cleanup/execute/', body),
 };

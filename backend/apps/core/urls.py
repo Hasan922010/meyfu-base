@@ -14,13 +14,21 @@ from .views import (
     CompanySettingsView,
     HealthView,
     IntegrityCheckView,
+    SystemSettingsView,
     SystemStatusView,
+    TestCleanupEntriesView,
+    TestCleanupExecuteView,
+    TestCleanupPreviewView,
 )
 
 urlpatterns = [
     path("health/", HealthView.as_view(), name="health"),
     path("system/status/", SystemStatusView.as_view(), name="system-status"),
+    path("system/settings/", SystemSettingsView.as_view(), name="system-settings"),
     path("system/integrity/", IntegrityCheckView.as_view(), name="system-integrity"),
+    path("system/test-cleanup/entries/", TestCleanupEntriesView.as_view(), name="test-cleanup-entries"),
+    path("system/test-cleanup/preview/", TestCleanupPreviewView.as_view(), name="test-cleanup-preview"),
+    path("system/test-cleanup/execute/", TestCleanupExecuteView.as_view(), name="test-cleanup-execute"),
     path("system/backups/", BackupListView.as_view(), name="backup-list"),
     path("system/backups/create/", BackupListView.as_view(), name="backup-create"),
     path("system/backups/upload/", BackupUploadView.as_view(), name="backup-upload"),

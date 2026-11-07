@@ -95,3 +95,49 @@ class OpeningBulkSerializer(serializers.Serializer):
                 f"Kasr qismi ko'pi bilan {places} xona bo'lishi mumkin."
             )
         return rows
+
+
+class SystemSettingsSerializer(serializers.Serializer):
+    """Tizim xavfsizligi va ruxsat sozlamalari (SUPER_ADMIN)."""
+
+    allow_test_cleanup = serializers.BooleanField(required=True)
+
+
+class TestCleanupPreviewSerializer(serializers.Serializer):
+    """Soxta operatsiyalarni tozalashdan oldin tekshirish (preview)."""
+
+    ledger = serializers.CharField(required=True)
+    ids = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=False,
+        max_length=100,
+    )
+
+
+class TestCleanupExecuteSerializer(TestCleanupPreviewSerializer):
+    """Soxta operatsiyalarni tasdiqlab tozalash."""
+
+    cleanup_token = serializers.CharField(required=True)
+    reason = serializers.CharField(required=True, max_length=500)
+    confirmation = serializers.CharField(required=True, max_length=20)
+    password = serializers.CharField(required=True, write_only=True)
+    acknowledged = serializers.BooleanField(required=True)
+
+    def validate_confirmation(self, value: str) -> str:
+        if value.strip() != "TOZALASH":
+            raise serializers.ValidationError("TOZALASH deb aniq yozing.")
+        return value.strip()
+
+    def validate_acknowledged(self, value: bool) -> bool:
+        if not value:
+            raise serializers.ValidationError(
+                "Bog‘liq yozuvlar va balans ta’sirini tekshirganingizni tasdiqlang."
+            )
+        return value
+
+    def validate_password(self, value: str) -> str:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.check_password(value):
+            raise serializers.ValidationError("Parol noto‘g‘ri.")
+        return value
