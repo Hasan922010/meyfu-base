@@ -101,35 +101,35 @@ def test_preview_does_not_mutate_handover(handover_case, admin_user):
     assert not AuditLog.objects.filter(action="admin.test_operations_cleaned").exists()
 
 
-def test_missing_pair_blocks_without_partial_cleanup(handover_case, admin_user):
+def test_missing_pair_cleans_remaining_leg_and_handover(handover_case, admin_user):
     case = handover_case
     WalletTransaction.all_objects.filter(pk=case["wallet"].pk).update(
         reference_id="missing-reference",
     )
-    with pytest.raises(CleanupBlocked, match="juftligi mos emas"):
-        clean(case["cash"], admin_user)
-    assert CashTransaction.objects.filter(pk=case["cash"].pk).exists()
-    assert CashHandover.objects.filter(pk=case["handover"].pk).exists()
-    assert CashAccount.objects.get(pk=case["cash"].account_id).balance == 40
+    assert clean(case["cash"], admin_user) == 2
+    assert not CashTransaction.objects.filter(pk=case["cash"].pk).exists()
+    assert not CashHandover.objects.filter(pk=case["handover"].pk).exists()
+    assert CashAccount.objects.get(pk=case["cash"].account_id).balance == 10
 
 
-def test_mismatched_dayclose_blocks(handover_case, admin_user):
+def test_mismatched_dayclose_adjusts_handed_amount(handover_case, admin_user):
     case = handover_case
     DayClose.objects.filter(pk=case["close"].pk).update(cash_handed_amount=999)
-    with pytest.raises(CleanupBlocked, match="pul ko‘rsatkichlari"):
-        clean(case["cash"], admin_user)
-    assert CashHandover.objects.filter(pk=case["handover"].pk).exists()
+    assert clean(case["cash"], admin_user) == 3
+    assert not CashHandover.objects.filter(pk=case["handover"].pk).exists()
+    case["close"].refresh_from_db()
+    assert case["close"].cash_handed_amount == 969
 
 
-def test_later_dayclose_remains_protected(handover_case, admin_user, distributor):
+def test_later_dayclose_remains_intact(handover_case, admin_user, distributor):
     case = handover_case
-    DayClose.objects.create(
+    later_dc = DayClose.objects.create(
         distributor=distributor, date=case["close"].date + timedelta(days=1),
         status="CLOSED", wallet_balance_end=70,
     )
-    with pytest.raises(CleanupBlocked, match="keyin boshqa kun yopish"):
-        clean(case["cash"], admin_user)
-    assert CashHandover.objects.filter(pk=case["handover"].pk).exists()
+    assert clean(case["cash"], admin_user) == 3
+    assert not CashHandover.objects.filter(pk=case["handover"].pk).exists()
+    assert DayClose.objects.filter(pk=later_dc.pk).exists()
 
 
 def test_other_later_cash_operation_is_not_removed(handover_case, admin_user):
@@ -137,10 +137,11 @@ def test_other_later_cash_operation_is_not_removed(handover_case, admin_user):
     later = cash_apply(
         transaction_type="CORRECTION", amount=Decimal("5"), reference_type="manual",
     )
-    with pytest.raises(CleanupBlocked, match="keyin boshqa operatsiyalar"):
-        clean(case["cash"], admin_user)
+    assert clean(case["cash"], admin_user) == 3
     assert CashTransaction.objects.filter(pk=later.pk).exists()
-    assert CashAccount.objects.get(pk=case["cash"].account_id).balance == 45
+    later.refresh_from_db()
+    assert later.balance_after == Decimal("15.00")
+    assert CashAccount.objects.get(pk=case["cash"].account_id).balance == 15
 
 
 def test_audit_failure_rolls_back_both_legs_and_dayclose(handover_case, admin_user):

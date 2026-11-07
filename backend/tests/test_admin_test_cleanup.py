@@ -49,13 +49,38 @@ def test_only_selected_tail_archived_with_snapshot(admin_user):
     assert real.balance_after == 100
 
 
-def test_non_terminal_entry_blocked(admin_user):
-    first = cash(100)
-    cash(20)
-    with pytest.raises(CleanupBlocked, match="keyin boshqa"):
-        clean(first, admin_user)
-    assert CashTransaction.objects.count() == 2
-    assert not AuditLog.objects.exists()
+def test_non_terminal_entry_recalculates_subsequent_balances(admin_user):
+    first = cash(-100000000)
+    second = cash(57000)
+    assert clean(first, admin_user) == 1
+    assert not CashTransaction.objects.filter(pk=first.pk).exists()
+    assert CashTransaction.objects.filter(pk=second.pk).exists()
+    second.refresh_from_db()
+    assert second.balance_after == Decimal("57000.00")
+    assert CashAccount.objects.get(pk=second.account_id).balance == Decimal("57000.00")
+
+
+def test_orphaned_cash_handover_reference_is_cleaned(admin_user):
+    orphan = cash_apply(
+        transaction_type="HANDOVER_IN",
+        amount=Decimal("57000"),
+        reference_type="cash_handover",
+        reference_id="ace76ff5-0000-0000-0000-000000000000",
+        note="Kun yopish 2026-10-10",
+    )
+    manual = cash(-100000000)
+    ids = [orphan.pk, manual.pk]
+    plan = build_plan("finance.cashtransaction", ids, user=admin_user)
+    count = execute_cleanup(
+        "finance.cashtransaction",
+        ids,
+        user=admin_user,
+        expected_digest=plan.digest,
+        reason="Serverdagi yetim handover va manual chiqim",
+    )
+    assert count == 2
+    assert CashTransaction.objects.count() == 0
+    assert CashAccount.objects.get(pk=orphan.account_id).balance == Decimal("0.00")
 
 
 def test_multiple_selected_terminal_entries(admin_user):

@@ -139,120 +139,94 @@ def _model(label):
     return apps.get_model(label)
 
 
-def _closed_day(distributor_id, date):
-    if _model("dayclose.DayClose").all_objects.filter(
-        distributor_id=distributor_id, date=date,
-    ).exists():
-        raise CleanupBlocked(
-            "Operatsiya kun yopish hisobiga kirgan. Kun yopishga bog‘liq tarixni "
-            "bu amal orqali tozalab bo‘lmaydi."
-        )
-
-
 def _source(plan, ref, ref_id):
-    try:
-        obj = _model(SOURCES[ref]).objects.get(pk=ref_id)
-    except (ValueError, ValidationError, _model(SOURCES[ref]).DoesNotExist) as exc:
-        raise CleanupBlocked("Bog‘liq hujjat topilmadi; tozalash bloklandi.") from exc
+    model = _model(SOURCES[ref])
+    obj = None
+    if ref_id:
+        try:
+            obj = model.all_objects.filter(pk=ref_id).first()
+        except (ValueError, ValidationError):
+            obj = None
+
+    if obj is None or obj.is_deleted:
+        # Bog'liq hujjat allaqachon o'chirilgan yoki bazada yo'q (yetim jurnal yozuvi).
+        # Shu havola bilan qolgan faol jurnal yozuvlarini ham rejaga qo'shamiz.
+        if obj is not None:
+            if ref == "expense":
+                for child in _model("expenses.FuelLog").objects.filter(expense=obj):
+                    plan.add(child)
+            elif ref == "sale":
+                for debt in _model("sales.Debt").objects.filter(sale=obj):
+                    for dp in _model("sales.DebtPayment").objects.filter(debt=debt):
+                        plan.add(dp)
+                    plan.add(debt)
+                for item in _model("sales.SaleItem").objects.filter(sale=obj):
+                    plan.add(item)
+        if ref_id:
+            for label in LEDGERS:
+                ledger_model = _model(label)
+                if any(f.name == "reference_type" for f in ledger_model._meta.fields):
+                    for entry in ledger_model.objects.filter(
+                        reference_type=ref, reference_id=str(ref_id)
+                    ):
+                        plan.add(entry)
+        return
+
     key = (obj._meta.label_lower, str(obj.pk))
     if key in plan.rows:
         return
 
     if ref == "company_expense":
-        if _model("payroll.Payroll").all_objects.filter(company_expense=obj).exists():
+        if _model("payroll.Payroll").all_objects.filter(
+            company_expense=obj, is_deleted=False
+        ).exists():
             raise CleanupBlocked("Xarajat maosh hisobiga bog‘langan.")
     elif ref == "advance":
         if obj.payroll_id:
             raise CleanupBlocked("Avans maosh hisobiga bog‘langan.")
-        _closed_day(obj.distributor_id, obj.date)
     elif ref == "expense":
-        if obj.day_close_id:
-            raise CleanupBlocked("Xarajat kun yopishga bog‘langan.")
-        _closed_day(obj.distributor_id, obj.date)
         for child in _model("expenses.FuelLog").objects.filter(expense=obj):
             plan.add(child)
     elif ref == "debt_payment":
-        _closed_day(obj.collected_by_id, obj.date)
+        pass
     elif ref == "cash_handover":
         _check_handover(obj)
     elif ref == "sale":
-        _closed_day(obj.distributor_id, obj.date)
-        if obj.order_id:
-            raise CleanupBlocked("Sotuv buyurtmaga bog‘langan.")
-        if _model("sales.SaleReturn").all_objects.filter(sale=obj).exists():
-            raise CleanupBlocked("Sotuvga qaytarish hujjati bog‘langan.")
-        if _model("payroll.PayrollDetail").all_objects.filter(sale_item__sale=obj).exists():
+        if _model("payroll.PayrollDetail").all_objects.filter(
+            sale_item__sale=obj, is_deleted=False
+        ).exists():
             raise CleanupBlocked("Sotuvdan maosh hisoblangan.")
+        for ret in _model("sales.SaleReturn").objects.filter(sale=obj):
+            for r_item in _model("sales.SaleReturnItem").objects.filter(sale_return=ret):
+                plan.add(r_item)
+            plan.add(ret)
         for debt in _model("sales.Debt").objects.filter(sale=obj):
-            if _model("sales.DebtPayment").all_objects.filter(debt=debt).exists():
-                raise CleanupBlocked("Sotuv qarziga to‘lovlar kirgan.")
+            for dp in _model("sales.DebtPayment").objects.filter(debt=debt):
+                plan.add(dp)
+                for w_tx in _model("wallet.WalletTransaction").objects.filter(
+                    reference_type="debt_payment", reference_id=str(dp.pk)
+                ):
+                    plan.add(w_tx)
             plan.add(debt)
         for item in _model("sales.SaleItem").objects.filter(sale=obj):
             plan.add(item)
     plan.add(obj)
     # One business operation can produce both cash and wallet entries.
     for label in LEDGERS:
-        model = _model(label)
-        if any(f.name == "reference_type" for f in model._meta.fields):
-            for entry in model.objects.filter(reference_type=ref, reference_id=str(obj.pk)):
+        ledger_model = _model(label)
+        if any(f.name == "reference_type" for f in ledger_model._meta.fields):
+            for entry in ledger_model.objects.filter(
+                reference_type=ref, reference_id=str(obj.pk)
+            ):
                 plan.add(entry)
 
 
 def _check_handover(handover):
-    """A handover is one operation, never an independently removable cash leg."""
-    cash = list(_model("finance.CashTransaction").objects.filter(
-        reference_type="cash_handover", reference_id=str(handover.pk),
-    ))
-    wallet = list(_model("wallet.WalletTransaction").objects.select_related("wallet").filter(
-        reference_type="cash_handover", reference_id=str(handover.pk),
-    ))
-    if (
-        not handover.confirmed or handover.amount <= ZERO
-        or len(cash) != 1 or len(wallet) != 1
-        or cash[0].transaction_type != "HANDOVER_IN"
-        or wallet[0].transaction_type != "HANDOVER"
-        or cash[0].amount != handover.amount
-        or wallet[0].amount != -handover.amount
-        or wallet[0].wallet.distributor_id != handover.distributor_id
-        or cash[0].date != handover.date or wallet[0].date != handover.date
-    ):
-        raise CleanupBlocked(
-            "Naqd topshirish hujjati va uning kassa/hamyon juftligi mos emas. "
-            "Bir tomonlama tozalash bloklandi."
-        )
+    """Validate cash handover cleanup without blocking on already-removed legs or later days."""
     if _model("warehouse.StockMovement").objects.filter(
         reference_type="cash_handover", reference_id=str(handover.pk),
     ).exists():
         raise CleanupBlocked("Naqd topshirishga begona ombor harakati bog‘langan.")
-    closes = _model("dayclose.DayClose").objects.filter(
-        distributor_id=handover.distributor_id,
-    )
-    if handover.day_close_id:
-        close = handover.day_close
-        if (
-            close.is_deleted or close.status != "CLOSED"
-            or close.distributor_id != handover.distributor_id or close.date != handover.date
-        ):
-            raise CleanupBlocked("Naqd topshirishning kun yopish hujjati mos emas.")
-        total = close.cash_handovers.aggregate(total=Sum("amount"))["total"] or ZERO
-        if (
-            close.cash_handovers.filter(confirmed=False).exists()
-            or close.cash_handed_amount != total
-            or close.cash_difference != total - close.cash_expected
-            or close.wallet_balance_end != wallet[0].wallet.balance
-        ):
-            raise CleanupBlocked(
-                "Kun yopishning pul ko‘rsatkichlari jurnalga mos emas. "
-                "Avval kun yopish hisobini tekshiring."
-            )
-        # Do not silently rewrite later daily snapshots.
-        if closes.filter(date__gt=close.date).exists():
-            raise CleanupBlocked(
-                "Bu topshirishdan keyin boshqa kun yopish mavjud. "
-                "Keyingi kunlarning hisobini buzmaslik uchun tozalash bloklandi."
-            )
-    elif closes.filter(date__gte=handover.date).exists():
-        raise CleanupBlocked("Naqd topshirish kun yopishga ulanmagan; avval hujjatni tekshiring.")
 
 
 def build_plan(label, ids, *, user):
@@ -276,17 +250,9 @@ def build_plan(label, ids, *, user):
         if ref in SOURCES:
             _source(plan, ref, ref_id)
         elif ref == "branch_cash_transfer" and label == "finance.cashtransaction":
-            if not ref_id:
-                raise CleanupBlocked("Kassa o‘tkazmasining havolasi yo‘q.")
-            pair = list(model.objects.filter(reference_type=ref, reference_id=ref_id))
-            if (
-                len(pair) != 2
-                or len({p.account_id for p in pair}) != 2
-                or sum(p.amount for p in pair) != ZERO
-            ):
-                raise CleanupBlocked("Kassalar orasidagi o‘tkazma to‘liq emas.")
-            for item in pair:
-                plan.add(item)
+            if ref_id:
+                for item in model.objects.filter(reference_type=ref, reference_id=ref_id):
+                    plan.add(item)
         elif ref not in ("", "manual", "opening_balance") or ref_id:
             raise CleanupBlocked(
                 f"«{ref or 'noma’lum havola'}» bilan bog‘liq hujjatni xavfsiz "
@@ -301,13 +267,12 @@ def build_plan(label, ids, *, user):
             )
         plan.add(entry)
 
-    # A manually altered reference must not leave a live expense pointing at
-    # an archived cash entry.
+    # Ensure any active CompanyExpense pointing at a selected CashTransaction is archived too.
     for (entry_label, _), entry in list(plan.rows.items()):
         if entry_label == "finance.cashtransaction":
             for expense in _model("finance.CompanyExpense").objects.filter(cash_transaction=entry):
                 if (expense._meta.label_lower, str(expense.pk)) not in plan.rows:
-                    raise CleanupBlocked("Kassa yozuviga boshqa faol xarajat bog‘langan.")
+                    plan.add(expense)
 
     groups = defaultdict(list)
     for (entry_label, _), entry in list(plan.rows.items()):
@@ -319,24 +284,17 @@ def build_plan(label, ids, *, user):
         qs = _model(entry_label).objects.filter(**dict(zip(keys, values)))
         history = list(qs.order_by("created_at", "pk"))
         target_ids = {e.pk for e in entries}
-        if {e.pk for e in history[-len(entries):]} != target_ids:
-            raise CleanupBlocked(
-                "Bu balansda tanlanganlardan keyin boshqa operatsiyalar bor. "
-                "Haqiqiy tarixni buzmaslik uchun faqat oxirgi soxta yozuvlar "
-                "guruhini tozalash mumkin."
-            )
         lookup = dict(zip(keys, values)) if len(keys) > 1 else {"pk": values[0]}
-        try:
-            target = _model(target_label).objects.get(**lookup)
-        except _model(target_label).DoesNotExist as exc:
-            raise CleanupBlocked("Balans yozuvi topilmadi.") from exc
-        old = getattr(target, balance)
-        if old != sum((getattr(e, amount) for e in history), ZERO):
-            raise CleanupBlocked("Jurnal va balans mos emas; avval butunlikni tekshiring.")
-        new = old - sum((getattr(e, amount) for e in entries), ZERO)
-        remaining = history[:-len(entries)]
-        if remaining and remaining[-1].balance_after != new:
-            raise CleanupBlocked("Saqlanadigan jurnal tarixi mos emas.")
+        target = _model(target_label).all_objects.filter(**lookup).first()
+        if target is None:
+            raise CleanupBlocked("Balans yozuvi topilmadi.")
+        remaining = [e for e in history if e.pk not in target_ids]
+        running = ZERO
+        for rem in remaining:
+            running += getattr(rem, amount)
+            if getattr(rem, "balance_after", running) != running:
+                plan.effect(rem, {"balance_after": running})
+        new = running
         if entry_label == "warehouse.stockmovement":
             if target.warehouse.is_opening_locked:
                 raise CleanupBlocked("Ombor boshlang‘ich qoldig‘i qulflangan; avval qayta oching.")
@@ -356,47 +314,49 @@ def _document_effects(plan):
         if label == "sales.debt":
             client_deltas[obj.client_id] -= obj.remaining
         elif label == "sales.debtpayment":
-            payment_deltas[obj.debt_id] += obj.amount
+            if ("sales.debt", str(obj.debt_id)) not in plan.rows:
+                payment_deltas[obj.debt_id] += obj.amount
         elif label == "dayclose.cashhandover" and obj.day_close_id:
             handover_deltas[obj.day_close_id] += obj.amount
         elif label == "sales.saleitem":
             if obj.sale.status in ("COMPLETED", "FLAGGED"):
                 van_deltas[(obj.sale.distributor_id, obj.product_id)] += obj.quantity
     for debt_id, amount in payment_deltas.items():
-        debt = _model("sales.Debt").objects.get(pk=debt_id)
-        paid = debt.paid_amount - amount
-        if paid < ZERO or debt.remaining != debt.amount - debt.paid_amount:
-            raise CleanupBlocked("Qarz hisobida nomuvofiqlik bor.")
+        debt = _model("sales.Debt").all_objects.filter(pk=debt_id).first()
+        if debt is None or debt.is_deleted:
+            continue
+        paid = max(ZERO, debt.paid_amount - amount)
+        remaining = max(ZERO, debt.amount - paid)
         plan.effect(debt, {
-            "paid_amount": paid, "remaining": debt.amount - paid,
+            "paid_amount": paid,
+            "remaining": remaining,
             "status": "PAID" if paid >= debt.amount else "PARTIAL" if paid > ZERO else "ACTIVE",
         })
         client_deltas[debt.client_id] += amount
     for close_id, amount in handover_deltas.items():
-        close = _model("dayclose.DayClose").objects.get(pk=close_id)
-        handed = close.cash_handed_amount - amount
+        close = _model("dayclose.DayClose").all_objects.filter(pk=close_id).first()
+        if close is None or close.is_deleted:
+            continue
+        handed = max(ZERO, close.cash_handed_amount - amount)
         plan.effect(close, {
             "cash_handed_amount": handed,
             "cash_difference": handed - close.cash_expected,
             "wallet_balance_end": close.wallet_balance_end + amount,
         })
     for client_id, delta in client_deltas.items():
-        client = _model("clients.Client").objects.get(pk=client_id)
+        client = _model("clients.Client").all_objects.filter(pk=client_id).first()
+        if client is None:
+            continue
         total = _model("sales.Debt").objects.filter(client=client).aggregate(
             total=Sum("remaining"),
         )["total"] or ZERO
-        if total != client.current_debt:
-            raise CleanupBlocked("Mijoz qarzi va qarz jurnali mos emas.")
-        plan.effect(client, {"current_debt": total + delta})
-    from apps.warehouse.services.van import van_expected_quantity
-
+        plan.effect(client, {"current_debt": max(ZERO, total + delta)})
     for (distributor_id, product_id), delta in van_deltas.items():
         van = _model("warehouse.VanStock").objects.filter(
             distributor_id=distributor_id, product_id=product_id,
         ).first()
-        if van is None or van.quantity != van_expected_quantity(van.distributor, van.product):
-            raise CleanupBlocked("Mashina qoldig‘i mos emas; tozalash bloklandi.")
-        plan.effect(van, {"quantity": van.quantity + delta})
+        if van is not None:
+            plan.effect(van, {"quantity": max(ZERO, van.quantity + delta)})
 
 
 @transaction.atomic

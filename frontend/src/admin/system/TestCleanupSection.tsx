@@ -177,11 +177,10 @@ export function TestCleanupSection(): ReactElement {
 
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                allowCleanup
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${allowCleanup
                   ? 'bg-success/15 text-success'
                   : 'bg-danger/15 text-danger'
-              }`}
+                }`}
             >
               {allowCleanup ? 'Ruxsat yoqilgan' : "Ruxsat o'chirilgan"}
             </span>
@@ -224,11 +223,10 @@ export function TestCleanupSection(): ReactElement {
               key={item.id}
               type="button"
               onClick={() => handleLedgerChange(item.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
-                ledger === item.id
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${ledger === item.id
                   ? 'bg-brand text-brand-fg'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
+                }`}
             >
               {item.label}
             </button>
@@ -327,11 +325,10 @@ export function TestCleanupSection(): ReactElement {
                     onClick={() => {
                       if (allowCleanup) toggleRow(entry.id);
                     }}
-                    className={`cursor-pointer transition-colors ${
-                      checked
+                    className={`cursor-pointer transition-colors ${checked
                         ? 'bg-danger/5 dark:bg-danger/10'
                         : 'hover:bg-gray-50/60 dark:hover:bg-gray-800/50'
-                    }`}
+                      }`}
                   >
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -364,9 +361,8 @@ export function TestCleanupSection(): ReactElement {
                       )}
                     </td>
                     <td
-                      className={`p-3 text-right font-semibold ${
-                        num < 0 ? 'text-danger' : 'text-success'
-                      }`}
+                      className={`p-3 text-right font-semibold ${num < 0 ? 'text-danger' : 'text-success'
+                        }`}
                     >
                       {num > 0 ? '+' : ''}
                       {formatVal(entry.amount)}

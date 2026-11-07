@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   HelpCircle,
   RefreshCw,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -17,6 +18,7 @@ import { money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 
 import { BackupsSection } from './BackupsSection';
+import { TestCleanupSection } from './TestCleanupSection';
 
 function ago(iso: string | null): string {
   if (!iso) return "hali yo'q";
@@ -110,13 +112,16 @@ export function SystemHealthPage(): ReactElement {
     },
   });
 
-  const initialTab =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('tab') === 'backups'
-      ? 'backups'
-      : 'health';
-  const [activeTab, setActiveTab] = useState<'health' | 'backups'>(initialTab);
-  const setTab = (t: 'health' | 'backups') => {
+  const rawTab =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('tab')
+      : null;
+  const initialTab: 'health' | 'backups' | 'cleanup' =
+    rawTab === 'backups' ? 'backups' : rawTab === 'cleanup' ? 'cleanup' : 'health';
+  const [activeTab, setActiveTab] = useState<'health' | 'backups' | 'cleanup'>(
+    initialTab,
+  );
+  const setTab = (t: 'health' | 'backups' | 'cleanup') => {
     setActiveTab(t);
     if (typeof window !== 'undefined' && window.history?.replaceState) {
       const url = new URL(window.location.href);
@@ -169,10 +174,24 @@ export function SystemHealthPage(): ReactElement {
         >
           <Archive size={16} aria-hidden /> Zaxira va Tiklash (Backup & Restore)
         </button>
+        {canFix && (
+          <button
+            className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'cleanup'
+                ? 'border-brand text-brand font-semibold'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setTab('cleanup')}
+          >
+            <Trash2 size={16} aria-hidden /> Soxta operatsiyalarni tozalash
+          </button>
+        )}
       </div>
 
       {activeTab === 'backups' ? (
         <BackupsSection />
+      ) : activeTab === 'cleanup' ? (
+        <TestCleanupSection />
       ) : (
         <DataState
           isLoading={!s && (fast.isLoading || status.isLoading)}
