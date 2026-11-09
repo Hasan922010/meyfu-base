@@ -121,7 +121,43 @@ export interface DistributorLocation {
   sales_amount: string;
 }
 
+export interface PriceVarianceRow {
+  id: string;
+  sale_id: string;
+  date: string;
+  product_id: string;
+  product_name: string;
+  product_sku: string;
+  unit: string;
+  quantity: string;
+  cost_price: string;
+  price: string;
+  amount: string;
+  cost_amount: string;
+  kamomad: string;
+  ortiqcha: string;
+  distributor_name: string;
+}
+
+export interface PriceVarianceResult {
+  date_from: string;
+  date_to: string;
+  rows: PriceVarianceRow[];
+  summary: {
+    total_items: number;
+    total_quantity: string;
+    total_amount: string;
+    total_cost: string;
+    total_kamomad: string;
+    total_ortiqcha: string;
+    net_difference: string;
+  };
+}
+
 export const reportsAdvancedApi = {
+  /** Tannarxdan farq (Kamomad / Ortiqcha) hisoboti */
+  priceVariance: (params: QueryParams) =>
+    retrieve<PriceVarianceResult>(`/reports/price-variance/${toQ(params)}`),
   /** v5 B2: tarqatuvchilarning bugungi oxirgi tashrif/sotuv nuqtasi */
   distributorLocations: () =>
     retrieve<{ date: string; rows: DistributorLocation[] }>('/reports/distributor-locations/'),

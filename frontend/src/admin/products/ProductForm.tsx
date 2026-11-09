@@ -19,17 +19,8 @@ interface Props {
 
 const PRICE_KEYS = [
   'cost_price',
-  'wholesale_price',
-  'retail_price',
-  'min_price',
-  'commission_percent',
-] as const;
-
-const PRICE_FIELDS = [
-  { name: 'cost_price', label: 'Tannarx' },
-  { name: 'wholesale_price', label: 'Optom narx' },
-  { name: 'retail_price', label: 'Chakana narx' },
-  { name: 'min_price', label: 'Minimal narx' },
+  'order_commission_rate',
+  'delivery_commission_rate',
 ] as const;
 
 export function ProductForm({ product, onDone }: Props): ReactElement {
@@ -44,6 +35,10 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
   const brands = useQuery({
     queryKey: ['brands'],
     queryFn: () => catalogApi.brands({ page_size: 200 }),
+  });
+  const otherProducts = useQuery({
+    queryKey: ['products-bonus-select'],
+    queryFn: () => catalogApi.products({ page_size: 200 }),
   });
 
   // Forma ma'lumotnomalar kelgandan keyin mount qilinadi: aks holda select'da hali
@@ -65,6 +60,7 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       categories={categories.data.results}
       units={units.data.results}
       brands={brands.data.results}
+      otherProducts={otherProducts.data?.results ?? []}
     />
   );
 }
@@ -73,6 +69,7 @@ interface FieldsProps extends Props {
   categories: Category[];
   units: Unit[];
   brands: Brand[];
+  otherProducts: Product[];
 }
 
 function ProductFormFields({
@@ -81,6 +78,7 @@ function ProductFormFields({
   categories,
   units,
   brands,
+  otherProducts,
 }: FieldsProps): ReactElement {
   const qc = useQueryClient();
   const toast = useToast();
@@ -98,27 +96,42 @@ function ProductFormFields({
           brand: product.brand ?? '',
           unit: product.unit,
           cost_price: product.cost_price,
-          wholesale_price: product.wholesale_price,
-          retail_price: product.retail_price,
-          min_price: product.min_price,
           pack_quantity: plainQty(product.pack_quantity),
-          commission_percent: product.commission_percent,
+          package_type: product.package_type || '',
+          order_commission_rate: product.order_commission_rate || '0',
+          delivery_commission_rate: product.delivery_commission_rate || '0',
+          has_bonus: product.has_bonus || false,
+          bonus_trigger_qty: plainQty(product.bonus_trigger_qty || '0'),
+          bonus_reward_qty: plainQty(product.bonus_reward_qty || '0'),
+          bonus_product: product.bonus_product || '',
+          track_variance: product.track_variance || false,
           min_stock_alert: plainQty(product.min_stock_alert),
           is_active: product.is_active,
         }
-      : { is_active: true, pack_quantity: '1' },
+      : {
+          is_active: true,
+          pack_quantity: '1',
+          package_type: '',
+          order_commission_rate: '0',
+          delivery_commission_rate: '0',
+          has_bonus: false,
+          bonus_trigger_qty: '0',
+          bonus_reward_qty: '0',
+          bonus_product: '',
+          track_variance: false,
+        },
   });
 
   const mutation = useMutation({
     mutationFn: (values: ProductInput) => {
-      const body: ProductInput = { ...values, brand: values.brand || null };
+      const body: ProductInput = {
+        ...values,
+        brand: values.brand || null,
+        bonus_product: values.bonus_product || null,
+      };
       if (product && !canEditPrice) {
         for (const k of PRICE_KEYS) delete body[k];
       }
-      // Ixtiyoriy raqamli maydon — bo'sh qoldirilsa backendga umuman yubormaymiz
-      // (bo'sh satr "" "raqam emas" xatosiga sabab bo'ladi, chunki bu register()
-      // orqali ulangan, AmountInput'lardan farqli ravishda ular tegilmasa
-      // `undefined` bo'lib avtomatik tushib qoladi).
       if (!body.min_stock_alert) {
         delete body.min_stock_alert;
       }
@@ -209,17 +222,17 @@ function ProductFormFields({
       </div>
 
       <fieldset
-        className="grid grid-cols-2 gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700"
+        className="space-y-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700"
         disabled={!canEditPrice}
       >
         <legend className="px-1 text-xs text-gray-500">
-          Narxlar {canEditPrice ? '' : '(faqat SUPER_ADMIN)'}
+          Narx {canEditPrice ? '' : '(faqat SUPER_ADMIN)'}
         </legend>
-        {PRICE_FIELDS.map(({ name, label }) => (
-          <label key={name} className="block space-y-1">
-            <span className="text-sm">{label}</span>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">Tannarx *</span>
             <Controller
-              name={name}
+              name="cost_price"
               control={control}
               render={({ field }) => (
                 <AmountInput
@@ -230,11 +243,90 @@ function ProductFormFields({
                 />
               )}
             />
-            {formState.errors[name]?.message && (
-              <span className="text-xs text-danger">{formState.errors[name].message}</span>
+            {formState.errors.cost_price?.message && (
+              <span className="text-xs text-danger">{formState.errors.cost_price.message}</span>
             )}
           </label>
-        ))}
+          <label className="flex items-center gap-2 pt-6">
+            <input type="checkbox" {...register('track_variance')} />
+            <span className="text-sm">Tannarxdan farqni (Kamomad / Ortiqcha) hisobotda kuzatish</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset className="grid grid-cols-2 gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+        <legend className="px-1 text-xs text-gray-500">
+          Oylik maosh uchun komissiya foizlari (tovar bo‘yicha)
+        </legend>
+        <label className="block space-y-1">
+          <span className="text-sm">Zakaz oluvchi komissiyasi (%)</span>
+          <input
+            className="field"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            {...register('order_commission_rate')}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-sm">Tarqatuvchi (yetkazish) komissiyasi (%)</span>
+          <input
+            className="field"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            {...register('delivery_commission_rate')}
+          />
+        </label>
+      </fieldset>
+
+      <fieldset className="space-y-3 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+        <legend className="px-1 text-xs text-gray-500">Aksiya va Bonus tizimi</legend>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" {...register('has_bonus')} />
+          <span className="text-sm font-medium">Ushbu tovar uchun bonus berish</span>
+        </label>
+        {watch('has_bonus') && (
+          <div className="grid grid-cols-3 gap-3 pt-1">
+            <label className="block space-y-1">
+              <span className="text-sm">Har nechtaga (xarid miqdori)</span>
+              <input
+                className="field"
+                type="number"
+                step="1"
+                min="1"
+                placeholder="masalan: 10"
+                {...register('bonus_trigger_qty')}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm">Qo‘shiladigan bonus soni</span>
+              <input
+                className="field"
+                type="number"
+                step="1"
+                min="1"
+                placeholder="masalan: 1"
+                {...register('bonus_reward_qty')}
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm">Bonus tovar</span>
+              <select className="field" {...register('bonus_product')}>
+                <option value="">Aynan shu tovarning o‘zidan</option>
+                {otherProducts
+                  .filter((p) => !product || p.id !== product.id)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </div>
+        )}
       </fieldset>
 
       {!product && (
@@ -252,17 +344,21 @@ function ProductFormFields({
         const packQtyNum = parseInt(String(packQuantity || '0'), 10);
         const costPriceNum = Number(costPrice || 0);
         const boxCost = packQtyNum * costPriceNum;
-
-        const unitText = (selectedUnit?.name || selectedUnit?.short_name || '').toLowerCase();
-        const isBag =
-          unitText.includes('kg') ||
-          unitText.includes('kilo') ||
-          unitText.includes('xalta') ||
-          unitText.includes('qop');
+        const packageType = watch('package_type') || (
+          (selectedUnit?.name || selectedUnit?.short_name || '').toLowerCase().includes('kg') ? 'xalta' : 'quti'
+        );
 
         return (
           <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
+              <label className="block space-y-1">
+                <span className="text-sm">Qadoq turi</span>
+                <input
+                  className="field"
+                  placeholder="masalan: qop, karopka, pachka"
+                  {...register('package_type')}
+                />
+              </label>
               <label className="block space-y-1">
                 <span className="text-sm">Qadoq soni</span>
                 <input
@@ -314,7 +410,7 @@ function ProductFormFields({
             {packQtyNum > 0 && costPriceNum > 0 && (
               <div className="rounded-lg border border-brand/30 bg-brand/5 p-2.5 text-xs text-brand-700 dark:text-brand-300">
                 <span className="font-semibold">
-                  {isBag ? '🛍️ 1 xalta narxi:' : '📦 1 quti narxi:'}
+                  📦 1 {packageType} narxi:
                 </span>{' '}
                 <span className="text-sm font-bold text-brand">{money(boxCost)}</span>{' '}
                 <span className="text-gray-500">

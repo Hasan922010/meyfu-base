@@ -7,6 +7,7 @@ const catalogApi = vi.hoisted(() => ({
   categories: vi.fn(),
   units: vi.fn(),
   brands: vi.fn(),
+  products: vi.fn(),
   createProduct: vi.fn(),
   updateProduct: vi.fn(),
 }));
@@ -71,6 +72,7 @@ function renderForm(product: Product | null): void {
 beforeEach(() => {
   catalogApi.categories.mockResolvedValue(page([{ id: 'c1', name: 'Kukunlar' }]));
   catalogApi.brands.mockResolvedValue(page([{ id: 'b1', name: 'Global Chem' }]));
+  catalogApi.products.mockResolvedValue(page([]));
   // Birliklar kechikib keladi — birinchi ochilishdagi poyga (race) holati
   catalogApi.units.mockImplementation(
     () => new Promise((r) => setTimeout(() => r(page([{ id: 'u1', short_name: 'dona' }])), 30)),
@@ -97,15 +99,15 @@ describe('ProductForm', () => {
     expect(catalogApi.createProduct).not.toHaveBeenCalled();
   });
 
-  it('server min_price xatosini "Minimal narx" maydoni ostida bir marta ko‘rsatadi', async () => {
-    const msg = "Minimal narx chakana narxdan katta bo'lmasligi kerak.";
-    catalogApi.updateProduct.mockRejectedValue(serverFieldError('min_price', msg));
+  it('server xatosini maydon ostida bir marta ko‘rsatadi', async () => {
+    const msg = "Tannarx manfiy bo'lmasligi kerak.";
+    catalogApi.updateProduct.mockRejectedValue(serverFieldError('cost_price', msg));
     renderForm(PRODUCT);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Saqlash' }));
 
     expect(await screen.findByText(msg)).toBeInTheDocument();
-    expect(screen.queryByText(/min_price/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cost_price/)).not.toBeInTheDocument();
   });
 
   it('saqlangach "Mahsulot saqlandi" xabarini ko‘rsatadi', async () => {

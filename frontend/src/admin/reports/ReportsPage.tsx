@@ -14,13 +14,15 @@ import { paymentLabel } from '@/shared/lib/labels';
 import { businessDateISO } from '@/shared/lib/businessDay';
 
 import { OneCExportTab } from './OneCExportTab';
+import { PriceVarianceTab } from './PriceVarianceTab';
 
-type Tab = 'query' | 'abc' | 'pnl' | 'onec';
+type Tab = 'query' | 'abc' | 'pnl' | 'variance' | 'onec';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'query', label: 'Konstruktor' },
   { id: 'abc', label: 'ABC tahlil' },
   { id: 'pnl', label: 'Foyda-zarar' },
+  { id: 'variance', label: 'Kamomad / Ortiqcha' },
   { id: 'onec', label: '1C eksport' },
 ];
 
@@ -117,6 +119,7 @@ export function ReportsPage(): ReactElement {
       {tab === 'query' && <QueryTab range={range} />}
       {tab === 'abc' && <AbcTab range={range} />}
       {tab === 'pnl' && <PnlTab range={range} />}
+      {tab === 'variance' && <PriceVarianceTab range={range} />}
       {tab === 'onec' && <OneCExportTab range={range} />}
     </div>
   );

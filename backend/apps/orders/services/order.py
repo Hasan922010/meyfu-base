@@ -264,7 +264,7 @@ def build_loading_from_orders(
     rows = (
         OrderItem.objects.filter(order_id__in=order_ids)
         .values("product_id")
-        .annotate(qty=Sum("quantity"))
+        .annotate(qty=Sum("quantity"), total_amount=Sum("amount"))
     )
     from apps.catalog.models import Product
     from apps.catalog.pricing import branch_price_map, price_for
@@ -277,10 +277,18 @@ def build_loading_from_orders(
     price_map = branch_price_map(branch, products)
     for row in rows:
         product = products[row["product_id"]]
-        price = price_for(product, branch, price_map).wholesale_price
+        qty = row["qty"]
+        order_amount = row["total_amount"]
+        # Mijoz bilan kelishilgan buyurtmadagi narx
+        if qty and order_amount:
+            price = (order_amount / qty).quantize(Decimal("0.01"))
+            amount = order_amount
+        else:
+            price = price_for(product, branch, price_map).wholesale_price or product.cost_price
+            amount = qty * price
         LoadingItem.objects.create(
-            loading=loading, product=product, quantity=row["qty"],
-            price=price, amount=row["qty"] * price,
+            loading=loading, product=product, quantity=qty,
+            price=price, amount=amount,
         )
     loading.recalc_total()
     loading.save(update_fields=["number", "total_amount", "updated_at"])

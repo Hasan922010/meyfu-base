@@ -563,3 +563,32 @@ class DistributorLocationsView(_ReportView):
     def get(self, request: Request) -> Response:
         day = parse_date(request.query_params.get("date", "")) or business_date()
         return ok(distributor_locations(day=day, branch=self._scope(request)))
+
+
+class PriceVarianceReportView(_ReportView):
+    """Tannarx va sotuv narxi farqi (Kamomad va Ortiqcha) hisoboti."""
+
+    @extend_schema(
+        summary="Tannarxdan farq (Kamomad / Ortiqcha) hisoboti",
+        parameters=[
+            OpenApiParameter("date_from", str, required=False),
+            OpenApiParameter("date_to", str, required=False),
+            OpenApiParameter("product_id", str, required=False),
+            OpenApiParameter("all_products", bool, required=False),
+        ],
+        request=None, responses={200: dict},
+    )
+    def get(self, request: Request) -> Response:
+        from .services.price_variance import price_variance_report
+
+        df, dt = self._range(request)
+        product_id = request.query_params.get("product_id") or None
+        all_products = request.query_params.get("all_products", "").lower() in ("true", "1")
+        data = price_variance_report(
+            date_from=df,
+            date_to=dt,
+            product_id=product_id,
+            all_products=all_products,
+            branch=self._scope(request),
+        )
+        return ok(data)

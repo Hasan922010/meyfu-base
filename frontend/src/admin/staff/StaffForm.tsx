@@ -297,53 +297,15 @@ export function StaffForm({
         {role === 'ORDER_TAKER' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
             <p className="text-xs text-gray-500">
-              Zakaz oluvchi faqat buyurtma oladi — marshrutni «Marshrutlar» bo‘limida biriktiring.
+              Zakaz oluvchi faqat buyurtma oladi — marshrutni «Marshrutlar» bo‘limida biriktiring. Komissiya har bir tovar profilida belgilangan foizlar bo‘yicha hisoblanadi.
             </p>
-            <label className="block space-y-1">
-              <span className="text-sm">Zakaz olgani uchun %</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_order_commission_percent')}
-              />
-            </label>
           </div>
         )}
 
         {role === 'DISTRIBUTOR' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
-            <p className="text-xs text-gray-500">Tarqatuvchiga xos sozlamalar</p>
+            <p className="text-xs text-gray-500">Tarqatuvchiga xos sozlamalar (komissiyalar har bir tovar profilida alohida belgilanadi)</p>
             <div className="grid grid-cols-2 gap-3">
-              <label className="block space-y-1">
-                <span className="text-sm">Zakaz olgani uchun %</span>
-                <input
-                  className="field"
-                  type="number"
-                  step="0.01"
-                  {...register('p_order_commission_percent')}
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm">Yetkazib bergani uchun %</span>
-                <input
-                  className="field"
-                  type="number"
-                  step="0.01"
-                  {...register('p_delivery_commission_percent')}
-                />
-              </label>
-              <label className="col-span-2 block space-y-1">
-                <span className="text-sm text-gray-500">
-                  Komissiya % (eski — yuqoridagi ikkitasi 0 bo'lsa ishlatiladi)
-                </span>
-                <input
-                  className="field"
-                  type="number"
-                  step="0.01"
-                  {...register('p_commission_percent')}
-                />
-              </label>
               <label className="block space-y-1">
                 <span className="text-sm">Oylik reja</span>
                 <Controller

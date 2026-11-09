@@ -95,12 +95,11 @@ export function ProductsPage(): ReactElement {
                 <SortableTh sortKey="name" {...th}>Nomi</SortableTh>
                 <SortableTh sortKey="sku" {...th}>SKU</SortableTh>
                 <SortableTh sortKey="category__name" {...th}>Kategoriya</SortableTh>
-                <SortableTh sortKey="retail_price" align="right" className="p-3 text-right" {...th}>
-                  Chakana
+                <SortableTh sortKey="cost_price" align="right" className="p-3 text-right" {...th}>
+                  Tannarx
                 </SortableTh>
-                <SortableTh sortKey="min_price" align="right" className="p-3 text-right" {...th}>
-                  Min. narx
-                </SortableTh>
+                <th className="p-3 text-right">Komissiya (Z / Y)</th>
+                <th className="p-3 text-center">Bonus</th>
                 <SortableTh sortKey="is_active" {...th}>Holat</SortableTh>
                 {canWrite && <th className="p-3" />}
               </tr>
@@ -125,8 +124,19 @@ export function ProductsPage(): ReactElement {
                   <td className="p-3 font-medium">{p.name}</td>
                   <td className="p-3 font-mono text-xs">{p.sku}</td>
                   <td className="p-3">{p.category_name}</td>
-                  <td className="p-3 text-right">{money(p.retail_price)}</td>
-                  <td className="p-3 text-right">{money(p.min_price)}</td>
+                  <td className="p-3 text-right font-semibold">{money(p.cost_price)}</td>
+                  <td className="p-3 text-right text-xs text-gray-500">
+                    {Number(p.order_commission_rate || 0)}% / {Number(p.delivery_commission_rate || 0)}%
+                  </td>
+                  <td className="p-3 text-center text-xs">
+                    {p.has_bonus ? (
+                      <span className="rounded bg-brand/10 px-1.5 py-0.5 font-medium text-brand">
+                        +{Number(p.bonus_reward_qty)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="p-3">
                     {p.is_active ? (
                       <span className="text-success">Faol</span>

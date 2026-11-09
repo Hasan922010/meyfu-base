@@ -254,3 +254,20 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+---
+
+## 21. XOTIRA VA SEANS DAVOMIYLIGI (PROJECT MEMORY & SESSION CONTINUITY — MAJBURIY)
+
+Har bir yangi seansda kontekst uzilmasligi uchun quyidagi tartibga qat'iy amal qilinadi:
+
+1. **Seans boshida (Qayerdan keldik va qayerdan davom etish kerak):**
+   - Ishni boshlashdan avval `.agents/memory/MEMORY.md` va `.agents/memory/SESSION_STATE.md` fayllarini o'qing (yoki `./scripts/session-memory.sh` skriptini ishga tushiring).
+   - Bu fayllarda oldingi seanslarda nimalar bajarilgani, loyihaning joriy texnik holati (portlar, testlar, artefaktlar) va navbatdagi vazifalar qayerdan davom etishi kerakligi yozilgan.
+2. **Seans yakunida (Xotirani yangilash):**
+   - Har bir topshiriq bajarilgach, `.agents/memory/SESSION_STATE.md` faylini yangilang: bajarilgan ishlarni tarixga qo'shing va keyingi ustuvor qadamlarni belgilang.
+   - Muhim arxitektura yoki xavfsizlik qarorlari qabul qilinganda `.agents/memory/` papkasiga yangi xotira fayli qo'shib, `MEMORY.md` indeksiga kiriting.
+3. **O'rnatilgan Skill'lar:**
+   - **Xotira (`agentmemory` + `project-memory`):** `project-memory`, `memory-discipline`, `handoff`, `session-history`, `recap`, `remember`, `recall`, `lesson`, `commit-context`.
+   - **Ponytail (`DietrichGebert/ponytail`):** `ponytail`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`, `ponytail-review` — ortiqcha kod yozmasdan, mavjud komponentlardan foydalanib, xavfsiz va testlangan yechim yaratish.
+   - **The Agency (`msitarzewski/agency-agents`):** `.agents/skills/` va `~/.claude/agents/` ichida 283 ta ixtisoslashgan AI muhandis, arxitektor, dizayner, QA va xavfsizlik agentlari.

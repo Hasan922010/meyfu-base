@@ -146,6 +146,9 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     brand_name = serializers.CharField(source="brand.name", read_only=True, default=None)
     unit_name = serializers.CharField(source="unit.short_name", read_only=True)
+    bonus_product_name = serializers.CharField(
+        source="bonus_product.name", read_only=True, allow_null=True, default=None
+    )
     images = ProductImageSerializer(many=True, read_only=True)
     image_thumb = serializers.SerializerMethodField()
     total_stock = serializers.DecimalField(
@@ -180,7 +183,12 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
             "category", "category_name", "brand", "brand_name",
             "unit", "unit_name", "image", "images", "image_thumb",
             "cost_price", "wholesale_price", "retail_price", "min_price",
-            "pack_quantity", "commission_percent", "min_stock_alert",
+            "pack_quantity", "package_type",
+            "order_commission_rate", "delivery_commission_rate",
+            "has_bonus", "bonus_trigger_qty", "bonus_reward_qty",
+            "bonus_product", "bonus_product_name",
+            "track_variance",
+            "commission_percent", "min_stock_alert",
             "total_stock", "reserved_stock", "available_stock", "stock_status",
             "is_active", "created_at", "updated_at",
             "initial_stock_warehouse", "initial_stock_quantity",
@@ -208,6 +216,24 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"initial_stock_warehouse": "Boshlang'ich qoldiq uchun ombor tanlang."}
             )
+
+        # Agar faqat tannarx kiritilgan bo'lsa, qolgan narxlarni moslashtiramiz
+        if "cost_price" in attrs:
+            for pfield in ("wholesale_price", "retail_price", "min_price"):
+                if pfield not in attrs:
+                    if self.instance is None or getattr(self.instance, pfield) == Decimal("0"):
+                        attrs[pfield] = attrs["cost_price"]
+
+        # Bonus tekshiruvi
+        has_bonus = attrs.get("has_bonus", getattr(self.instance, "has_bonus", False))
+        if has_bonus:
+            trigger = attrs.get("bonus_trigger_qty", getattr(self.instance, "bonus_trigger_qty", Decimal("0")))
+            reward = attrs.get("bonus_reward_qty", getattr(self.instance, "bonus_reward_qty", Decimal("0")))
+            if (trigger or Decimal("0")) <= Decimal("0") or (reward or Decimal("0")) <= Decimal("0"):
+                raise serializers.ValidationError(
+                    {"bonus_trigger_qty": "Bonus berilishi uchun minimal xarid va bonus miqdori 0 dan katta bo'lishi kerak."}
+                )
+
         self._validate_min_not_above_retail(attrs)
         # MANAGER narx/foizni o'zgartirmaydi — faqat SUPER_ADMIN.
         request = self.context.get("request")

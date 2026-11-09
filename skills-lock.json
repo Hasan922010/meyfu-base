@@ -1,17 +1,116 @@
 {
   "version": 1,
   "skills": {
+    "agentmemory-agents": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "c30a1554a577d4511eb1d05bc4566fcef0a33c188979619a6ac67c1b0150d119"
+    },
+    "agentmemory-architecture": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "29a84911316a9ef310cf384d7618db8f6262c6a147179a3ff188db47d7e69438"
+    },
+    "agentmemory-config": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "65e53a5fade0e0b5e70807966306c3b950f4ef3c630e1ee8d54f01888056cd9a"
+    },
+    "agentmemory-hooks": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "251a0a9647ea1370beb13249bd907d7de2f0701f6c31b74a9f2dcf3b40ee25b8"
+    },
+    "agentmemory-mcp-tools": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "4abc1497061f18869169ce6a12dbdaf5bd4d4f438e0bf137e114a4c8021d8ca2"
+    },
+    "agentmemory-rest-api": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "0faa8de9633b3ba62310c023591e487645e7b691e780b90a048fb0b57587b636"
+    },
+    "commit-context": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "24c8af263eda3adbe348a0e899b694c3a2657fe7c09ad01a34c7ee71d754e2d4"
+    },
+    "commit-history": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "5716cf41742aa7601907c7d17eaf1446df41717225278fa7155449f818e508cf"
+    },
     "find-skills": {
       "source": "vercel-labs/skills",
       "sourceType": "github",
       "skillPath": "skills/find-skills/SKILL.md",
       "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
     },
-    "security-audit": {
-      "source": "cloudflare/security-audit-skill",
-      "sourceType": "github",
-      "skillPath": "skills/security-audit/SKILL.md",
-      "computedHash": "e6b2e317de75da97e9de18d842982994803f3a67a4a6d8154a82323dc3de8528"
+    "forget": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "bb6077e0f64b9089a8d839487ad95cd825e27b8c1f063483df829257d568e405"
+    },
+    "handoff": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "b6f6ab826778fa792c235d3d493c6ff893481b22740d34a0368f7a4ec66a82d2"
+    },
+    "lesson": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "31d11dacc54e18cda81b8735bf0b3e913e1a3d797f7e3c6c9d1343abcfb5a0bf"
+    },
+    "memory-discipline": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "dd42f5803edb2ee5c5969ef40f22bd4f3a2a40b8805a6971b61f507a0627205a"
+    },
+    "ponytail": {
+      "source": "/tmp/ponytail",
+      "sourceType": "local",
+      "computedHash": "061f887d9e3e735f85db3be3655a8936a00f24d5fb65ac4ab74a968a770fe342"
+    },
+    "ponytail-audit": {
+      "source": "/tmp/ponytail",
+      "sourceType": "local",
+      "computedHash": "1d718f893dabc01caad0dacef86444b5b4b3e1e59409527d66e8b5dd0cd85ae0"
+    },
+    "ponytail-debt": {
+      "source": "/tmp/ponytail",
+      "sourceType": "local",
+      "computedHash": "f5d1d2ab891ff0a650a90b67235e487828e7d2a189de08a1ae073032de379407"
+    },
+    "ponytail-gain": {
+      "source": "/tmp/ponytail",
+      "sourceType": "local",
+      "computedHash": "fca2297cf7b5fd26692f6bd94d398b522e19fa81ad6e2aaebf1933575f7a6803"
+    },
+    "ponytail-help": {
+      "source": "/tmp/ponytail",
+      "sourceType": "local",
+      "computedHash": "4582025c3923072fb6c35b8cbd75adf4f7ce47df0eff43cc9a2a39808537fd61"
+    },
+    "ponytail-review": {
+      "source": "/tmp/ponytail",
+      "sourceType": "local",
+      "computedHash": "800dc0c86402978e12359f701b9e0c81ba4607a0cd0027f4596d0f835a67eadc"
+    },
+    "recall": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "374fd00d4a855be90c043f95026e60a9a2cc2730e70e35eede04ab70eb23a6d8"
+    },
+    "recap": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "286ea5410281a40521efc78cb513fbfa0d0c46e71dd401ed9c2940822667b783"
+    },
+    "remember": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "7b1d56d038198539dbea85210ef5949a3f3822404cd3abb37524f3e424d80d50"
     },
     "replica-architect": {
       "source": "Jakeschincariol/replica-skill",
@@ -78,6 +177,22 @@
       "sourceType": "github",
       "skillPath": "replica-test/SKILL.md",
       "computedHash": "dd27a6fe4d95ea1267c80dbecd05848f13ea837fe15277dcd7ac44e88bede81f"
+    },
+    "security-audit": {
+      "source": "cloudflare/security-audit-skill",
+      "sourceType": "github",
+      "skillPath": "skills/security-audit/SKILL.md",
+      "computedHash": "e6b2e317de75da97e9de18d842982994803f3a67a4a6d8154a82323dc3de8528"
+    },
+    "session-history": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "ab52aef3f7fa451756411f48136cb705e82b73422c6d4f4aa3bea191d57d986d"
+    },
+    "write-agentmemory-skill": {
+      "source": "/tmp/agentmemory/plugin",
+      "sourceType": "local",
+      "computedHash": "7d51ee452329169dcc37810cf79d6db51c4343a1de6510b1cce551f114a9b94f"
     }
   }
 }

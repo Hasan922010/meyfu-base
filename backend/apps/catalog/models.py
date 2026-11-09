@@ -101,8 +101,43 @@ class Product(BaseModel):
         _("qadoqdagi soni"), **_QTY, default=Decimal("1"),
         validators=[MinValueValidator(Decimal("0.001"))],
     )
+    package_type = models.CharField(
+        _("qadoq turi"), max_length=64, blank=True, default="",
+        help_text=_("Masalan: qop, xalta, pachka, karopka, blok"),
+    )
+
+    # Alohida buyurtma va tarqatish foizlari (tovar bo'yicha)
+    order_commission_rate = models.DecimalField(
+        _("buyurtma komissiya foizi"), max_digits=5, decimal_places=2, default=_ZERO,
+        validators=[MinValueValidator(_ZERO)],
+    )
+    delivery_commission_rate = models.DecimalField(
+        _("tarqatish komissiya foizi"), max_digits=5, decimal_places=2, default=_ZERO,
+        validators=[MinValueValidator(_ZERO)],
+    )
+
+    # Bonus tizimi
+    has_bonus = models.BooleanField(_("bonus mavjud"), default=False)
+    bonus_trigger_qty = models.DecimalField(
+        _("bonus berilishi uchun minimal xarid miqdori"), **_QTY, default=_ZERO,
+        validators=[MinValueValidator(_ZERO)],
+    )
+    bonus_reward_qty = models.DecimalField(
+        _("bonus beriladigan miqdor"), **_QTY, default=_ZERO,
+        validators=[MinValueValidator(_ZERO)],
+    )
+    bonus_product = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="bonus_parent_products", verbose_name=_("bonus tovar (bo'sh bo'lsa o'zidan)"),
+    )
+
+    # Tannarx va sotuv narxi farqini hisobotda kuzatish (Kamomad / Ortiqcha)
+    track_variance = models.BooleanField(
+        _("tannarxdan farqni hisobotda kuzatish"), default=False, db_index=True,
+    )
+
     commission_percent = models.DecimalField(
-        _("komissiya foizi"), max_digits=5, decimal_places=2, default=_ZERO,
+        _("komissiya foizi (umumiy)"), max_digits=5, decimal_places=2, default=_ZERO,
         validators=[MinValueValidator(_ZERO)],
     )
     min_stock_alert = models.DecimalField(
@@ -114,6 +149,7 @@ class Product(BaseModel):
     PRICE_FIELDS = (
         "cost_price", "wholesale_price", "retail_price",
         "min_price", "commission_percent",
+        "order_commission_rate", "delivery_commission_rate",
     )
 
     class Meta:

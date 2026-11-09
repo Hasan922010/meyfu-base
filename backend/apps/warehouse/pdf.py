@@ -48,6 +48,10 @@ def _styles() -> dict[str, ParagraphStyle]:
         "cell": ParagraphStyle("c", fontName=font, fontSize=8, leading=10),
         "cellr": ParagraphStyle("cr", fontName=font, fontSize=8, leading=10,
                                 alignment=2),
+        "dist_bold": ParagraphStyle("db", fontName=bold, fontSize=11, leading=14,
+                                   alignment=2, textColor=colors.HexColor("#0f172a")),
+        "dist_phone": ParagraphStyle("dp", fontName=bold, fontSize=10, leading=13,
+                                    alignment=2, textColor=colors.HexColor("#1e293b")),
     }
 
 
@@ -217,12 +221,31 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     elements: list = []
     elements += _company_header(company, st)
     elements.append(Spacer(1, 4 * mm))
-    elements.append(Paragraph(f"YUKLAMA № {loading.number}", st["title"]))
-    elements.append(Paragraph(
-        f"Sana: {loading.date:%d.%m.%Y} · Tarqatuvchi: {loading.distributor.full_name}"
-        f" · Ombor: {loading.warehouse.name}",
-        st["small"],
-    ))
+
+    # O'ng tomonda Tarqatuvchi ismi va telefon raqami qalin shriftda (qayta buyurtma uchun)
+    dist_phone = getattr(loading.distributor, "phone", "") or ""
+    left_header = [
+        Paragraph(f"YUKLAMA № {loading.number}", st["title"]),
+        Spacer(1, 1.5 * mm),
+        Paragraph(
+            f"Sana: {loading.date:%d.%m.%Y} · Ombor: {loading.warehouse.name}",
+            st["small"],
+        ),
+    ]
+    right_header = [
+        Paragraph("TARQATUVCHI (BUYURTMA UCHUN):", st["small"]),
+        Spacer(1, 1 * mm),
+        Paragraph(f"{loading.distributor.full_name}", st["dist_bold"]),
+    ]
+    if dist_phone:
+        right_header.append(Paragraph(f"Tel: {dist_phone}", st["dist_phone"]))
+
+    hdr_table = Table([[left_header, right_header]], colWidths=[105 * mm, 75 * mm])
+    hdr_table.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+    ]))
+    elements.append(hdr_table)
     elements.append(Spacer(1, 3 * mm))
 
     header = ["№", "Rasm", "Nomi", "SKU", "Miqdor", "Narx", "Summa"]

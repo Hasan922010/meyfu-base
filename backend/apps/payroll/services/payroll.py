@@ -79,33 +79,40 @@ def _commission_rows(distributor, date_from, date_to):
     for item in base_qs.filter(sale__distributor=distributor):
         comp.total_sales += item.amount
         comp.total_profit += item.profit
-        if delivery_pct <= _ZERO:
+        # Mahsulot bo'yicha belgilangan tarqatish komissiyasi foizi, agar bo'sh/nol bo'lsa xodim/standart foizi
+        prod_delivery_pct = getattr(item.product, "delivery_commission_rate", _ZERO) or _ZERO
+        active_delivery_pct = prod_delivery_pct if prod_delivery_pct > _ZERO else delivery_pct
+        if active_delivery_pct <= _ZERO:
             continue
-        commission = (item.amount * delivery_pct / Decimal("100")).quantize(_CENT)
+        commission = (item.amount * active_delivery_pct / Decimal("100")).quantize(_CENT)
         comp.delivery_commission_amount += commission
         details.append(
             PayrollDetail(
                 sale_item=item, role=CommissionRole.DELIVERY,
-                beneficiary=distributor, percent=delivery_pct,
+                beneficiary=distributor, percent=active_delivery_pct,
                 base_amount=item.amount, commission_amount=commission,
             )
         )
 
-    if order_pct > _ZERO:
-        order_items = base_qs.filter(
-            Q(sale__order__taken_by=distributor)
-            | Q(sale__order__isnull=True, sale__distributor=distributor)
-        )
-        for item in order_items:
-            commission = (item.amount * order_pct / Decimal("100")).quantize(_CENT)
-            comp.order_commission_amount += commission
-            details.append(
-                PayrollDetail(
-                    sale_item=item, role=CommissionRole.ORDER,
-                    beneficiary=distributor, percent=order_pct,
-                    base_amount=item.amount, commission_amount=commission,
-                )
+    order_items = base_qs.filter(
+        Q(sale__order__taken_by=distributor)
+        | Q(sale__order__isnull=True, sale__distributor=distributor)
+    )
+    for item in order_items:
+        # Mahsulot bo'yicha belgilangan buyurtma komissiyasi foizi, agar bo'sh/nol bo'lsa xodim/standart foizi
+        prod_order_pct = getattr(item.product, "order_commission_rate", _ZERO) or _ZERO
+        active_order_pct = prod_order_pct if prod_order_pct > _ZERO else order_pct
+        if active_order_pct <= _ZERO:
+            continue
+        commission = (item.amount * active_order_pct / Decimal("100")).quantize(_CENT)
+        comp.order_commission_amount += commission
+        details.append(
+            PayrollDetail(
+                sale_item=item, role=CommissionRole.ORDER,
+                beneficiary=distributor, percent=active_order_pct,
+                base_amount=item.amount, commission_amount=commission,
             )
+        )
 
     comp.commission_amount = (
         comp.order_commission_amount + comp.delivery_commission_amount
