@@ -1,0 +1,21 @@
+feature,area,priority,original,clone,notes
+Phone + JWT login & token rotation,auth,must,yes,yes,SimpleJWT with refresh rotation and multi-tab rehydration
+Telegram OTP password reset,auth,should,yes,yes,HMAC hashed one-time codes
+Role-based access control (7 roles),auth,must,yes,yes,SUPER_ADMIN MANAGER BRANCH_MANAGER ACCOUNTANT WAREHOUSE DISTRIBUTOR ORDER_TAKER
+Multi-branch data isolation & BranchStampedModel,branches,must,yes,yes,Historical documents stay in creation branch
+Branch-specific pricing (BranchPrice),branches,should,yes,yes,Overrides base wholesale/retail/min price per branch
+Product catalog & pack quantity,catalog,must,yes,yes,SKU barcode cost wholesale retail min_price pack_quantity
+Warehouse stock & purchase confirmation,warehouse,must,yes,yes,Append-only StockMovement ledger + cost history
+Morning van loading & return settlement,warehouse,must,yes,yes,Loading confirmation moves warehouse stock to VanStock
+Opening balances bulk entry & warehouse lock,warehouse,must,yes,yes,Locks opening stock edits once confirmed
+Field sales with cash/debt split & price floor check,sales,must,yes,yes,Flags sales below min_price; updates wallet and client debt
+Pre-orders (Order Taker flow) & conversion to sale,orders,should,yes,yes,Order commission + delivery commission split
+"Client directory, routes & debt collection",clients,must,yes,yes,Client 360 statement PDF + route stop optimization
+Distributor expenses & fuel log tracking,expenses,must,yes,yes,Daily limit check + admin approval + DayClose snapshot refresh
+3-step Day Close & paired Cash Handover,dayclose,must,yes,yes,DailyReturn + CashHandover + atomic wallet/cash journal entries
+Central & branch cash accounts + inkassatsiya,finance,must,yes,yes,Paired BRANCH_OUT and CENTER_IN transfers
+"Monthly payroll, commissions & advances",payroll,must,yes,yes,Order + delivery commission calculation
+Offline-first mobile queue (Dexie) & bulk-sync,offline,must,yes,yes,Idempotent client UUIDs + SyncLog
+OCR invoice scanning,ocr,could,yes,yes,Extracts invoice lines into draft purchase
+"System health, ledger integrity & backups",system,must,yes,yes,Checks 6 ledger invariants + gzipped backups with SHA-256
+Settings permission toggle & Test Transaction Cleanup,system,must,yes,yes,SUPER_ADMIN web UI + settings switch + orphan/middle-entry balance recalculation

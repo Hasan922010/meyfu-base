@@ -23,10 +23,16 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+      },
+    },
     {
       name: 'mobile',
-      use: { ...devices['Pixel 7'] },
+      use: { ...devices['Pixel 7'], channel: 'chrome' },
       testMatch: /mobile\.spec\.ts$/,
     },
   ],
@@ -35,9 +41,10 @@ export default defineConfig({
       // Har ishga tushishda toza e2e.sqlite3 (repo'dagi local.sqlite3 ga tegmaydi)
       command:
         'node -e "require(\'fs\').rmSync(\'e2e.sqlite3\',{force:true})" && ' +
-        'python manage.py migrate --noinput && ' +
-        'python manage.py seed_demo && ' +
-        `python manage.py runserver ${BACKEND_PORT} --noreload`,
+        'PY=$([ -x ../.venv/bin/python ] && echo ../.venv/bin/python || echo python) && ' +
+        '$PY manage.py migrate --noinput && ' +
+        '$PY manage.py seed_demo && ' +
+        `$PY manage.py runserver ${BACKEND_PORT} --noreload`,
       cwd: '../backend',
       env: {
         DJANGO_SETTINGS_MODULE: 'config.settings.e2e',
