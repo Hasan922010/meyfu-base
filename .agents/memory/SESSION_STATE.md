@@ -28,7 +28,25 @@
    - **Tovar Komissiyasi va Oylik:** Har bir tovar profilida alohida `order_commission_rate` va `delivery_commission_rate` belgilandi, oylik maosh (`Payroll`) tovar foizlari bo'yicha yig'iladi. Xodim profilidagi umumiy komissiya foizlari kiritish maydonlari olib tashlandi.
    - **Yuklama Hujjati (PDF):** Buyurtmalardan yuklama yaratishda mijoz bilan kelishilgan buyurtma narxi olindi (`build_loading_from_orders`) hamda yuklama qog'ozining o'ng tomonida qalin shriftda Tarqatuvchi ismi va telefon raqami joylashtirildi.
    - **Kamomad va Ortiqcha Hisoboti:** `track_variance` bo'yicha belgilangan tovarlar sotuvida tannarxdan arzon (kamomad) yoki qimmat (ortiqcha) sotilganini ko'rsatuvchi hisobot va `PriceVarianceTab` jadvali joriy qilindi.
-   - **Test Natijalari:** Backend 609 ta test (`pytest`), Frontend 215 ta test (`vitest`), `tsc` 0 xato.
+
+5. **Buyurtma Oluvchida Qadoq Birligi Bo'yicha Buyurtma Olish va Hisoblash (Mobile NewOrderPage):**
+   - **Prompt Spetsifikatsiyasi:** `.agents/prompts/order-packaging-unit-spec.md` yaratildi.
+   - **Dona vs Qadoq Tanlovi:** Qadoq ma'lumotlariga ega tovarlar (`pack_quantity > 1` yoki `package_type`) tanlanganda interfeysda "Dona (dona)" va "Qadoq (karopka — 12 dona)" tanlash tugmalari paydo bo'ladi.
+   - **Avtomatik Hisob-kitob Formulasi:** Qadoq tanlanganda kiritilgan son qadoqlar soni deb olinadi va ekranda formula ko'rsatiladi: `10 karopka × 12 dona = 120 dona`, `120 dona × 25 000 so'm = 3 000 000 so'm`.
+   - **Savat va Backend Muvofiqligi:** Savatda tovar qatori `10 karopka (120 dona) × 25 000 so'm = 3 000 000 so'm` deb ko'rsatiladi. `saveOrderLocal` va backend API ga asosiy o'lchov birligidagi to'liq miqdor (`quantity = 120`) uzatiladi, bu orqali ombor, yuklama va narxlar 100% to'g'ri hisoblanadi.
+   - **Test Natijalari:** Frontend 217 ta test (`vitest`) barchasi muvaffaqiyatli, `tsc -b --noEmit` 0 xato, Backend 17 ta tegishli test o'tdi.
+
+6. **Xavfsizlik Arxitekturasi va Himoya Qatlamlari Kuchaytirildi (`agency-security-architect`):**
+   - **Hujjat:** `security_architecture_audit.md` xavfsizlik arxitekturasi va tahdidlar tahlili yaratildi.
+   - **Haqiqiy Token Blacklisting:** `frontend/src/shared/api/auth.ts` dagi `logout()` funksiyasi orqali chiqishda refresh token backendga uzatilib, `rest_framework_simplejwt.token_blacklist` orqali darhol bekor qilinadigan qilindi.
+   - **Admin Test Cleanup Scoped Throttling:** `TestCleanupExecuteView` ga `throttle_scope = "test_cleanup"` va `DEFAULT_THROTTLE_RATES` ga `"test_cleanup": "5/min"` qo'shilib, admin parolini brute-force qilish xavfi bartaraf etildi.
+   - **Test Natijalari:** Backend 29 ta test (`test_auth.py`, `test_admin_test_cleanup.py`) va frontend 217 ta test 100% muvaffaqiyatli o'tdi.
+
+7. **Frontend UI/UX Yangilanishi (`agency-frontend-developer`):**
+   - **Komponentlar:** `UnitToggle.tsx` (Dona/Qadoq segmentli boshqaruv), `QuantityStepper.tsx` (48px ergonomik hisoblagich va tezkor raqamlar) hamda `PriceFormulaCard.tsx` (jonli hisoblash kartochkasi) yaratildi.
+   - **Integratsiya:** `NewOrderPage.tsx` soddalashtirildi, `index.css` ga `.card-minimal` va micro-interaction animatsiyalari qo'shildi.
+   - **Test Natijalari:** Frontend 51 ta test fayli, 222 ta test (`vitest`) barchasi muvaffaqiyatli, `tsc -b --noEmit` 0 xato.
+   - **Sinxronizatsiya:** `artifacts/meyfu-app/` deploy nusxasi to'liq yangilandi.
 
 ---
 

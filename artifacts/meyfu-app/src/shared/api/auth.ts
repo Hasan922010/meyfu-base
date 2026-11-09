@@ -1,6 +1,7 @@
 import { api } from '@/shared/api/client';
 import { loginDataShape } from '@/shared/api/schemas';
 import { assertApiShape } from '@/shared/lib/validate';
+import { useAuthStore } from '@/shared/store/authStore';
 import type { ApiSuccess, LoginResponse, User } from '@/shared/types/api';
 
 export interface LoginPayload {
@@ -36,7 +37,8 @@ export async function fetchMe(): Promise<User> {
 
 export async function logout(): Promise<void> {
   try {
-    await api.post('/auth/logout/');
+    const refresh = useAuthStore.getState().refresh;
+    await api.post('/auth/logout/', { refresh: refresh ?? '' });
   } catch {
     // stateless — mijoz baribir tozalaydi
   }

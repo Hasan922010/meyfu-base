@@ -319,6 +319,7 @@ class TestCleanupExecuteView(APIView):
 
     permission_classes = [IsAuthenticated, RolePermission, IsCentralStaff]
     write_roles = (Role.SUPER_ADMIN,)
+    throttle_scope = "test_cleanup"
 
     @extend_schema(
         summary="Soxta operatsiyalarni tasdiqlab tozalash (SUPER_ADMIN)",

@@ -11,6 +11,9 @@ export interface CachedProduct {
   retail_price: string;
   wholesale_price: string;
   min_price: string;
+  cost_price?: string | undefined;
+  pack_quantity?: string | number | undefined;
+  package_type?: string | undefined;
   is_active: boolean;
   image_thumb: string | null;
 }

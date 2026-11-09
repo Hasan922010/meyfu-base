@@ -31,6 +31,10 @@ body {
       dark:border-gray-700 dark:bg-gray-900
       aria-[invalid=true]:border-danger aria-[invalid=true]:focus:ring-danger/30;
   }
+  .card-minimal {
+    @apply rounded-2xl bg-white p-4 shadow-sm transition-all duration-200
+      dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80;
+  }
 }
 
 /* v5 B2: xaritadagi tartib raqami (marshrut) — fon va o'q ko'rinmasin */

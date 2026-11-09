@@ -222,6 +222,11 @@ export interface LocalOrderLine {
   product_name: string;
   quantity: number;
   price: number;
+  unit_mode?: 'base' | 'package' | undefined;
+  package_count?: number | undefined;
+  package_type?: string | undefined;
+  pack_quantity?: number | undefined;
+  unit_name?: string | undefined;
 }
 
 /**

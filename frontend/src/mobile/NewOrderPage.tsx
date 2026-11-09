@@ -2,8 +2,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft,
   CircleCheckBig,
-  Minus,
-  Plus,
   X,
 } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
@@ -12,6 +10,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveOrderLocal, type LocalOrderLine } from '@/offline/actions';
 import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
+import { PriceFormulaCard } from '@/shared/components/PriceFormulaCard';
+import { QuantityStepper } from '@/shared/components/QuantityStepper';
+import { UnitToggle } from '@/shared/components/UnitToggle';
 import { money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
@@ -19,7 +20,6 @@ import { paymentLabel } from '@/shared/lib/labels';
 type Step = 'client' | 'items' | 'meta' | 'done';
 type Intent = '' | 'NAQD' | 'PLASTIK' | 'OTKAZMA' | 'QARZ' | 'ARALASH';
 
-const QUICK = [1, 3, 5, 10, 12, 20];
 const INTENTS: Array<{ v: Intent; l: string }> = [
   { v: '', l: 'Aniqlanmagan' },
   ...(['NAQD', 'PLASTIK', 'OTKAZMA', 'QARZ', 'ARALASH'] as const).map((v) => ({
@@ -46,6 +46,7 @@ export function NewOrderPage(): ReactElement {
   const [productSearch, setProductSearch] = useState<string>('');
   const [cart, setCart] = useState<LocalOrderLine[]>([]);
   const [qty, setQty] = useState<number>(1);
+  const [unitMode, setUnitMode] = useState<'base' | 'package'>('base');
   const [picked, setPicked] = useState<string>('');
   const [pickedPrice, setPickedPrice] = useState<string>('');
   const [intent, setIntent] = useState<Intent>('');
@@ -59,34 +60,57 @@ export function NewOrderPage(): ReactElement {
     [cart],
   );
 
-  const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(clientSearch.toLowerCase()),
+  const filteredClients = useMemo(
+    () =>
+      clients.filter((c) =>
+        c.name.toLowerCase().includes(clientSearch.toLowerCase()),
+      ),
+    [clients, clientSearch],
   );
   const productQ = productSearch.trim().toLowerCase().replace(/[‘'’`]/g, "'");
-  const filteredProducts = products.filter((p) => {
-    if (!p.is_active) return false;
-    if (!productQ) return true;
-    const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
-    const sku = (p.sku || '').toLowerCase();
-    const barcode = (p.barcode || '').toLowerCase();
-    return name.includes(productQ) || sku.includes(productQ) || barcode.includes(productQ);
-  });
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (!p.is_active) return false;
+      if (!productQ) return true;
+      const name = (p.name || '').toLowerCase().replace(/[‘'’`]/g, "'");
+      const sku = (p.sku || '').toLowerCase();
+      const barcode = (p.barcode || '').toLowerCase();
+      return name.includes(productQ) || sku.includes(productQ) || barcode.includes(productQ);
+    });
+  }, [products, productQ]);
 
   function suggestedPrice(productId: string): string {
-    return products.find((x) => x.id === productId)?.wholesale_price ?? '';
+    const p = products.find((x) => x.id === productId);
+    return p?.wholesale_price || p?.cost_price || '';
   }
 
   function addToCart(): void {
     const p = products.find((x) => x.id === picked);
     const price = Number(pickedPrice || suggestedPrice(picked));
     if (!p || qty <= 0 || price <= 0) return;
+    const pPackQty = Number(p.pack_quantity) || 1;
+    const pPackType = p.package_type?.trim() || '';
+    const isPack = unitMode === 'package';
+    const totalQty = isPack ? qty * pPackQty : qty;
+
     setCart((prev) => [
       ...prev.filter((l) => l.product !== picked),
-      { product: p.id, product_name: p.name, quantity: qty, price },
+      {
+        product: p.id,
+        product_name: p.name,
+        quantity: totalQty,
+        price,
+        unit_mode: isPack ? 'package' : 'base',
+        package_count: isPack ? qty : undefined,
+        package_type: isPack ? (pPackType || 'qadoq') : undefined,
+        pack_quantity: pPackQty,
+        unit_name: p.unit || 'dona',
+      },
     ]);
     setPicked('');
     setPickedPrice('');
     setQty(1);
+    setUnitMode('base');
     setProductSearch('');
   }
 
@@ -152,6 +176,7 @@ export function NewOrderPage(): ReactElement {
         <div className="space-y-2">
           <input
             className="field"
+            aria-label="Mijoz qidirish"
             placeholder="Mijoz qidirish…"
             value={clientSearch}
             onChange={(e) => setClientSearch(e.target.value)}
@@ -179,6 +204,7 @@ export function NewOrderPage(): ReactElement {
           <div className="text-sm text-gray-500">Mijoz: {client?.name}</div>
           <input
             className="field"
+            aria-label="Tovar qidirish"
             placeholder="Tovar qidirish…"
             value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)}
@@ -189,7 +215,14 @@ export function NewOrderPage(): ReactElement {
                 <li key={p.id}>
                   <button
                     className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
-                    onClick={() => setPicked(p.id)}
+                    onClick={() => {
+                      setPicked(p.id);
+                      const pPackQty = Number(p.pack_quantity) || 1;
+                      const pPackType = p.package_type?.trim() || '';
+                      setUnitMode(pPackQty > 1 || pPackType ? 'package' : 'base');
+                      setQty(1);
+                      setPickedPrice(suggestedPrice(p.id));
+                    }}
                   >
                     {p.image_thumb ? (
                       <img
@@ -201,73 +234,135 @@ export function NewOrderPage(): ReactElement {
                       <div className="h-9 w-9 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
                     )}
                     <span className="flex-1">{p.name}</span>
-                    <span className="text-gray-400">{money(p.wholesale_price)}</span>
+                    <span className="text-gray-400">
+                      {money(p.wholesale_price || p.cost_price || 0)}
+                    </span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
 
-          {picked && (
-            <div className="space-y-3 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
-              <div className="font-medium">
-                {products.find((p) => p.id === picked)?.name}
-              </div>
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-                  onClick={() => setQty((q) => Math.max(1, q - 1))}
-                  aria-label="Kamaytirish"
-                >
-                  <Minus size={22} aria-hidden />
-                </button>
-                <span className="w-16 text-center text-2xl font-bold">{qty}</span>
-                <button
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
-                  onClick={() => setQty((q) => q + 1)}
-                  aria-label="Ko'paytirish"
-                >
-                  <Plus size={22} aria-hidden />
-                </button>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {QUICK.map((n) => (
+          {picked && (() => {
+            const p = products.find((x) => x.id === picked);
+            if (!p) return null;
+            const packQty = Number(p.pack_quantity) || 1;
+            const packType = p.package_type?.trim() || '';
+            const hasPackaging = packQty > 1 || Boolean(packType);
+            const baseUnit = p.unit || 'dona';
+            const packLabel = packType || 'qadoq';
+
+            const isPack = unitMode === 'package';
+            const totalBaseQty = isPack ? qty * packQty : qty;
+            const unitPrice = Number(pickedPrice || suggestedPrice(picked));
+            const lineTotal = totalBaseQty * unitPrice;
+
+            return (
+              <div className="card-minimal space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-base font-semibold text-gray-900 dark:text-white">
+                      {p.name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Asosiy birlik: <span className="font-medium">{baseUnit}</span>
+                      {hasPackaging && (
+                        <span> · Qadoq: 1 {packLabel} = {packQty} {baseUnit}</span>
+                      )}
+                    </div>
+                  </div>
                   <button
-                    key={n}
-                    className="min-w-[44px] rounded-lg bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-800"
-                    onClick={() => setQty(n)}
+                    type="button"
+                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                    onClick={() => {
+                      setPicked('');
+                      setPickedPrice('');
+                      setQty(1);
+                      setUnitMode('base');
+                    }}
+                    aria-label="Bekor qilish"
                   >
-                    {n}
+                    <X size={18} aria-hidden />
                   </button>
-                ))}
+                </div>
+
+                {hasPackaging && (
+                  <UnitToggle
+                    mode={unitMode}
+                    baseUnit={baseUnit}
+                    packageType={packType}
+                    packQuantity={packQty}
+                    onChange={setUnitMode}
+                  />
+                )}
+
+                <QuantityStepper
+                  value={qty}
+                  unitLabel={isPack ? packLabel : baseUnit}
+                  onChange={setQty}
+                />
+
+                <PriceFormulaCard
+                  isPackage={isPack}
+                  packageCount={qty}
+                  packageType={packType}
+                  packQuantity={packQty}
+                  baseUnit={baseUnit}
+                  totalBaseQty={totalBaseQty}
+                  unitPrice={unitPrice}
+                  totalPrice={lineTotal}
+                />
+
+                <input
+                  className="field"
+                  type="number"
+                  inputMode="decimal"
+                  aria-label="Tovar narxi"
+                  placeholder={`Narx (${baseUnit} uchun taxminan ${suggestedPrice(picked)})`}
+                  value={pickedPrice}
+                  onChange={(e) => setPickedPrice(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn-brand w-full shadow-md shadow-brand/20"
+                  disabled={unitPrice <= 0}
+                  onClick={addToCart}
+                >
+                  Savatga qo'shish ({money(lineTotal)})
+                </button>
               </div>
-              <input
-                className="field"
-                type="number"
-                inputMode="decimal"
-                placeholder={`Narx (taxminan ${suggestedPrice(picked)})`}
-                value={pickedPrice}
-                onChange={(e) => setPickedPrice(e.target.value)}
-              />
-              <button
-                className="btn-brand w-full"
-                disabled={Number(pickedPrice || suggestedPrice(picked)) <= 0}
-                onClick={addToCart}
-              >
-                Qo'shish
-              </button>
-            </div>
-          )}
+            );
+          })()}
 
           {cart.length > 0 && (
             <ul className="divide-y divide-gray-100 rounded-xl bg-white text-sm shadow-sm dark:divide-gray-800 dark:bg-gray-900">
               {cart.map((l) => (
-                <li key={l.product} className="flex justify-between p-3">
-                  <span>
-                    {l.product_name} · {l.quantity} × {money(l.price)}
-                  </span>
+                <li key={l.product} className="flex items-center justify-between p-3">
+                  <div className="min-w-0 flex-1 pr-2">
+                    <div className="truncate font-medium">{l.product_name}</div>
+                    <div className="text-xs text-gray-500">
+                      {l.unit_mode === 'package' && l.package_count ? (
+                        <>
+                          <span className="font-semibold text-brand">
+                            {l.package_count} {l.package_type || 'qadoq'}
+                          </span>{' '}
+                          ({l.quantity} {l.unit_name || 'dona'}) × {money(l.price)} ={' '}
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {money(l.quantity * l.price)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {l.quantity} {l.unit_name || 'dona'} × {money(l.price)} ={' '}
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {money(l.quantity * l.price)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                   <button
-                    className="text-danger"
+                    className="rounded p-1 text-danger hover:bg-danger/10"
                     onClick={() =>
                       setCart((prev) => prev.filter((x) => x.product !== l.product))
                     }

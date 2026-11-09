@@ -222,6 +222,7 @@ REST_FRAMEWORK = {
         "login": "10/min",
         "password_reset": "5/min",
         "ocr": "20/min",
+        "test_cleanup": "5/min",
     },
 }
 
