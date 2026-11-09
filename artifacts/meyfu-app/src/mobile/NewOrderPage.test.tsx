@@ -86,4 +86,69 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     expect(screen.getByText(/10 karopka/)).toBeInTheDocument();
     expect(screen.getByText(/\(120 dona\)/)).toBeInTheDocument();
   });
+
+  it('aksiyali tovar buyurtma qilinganda avtomatik bepul aksiya bonusi qo‘shiladi va saqlanadi', async () => {
+    const { saveOrderLocal } = await import('@/offline/actions');
+
+    await db.products.update('p1', {
+      has_bonus: true,
+      bonus_trigger_qty: 12,
+      bonus_reward_qty: 1,
+      bonus_product: 'p1',
+      bonus_product_name: 'Bio Kukun 3kg',
+    });
+
+    render(
+      <MemoryRouter>
+        <NewOrderPage />
+      </MemoryRouter>,
+    );
+
+    // 1. Mijoz tanlash
+    const clientBtn = await screen.findByRole('button', { name: 'Oqtepa Do‘koni' });
+    fireEvent.click(clientBtn);
+
+    // 2. Tovarni qidirish va 1 karopka (12 dona) tanlash
+    const searchInput = screen.getByPlaceholderText('Tovar qidirish…');
+    fireEvent.change(searchInput, { target: { value: 'Bio' } });
+
+    const productBtn = await screen.findByRole('button', { name: /Bio Kukun 3kg/ });
+    fireEvent.click(productBtn);
+
+    const addBtn = screen.getByRole('button', { name: /Savatga qo'shish/ });
+    fireEvent.click(addBtn);
+
+    // 3. Aksiya bonusi banneri paydo bo'lishi
+    expect(await screen.findByText("Aksiya bonusi (Buyurtmaga bepul qo'shiladi):")).toBeInTheDocument();
+    expect(screen.getByText('+1 dona Bio Kukun 3kg')).toBeInTheDocument();
+
+    // 4. Davom etish va buyurtmani saqlash
+    const nextBtn = screen.getByRole('button', { name: 'Davom etish' });
+    fireEvent.click(nextBtn);
+
+    expect(screen.getByText('+1 ta bepul aksiya bonusi bilan')).toBeInTheDocument();
+
+    const saveBtn = screen.getByRole('button', { name: 'Buyurtmani saqlash' });
+    fireEvent.click(saveBtn);
+
+    expect(saveOrderLocal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client: 'c1',
+        lines: expect.arrayContaining([
+          expect.objectContaining({
+            product: 'p1',
+            quantity: 12,
+            price: 25000,
+            is_bonus: false,
+          }),
+          expect.objectContaining({
+            product: 'p1',
+            quantity: 1,
+            price: 0,
+            is_bonus: true,
+          }),
+        ]),
+      }),
+    );
+  });
 });

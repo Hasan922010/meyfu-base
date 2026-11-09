@@ -6,6 +6,7 @@ import {
   CalendarClock,
   CircleCheckBig,
   CreditCard,
+  Gift,
   RefreshCw,
   Search,
   Split,
@@ -30,6 +31,8 @@ import { dateTimeShort, money } from '@/shared/lib/format';
 import { useToast } from '@/shared/lib/toast';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
+import { computePromotionalBonuses } from '@/shared/lib/bonusCalculator';
+import { useUserPermission } from '@/shared/lib/permissions';
 
 type Step = 'client' | 'items' | 'pay' | 'done';
 type PayType = 'NAQD' | 'PLASTIK' | 'QARZ' | 'ARALASH';
@@ -45,6 +48,8 @@ export function NewSalePage(): ReactElement {
   const initialClientId = searchParams.get('client') ?? '';
   const { online, pending } = useSync();
   const distributorName = useAuthStore((s) => s.user?.full_name ?? '');
+  const canSellOnDebt = useUserPermission('can_sell_on_debt');
+  const canMakeSales = useUserPermission('can_make_sales');
   const toast = useToast();
   const [step, setStep] = useState<Step>(initialClientId ? 'items' : 'client');
   const [receipt, setReceipt] = useState<ReceiptDoc | null>(null);
@@ -137,6 +142,15 @@ export function NewSalePage(): ReactElement {
     [products],
   );
 
+  const bonuses = useMemo(
+    () => computePromotionalBonuses(cart, productMap),
+    [cart, productMap],
+  );
+  const totalBonusQty = useMemo(
+    () => bonuses.reduce((s, b) => s + b.bonusQty, 0),
+    [bonuses],
+  );
+
   function suggestedPrice(productId: string): string {
     const p = productMap.get(productId);
     return p?.wholesale_price ?? '';
@@ -147,23 +161,50 @@ export function NewSalePage(): ReactElement {
     opts?: { paidAmount?: number; dueDate?: string },
   ): Promise<void> {
     if (!client || cart.length === 0) return;
+    if (!canMakeSales) {
+      toast.push({ kind: 'danger', title: 'Sizga sotuv/tarqatish amaliyotini bajarishga ruxsat berilmagan.' });
+      return;
+    }
+    if ((paymentType === 'QARZ' || paymentType === 'ARALASH') && !canSellOnDebt) {
+      toast.push({ kind: 'danger', title: 'Sizga qarzga sotishga ruxsat berilmagan.' });
+      return;
+    }
     setSaving(true);
     try {
       const coords = await coordsForSave();
       const needsDue = paymentType === 'QARZ' || paymentType === 'ARALASH';
       const due = needsDue ? (opts?.dueDate ?? dueDate) : null;
+
+      const normalLines = cart.map((l) => ({
+        product: l.product,
+        product_name: l.product_name,
+        quantity: l.quantity,
+        price: l.price,
+        is_bonus: false,
+        unit_mode: l.unit_mode,
+        package_count: l.package_count,
+        package_type: l.package_type,
+        pack_quantity: l.pack_quantity,
+        unit_name: l.unit_name,
+      }));
+
+      const bonusLines = bonuses.map((b) => ({
+        product: b.bonusProductId,
+        product_name: b.bonusProductName,
+        quantity: b.bonusQty,
+        price: 0,
+        is_bonus: true,
+      }));
+
+      const allLines = [...normalLines, ...bonusLines];
+
       const uuid = await saveSaleLocal({
         client: client.id,
         client_name: client.name,
         payment_type: paymentType,
         ...(opts?.paidAmount != null ? { paid_amount: opts.paidAmount } : {}),
         due_date: due,
-        lines: cart.map((l) => ({
-          product: l.product,
-          product_name: l.product_name,
-          quantity: l.quantity,
-          price: l.price,
-        })),
+        lines: allLines,
         ...(coords ?? {}),
       });
       const paid =
@@ -180,11 +221,21 @@ export function NewSalePage(): ReactElement {
         distributorName,
         clientName: client.name,
         paymentLabel: paymentLabel(paymentType),
-        lines: cart.map((l) => ({
-          name: l.product_name,
-          qty: l.quantity,
-          price: l.price,
-        })),
+        lines: [
+          ...cart.map((l) => ({
+            name:
+              l.unit_mode === 'package' && l.package_count
+                ? `${l.product_name} (${l.package_count} ${l.package_type || 'qadoq'})`
+                : l.product_name,
+            qty: l.quantity,
+            price: l.price,
+          })),
+          ...bonuses.map((b) => ({
+            name: `${b.bonusProductName} (Aksiya bonusi)`,
+            qty: b.bonusQty,
+            price: 0,
+          })),
+        ],
         total,
         paid,
         debt: Math.max(0, total - paid),
@@ -365,6 +416,35 @@ export function NewSalePage(): ReactElement {
             }}
           />
 
+          {bonuses.length > 0 && (
+            <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/95 p-3.5 text-emerald-950 shadow-sm dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+              <div className="flex items-center gap-2 font-bold text-sm text-emerald-800 dark:text-emerald-200">
+                <Gift size={20} className="text-emerald-600 dark:text-emerald-400" />
+                <span>Aksiya bonusi (Mijozga bepul beriladi):</span>
+              </div>
+              <ul className="mt-2 space-y-1.5">
+                {bonuses.map((b, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-center justify-between rounded-xl bg-white/90 p-2 text-xs font-semibold shadow-xs dark:bg-gray-800/90"
+                  >
+                    <div>
+                      <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                        +{b.bonusQty} dona {b.bonusProductName}
+                      </span>
+                      <span className="block text-[11px] font-normal text-gray-500 dark:text-gray-400">
+                        «{b.triggeredByProductName}» xaridi uchun
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-extrabold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                      0 so'm (BEPUL)
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Pastdagi panel ro'yxatning oxirini yopmasligi uchun joy */}
           <div className="h-32" aria-hidden />
 
@@ -379,9 +459,16 @@ export function NewSalePage(): ReactElement {
                 <span className="text-xs text-gray-500 block">Jami summa</span>
                 <span className="text-lg font-extrabold text-gray-900 dark:text-gray-100">{money(total)}</span>
               </div>
-              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                {itemCount} dona tovar
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                  {itemCount} dona tovar
+                </span>
+                {totalBonusQty > 0 && (
+                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                    +{totalBonusQty} bonus
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex gap-2.5">
               <button
@@ -409,8 +496,27 @@ export function NewSalePage(): ReactElement {
           <div className="card-minimal text-center py-6 space-y-1">
             <div className="text-sm font-medium text-gray-500">{client?.name}</div>
             <div className="text-3xl font-black text-gray-900 dark:text-gray-100">{money(total)}</div>
-            <div className="text-xs text-gray-400 font-medium">{itemCount} dona tovar</div>
+            <div className="text-xs text-gray-400 font-medium">
+              {itemCount} dona tovar
+              {totalBonusQty > 0 && ` (+${totalBonusQty} ta bepul aksiya bonusi)`}
+            </div>
           </div>
+
+          {bonuses.length > 0 && (
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/70 p-3 text-xs dark:border-emerald-500/40 dark:bg-emerald-950/40">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-200">
+                <Gift size={16} /> Aksiya bo'yicha bepul beriladigan tovarlar:
+              </div>
+              <ul className="mt-1.5 space-y-1 text-emerald-900 dark:text-emerald-100 font-medium">
+                {bonuses.map((b, i) => (
+                  <li key={i} className="flex justify-between">
+                    <span>• {b.bonusQty} dona {b.bonusProductName}</span>
+                    <span className="font-bold text-emerald-700 dark:text-emerald-300">0 so'm (BEPUL)</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {payMode === 'choose' && (
             <>
@@ -431,20 +537,33 @@ export function NewSalePage(): ReactElement {
                 </button>
                 <button
                   className="btn min-h-[52px] flex items-center justify-center gap-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition disabled:opacity-50"
-                  disabled={saving || client?.is_blocked}
+                  disabled={saving || client?.is_blocked || !canSellOnDebt}
                   onClick={() => setPayMode('QARZ')}
                 >
                   <CalendarClock size={22} aria-hidden />
-                  {client?.is_blocked ? 'Qarz (mijoz bloklangan)' : 'Qarzga berish'}
+                  {client?.is_blocked
+                    ? 'Qarz (mijoz bloklangan)'
+                    : !canSellOnDebt
+                      ? 'Qarzga berish (Ruxsat yo‘q)'
+                      : 'Qarzga berish'}
                 </button>
                 <button
                   className="btn min-h-[52px] flex items-center justify-center gap-3 border-2 border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition disabled:opacity-50"
-                  disabled={saving || client?.is_blocked}
+                  disabled={saving || client?.is_blocked || !canSellOnDebt}
                   onClick={() => setPayMode('ARALASH')}
                 >
-                  <Split size={22} aria-hidden /> Aralash (qisman naqd + qarz)
+                  <Split size={22} aria-hidden />
+                  {!canSellOnDebt
+                    ? 'Aralash to‘lov (Ruxsat yo‘q)'
+                    : 'Aralash (qisman naqd + qarz)'}
                 </button>
               </div>
+
+              {!canSellOnDebt && (
+                <div className="rounded-xl bg-amber-500/10 p-3 text-center text-xs font-medium text-amber-700 dark:text-amber-400">
+                  Sizning profilingizda qarzga tovar sotish ruxsati o‘chirilgan. Faqat naqd yoki plastik karta orqali to‘lov qabul qilishingiz mumkin.
+                </div>
+              )}
               <button
                 className="btn min-h-[48px] flex w-full items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium"
                 onClick={() => setStep('items')}

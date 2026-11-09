@@ -15,13 +15,15 @@ import { businessDateISO } from '@/shared/lib/businessDay';
 
 import { OneCExportTab } from './OneCExportTab';
 import { PriceVarianceTab } from './PriceVarianceTab';
+import { ProductMovementTab } from './ProductMovementTab';
 
-type Tab = 'query' | 'abc' | 'pnl' | 'variance' | 'onec';
+type Tab = 'query' | 'abc' | 'pnl' | 'movement' | 'variance' | 'onec';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'query', label: 'Konstruktor' },
   { id: 'abc', label: 'ABC tahlil' },
   { id: 'pnl', label: 'Foyda-zarar' },
+  { id: 'movement', label: 'Tovar harakati (Sotuv / Bonus)' },
   { id: 'variance', label: 'Kamomad / Ortiqcha' },
   { id: 'onec', label: '1C eksport' },
 ];
@@ -119,6 +121,7 @@ export function ReportsPage(): ReactElement {
       {tab === 'query' && <QueryTab range={range} />}
       {tab === 'abc' && <AbcTab range={range} />}
       {tab === 'pnl' && <PnlTab range={range} />}
+      {tab === 'movement' && <ProductMovementTab range={range} />}
       {tab === 'variance' && <PriceVarianceTab range={range} />}
       {tab === 'onec' && <OneCExportTab range={range} />}
     </div>

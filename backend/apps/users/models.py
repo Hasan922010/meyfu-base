@@ -55,6 +55,17 @@ class User(AbstractUser):
     telegram_chat_id = models.CharField(
         _("Telegram chat ID"), max_length=64, blank=True
     )
+
+    # Shaxsiy imkoniyatlar va ruxsatlar (Granular Permissions)
+    can_receive_stock = models.BooleanField(_("tovar kirim qilish"), default=False)
+    can_take_orders = models.BooleanField(_("buyurtma olish"), default=False)
+    can_make_sales = models.BooleanField(_("tarqatish / sotuv qilish"), default=False)
+    can_sell_on_debt = models.BooleanField(_("qarzga berish"), default=False)
+    can_collect_debts = models.BooleanField(_("pul / qarz undirish"), default=False)
+    can_record_expenses = models.BooleanField(_("xarajat kiritish"), default=False)
+    can_see_warehouse_stock = models.BooleanField(_("ombor qoldig'ini ko'rish"), default=True)
+    can_scan_invoices = models.BooleanField(_("naklit skani (AI OCR)"), default=False)
+
     # `User` BaseModel'dan meros olmaydi (AbstractUser bilan to'qnashadi),
     # shuning uchun yumshoq o'chirish uchun bu maydon alohida qo'shilgan
     # (CLAUDE.md 5 — "ma'lumot yo'qolmaydi": FK'lar PROTECT bo'lgani uchun
@@ -91,9 +102,43 @@ class User(AbstractUser):
             return "+998" + cleaned
         return cleaned
 
+    def has_app_permission(self, perm: str) -> bool:
+        if self.is_superuser or self.role in (Role.SUPER_ADMIN, Role.MANAGER):
+            return True
+        return bool(getattr(self, perm, False))
+
     def save(self, *args, **kwargs):
         if self.phone:
             self.phone = self.normalize_phone(self.phone)
+        if self._state.adding:
+            # Yangi xodim yaratilganda roliga mos standart ruxsatlarni belgilash
+            if self.role == Role.DISTRIBUTOR:
+                self.can_make_sales = True
+                self.can_take_orders = True
+                self.can_sell_on_debt = True
+                self.can_collect_debts = True
+                self.can_record_expenses = True
+                self.can_see_warehouse_stock = True
+            elif self.role == Role.ORDER_TAKER:
+                self.can_take_orders = True
+                self.can_see_warehouse_stock = True
+            elif self.role == Role.WAREHOUSE:
+                self.can_receive_stock = True
+                self.can_scan_invoices = True
+                self.can_see_warehouse_stock = True
+                self.can_take_orders = True
+                self.can_make_sales = True
+                self.can_sell_on_debt = True
+                self.can_collect_debts = True
+            elif self.role in (Role.SUPER_ADMIN, Role.MANAGER, Role.BRANCH_MANAGER):
+                self.can_receive_stock = True
+                self.can_take_orders = True
+                self.can_make_sales = True
+                self.can_sell_on_debt = True
+                self.can_collect_debts = True
+                self.can_record_expenses = True
+                self.can_see_warehouse_stock = True
+                self.can_scan_invoices = True
         super().save(*args, **kwargs)
 
 

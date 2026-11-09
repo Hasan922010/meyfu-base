@@ -26,56 +26,91 @@ const IMG = (name: string): string => `/help/${name}`;
 const common: RoleGuide = {
   id: 'ALL',
   label: 'Hamma uchun',
-  summary: 'Kirish, offline ishlash va umumiy qoidalar',
+  summary: 'Kirish, offline ishlash, qadoq birliklari va bonus qoidalari',
   sections: [
     {
-      title: 'Kirish (login)',
+      title: 'Kirish (Login) va PIN-kod',
       blocks: [
         {
           k: 'steps',
           items: [
-            'Ilova manzilini oching (brauzer yoki telefon).',
-            "Telefon raqami va parolni kiriting. Telefonni probel va tiresiz yozing: +998901234567",
-            '"Tizimga kirish" tugmasini bosing.',
+            'Ilova manzilini oching (kompyuter brauzeri yoki mobil telefon).',
+            'Telefon raqamingizni xalqaro formatda kiriting: +998901234567 (probel va tiresiz).',
+            'Parolingizni kiritib, "Tizimga kirish" tugmasini bosing.',
+            'Mobil ilovada birinchi kirishda 4 xonali tezkor PIN-kod o\'rnating — keyingi safar tez ochiladi.',
           ],
         },
         {
           k: 'note',
-          text: 'Parolni bilmasangiz yoki unutgan bo\'lsangiz — super admindan so\'rang. Faqat u parol o\'rnatadi.',
+          text: 'Parolni unutgan bo\'lsangiz, faqat Super Admin uni xodimlar bo\'limida o\'zgartirib bera oladi.',
         },
       ],
     },
     {
-      title: 'Internet yo\'q bo\'lsa (offline)',
+      title: 'Internet yo\'q bo\'lsa (Offline-First)',
       blocks: [
         {
           k: 'p',
-          text: 'Tarqatuvchi ilovasi internetsiz ham to\'liq ishlaydi. Sotuv, xarajat, qarz to\'lovi darhol saqlanadi — "Saqlandi" chiqadi.',
+          text: 'Tarqatuvchi va Zakazchi ilovalari internetsiz (podval, bozor, yo\'lda) ham 100% to\'liq ishlaydi. Har bir sotuv, buyurtma, xarajat yoki to\'lov telefon xotirasida xavfsiz saqlanadi.',
         },
         {
           k: 'list',
           items: [
-            'Online (yashil) — hammasi serverga yuborildi',
-            'Yuborilmoqda (sariq N) — N ta operatsiya navbatda',
-            'Offline (qizil N) — internet yo\'q, N ta saqlangan',
+            '🟢 Online — barcha operatsiyalar serverga to\'liq yetib borgan',
+            '🟡 Yuborilmoqda (N ta) — internet paydo bo\'ldi, N ta ma\'lumot serverga yuklanmoqda',
+            '🔴 Offline (N ta kutmoqda) — internet yo\'q, N ta operatsiya telefon xotirasida navbatda turibdi',
           ],
         },
         {
           k: 'p',
-          text: 'Internet paydo bo\'lganda hammasi avtomatik yuboriladi. Ilovani yopib qayta ochsangiz ham ma\'lumot yo\'qolmaydi.',
+          text: 'Internet ulanganda ma\'lumotlar avtomatik tarzda server bilan sinxronlanadi. Ilovani yopib qayta ochsangiz ham hech narsa yo\'qolmaydi.',
         },
         {
           k: 'note',
-          text: 'Har kuni internet bor joyda ilovani bir marta oching — katalog va narxlar yangilanadi.',
+          text: 'Har kuni ertalab internet bor joyda ilovani bir marta oching — yangi mahsulotlar, qoldiqlar va aksiyalar avtomatik yuklanadi.',
         },
       ],
     },
     {
-      title: 'Pul va tovar yozuvlari o\'chirilmaydi',
+      title: 'Yangi: Qadoq Birliklari Bo\'yicha Savdo',
       blocks: [
         {
           k: 'p',
-          text: 'Har bir sotuv, xarajat, tovar harakati, pul harakati doimiy saqlanadi. Xato bo\'lsa yozuv o\'chirilmaydi — tuzatuvchi yozuv qo\'shiladi (kim, qachon, nima sababdan). Barcha muhim o\'zgarishlar audit jurnaliga tushadi.',
+          text: 'Tovarlarni nafaqat dona, balki ulgurji qadoqlarda (karopka, qop, xalta, pachka) sotish va buyurtma qilish mumkin.',
+        },
+        {
+          k: 'list',
+          items: [
+            'Qadoq tanlash oynasida "Dona" yoki "Qadoq" tugmasini tanlang.',
+            'Masalan: 2 karopka kiritilganda (agar 1 karopkada 12 dona bo\'lsa), tizim 24 dona deb hisoblaydi va summani to\'g\'ri chiqaradi.',
+            'Ombor va mashina qoldig\'i doimo asosiy birlikda (donada) aniq kamayadi.',
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Yangi: Aksiya va Bepul Bonus Tovarlar',
+      blocks: [
+        {
+          k: 'p',
+          text: 'Kompaniyada e\'lon qilingan aksiyalar doirasida beriladigan bepul bonus tovarlar avtomatik hisoblanadi:',
+        },
+        {
+          k: 'list',
+          items: [
+            'Savatga tovar miqdori kiritilganda aksiya shartiga yetsa (masalan: 10 ta olganga 1 ta bepul), bepul tovar avtomatik savatga qo\'shiladi.',
+            'Bonus tovar narxi: 0 so\'m (BEPUL) deb aks etadi va yashil yorliq bilan ko\'rsatiladi.',
+            'Bonus tovar ombor va mashina qoldig\'idan aniq hisobdan chiqariladi — hech qanday kamomad vujudga kelmaydi.',
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Buxgalteriya Qat\'iyligi (Append-Only)',
+      blocks: [
+        {
+          k: 'p',
+          text: 'Har bir sotuv, pul harakati, xarajat va tovar harakati tizimda o\'zgarmas tarix sifatida saqlanadi. Xato yozuvlarni orqaga o\'chirib bo\'lmaydi — faqat sababi ko\'rsatilgan holda rasmiy tuzatuvchi operatsiya kiritiladi.',
         },
       ],
     },
@@ -84,214 +119,99 @@ const common: RoleGuide = {
 
 const distributor: RoleGuide = {
   id: 'DISTRIBUTOR',
-  label: 'Tarqatuvchi',
-  summary: 'Sotuv, xarajat, hamyon, kun yopish',
+  label: 'Tarqatuvchi (Haydovchi)',
+  summary: '5-tabli mobil ilova, sotuv, qadoq, aksiya bonuslari, kun yopish',
   sections: [
     {
-      title: 'Bosh sahifa',
+      title: 'Mobil Ilova Tuzilishi (5 ta Tab)',
       blocks: [
         {
           k: 'p',
-          text: 'Yuqorida — qo\'lingizdagi pul (jonli hisoblanadi) va bugungi ko\'rsatkichlar. Ikki katta tugma: "+ Yangi sotuv" va "Kunni yopish". Pastda barcha bo\'limlarga tez o\'tish.',
+          text: 'Ekranning pastki qismida 5 ta asosiy bo\'lim mavjud: Bosh (hamyon va ko\'rsatkichlar), Sotuv (yangi sotuv va tarix), Buyurtma (yetkazish zakazlari), Hamyon (xarajat va qarz undirish), Mijozlar (marshrut va GPS).',
         },
-        { k: 'img', src: IMG('dist-01-home.png'), caption: 'Tarqatuvchi bosh sahifasi' },
+        { k: 'img', src: IMG('dist-01-home.png'), caption: 'Tarqatuvchi bosh ekrani' },
       ],
     },
     {
-      title: 'Ertalab — yuklamani tasdiqlash',
+      title: 'Ertalab — Yuklamani Tasdiqlash',
       blocks: [
         {
           k: 'steps',
           items: [
-            '"Yuklama" ni oching — omborchi tayyorlagan tovar ro\'yxati.',
-            'Miqdorlarni haqiqiy olgan tovar bilan solishtiring.',
-            'To\'g\'ri bo\'lsa — "Tasdiqlash". Tovar "mashina qoldig\'ingizga" o\'tadi.',
+            'Bosh ekrandan "Yuklamalar" bo\'limini oching.',
+            'Omborchi tayyorlagan tovarlar ro\'yxati va qadoq miqdorlarini mashinaga yuklangan haqiqiy tovar bilan solishtiring.',
+            'Hammasi to\'g\'ri bo\'lsa — "Tasdiqlash" tugmasini bosing.',
+            'Tovar sizning moddiy javobgarligingizga ("mashina qoldig\'iga") o\'tadi.',
           ],
         },
-        { k: 'note', text: 'Farq bo\'lsa, tasdiqlashdan oldin omborchiga ayting.' },
+        { k: 'note', text: 'Farq bo\'lsa, tasdiqlashdan oldin omborchiga ayting va tuzatish kiriting.' },
       ],
     },
     {
-      title: 'Sotuv (30 soniya)',
+      title: 'Do\'konda — Tezkor Sotuv (Van-Sale)',
       blocks: [
-        { k: 'p', text: '"+ Yangi sotuv" → 4 qadam:' },
+        { k: 'p', text: '"+ Yangi sotuv" tugmasini bosing — jarayon 4 qadamda bajariladi:' },
         {
           k: 'steps',
           items: [
-            'Mijoz — marshrutdagi ro\'yxatdan tanlash.',
-            'Tovar — qidirib tanlash → miqdor (katta +/− yoki tez tugmalar) → narx (standart narx avtomatik).',
-            'To\'lov — Naqd / Plastik / Qarzga. Aralash bo\'lsa: qancha naqd, qolgani qarzga, muddat.',
-            'Saqlash — "Saqlandi" darhol chiqadi, chekni PDF qilib mijozga yuborish mumkin.',
+            'Mijoz — marshrutdagi do\'konni tanlang.',
+            'Tovar va Qadoq — mahsulotni tanlang, "Dona" yoki "Qadoq" (karopka) miqdorini kiriting. Formula avtomatik hisoblaydi.',
+            'Aksiya Bonusi — agar mahsulot aksiyada bo\'lsa, bepul bonus tovar avtomatik 0 so\'m bo\'lib savatga qo\'shiladi.',
+            'To\'lov — Naqd, Plastik yoki Qarzga (muddat bilan). Aralash to\'lov ham mumkin.',
+            'Saqlash — "✅ Saqlandi" chiqadi, chekni PDF qilib mijozga Telegram orqali yuborishingiz mumkin.',
           ],
         },
-        { k: 'img', src: IMG('dist-02-sale-client.png'), caption: '1-qadam: mijozni tanlash' },
-        { k: 'img', src: IMG('dist-03-sale-item.png'), caption: '2-qadam: tovar, miqdor, narx' },
+        { k: 'img', src: IMG('dist-02-sale-client.png'), caption: 'Mijoz va tovar tanlash' },
         {
           k: 'list',
           items: [
-            'Mashinada yo\'q tovarni sotib bo\'lmaydi ("Mashinada faqat 8 dona bor").',
-            'Minimal narxdan past sotib bo\'lmaydi (ruxsat bo\'lsa — sotiladi, adminga belgi boradi).',
-            'Bloklangan mijozga faqat naqd.',
+            'Mashina qoldig\'ida yo\'q tovar sotilmaydi.',
+            'Minimal narxdan past sotishga ruxsat faqat admin ruxsat bergan bo\'lsa ishlaydi.',
+            'Bloklangan mijozga faqat naqd savdo qilish mumkin.',
           ],
         },
       ],
     },
     {
-      title: 'Xarajat',
-      blocks: [
-        {
-          k: 'steps',
-          items: [
-            '"Xarajat" → "Yangi xarajat".',
-            'Kategoriya (ikonka) → summa (katta klaviatura, tez tugmalar).',
-            'Kamera orqali "Chek rasmidan summani olish" — AI summani o\'zi to\'ldiradi.',
-            'Yoqilg\'i uchun: litr, narx, odometr. Saqlash → qo\'lingizdagi pul kamayadi.',
-          ],
-        },
-        { k: 'img', src: IMG('dist-06-expense.png'), caption: 'Yangi xarajat' },
-        {
-          k: 'note',
-          text: 'Limitdan oshgan xarajat "kutilmoqda" holatida — admin tasdiqlaydi. Rad etilsa sababi ko\'rsatiladi.',
-        },
-      ],
-    },
-    {
-      title: 'Hamyon',
+      title: 'Hamyon, Xarajat va Qarz Undirish',
       blocks: [
         {
           k: 'p',
-          text: 'Jonli balans = naqd sotuv + undirilgan qarz − xarajat − topshirilgan. Barcha tranzaksiyalar ro\'yxati ko\'rinadi.',
+          text: 'Hamyon balansi = Naqd sotuv + Undirilgan qarz − Tasdiqlangan yo\'l xarajatlari − Kassaga topshirilgan pul.',
         },
-        { k: 'img', src: IMG('dist-05-wallet.png'), caption: 'Hamyon va tranzaksiyalar' },
-        {
-          k: 'p',
-          text: 'Pulni buxgalterga topshirganda — bu kun yopish paytida amalga oshiriladi (summa, foto, izoh).',
-        },
-      ],
-    },
-    {
-      title: 'Qarz undirish',
-      blocks: [
         {
           k: 'steps',
           items: [
-            '"Qarz undirish" — mijoz qarzlari (muddati o\'tganlar qizil).',
-            'Mijozni tanlab → to\'lov summasi → to\'lov turi → saqlash.',
-            'Undirilgan pul hamyonga (+) qo\'shiladi.',
+            'Xarajat: yoqilg\'i, tushlik, ta\'mirlash summasini kiriting. "Chek rasmidan summani olish" tugmasi AI bilan summani o\'zi to\'ldiradi.',
+            'Qarz undirish: mijozlar qarzidan to\'lov qabul qiling, naqd pul darhol hamyoningizga qo\'shiladi.',
           ],
         },
+        { k: 'img', src: IMG('dist-05-wallet.png'), caption: 'Hamyon va pul harakatlari' },
       ],
     },
     {
-      title: 'Mijozlar va tashriflar',
+      title: 'Kechqurun — Kunni Yopish (3 Bosqichli)',
+      blocks: [
+        { k: 'p', text: '"Kunni yopish" tugmasi bosilganda 3 bosqichli oyna ochiladi:' },
+        {
+          k: 'steps',
+          items: [
+            '1-bosqich (Tovar): Omborga qaytariladigan tovar miqdorini kiriting (yaroqli, brak, muddati o\'tgan). Tovar farqi darhol chiqadi.',
+            '2-bosqich (Pul): Kassaga topshiriladigan naqd pul summasini kiriting. Kassa farqi (kamomad) bo\'lsa, sababini izohlab yozing.',
+            '3-bosqich (Tasdiq): Yakuniy ma\'lumotlarni ko\'rib chiqib "Kunni yopish" tugmasini bosing.',
+          ],
+        },
+        { k: 'img', src: IMG('dist-04-dayclose.png'), caption: 'Kunni yopish vizardi' },
+      ],
+    },
+    {
+      title: 'Mening Maoshim va Hisobotlarim',
       blocks: [
         {
           k: 'list',
           items: [
-            'Mijozga kelganda GPS check-in qiling — joylashuv faqat ish vaqtida va tashrif/sotuv paytida yoziladi, kun bo\'yi kuzatilmaydi.',
-            'Sotuvsiz ketsangiz ham natijani belgilang: SOTUV / SOTUVSIZ / YOPIQ.',
-          ],
-        },
-      ],
-    },
-    {
-      title: 'Kechqurun — kunni yopish',
-      blocks: [
-        { k: 'p', text: '"Kunni yopish" → 3 qadam:' },
-        {
-          k: 'steps',
-          items: [
-            'Tovar — omborga qaytariladigan miqdorni kiriting (yaxshi / brak / muddat alohida). Tovar farqi darhol ko\'rinadi.',
-            'Pul — topshiriladigan naqd summasini kiriting. Kassa farqi darhol ko\'rinadi.',
-            'Tasdiq — "Kunni yopish". Shundan keyin o\'sha kunni o\'zgartirib bo\'lmaydi.',
-          ],
-        },
-        { k: 'img', src: IMG('dist-04-dayclose.png'), caption: 'Kun yopish — 1-qadam (Tovar)' },
-        {
-          k: 'note',
-          text: 'Kassa yoki tovar farqi bo\'lsa qo\'rqmang — izoh yozing. Bu jarima emas, tushuntirish. Admin ko\'rib chiqadi.',
-        },
-      ],
-    },
-    {
-      title: 'Mening hisobotim va maoshim',
-      blocks: [
-        {
-          k: 'list',
-          items: [
-            '"Mening hisobotim" — kun/hafta/oy: savdo, foyda, xarajat, foiz, taxminiy maosh, reja progressi.',
-            '"Mening maoshim" — sotuvdan foiz (zakaz + yetkazish alohida), bonus, ushlanmalar, yakuniy summa.',
-          ],
-        },
-      ],
-    },
-  ],
-};
-
-const warehouse: RoleGuide = {
-  id: 'WAREHOUSE',
-  label: 'Omborchi',
-  summary: 'Tovar qabuli, yuklash, qaytarish',
-  sections: [
-    {
-      title: 'Telefonda — tez ish',
-      blocks: [
-        {
-          k: 'list',
-          items: [
-            'Tovar qabuli — yetkazib beruvchi, nakladnoy №, sana → tovarlar → "Qabulni saqlash".',
-            'Naklit skani — nakladnoyni kamera bilan suratga oling, AI o\'qiydi, admin panelda tekshiriladi.',
-            'Ombor qoldig\'i — har tovarning joriy qoldig\'i.',
-            'Boshlang\'ich qoldiq — omborni tanlang, har tovarning haqiqiy miqdorini yozing va saqlang.',
-          ],
-        },
-        {
-          k: 'note',
-          text: 'Sifatli surat = kam tuzatish. Yorug\' joyda, tekis qo\'yib, to\'liq ramka ichiga.',
-        },
-      ],
-    },
-    {
-      title: 'Kompyuterda — Ombor bo\'limi',
-      blocks: [
-        {
-          k: 'p',
-          text: 'To\'rt bo\'lim: Qoldiq · Tovar qabullari (Kirim) · Yuklamalar · Inventarizatsiya. Inventarizatsiyada hujjat barcha tovarlar bilan to\'ldiriladi — sanab, haqiqiy qoldiqni kiriting va saqlang; tasdiqlashni menejer qiladi.',
-        },
-        { k: 'img', src: IMG('admin-06-warehouse.jpg'), caption: 'Ombor — qoldiq' },
-        {
-          k: 'p',
-          text: 'Kirim: "Yangi kirim" → yetkazib beruvchi, nakladnoy №, sana → tovarlar → saqlash. Tovar omborga tushadi, harakat jurnaliga yoziladi (o\'chirilmaydi). PDF / Pechat bilan chop etish mumkin.',
-        },
-      ],
-    },
-    {
-      title: 'Yuklama tayyorlash',
-      blocks: [
-        {
-          k: 'steps',
-          items: [
-            '"Yangi yuklama" → tarqatuvchi, ombor, sana.',
-            'Tovar va miqdorlarni kiriting (yoki admin "Buyurtmalar → Yuklamaga yig\'ish" dan tayyorlaydi).',
-            '"Yuborish" → tarqatuvchi telefonida ko\'radi.',
-            'Tarqatuvchi tasdiqlagandan keyin tovar uning "mashina qoldig\'iga" o\'tadi.',
-          ],
-        },
-        {
-          k: 'note',
-          text: 'Yuborishdan oldin miqdorlarni ikki marta tekshiring — tasdiqlangandan keyin o\'zgartirish qiyin.',
-        },
-      ],
-    },
-    {
-      title: 'Kechqurun — qaytarish qabuli',
-      blocks: [
-        {
-          k: 'steps',
-          items: [
-            'Tarqatuvchi telefonida qaytarish ro\'yxatini tuzadi (yaxshi / brak / muddat alohida).',
-            'Siz omborda tovarni sanab, qabul qilasiz.',
-            'Yaxshi tovar omborga qaytadi, brak alohida hisoblanadi. Tovar farqi avtomatik chiqadi.',
+            '"Mening maoshim" (/m/payroll) — yetkazib berganlik uchun % va zakaz olganlik uchun % bo\'yicha kunlik hisoblangan oylik maosh.',
+            '"Mening hisobotim" (/m/reports) — kunlik, haftalik va oylik sof savdo va reja bajarilish ko\'rsatkichlari.',
           ],
         },
       ],
@@ -301,35 +221,145 @@ const warehouse: RoleGuide = {
 
 const orderTaker: RoleGuide = {
   id: 'ORDER_TAKER',
-  label: 'Zakaz oluvchi',
-  summary: 'Mijozlardan buyurtma olish',
+  label: 'Zakaz Oluvchi (Pre-Seller)',
+  summary: 'Mijozlardan buyurtma olish, qadoqlar, aksiya bonuslari, ombor qoldig\'i',
   sections: [
     {
-      title: 'Buyurtma olish',
+      title: 'Zakazchining Asosiy Vazifasi',
       blocks: [
         {
-          k: 'steps',
-          items: [
-            '"Yangi buyurtma" yoki Mijozlar ro\'yxatidan mijozni bosing.',
-            'Tovar va miqdorlarni kiriting, to\'lov turini tanlang.',
-            'Saqlang — internet bo\'lmasa ham saqlanadi, keyin o\'zi yuboriladi.',
-          ],
-        },
-        {
-          k: 'note',
-          text: 'Buyurtmani menejer tasdiqlaydi, tovarni tarqatuvchi yetkazadi. Siz pul va tovar ushlamaysiz.',
+          k: 'p',
+          text: 'Savdo agenti (Pre-seller) marshrut bo\'ylab do\'konlarni aylanib sifatli buyurtma yig\'adi. Zakazchi tovar yuklamaydi va naqd pul yig\'maydi — yetkazish va pul qabul qilish haydovchi zimmasidadir.',
         },
       ],
     },
     {
-      title: 'Natijangiz',
+      title: 'Buyurtma Olish Jarayoni',
+      blocks: [
+        {
+          k: 'steps',
+          items: [
+            'Bosh ekrandagi "+ Yangi Buyurtma" tugmasini bosing va marshrutdagi do\'konni tanlang (GPS check-in avtomatik).',
+            'Tovar qidirib tanlang. "Dona" yoki "Qadoq" (karopka, pachka) tanlang — tizim qadoqni donaga ko\'paytirib summani hisoblaydi.',
+            'Aksiya bonuslari — agar aksiya bo\'lsa, bepul bonus tovar avtomatik 0 so\'m narxda savatga tushadi.',
+            'To\'lov sharti va kutilgan yetkazish sanasini belgilab, "Buyurtmani saqlash" tugmasini bosing.',
+          ],
+        },
+        {
+          k: 'note',
+          text: 'Internet yo\'q joyda ham buyurtma oling — internet paydo bo\'lishi bilan serverga avtomatik jo\'natiladi.',
+        },
+      ],
+    },
+    {
+      title: 'Ombor Qoldig\'i Monitoringi (/m/stock)',
+      blocks: [
+        {
+          k: 'p',
+          text: 'Do\'konga kirishdan oldin "Ombor qoldig\'i" bo\'limini tekshiring. Omborda tugagan tovarlarga buyurtma olmang, aks holda haydovchi yetkaza olmaydi.',
+        },
+      ],
+    },
+    {
+      title: 'Buyurtmalar Holati va Komissiya Foizi',
       blocks: [
         {
           k: 'list',
           items: [
-            'Bosh sahifa — bugungi buyurtmalar soni va summasi.',
-            'Buyurtmalar — siz olgan buyurtmalar va ularning holati.',
-            'Maosh — zakaz olgani uchun foizingiz bilan taxminiy maosh.',
+            'Buyurtma holatlari: Kutilmoqda → Tasdiqlandi → Yuklamaga kiritildi → Yetkazilmoqda → Yetkazildi (sotuv bo\'ldi).',
+            'Sizga hisoblangan komissiya aynan buyurtma yetkazilganda "Zakaz olgani uchun %" bo\'yicha to\'liq yoziladi.',
+            '"Mening maoshim" bo\'limida har kuni qancha komissiya ishlaganingizni jonli kuzatishingiz mumkin.',
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+const warehouse: RoleGuide = {
+  id: 'WAREHOUSE',
+  label: 'Omborchi (Ombor Mudiri)',
+  summary: 'Kirim, AI naklit skani, yuklamalar, buyurtma olish va tarqatish',
+  sections: [
+    {
+      title: 'Yangi: Mobil Buyurtma Olish va Tarqatish (Sotuv)',
+      blocks: [
+        {
+          k: 'p',
+          text: 'Omborchi smartfon orqali bevosita savdo do‘konlaridan buyurtma olishi va tovarlarni tarqatishi (sotishi) mumkin:',
+        },
+        {
+          k: 'list',
+          items: [
+            '+ Yangi Tarqatish / Sotuv — do\'konga tovar yetkazib sotish, qadoq tanlash (dona/karopka) va avtomatik aksiya bonuslari (0 so\'m).',
+            '+ Buyurtma Olish — mijozlardan buyurtma qabul qilish va "Buyurtmalarim" bo\'limida holatini kuzatish.',
+            'Tarqatish Yuklamalari — mashinaga yuklangan tovarlar va tarqatish varaqasi.',
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Tovar Qabuli (Kirim Nakladnoy)',
+      blocks: [
+        {
+          k: 'steps',
+          items: [
+            'Kompyuterda: Ombor → Kirim → "+ Yangi Kirim".',
+            'Yetkazib beruvchi tashkilot, nakladnoy raqami va sanasini kiriting.',
+            'Tovarlarni qadoq (karopka) va dona miqdorida kirim tannarxi bilan kiriting.',
+            'Saqlang — tovar ombor zaxirasiga qo\'shiladi va o\'zgarmas harakat jurnaliga yoziladi. PDF nakladnoy chop etish mumkin.',
+          ],
+        },
+      ],
+    },
+    {
+      title: 'AI Naklit Skani (OCR)',
+      blocks: [
+        {
+          k: 'p',
+          text: 'Qog\'oz nakladnoyni qo\'lda terib o\'tirmaslik uchun mobil telefonda "Naklit skani" tugmasini bosing va suratga oling. AI jadvaldagi tovar nomlari, qadoqlar, miqdorlar va narxlarni bir necha soniyada o\'qib oladi. Admin panelda tekshirib bitta tugma bilan Kirimga o\'tkazasiz.',
+        },
+      ],
+    },
+    {
+      title: 'Yuklamalar (Haydovchiga Tovar Berish)',
+      blocks: [
+        {
+          k: 'steps',
+          items: [
+            'Buyurtmalardan yig\'ish: tasdiqlangan buyurtmalarni avtomatik bitta yuklamaga komplektatsiya qiling.',
+            'Erkin yuklama: haydovchi va tovarlarni tanlab yangi yuklama tuzing.',
+            'Yuklama varaqasini (PDF) chop etib haydovchiga imzo chektiring.',
+            'Haydovchi telefonida tasdiqlagach, tovar ombordan chiqib uning mashina qoldig\'iga o\'tadi.',
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Kechqurun — Qaytarish Qabuli va Bonuslar Hisobi',
+      blocks: [
+        {
+          k: 'steps',
+          items: [
+            'Haydovchi kunni yopganda mashinada qolgan tovarlarni omborga qaytaradi.',
+            'Yaroqli tovar, brak (yaroqsiz) va muddati o\'tgan tovarlarni sanab qabul qiling.',
+            'Tovar farqi = Yuklangan − Sotilgan (pullik va bepul bonuslar) − Qaytarilgan.',
+          ],
+        },
+        {
+          k: 'note',
+          text: 'Aksiya doirasida bepul berilgan bonus tovarlar ham qoldiqdan xuddi sotilgan tovardek aniq chiqadi — qoldiqda farq bo\'lmaydi.',
+        },
+      ],
+    },
+    {
+      title: 'Ombor Qoldiqlari va Inventarizatsiya',
+      blocks: [
+        {
+          k: 'list',
+          items: [
+            'Qoldiqlar sahifasida kam qolgan tovarlar qizil ogohlantirish bilan ko\'rinadi.',
+            'Inventarizatsiya: haqiqiy qoldiq sanaladi, tizimdagi farqlar aniqlanadi va tasdiqlangach tuzatuvchi akt tuziladi.',
           ],
         },
       ],
@@ -339,187 +369,84 @@ const orderTaker: RoleGuide = {
 
 const admin: RoleGuide = {
   id: 'SUPER_ADMIN',
-  label: 'Super admin / Menejer',
-  summary: 'Admin panelning barcha bo\'limlari',
+  label: 'Super Admin / Menejer',
+  summary: '5 guruhli boshqaruv, mahsulotlar, aksiyalar, xodimlar, 6 xil hisobot',
   sections: [
     {
-      title: 'Birinchi sozlash tartibi',
-      blocks: [
-        {
-          k: 'steps',
-          items: [
-            'Sozlamalar → Kompaniya rekvizitlari (nom, STIR, manzil, bank, logo, muhr).',
-            'Ma\'lumotnomalar — omborlar, yetkazib beruvchilar, birliklar, kategoriyalar, xarajat kategoriyalari.',
-            'Mahsulotlar — har bir tovar: nom, kategoriya, narxlar, rasm.',
-            'Xodimlar — tarqatuvchi, omborchi, menejer, buxgalter.',
-            'Marshrutlar — har tarqatuvchiga marshrut, unga mijozlar.',
-            'Ombor → Kirim — boshlang\'ich tovar qoldig\'i.',
-          ],
-        },
-        {
-          k: 'note',
-          text: 'Menejer quyidagilarga ruxsatsiz: narx/foizni o\'zgartirish, xodim yaratish, sozlamalar, maosh tasdiqlash.',
-        },
-      ],
-    },
-    {
-      title: 'Boshqaruv paneli',
-      blocks: [
-        {
-          k: 'p',
-          text: 'Jonli ko\'rsatkichlar: bugungi savdo, foyda, naqd, xarajat, tashriflar, jonli lenta, xaritada tarqatuvchilar. Diqqat belgilar (qizil/sariq): narxdan past sotuv, limitdan oshgan xarajat, katta kassa farqi, kam qolgan tovar.',
-        },
-        { k: 'img', src: IMG('admin-01-dashboard.jpg'), caption: 'Boshqaruv paneli' },
-      ],
-    },
-    {
-      title: 'Mahsulotlar',
+      title: '5 Guruhli Yangi Qulay Navigatsiya',
       blocks: [
         {
           k: 'list',
           items: [
-            'Narxlar: tannarx, optom, chakana, minimal narx (bundan past sotib bo\'lmaydi).',
-            'Rasm galereyasi: bir nechta rasm, birinchisi asosiy. Tarqatuvchi tovarni rasmi bilan ko\'radi.',
-            'Narx o\'zgarishi tarixga va audit jurnaliga yoziladi. Faqat SUPER_ADMIN o\'zgartiradi.',
+            '1. Tezkor & Monitoring — Jonli Boshqaruv Paneli, Xarita (GPS) va Jonli Lenta.',
+            '2. Savdo & Mijozlar — Yangi Sotuv, Sotuvlar tarixi, Buyurtmalar va Mijozlar.',
+            '3. Ombor & Logistika — Ombor Qoldig\'i, Kirim (nakladnoy), Yuklamalar, AI Naklit Skani va Inventarizatsiya.',
+            '4. Moliya & Hisobotlar — Kassa Balansi, Kunlik Hisob-Kitob, Mijozlar Qarzdorligi, Xarajatlar va barcha Kengaytirilgan Hisobotlar.',
+            '5. Jamoa & Sozlamalar — Mahsulotlar Katalogi, Xodimlar & Filiallar, Maosh (Payroll), Tizim Salomatligi va Sinxronizatsiya Audit Jurnali.',
           ],
         },
-        { k: 'img', src: IMG('admin-07-products.jpg'), caption: 'Mahsulotlar ro\'yxati' },
       ],
     },
     {
-      title: 'Ombor',
-      blocks: [
-        {
-          k: 'p',
-          text: 'Qoldiq · Kirim · Yuklamalar. Kirim: yetkazib beruvchi + nakladnoy № + tovarlar → omborga tushadi. Yuklama: tarqatuvchiga tovar → u telefonda tasdiqlaydi.',
-        },
-        { k: 'img', src: IMG('admin-06-warehouse.jpg'), caption: 'Ombor — qoldiq' },
-      ],
-    },
-    {
-      title: 'Naklit skani (OCR)',
-      blocks: [
-        {
-          k: 'p',
-          text: 'Omborchi yuklagan naklit rasmlari shu yerga tushadi. Tekshirish ekranida: chapda rasm, o\'ngda tahrirlanadigan jadval (past ishonchli kataklar sariq). Har qatorni katalogdagi tovarga moslang → tasdiq → avtomatik Kirim.',
-        },
-        {
-          k: 'note',
-          text: 'Aniqlik 85% dan past bo\'lsa — qo\'lda kiritish tezroq. "Ombor → Kirim" dan foydalaning.',
-        },
-      ],
-    },
-    {
-      title: 'Sotuvlar va Buyurtmalar',
-      blocks: [
-        {
-          k: 'p',
-          text: 'Sotuvlar: filtr (sana, tarqatuvchi, mijoz, to\'lov), tafsilot, bekor qilish (sabab bilan), Excel eksport. Narxdan past yoki qarz limitidan oshgan sotuvlar belgilangan.',
-        },
-        { k: 'img', src: IMG('admin-02-sales.jpg'), caption: 'Sotuvlar jadvali' },
-        {
-          k: 'p',
-          text: 'Buyurtmalar: tarqatuvchi yiqqan zakazlarni tasdiqlash yoki bekor qilish. "Yuklamaga yig\'ish" — tasdiqlangan buyurtmalarni bitta yuklamaga birlashtirish.',
-        },
-      ],
-    },
-    {
-      title: 'Xarajatlar',
+      title: 'Mahsulotlar, Narxlar va Qadoq Birligi',
       blocks: [
         {
           k: 'list',
           items: [
-            'Har biri: summa, kategoriya, chek rasmi, joylashuv.',
-            'Tasdiqlash / Rad etish. Rad etsangiz sababini yozing — tarqatuvchi ko\'radi.',
-            'Limitdan oshganlar "kutilmoqda" holatida, ajratib ko\'rsatiladi.',
+            'Yagona tannarx (cost_price): tovarning haqiqiy tannarxi.',
+            'Sotuv narxlari: Standart optom narx, chakana narx va minimal narx (ruxsatsiz bundan past sotib bo\'lmaydi).',
+            'Qadoq birligi: mahsulot qadog\'i nomi (karopka, pachka, qop) va bitta qadoqdagi dona soni (masalan 1 karopka = 12 dona).',
           ],
         },
+        { k: 'img', src: IMG('admin-07-products.jpg'), caption: 'Mahsulotlar katalogi' },
       ],
     },
     {
-      title: 'Kunlik hisob-kitob',
+      title: 'Aksiya va Bepul Bonus Tovarlar Sozlamasi',
       blocks: [
         {
           k: 'p',
-          text: 'Tarqatuvchi kunni yopganda shu yerga tushadi. Jadval: har kun bo\'yicha kassa farqi va tovar farqi. "Faqat farqli kunlar" filtri. Qatorni oching → tafsilot → "Tasdiqlash". Keyin faqat SUPER_ADMIN, sabab bilan tahrirlaydi.',
-        },
-        {
-          k: 'p',
-          text: 'kutilgan naqd = naqd sotuv + undirilgan qarz − tasdiqlangan naqd xarajatlar. kassa farqi = topshirilgan − kutilgan (manfiy = kamomad).',
+          text: 'Har bir mahsulot kartasida aksiya shartlarini belgilash mumkin: qaysi tovardan minimal qancha sotib olinsa, qaysi tovardan qancha miqdor bepul bonus berilishi. Masalan: 10 ta Shokoladga + 1 ta Shokolad yoki + 1 ta Choy bepul. Ilovada barcha hisob-kitob avtomatik ishlaydi.',
         },
       ],
     },
     {
-      title: 'Qarzdorlik va Moliya',
-      blocks: [
-        {
-          k: 'p',
-          text: 'Qarzdorlik: yoshi bo\'yicha tahlil (0–7, 8–14, 15–30, 30+ kun), muddati o\'tganlar alohida, to\'lov qabul qilish, eslatma. Moliya: kassa balansi, tushum, yalpi foyda, kassa harakatlari (append-only), kompaniya xarajatlari.',
-        },
-        { k: 'img', src: IMG('admin-08-debts.jpg'), caption: 'Qarzdorlik — aging' },
-      ],
-    },
-    {
-      title: 'Xodimlar',
+      title: 'Xodimlar va Ikki Bosqichli Maosh Stavkalari',
       blocks: [
         {
           k: 'list',
           items: [
-            'Qo\'shish: telefon (login), F.I.SH., rol, parol, passport, ishga kirgan sana.',
-            'Tarqatuvchi profili: "Zakaz olgani uchun %" va "Yetkazib bergani uchun %" — ikki bosqichli komissiya. "Komissiya %" (eski) — yuqoridagi ikkitasi 0 bo\'lsagina ishlatiladi.',
-            'Asosiy maosh, oylik reja, qarz limiti, kunlik xarajat limiti, "minimal narxdan past sotishga ruxsat".',
-            'Bloklash / Faollashtirish, parol o\'rnatish — faqat SUPER_ADMIN.',
+            'Zakaz olgani uchun % — buyurtma oluvchi agentlar uchun stavka (masalan 2.5%).',
+            'Yetkazib bergani uchun % — haydovchi-tarqatuvchilar uchun stavka (masalan 1.5%).',
+            'Fiks asosiy oylik maosh (oklad) — omborchi, buxgalter va boshqa xodimlar uchun.',
+            'Kunlik xarajat limiti, ruxsat etilgan qarz limiti va minimal narxdan past sotish ruxsati.',
           ],
         },
-        { k: 'img', src: IMG('admin-03-staff-commission.png'), caption: 'Xodim formasi — komissiya foizlari' },
+        { k: 'img', src: IMG('admin-03-staff-commission.png'), caption: 'Xodim komissiya stavkalari' },
       ],
     },
     {
-      title: 'Tarqatuvchilar 360°',
-      blocks: [
-        {
-          k: 'p',
-          text: 'Har tarqatuvchi uchun to\'liq ko\'rinish. Davr tanlagich (Bugun / Hafta / Oy / ...). KPI kartalar oldingi davr bilan ▲▼. Tablar: Umumiy, Pul harakati (farqli kunlar qizil), Sotuvlar, Xarajatlar, Mijozlar, Mahsulotlar, Qarzdorlik, Kunlik jurnal, Maosh. Eksport: Excel / PDF.',
-        },
-        { k: 'img', src: IMG('admin-05-card360.jpg'), caption: '360° xodim kartasi' },
-      ],
-    },
-    {
-      title: 'Maosh',
-      blocks: [
-        {
-          k: 'steps',
-          items: [
-            'Davr tanlang → "Hisoblash".',
-            'Har tarqatuvchi: sotuvdan foiz (zakaz + yetkazish alohida), bonus, ushlanmalar (kamomad, kassa farqi, avans), xarajat qaytarimi, yakuniy summa.',
-            'Tekshiring → "Tasdiqlash" → to\'lovdan keyin "To\'landi".',
-          ],
-        },
-        { k: 'img', src: IMG('admin-04-payroll.jpg'), caption: 'Maosh hisoblash' },
-        {
-          k: 'note',
-          text: '"Komissiya qoidalari" tabi — eski bir bosqichli tizim uchun; zakaz/yetkazish bo\'linishiga ta\'sir qilmaydi. Maoshni tasdiqlash — SUPER_ADMIN yoki BUXGALTER.',
-        },
-      ],
-    },
-    {
-      title: 'Hisobotlar va Tizim salomatligi',
+      title: 'Kengaytirilgan Hisobotlar (6 xil)',
       blocks: [
         {
           k: 'list',
           items: [
-            'Hisobotlar: Konstruktor (o\'lchov + filtr), ABC tahlil (Pareto), Foyda-zarar. Excel / PDF eksport.',
-            'Tizim salomatligi: xizmatlar holati, butunlik tekshiruvi (balans = jurnal), backup holati, sinxronizatsiya ziddiyatlari.',
+            'Tovar harakati (Sotuv / Bonus) — pullik sotilgan tovarlar va aksiya bo\'yicha bepul berilgan bonus tovarlar donasi va tannarx qiymati bo\'yicha aniq hisobot (Excel eksport bilan).',
+            'P&L (Foyda va Zarar) — yalpi tushum, tannarx, yalpi foyda, yo\'l va operatsion xarajatlar, sof foyda.',
+            'ABC Tahlil — Pareto 80/20 qoidasi bo\'yicha eng ko\'p daromad keltiruvchi tovarlar.',
+            'Hisobotlar Konstruktori — erkin o\'lchovlar va filtrlar bo\'yicha tahliliy jadval.',
+            'Mijozlar Qarzdorligi (Aging) — 0-7, 8-14, 15-30, 30+ kunlik qarzlar va Akt-sverka PDF.',
+            'Kunlik hisob-kitob jurnali — kassa va tovar farqlari nazorati.',
           ],
         },
       ],
     },
     {
-      title: 'Telegram bot',
+      title: 'Tizim Salomatligi va Audit Jurnali (/admin/sync-log)',
       blocks: [
         {
           k: 'p',
-          text: 'Sozlamalar → Telegram orqali ulang. Har kuni 20:00 da kunlik xulosa keladi. Darhol ogohlantirish: narxdan past sotuv, limitdan oshgan xarajat, katta kassa farqi, kam qolgan tovar.',
+          text: 'Tizim xizmatlari holati, kassa balansining jurnallar bilan butunligi, mobil ilovalar sinxronizatsiyasi audit jurnali (/admin/sync-log) orqali to\'liq nazorat qilinadi.',
         },
       ],
     },
@@ -528,67 +455,67 @@ const admin: RoleGuide = {
 
 const accountant: RoleGuide = {
   id: 'ACCOUNTANT',
-  label: 'Buxgalter',
-  summary: 'Kassa, qarzdorlik, maosh, eksport',
+  label: 'Buxgalter / Kassir',
+  summary: 'Kassa jurnali, qarzdorlik, Akt-sverka, Tovar harakati hisoboti, maosh',
   sections: [
     {
-      title: 'Moliya',
+      title: 'Moliya va Kassa Harakatlari',
       blocks: [
         {
           k: 'list',
           items: [
-            'Umumiy: kassa balansi, tushum, yalpi foyda, tarqatuvchi va kompaniya xarajatlari.',
-            'Kassa: barcha pul kirim/chiqim harakatlari — o\'zgarmas jurnal (append-only).',
-            'Kompaniya xarajatlari: ijara, ish haqi fondi va h.k. qo\'shish.',
+            'Kassa balansi: naqd pul va bank hisob raqami qoldiqlari.',
+            'O\'zgarmas kassa jurnali (Append-only): barcha kirim, chiqim va tuzatish yozuvlari xavfsiz saqlanadi, o\'chirib bo\'lmaydi.',
+            'Haydovchilar kunni yopganda topshirgan naqd pullarni tekshirish va qabul qilish.',
+            'Kompaniya operatsion xarajatlarini (ijara, kommunal, oylik avanslar) kiritish.',
           ],
         },
       ],
     },
     {
-      title: 'Qarzdorlik',
+      title: 'Mijozlar Qarzdorligi va Akt-Sverka (PDF)',
       blocks: [
         {
           k: 'p',
-          text: 'Yoshi bo\'yicha tahlil (aging): 0–7, 8–14, 15–30, 30+ kun. Muddati o\'tganlar alohida. Mijoz bo\'yicha to\'lov qabul qilish, eslatma. To\'lov kiritilganda qarz holati yangilanadi (ACTIVE → PARTIAL → PAID).',
+          text: 'Debitorlik qarzdorligi yoshi bo\'yicha (Aging: 0–7, 8–14, 15–30, 30+ kun) monitoring qilinadi. Har bir mijoz bo\'yicha to\'liq solishtirma dalolatnoma (Akt-sverka) bir marta bosishda PDF formatida chop etiladi (xaridlar, to\'lovlar va yakuniy qarz qoldig\'i bilan).',
         },
-        { k: 'img', src: IMG('admin-08-debts.jpg'), caption: 'Qarzdorlik — aging' },
+        { k: 'img', src: IMG('admin-08-debts.jpg'), caption: 'Qarzdorlik — aging tahlili' },
       ],
     },
     {
-      title: 'Xarajatlar',
+      title: 'Yangi: Tovar Harakati (Sotuv va Bonuslar Hisoboti)',
       blocks: [
         {
           k: 'p',
-          text: 'Tarqatuvchilarning yo\'l xarajatlarini ko\'rish: summa, kategoriya, chek rasmi, holat. Tasdiqlangan naqd xarajatlar tarqatuvchining "kutilgan naqd" hisobiga ta\'sir qiladi.',
+          text: 'Hisobotlar bo\'limidagi "Tovar harakati (Sotuv / Bonus)" jadvali orqali pullik sotilgan tovarlar va bepul berilgan bonus tovarlar tahlil qilinadi. Bepul bonuslarning kompaniyaga tushgan tannarx qiymati (marketing xarajati) aniq ko\'rinadi. Ma\'lumotlarni Excel (.xlsx) formatida yuklab olish mumkin.',
         },
       ],
     },
     {
-      title: 'Maosh',
+      title: 'Ikki Bosqichli Oylik Maosh (Payroll)',
       blocks: [
         {
           k: 'steps',
           items: [
-            'Davr tanlang → "Hisoblash".',
-            'Har tarqatuvchi: sotuvdan foiz (zakaz + yetkazish alohida), bonus, ushlanmalar (kamomad, kassa farqi, avans), xarajat qaytarimi, yakuniy summa.',
-            'Tekshiring → "Tasdiqlash" → to\'lovdan keyin "To\'landi".',
+            'Davrni tanlang va "Hisoblash" tugmasini bosing.',
+            'Zakazchilar uchun "Zakaz %", haydovchilar uchun "Yetkazish %", boshqa xodimlar uchun fiks maosh hisoblanadi.',
+            'Ushlanmalar (kassa kamomadi, avanslar) avtomatik chegiriladi.',
+            'Vedomostni tekshirib "Tasdiqlash" va to\'langach "To\'landi" maqomiga o\'tkazing.',
           ],
         },
-        { k: 'img', src: IMG('admin-04-payroll.jpg'), caption: 'Maosh hisoblash' },
-        {
-          k: 'note',
-          text: 'Tasdiqlashdan oldin kamomad va kassa farqi kunlarini 360° kartadan tekshiring. Avanslar keyingi maoshdan avtomatik ushlanadi.',
-        },
+        { k: 'img', src: IMG('admin-04-payroll.jpg'), caption: 'Oylik maosh hisoblash oynasi' },
       ],
     },
     {
-      title: 'Hisobotlar va eksport',
+      title: 'Foyda-Zarar (P&L) va 1C Eksport',
       blocks: [
         {
-          k: 'p',
-          text: 'Konstruktor (o\'lchov + filtr), ABC tahlil (80/20), Foyda-zarar (P&L). Har bir hisobot va 360° xodim kartasini Excel / PDF ga yuklab olish mumkin.',
+          k: 'list',
+          items: [
+            'Foyda va Zarar (P&L): yalpi tushum, tovarlar tannarxi, transport va operatsion xarajatlar, sof foyda.',
+            'Barcha kunlik operatsiyalar va nakladnoylarni 1C dasturiga import qilish uchun standart formatlarda yuklab olish.',
+          ],
         },
-        { k: 'img', src: IMG('admin-05-card360.jpg'), caption: '360° xodim kartasi — oyni yakunlashda qulay' },
       ],
     },
   ],

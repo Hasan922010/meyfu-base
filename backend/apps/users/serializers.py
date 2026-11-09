@@ -30,6 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
     warehouse_name = serializers.CharField(
         source="warehouse.name", read_only=True, default=None
     )
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -38,8 +39,24 @@ class UserSerializer(serializers.ModelSerializer):
             "passport_series", "address", "hire_date",
             "is_active", "last_seen_at", "telegram_chat_id",
             "distributor_profile", "warehouse", "warehouse_name",
+            "can_receive_stock", "can_take_orders", "can_make_sales",
+            "can_sell_on_debt", "can_collect_debts", "can_record_expenses",
+            "can_see_warehouse_stock", "can_scan_invoices",
+            "permissions",
         )
         read_only_fields = ("id", "last_seen_at", "role", "warehouse")
+
+    def get_permissions(self, obj) -> dict[str, bool]:
+        return {
+            "can_receive_stock": obj.has_app_permission("can_receive_stock"),
+            "can_take_orders": obj.has_app_permission("can_take_orders"),
+            "can_make_sales": obj.has_app_permission("can_make_sales"),
+            "can_sell_on_debt": obj.has_app_permission("can_sell_on_debt"),
+            "can_collect_debts": obj.has_app_permission("can_collect_debts"),
+            "can_record_expenses": obj.has_app_permission("can_record_expenses"),
+            "can_see_warehouse_stock": obj.has_app_permission("can_see_warehouse_stock"),
+            "can_scan_invoices": obj.has_app_permission("can_scan_invoices"),
+        }
 
 
 class UserWriteSerializer(serializers.ModelSerializer):
@@ -67,6 +84,9 @@ class UserWriteSerializer(serializers.ModelSerializer):
             "id", "phone", "full_name", "role", "passport_series", "address",
             "hire_date", "is_active", "password", "distributor_profile",
             "opening_balance", "warehouse", "warehouse_name",
+            "can_receive_stock", "can_take_orders", "can_make_sales",
+            "can_sell_on_debt", "can_collect_debts", "can_record_expenses",
+            "can_see_warehouse_stock", "can_scan_invoices",
         )
         read_only_fields = ("id",)
         extra_kwargs = {"phone": {"validators": []}}  # normalizatsiya validate_phone'da

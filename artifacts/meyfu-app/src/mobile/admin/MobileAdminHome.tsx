@@ -95,15 +95,15 @@ export function MobileAdminHome(): ReactElement {
         </Link>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2.5">
         {LINKS.map((l) => (
           <Link
             key={l.to}
             to={l.to}
-            className="flex flex-col items-center gap-1 rounded-xl bg-white p-3 text-center text-xs shadow-sm dark:bg-gray-900"
+            className="flex flex-col items-center gap-1.5 rounded-2xl bg-white p-3.5 text-center text-xs font-bold shadow-xs border border-gray-100 dark:border-gray-800 dark:bg-gray-900 active:scale-95 transition"
           >
-            <l.Icon size={22} className="text-brand" aria-hidden />
-            {l.label}
+            <l.Icon size={24} className="text-brand" aria-hidden />
+            <span>{l.label}</span>
           </Link>
         ))}
       </div>

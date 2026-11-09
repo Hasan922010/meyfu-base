@@ -132,11 +132,18 @@ class SaleItem(BaseModel):
     amount = models.DecimalField(_("summa"), **_MONEY, default=_ZERO)
     profit = models.DecimalField(_("foyda"), **_MONEY, default=_ZERO)
     below_min_price = models.BooleanField(_("minimal narxdan past"), default=False)
+    is_bonus = models.BooleanField(_("bonus tovar (bepul)"), default=False, db_index=True)
 
     class Meta:
         verbose_name = _("sotuv qatori")
         verbose_name_plural = _("sotuv qatorlari")
         ordering = ("created_at",)
+        indexes = [
+            models.Index(
+                fields=["sale", "is_bonus", "product"],
+                name="saleitem_sale_bonus_prod_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.product.sku} × {self.quantity}"

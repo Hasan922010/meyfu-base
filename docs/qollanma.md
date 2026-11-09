@@ -1,84 +1,107 @@
-# MeyFu — Foydalanish qo'llanmasi
+# 📖 MeyFu Tizimi — To'liq Foydalanish Qo'llanmasi (User Manual)
 
-Bu qo'llanma har bir rol uchun alohida bo'limlarga bo'lingan. O'zingizga tegishlisini oching:
-
-| Rol | Qo'llanma | Qurilma |
-|---|---|---|
-| Super admin / Menejer | [`qollanma-admin.md`](./qollanma-admin.md) | Kompyuter (brauzer) |
-| Omborchi | [`qollanma-omborchi.md`](./qollanma-omborchi.md) | Kompyuter yoki telefon |
-| Tarqatuvchi (agent) | [`qollanma-tarqatuvchi.md`](./qollanma-tarqatuvchi.md) | Telefon (mobil ilova) |
-| Buxgalter | [`qollanma-buxgalter.md`](./qollanma-buxgalter.md) | Kompyuter (brauzer) |
+> **Versiya:** 5.2 (Yangi Qadoq Birliklari, Aksiya/Bonus Tizimi va 5-Menyuli UI/UX)  
+> **Loyiha:** MeyFu (`meyfu-base`) — Tarqatish, Savdo va Ombor Boshqaruvi Tizimi (ERP / WMS / SFA)  
+> **Tili:** O'zbek tili (Lotin)  
+> **Qurilmalar:** Kompyuter (Desktop brauzer), Planshet va Smartfonlar (Android/iOS PWA)
 
 ---
 
-## Hamma uchun umumiy qoidalar
+## 📌 Qo'llanma Mundarijasi
 
-### 1. Kirish (login)
+MeyFu tizimi korxonadagi har bir xodimning roliga moslashtirilgan. O'z rolingizga tegishli bo'limni tanlang:
 
-1. Brauzerda yoki telefonda ilova manzilini oching.
-2. **Telefon raqami** va **parol** ni kiriting.
-   - Telefonni **probel va tiresiz** yozing: `+998901234567`
-3. "Kirish" tugmasini bosing.
-4. Keyingi safar telefonda ilova sizni eslab qoladi (PIN so'raydi).
+| Rol | Kimlar uchun | Asosiy Qurilma | Maxsus Qo'llanma Hujjati |
+|---|---|---|---|
+| 👑 **Super Admin & Menejer** | Korxona rahbari, tijorat direktori, boshqaruvchilar | Kompyuter / Noutbuk | [`qollanma-admin.md`](./qollanma-admin.md) |
+| 🚚 **Tarqatuvchi (Haydovchi)** | Yetkazib beruvchi haydovchilar, van-sale tarqatuvchilar | Mobil telefon / PWA | [`qollanma-tarqatuvchi.md`](./qollanma-tarqatuvchi.md) |
+| 📝 **Zakaz Oluvchi (Agent)** | Do'konma-do'kon yurib buyurtma oluvchi savdo agentlari | Mobil telefon / PWA | [`qollanma-zakazchi.md`](./qollanma-zakazchi.md) |
+| 📦 **Omborchi** | Markaziy va filial ombor mudirlari, qabul qiluvchilar | Kompyuter / Mobil | [`qollanma-omborchi.md`](./qollanma-omborchi.md) |
+| 💰 **Buxgalter & Kassir** | Bosh buxgalter, kassa xodimlari, moliya tahlilchilari | Kompyuter (brauzer) | [`qollanma-buxgalter.md`](./qollanma-buxgalter.md) |
 
-Parolni bilmasangiz yoki unutgan bo'lsangiz — **super admindan** so'rang. Faqat u parol
-o'rnatadi/almashtiradi.
+---
 
-### 2. Rollar nima qila oladi
+## 🔑 Hamma Uchun Umumiy Qoidalar
 
-| | Super admin | Menejer | Omborchi | Tarqatuvchi | Buxgalter |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Sozlama, narx, foiz, xodim | ✅ | — | — | — | — |
-| Tovar / katalog | ✅ | ✅ | ko'radi | ko'radi | ko'radi |
-| Kirim (nakladnoy) | ✅ | ✅ | ✅ | — | ko'radi |
-| Yuklash | ✅ | ✅ | ✅ | tasdiqlaydi | — |
-| Sotuv | ✅ | ✅ | — | ✅ | ko'radi |
-| Xarajat tasdiqlash | ✅ | ✅ | — | o'ziniki | ko'radi |
-| Kun yopish tasdiqlash | ✅ | ✅ | — | topshiradi | ko'radi |
-| Kassa, qarz, moliya | ✅ | ko'radi | — | qarz undiradi | ✅ |
-| Maosh | ✅ | — | — | o'ziniki | ✅ |
-| Hisobotlar | ✅ | ✅ | — | o'ziniki | ✅ |
+### 1. Tizimga Kirish (Login) va Xavfsizlik
 
-Menyu barcha adminlarga bir xil ko'rinadi, lekin ruxsatingiz bo'lmagan amalni bajarolmaysiz
-(tizim "ruxsat yo'q" deb ogohlantiradi).
+1. Kompyuter yoki telefon brauzerida tizim manzilini oching (masalan: `http://localhost:5173` yoki `https://meyfu-base.uz`).
+2. **Telefon raqamingiz** va **parolingiz**ni kiriting:
+   * Telefon raqamni to'liq xalqaro formatda, probel va tiresiz yozing: `+998901234567`.
+   * Parolni kiritib, **«Tizimga kirish»** tugmasini bosing.
+3. **Mobil ilovani telefonga o'rnatish (PWA):**
+   * Brauzer menyusidan **«Bosh ekranga qo'shish» (Add to Home screen)** tugmasini bosing.
+   * Shundan so'ng ilova telefonda alohida dastur kabi ochiladi.
+   * Telefonda bir marta kirilgach, keyingi safar tezkor **PIN-kod (4 xonali)** bilan xavfsiz ochiladi (har safar uzun parol kiritish shart emas).
+4. **Parolni unutgan bo'lsangiz:** Parol faqat Super Admin tomonidan xodimlar bo'limida o'zgartirib beriladi.
 
-### 3. Internet yo'q bo'lsa (offline)
+---
 
-Tarqatuvchi ilovasi **internetsiz ham to'liq ishlaydi**:
+### 2. Rollar va Ruxsatlar Matritsasi
 
-- Sotuv, xarajat, qarz to'lovi darhol saqlanadi — "✅ Saqlandi" chiqadi.
-- Yuqorida holat ko'rsatiladi:
-  - 🟢 **Online** — hammasi yuborildi
-  - 🟡 **Yuborilmoqda (N)** — navbatda N ta operatsiya bor
-  - 🔴 **Offline · N ta kutmoqda** — internet yo'q, N ta operatsiya saqlangan
-- Internet paydo bo'lganda hammasi **avtomatik** serverga yuboriladi.
-- Ilovani yopib qayta ochsangiz ham ma'lumot yo'qolmaydi.
-- Yuborilmagan operatsiyalarni **"Sinxronizatsiya"** ekranida ko'rasiz va qayta urinishingiz mumkin.
+Tizimda har bir xodim o'z vakolatiga doir ma'lumotlarni ko'radi:
 
-> Katalog (tovar ro'yxati, narxlar) 24 soatdan eski bo'lsa ilova ogohlantiradi —
-> internet bor joyda ilovani bir marta oching, u yangilanadi.
+| Imkoniyatlar / Bo'limlar | Super Admin | Filial Rahbari | Omborchi | Tarqatuvchi | Zakaz Oluvchi | Buxgalter |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Tizim sozlamalari va Audit | ✅ | — | — | — | — | — |
+| Mahsulotlar (Katalog, Tannarx, Bonus) | ✅ | ko'radi | ko'radi | ko'radi | ko'radi | ko'radi |
+| Tovar qabuli (Kirim nakladnoy, OCR) | ✅ | ✅ | ✅ | — | — | ko'radi |
+| Yuklamalar (Ombordan mashinaga) | ✅ | ✅ | ✅ | tasdiqlaydi | — | — |
+| Yangi Sotuv (Van-sale, Naqd/Qarz) | ✅ | ✅ | — | ✅ | — | ko'radi |
+| Buyurtma olish (Zakaz olish) | ✅ | ✅ | — | ko'radi | ✅ | ko'radi |
+| Hamyon va Kassa topshirish | ✅ | ✅ | — | ✅ (o'ziniki) | — | ✅ |
+| Kunni Yopish (3 bosqichli kassa) | ✅ | ✅ | — | topshiradi | — | ko'radi |
+| Xarajat yozish va Tasdiqlash | ✅ | ✅ | — | yozadi | — | ko'radi |
+| Mijozlar qarzdorligi va Akt-sverka | ✅ | ✅ | — | undiradi | ko'radi | ✅ |
+| Ikki bosqichli Oylik Maosh (Payroll) | ✅ | — | — | o'ziniki | o'ziniki | ✅ |
+| Hisobotlar (Tovar harakati, P&L, ABC) | ✅ | ✅ | — | — | — | ✅ |
 
-### 4. Pul va tovar yozuvlari o'chirilmaydi
+---
 
-Har bir sotuv, xarajat, tovar harakati, pul harakati **doimiy** saqlanadi. Xato bo'lsa
-yozuvni o'chirib bo'lmaydi — **tuzatuvchi yozuv** qo'shiladi (kim, qachon, nima sababdan).
-Barcha muhim o'zgarishlar audit jurnaliga tushadi.
+### 3. Internet Bo'lmaganda Ishlash (Offline-First Texnologiyasi)
 
-### 5. Formalar: xatolik xabarlari va pul kiritish
+Tarqatuvchi va Zakaz oluvchi ilovasi **internetsiz (podvalda, tog'da, bozorda) ham 100% to'liq ishlaydi**:
+* Yangi sotuv, buyurtma, xarajat yoki qarz undirish amalga oshirilganda darhol **«✅ Saqlandi»** xabari chiqadi va ma'lumot telefon xotirasida (IndexedDB) xavfsiz saqlanadi.
+* Ekranning yuqori o'ng burchagidagi indikator joriy holatni bildiradi:
+  * 🟢 **Online:** Barcha operatsiyalar serverga to'liq yetib borgan.
+  * 🟡 **Yuborilmoqda (N ta):** Internet paydo bo'ldi, N ta operatsiya navbat bilan serverga yuborilmoqda.
+  * 🔴 **Offline (N ta kutmoqda):** Internet yo'q, N ta operatsiya telefon xotirasida turibdi.
+* Internet paydo bo'lishi bilan dastur **avtomatik tarzda** barcha saqlangan ma'lumotlarni server bilan sinxronlaydi. Ilovani yopib qayta ochsangiz ham hech qanday ma'lumot yo'qolmaydi!
 
-- **Xatolik xabarlari — to'liq o'zbekcha.** Majburiy maydon bo'sh qolsa, noto'g'ri
-  formatda ma'lumot kiritilsa yoki qiymat chegaradan oshsa — xabar aniq va ayblovsiz
-  o'zbek tilida chiqadi (masalan: "Bu maydon to'ldirilishi shart.",
-  "Bu qiymat 3 ta belgidan oshmasligi kerak.").
-- **Pul mablag'i maydonlari** (narx, maosh, qarz limiti, kassa summasi va h.k.) —
-  yozayotganingizda raqamlar avtomatik minglik guruhlarga bo'linib ko'rsatiladi
-  (masalan `1 000 000`), pastida summa so'z bilan ham yoziladi. Faqat raqam kiriting —
-  bo'sh joy va boshqa belgilarni tizim o'zi qo'yadi.
-- Boshlang'ich qoldiq/balans kabi **ishorali** (musbat/manfiy) summalarda — bare "−"
-  belgisi o'rniga aniq tugmalar bilan yo'nalish tanlanadi (masalan "Kassada bor (+)" /
-  "Kamomad (−)").
+---
 
-### 6. Chiqish
+### 4. Yangi Standart: Qadoq Birliklari Bo'yicha Hisob-kitob
 
-Har bir ilovada profil / sozlamalar bo'limida **"Chiqish"** tugmasi bor. Umumiy
-kompyuterda ishlaganingizda har safar chiqib qo'ying.
+Dasturda tovarlarni nafaqat dona, balki ulgurji qadoq birliklarida sotish va buyurtma olish imkoniyati mavjud:
+1. Mahsulot kartochkasida qadoq turi (masalan, *karopka, qop, xalta, pachka*) va bitta qadoqdagi dona miqdori (masalan, *1 karopka = 12 dona*) ko'rsatiladi.
+2. Sotish yoki buyurtma olish paytida ekranda **«Dona»** yoki **«Qadoq (karopka)»** tanlash tugmasi chiqadi.
+3. Qadoq tanlanib soni kiritilganda, tizim jonli formula asosida avtomatik hisoblaydi:
+   $$\text{2 karopka} \times \text{12 dona} = \text{24 dona}$$
+   $$\text{24 dona} \times \text{20 000 so'm} = \text{480 000 so'm}$$
+4. Ombor va mashina qoldig'i, yuklama va buxgalteriya hisoboti doimo asosiy o'lchov birligida aniq kamayadi.
+
+---
+
+### 5. Yangi Standart: Aksiya va Bepul Bonus Tovarlar Tizimi
+
+Kompaniyada xarid hajmini oshirish uchun bepul bonus tovarlar aksiyasi yo'lga qo'yilgan:
+1. Masalan: *«10 ta shokolad olganga 1 ta bepul shokolad yoki 1 ta choy sovg'a»*.
+2. Sotuvchi yoki zakazchi savatga tovar qo'shganda, agar hajm aksiya shartiga yetsa (masalan, 10 ta, 20 ta, 30 ta), tizim avtomatik ravishda bepul bonusni hisoblab savatga qo'shadi:
+   * Bonus tovar narxi: **`0 so'm (BEPUL)`**.
+   * Ekranda zumrad rangli maxsus belgi chiqadi: **«🎁 Aksiya Bonusi: +1 dona bepul»**.
+3. Bepul berilgan tovar ombor va mashina qoldig'idan to'liq hisobdan chiqariladi.
+4. Admin panelidagi **«Tovar harakati (Sotuv / Bonus)»** hisobotida qaysi tovardan qancha pullik sotilgani va qancha bepul bonus berilgani so'm va donasigacha aniq ko'rinadi.
+
+---
+
+### 6. Buxgalteriya Qat'iyligi (Append-Only Immutability)
+
+* Tizimda pul va tovar bilan bog'liq yozuvlarni orqaga qaytarib o'chirib (`DELETE`) yoki yashirincha o'zgartirib (`UPDATE`) bo'lmaydi.
+* Agar xatolik yuz bersa, buxgalteriya standartlariga muvofiq faqat **tuzatuvchi hujjat (CORRECTION)** rasmiylashtiriladi.
+* Barcha amallar, narx o'zgarishlari va tizimga kirishlar **Audit jurnali**da qat'iy saqlanadi.
+
+---
+
+### 7. Bog'lanish va Qo'llab-quvvatlash
+
+Tizim bo'yicha savollar, yangi xodim qo'shish yoki parolni tiklash bo'yicha korxona Super Administratoriga yoki ilova ichidagi **«Yordam» (`/admin/help` yoki `/m/help`)** bo'limiga murojaat qiling.

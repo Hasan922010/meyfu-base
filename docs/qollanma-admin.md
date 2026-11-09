@@ -1,294 +1,133 @@
-# Qo'llanma — Super admin va Menejer
+# 👑 Qo'llanma — Super Admin, Menejer va Filial Rahbari
 
-**Kim uchun:** SUPER_ADMIN, MANAGER · **Qurilma:** kompyuter (brauzer) · **Manzil:** `/admin`
-
-> Umumiy qoidalar (kirish, offline, rollar): [`qollanma.md`](./qollanma.md)
-> **Menejer** quyidagilarga ruxsatsiz: narx/foizni o'zgartirish, xodim yaratish, sozlamalar,
-> maosh tasdiqlash. Qolgan hamma bo'lim ochiq.
+> **Kim uchun:** `SUPER_ADMIN`, `MANAGER`, `BRANCH_MANAGER`  
+> **Qurilma:** Kompyuter / Noutbuk (katta ekranli brauzer)  
+> **Asosiy manzil:** `/admin`
 
 ---
 
-## Ish tartibi (tavsiya etilgan ketma-ketlik)
+## 🧭 Yangi Menyular Tuzilishi (5 ta Asosiy Biznes Guruhi)
 
-Tizimni **birinchi marta** sozlashda shu tartibda yuring:
+Admin paneli 5 ta qulay mantiqiy bo'limga ajratilgan. Har bir bo'lim tepasida tezkor qidiruv paneli (`Bo‘limni qidirish…`) mavjud bo'lib, kerakli sahifani bir zumda topish imkonini beradi:
 
-1. **Sozlamalar → Kompaniya rekvizitlari** — nom, STIR, manzil, bank, direktor, logo, muhr.
-2. **Ma'lumotnomalar** — omborlar, yetkazib beruvchilar, o'lchov birliklari, kategoriyalar,
-   brendlar, xarajat kategoriyalari (limit va "chek majburiy" bilan).
-3. **Mahsulotlar** — har bir tovar: nom, kategoriya, narxlar, rasm.
-4. **Xodimlar** — tarqatuvchi, omborchi, menejer, buxgalter qo'shish.
-5. **Marshrutlar** — har tarqatuvchiga marshrut, unga mijozlar biriktirish.
-6. **Boshlang'ich qoldiqlar** (bo'lim 13) — tovar, kassa, ta'minotchi, mijoz, xodim
-   boshlang'ich holatini kiriting.
-
-Shundan keyin kundalik ish boshlanadi.
-
----
-
-## 1. Dashboard (Bosh sahifa)
-
-Jonli (real-time) ko'rsatkichlar: bugungi savdo, foyda, naqd, xarajat, tashriflar,
-faol tarqatuvchilar, jonli lenta (yangi sotuvlar), xaritada tarqatuvchilar joylashuvi.
-Internet uzilsa ham ochiq turadi, faqat yangilanish to'xtaydi.
-
-**Diqqat belgilar** (qizil/sariq): narxdan past sotuv, limitdan oshgan xarajat, katta kassa
-farqi, kam qolgan tovar — bosib tafsilotga o'ting.
-
-## 2. Mahsulotlar
-
-- **Qo'shish / tahrirlash:** nom, SKU, shtrix-kod, kategoriya, brend, birlik.
-- **Narxlar:** tannarx (`cost_price`), optom, chakana, **minimal narx** (`min_price` —
-  bundan past sotib bo'lmaydi). Narx o'zgarishi tarixga va audit jurnaliga yoziladi.
-- **Rasm galereyasi:** bir nechta rasm yuklash mumkin, birinchisi avtomatik asosiy bo'ladi.
-  «Asosiy qilish» / «O'chirish» / tartibni ‹ › bilan o'zgartirish. Tarqatuvchi telefonida
-  tovarni rasmi bilan ko'radi — adashmaydi.
-- `min_stock_alert` — shu miqdordan kamaysa "kam qoldi" ogohlantirishi chiqadi.
-- **Boshlang'ich qoldiq** — mahsulotni saqlagandan keyin **«Boshlang'ich qoldiqlar»**
-  bo'limidan (bo'lim 13) kiritasiz.
-
-> Narx va foizni faqat **SUPER_ADMIN** o'zgartiradi.
-
-## 3. Ombor
-
-To'rt bo'lim (tab):
-
-### Qoldiq
-Har ombor bo'yicha tovar qoldig'i. Kam qolganlar ajratib ko'rsatiladi.
-
-### Kirim (nakladnoy)
-Zavoddan kelgan tovarni kiritish:
-1. «Yangi kirim» → yetkazib beruvchi, nakladnoy raqami, sana.
-2. Tovarlarni qo'shing (tez kiritish formasi): tovar, miqdor, narx.
-3. Saqlang → tovar omborga tushadi, `StockMovement` yoziladi.
-4. **PDF / Pechat** tugmalari — nakladnoyni rasm va muhr bilan chop etish.
-
-> Naklitni qo'lda kiritish o'rniga **kamera bilan skanerlash** — «Naklit skani» bo'limi (quyida).
-
-### Yuklamalar
-Ertalab tarqatuvchiga beriladigan tovar:
-1. «Yangi yuklama» → tarqatuvchi, ombor, sana.
-2. Tovar va miqdorlarni kiriting (yoki tasdiqlangan buyurtmalardan yig'ing — «Buyurtmalar» bo'limi).
-3. «Yuborish» → tarqatuvchi telefonida ko'radi va **tasdiqlaydi**.
-4. Tasdiqlangach tovar tarqatuvchining "mashina qoldig'iga" (VanStock) o'tadi.
-5. **PDF** — yuklama varaqasini chop etish.
-
-### Inventarizatsiya
-Ombordagi haqiqiy qoldiqni hisobdagi bilan solishtirib, tuzatish:
-1. «+ Inventarizatsiya» → ombor va sana. Hujjat (`INV-2026-00001`) ochiladi va ombordagi
-   **barcha tovarlar** hisobdagi qoldig'i bilan **avtomatik to'ldiriladi**.
-2. Sanab, «Haqiqiy» ustuniga miqdorni yozing (Enter — keyingi qator). Farq donada va so'mda
-   (tannarx bo'yicha) darhol ko'rinadi. Filtr: «Farqlilar», «Sanalmaganlar»; qidiruv.
-3. «Saqlash» — qoralama saqlanadi, keyin davom ettirish mumkin. Sanalmagan qatorlar
-   tasdiqlashda **o'zgarmaydi**; kerak bo'lsa «Sanalmaganlarni 0 qilish».
-4. «Tasdiqlash» (**MANAGER / SUPER_ADMIN**; omborchi faqat sanaydi va saqlaydi) — har farq
-   uchun qoldiq tuzatiladi (`StockMovement` «Tuzatish (inventarizatsiya)», jurnal
-   o'chirilmaydi) va audit jurnaliga yoziladi. Tasdiqlangan hujjat tahrirlanmaydi.
-5. Sanash davomida sotuv/yuklama bo'lib qoldiq o'zgargan bo'lsa, tizim tasdiqlashni
-   to'xtatadi — «Hisobdagi qoldiqni yangilash» ni bosing (kiritilganlar saqlanib qoladi)
-   va qayta tasdiqlang.
-
-## 4. Naklit skani (OCR)
-
-Omborchi yuklagan naklit rasmlari shu yerga tushadi:
-- **Navbat:** UPLOADED → PROCESSING → **NEEDS_REVIEW** → CONFIRMED.
-- **Tekshirish ekrani:** chapda naklit rasmi (kattalashtirish/burish), o'ngda tahrirlanadigan
-  jadval. Past ishonchli kataklar **sariq** rangda.
-- Har bir qatorni katalogdagi tovarga moslang (aniq / o'xshash / yangi). Tasdiqlaganingizda
-  har tuzatish eslab qolinadi — keyingi safar OCR to'g'ri taniydi.
-- Tasdiq → avtomatik Kirim (Purchase) + omborga tushadi.
-- **Metrikalar:** qator aniqligi, tuzatish ulushi, bitta skan narxi (API xarajati), tasdiq
-  vaqti. Aniqlik 85% dan past bo'lsa — qo'lda kiritish tezroq, «Naklit skani» o'rniga
-  «Ombor → Kirim» dan foydalaning.
-
-## 5. Mijozlar va Marshrutlar
-
-- **Mijozlar:** nom, egasi, telefon, manzil, joylashuv (xarita), tur, **qarz limiti**,
-  STIR, "bloklangan" belgisi, izoh.
-  - Bloklangan mijozga faqat **naqd** sotiladi.
-  - **O'chirish** — mijozlar ro'yxatidagi «O'chirish» tugmasi (tasdiq so'raladi).
-    Yumshoq o'chirish — mijoz ro'yxatdan yo'qoladi, lekin oldingi sotuv/qarz tarixi
-    saqlanadi (CLAUDE.md 5 — ma'lumot yo'qolmaydi). MANAGER va SUPER_ADMIN uchun.
-  - **Boshlang'ich qarz** (mavjud mijoz uchun, sotuvsiz) — **«Boshlang'ich qoldiqlar»**
-    bo'limidan (bo'lim 13) kiritiladi.
-- **Marshrutlar:** nom, biriktirilgan tarqatuvchi, **zakaz oluvchi** (ixtiyoriy), ish kunlari.
-  Mijozlarni marshrutga biriktiring — tarqatuvchi va zakaz oluvchi shu ro'yxatni
-  telefonida ko'radi.
-- Mijoz kartasida: sotuvlar tarixi, qarzlari, tashriflar.
-
-## 6. Sotuvlar
-
-Barcha sotuvlar jadvali: filtr (sana, tarqatuvchi, mijoz, to'lov turi), tafsilot,
-**bekor qilish** (sabab bilan, audit jurnaliga tushadi), Excel eksport.
-Narxdan past yoki qarz limitidan oshgan sotuvlar belgilangan (flag).
-
-## 7. Buyurtmalar (zakaz)
-
-Tarqatuvchi yig'gan zakazlar:
-
-### Ro'yxat
-Holat bo'yicha filtr (qoralama, berilgan, tasdiqlangan, yuklangan, yetkazilgan).
-Tafsilot modalida **«Tasdiqlash»** yoki **«Bekor qilish»**.
-
-### Yuklamaga yig'ish
-Tarqatuvchi + ombor tanlang → tasdiqlangan buyurtmalarni belgilang → «Yuklama yaratish».
-Bir necha buyurtma bitta yuklamaga birlashadi.
-
-## 8. Xarajatlar
-
-Tarqatuvchilarning yo'l xarajatlari (yoqilg'i, tushlik, ta'mirlash...):
-- Har biri: summa, kategoriya, chek rasmi, joylashuv, izoh.
-- **Tasdiqlash / Rad etish.** Rad etsangiz **sababini** yozing — tarqatuvchi ko'radi.
-- Limitdan oshganlar avtomatik "kutilmoqda" holatida — ular ajratib ko'rsatiladi.
-- Diagramma: kategoriya bo'yicha taqsimot.
-
-## 9. Kunlik hisob-kitob (kun yopish)
-
-Tarqatuvchi kunni yopganda shu yerga tushadi:
-- Jadval: har kun bo'yicha **kassa farqi** va **tovar farqi**.
-- "Faqat farqli kunlar" filtri.
-- Qatorni oching → to'liq tafsilot (yuklandi, sotildi, qaytdi, kutilgan naqd, topshirilgan naqd).
-- **«Tasdiqlash»** → kun yakunlanadi. Shundan keyin o'sha kunni faqat SUPER_ADMIN,
-  sabab bilan tahrirlaydi (audit jurnaliga tushadi).
-
-Formulalar:
 ```
-kutilgan naqd  = naqd sotuv + undirilgan qarz − tasdiqlangan naqd xarajatlar
-kassa farqi    = topshirilgan naqd − kutilgan naqd     (manfiy = kamomad)
-tovar farqi    = yuklangan − sotilgan − qaytarilgan
+┌────────────────────────────────────────────────────────┐
+│ 1. 📊 BOSHQARUV & TAHLIL                                │
+│    ├── Bosh sahifa (Dashboard)                         │
+│    ├── Hisobotlar (Tovar harakati, P&L, ABC, 1C...)    │
+│    └── Filiallar boshqaruvi                            │
+│                                                        │
+│ 2. 📦 OMBOR & TOVARLAR                                 │
+│    ├── Mahsulotlar (Katalog, Tannarx, Bonus, Qadoq)    │
+│    ├── Ombor (Qoldiq, Kirim, Yuklama, Ko'chirish)      │
+│    ├── OCR Naklit Skani (Kamerada kirim qilish)        │
+│    └── Boshlang'ich qoldiqlar                          │
+│                                                        │
+│ 3. 🛒 SAVDO & YETKAZISH                                │
+│    ├── Sotuvlar jurnali (Pullik va Bepul bonuslar)     │
+│    ├── Buyurtmalar (Zakazlar ro'yxati va holati)       │
+│    ├── Do'konlar & Mijozlar (Qarzdorlik, GPS lokatsiya)│
+│    ├── Marshrutlar (Kunlik grafiklar)                  │
+│    └── Kun yopishni tasdiqlash                         │
+│                                                        │
+│ 4. 💰 MOLIYA & KASSA                                   │
+│    ├── Moliya & Kassa (Kassa qoldig'i, Kirim/Chiqim)   │
+│    ├── Mijozlar qarzdorligi (Akt-sverka, Muddatlar)    │
+│    ├── Xarajatlar (Tasdiqlash va chek rasmlari)        │
+│    └── Oylik Maosh (2 bosqichli Payroll)               │
+│                                                        │
+│ 5. ⚙️ JAMOA & SOZLAMALAR                               │
+│    ├── Xodimlar boshqaruvi (Rollar va ruxsatlar)       │
+│    ├── Tarqatuvchilar & Mashina qoldiqlari             │
+│    ├── Ma'lumotnomalar (Kategoriyalar, Ta'minotchilar) │
+│    ├── Sinxronizatsiya jurnali (SyncLog)               │
+│    ├── Audit jurnali (O'zgarishlar tarixi)             │
+│    ├── Tizim sozlamalari & Butunlik tekshiruvi         │
+│    └── Foydalanish qo'llanmasi                         │
+└────────────────────────────────────────────────────────┘
 ```
 
-## 10. Qarzdorlik
+---
 
-- Yoshi bo'yicha tahlil (aging): 0–7, 8–14, 15–30, 30+ kun.
-- Muddati o'tgan qarzlar ajratilgan.
-- Mijoz bo'yicha to'lov qabul qilish, eslatma yuborish.
+## 1. Mahsulotlar Kartochkasi va Narxlar Siyosati (`/admin/products`)
 
-## 11. Moliya
+Yangi talablarga binoan, mahsulot profilida ma'lumotlar soddalashtirilgan va biznes uchun eng muhim ko'rsatkichlarga keltirilgan:
 
-- **Umumiy:** kassa balansi, tushum, yalpi foyda, tarqatuvchi xarajatlari, kompaniya xarajatlari.
-- **Kassa:** barcha kirim/chiqim harakatlari (append-only jurnal). Kassa boshlang'ich
-  qoldig'i endi **«Boshlang'ich qoldiqlar»** bo'limidan (bo'lim 13, faqat SUPER_ADMIN)
-  kiritiladi.
-- **Kompaniya xarajatlari:** ijara, ish haqi fondi va h.k. qo'shish.
+### 1.1 Yagona Tannarx va Narxlar
+* **Tannarx (`cost_price`):** Tovar zavoddan qanchaga olingani. Bu ko'rsatkich faqat Admin va Buxgalterga ko'rinadi (tarqatuvchi va zakazchilardan yashirilgan).
+* **Standart sotuv narxi:** Do'konlarga tavsiya etiladigan ulgurji narx.
+* **Minimal narx (`min_price`):** Tarqatuvchi bundan past narxda sota olmaydi (agar sotmoqchi bo'lsa, tizim ogohlantiradi va adminga belgilangan savdo sifatida tushadi).
 
-## 12. Xodimlar
+### 1.2 Qadoq Birliklari Parametrlari
+* **Qadoq turi (`package_type`):** *karopka*, *qop*, *xalta*, *pachka*, *blok*.
+* **Qadoqdagi dona soni (`pack_quantity`):** Masalan, `12`.
+* *Natija:* Tarqatuvchi va zakazchi ilovasida bitta tugma bilan karopkada buyurtma olish imkoni paydo bo'ladi.
 
-- **Qo'shish:** telefon (login), F.I.SH., rol, parol, passport, ishga kirgan sana.
-- **Xodim profili (maosh)** — **barcha rol turlari uchun** (tarqatuvchi, omborchi, menejer,
-  buxgalter, super admin):
-  - **Asosiy maosh** — oylik maosh hisoblashda (bo'lim 15) ishlatiladi.
-  - **Boshlang'ich balans** — xodim yaratishda shu yerdan (ixtiyoriy) kiritish mumkin,
-    yoki **mavjud** xodim uchun keyinroq **«Boshlang'ich qoldiqlar»** bo'limidan
-    (bo'lim 13). Ikkalasida ham: «Xodimga berilgan (avans)» yoki «Xodimning qarzi»
-    tugmasi bilan yo'nalishni tanlang, so'ng summani kiriting — xodimning hamyoniga
-    bir martalik yozuv sifatida tushadi.
-  - **Zakaz oluvchi** (ORDER_TAKER) — faqat buyurtma oladi. Telefonida: Bosh (bugungi
-    buyurtmalar soni va summasi), Buyurtma, Mijozlar (marshrutidagilar; mijozni bossa
-    shu mijozga yangi buyurtma ochiladi), Maosh. Sotuv, hamyon, xarajat, yuklama, kun
-    yopish, qarz undirish unga yopiq; buyurtmani tasdiqlash va yetkazish ham yo'q.
-    Qo'shimcha sozlama: **Zakaz olgani uchun %**. Marshrutni «Marshrutlar» bo'limida
-    biriktiring.
-  - Faqat **DISTRIBUTOR** rolida qo'shimcha sozlamalar ochiladi: **Zakaz olgani uchun %**
-    va **Yetkazib bergani uchun %** (ikki bosqichli komissiya), "Komissiya %" (eski —
-    yuqoridagi ikkitasi 0 bo'lsagina ishlatiladi), oylik reja, qarz limiti, kunlik xarajat
-    limiti, mashina raqami, "Minimal narxdan past sotishga ruxsat" belgisi.
-- **Bloklash / Faollashtirish** — bloklangan xodim tizimga **vaqtincha** kira olmaydi
-  (audit jurnaliga tushadi), lekin ro'yxatda ko'rinishda qoladi.
-- **O'chirish** — xodimlar ro'yxatidagi «O'chirish» tugmasi (tasdiq so'raladi). Bloklashdan
-  farqli — xodim ro'yxatdan butunlay yo'qoladi va tizimga kira olmaydi, lekin oldingi
-  sotuv/maosh/hamyon tarixi saqlanadi (yumshoq o'chirish — CLAUDE.md 5). O'zingizni
-  o'chira olmaysiz.
-- **Parol o'rnatish** — tahrirlashda yangi parol kiriting (bo'sh qoldirsangiz o'zgarmaydi).
+### 1.3 Aksiya va Bepul Bonus Tovarlar Sozlamasi
+* **Aksiyada qatnashadimi (`has_bonus`):** Ha/Yo'q belgisi.
+* **Bonus chegarasi (`bonus_trigger_qty`):** Masalan, `10` dona.
+* **Beriladigan bepul tovar soni (`bonus_reward_qty`):** Masalan, `1` dona.
+* **Bonus mahsulot (`bonus_product`):** Tovarning o'zidan bepul beriladimi yoki boshqa maxsus tovar (masalan, sovg'a krujkasi, choy) qo'shib beriladimi.
+* *Natija:* Savatda miqdor 10 taga yetganda avtomatik `0 so'm` lik bepul bonus qatori qo'shiladi.
 
-> Xodim yaratish/bloklash/o'chirish/parol — faqat **SUPER_ADMIN**.
-
-## 13. Boshlang'ich qoldiqlar
-
-Tizimni birinchi marta sozlashda (yoki mavjud yozuvlarga tuzatish kiritishda) barcha
-"boshlang'ich holat"larni **bitta bo'limda**, alohida-alohida sahifada (tab) kiritasiz.
-
-Har tabda ro'yxat **avtomatik to'ldiriladi** — barcha kassalar, tovarlar, ta'minotchilar,
-mijozlar yoki xodimlar hozirgi balansi bilan chiqadi. «Yangi qoldiq» ustuniga **yakuniy**
-(haqiqiy) qiymatni yozing — farqni tizim o'zi hisoblaydi va ko'rsatadi. Bo'sh qoldirilgan
-qatorlar o'zgarmaydi. Enter — keyingi qatorga o'tadi. «Saqlash» bitta bosishda barcha
-o'zgarganlarni yozadi: yo hammasi saqlanadi, yo hech biri (xato bo'lsa sababi ko'rsatiladi).
-Bir xil ro'yxatni qayta saqlash ikkinchi marta hech narsani o'zgartirmaydi.
-
-- **Tovarlar** — avval omborni tanlang; ombordagi barcha faol tovarlar (qoldig'i yo'qlari
-  ham) chiqadi. Miqdor manfiy bo'lmaydi. Kiritadi: **Omborchi** (telefonida ham — Bosh →
-  «Boshlang'ich qoldiq»), menejer, super admin.
-- **Kassa** — kassadagi haqiqiy summa; manfiy — kamomad. Faqat **SUPER_ADMIN**.
-- **Ta'minotchilar** — musbat: biz qarzdormiz, manfiy: ta'minotchi qarzdor. Faqat
-  **SUPER_ADMIN**. **Diqqat:** bu faqat boshlang'ich holat uchun — keyingi xaridlar va
-  to'lovlar bu balansga avtomatik qo'shilmaydi.
-- **Mijozlar** — mijozning umumiy qarzi. Farq sotuvsiz boshlang'ich qarz bo'lib qo'shiladi
-  (bo'lim 5, 10). Qarzni **kamaytirish** bu yerda emas — qarz to'lovi orqali.
-- **Xodimlar** — musbat: xodimga berilgan (avans), manfiy: xodimning qarzi. Faqat
-  **SUPER_ADMIN**.
-
-Har bir tabda pastda oxirgi kiritilgan yozuvlar ro'yxati ko'rinadi. Har ommaviy saqlash
-audit jurnaliga yoziladi.
-
-## 14. Tarqatuvchilar — 360° karta
-
-Har tarqatuvchi uchun to'liq ko'rinish. Yuqorida davr tanlagich (Bugun / Hafta / Oy / ...).
-
-- **KPI kartalar:** sotuv, sof foyda, naqd yig'ildi, xarajat, topshirildi, qo'lda qolgan,
-  qarz berdi/undirdi, kamomad, reja bajarilishi, taxminiy maosh (oldingi davr bilan ▲▼).
-- **Tablar:** Umumiy (grafiklar) · Pul harakati (kunlik, farqli kunlar qizil) · Sotuvlar ·
-  Xarajatlar · Mijozlar · Mahsulotlar · Qarzdorlik · Kunlik jurnal · Maosh · Faollik (audit).
-- **Eksport:** butun karta yoki tab → Excel / PDF.
-- **Solishtirish:** bir nechta xodimni yonma-yon + reyting.
-
-## 15. Maosh
-
-### Hisoblash
-Davr va xodim tanlang → «Hisoblash». **Barcha rol turlari** uchun ishlaydi — nafaqat
-tarqatuvchi: tarqatuvchi uchun asosiy maosh + sotuvdan foiz (zakaz + yetkazish alohida
-ko'rsatiladi); omborchi/menejer/buxgalter/super admin uchun — asosiy maosh (bo'lim 12'da
-kiritilgan), komissiya har doim 0 bo'ladi (ular sotuv qilmaydi). Qolgan komponentlar
-hammaga baravar: bonus, ushlanmalar (kamomad, kassa farqi, avans), xarajat qaytarimi,
-yakuniy summa. Holat: qoralama → **tasdiqlangan** → to'langan.
-
-### Komissiya qoidalari
-Umumiy / kategoriya / mahsulot / tarqatuvchi darajasida foiz qoidalari (eski, bir bosqichli
-tizim uchun). Aniqrog'i yutadi.
-
-### Avanslar
-Tarqatuvchiga berilgan avanslar — keyingi maoshdan ushlanadi.
-
-> Maoshni tasdiqlash / to'langan deb belgilash — **SUPER_ADMIN** yoki **BUXGALTER**.
-
-## 16. Hisobotlar
-
-- **Konstruktor:** o'lchov (kun / tarqatuvchi / mahsulot / mijoz) + filtr → jadval.
-- **ABC tahlil:** Pareto — qaysi mahsulot/mijoz aylanmaning 80% ini beradi.
-- **Foyda-zarar:** davr bo'yicha P&L.
-- Har birini Excel / PDF ga yuklab olish mumkin.
-
-## 17. Tizim salomatligi
-
-- Xizmatlar holati (baza, kesh, disk, fon vazifalar).
-- **Butunlik tekshiruvi:** hamyon/ombor balansi jurnal yig'indisiga mos keladimi.
-  Farq bo'lsa — SUPER_ADMIN shu yerdan tuzatadi (jurnalga tegilmaydi, faqat hisoblangan
-  qiymat jurnalga moslanadi).
-- Backup holati (oxirgi nusxa yoshi va hajmi).
-- Sinxronizatsiya ziddiyatlari, OCR navbati.
-
-## 18. Sozlamalar
-
-- Til (o'zbek / rus / ingliz), tema (yorug' / qorong'i).
-- **Telegram** — hisobingizni bir martalik kod bilan ulash (kunlik xulosa va ogohlantirishlar keladi).
-- **Kompaniya rekvizitlari** — nom, STIR, manzil, bank, direktor, **logo va muhr**
-  (nakladnoy va cheklarda ishlatiladi). Faqat SUPER_ADMIN tahrirlaydi.
+### 1.4 Tovarga Bog'liq Oylik Komissiya Foizlari
+* **Zakaz foizi (`order_commission_rate`):** Ushbu tovardan olingan buyurtma uchun zakaz oluvchiga to'lanadigan foiz (masalan, `2%`).
+* **Yetkazish foizi (`delivery_commission_rate`):** Ushbu tovarni yetkazib bergan tarqatuvchiga to'lanadigan foiz (masalan, `3%`).
+* *Natija:* Oylik maosh umumiy foizdan emas, sotilgan aniq tovarlarning komissiyasi asosida adolatli jamlanadi.
 
 ---
 
-## Telegram bot
+## 2. Ombor Boshqaruvi (`/admin/warehouse`)
 
-Hisobingizni ulaganingizdan keyin (Sozlamalar → Telegram):
-- Har kuni **20:00 da kunlik xulosa**: savdo, foyda, naqd, xarajat, qarz, kim qancha sotdi,
-  farqli kunlar.
-- Darhol ogohlantirish: narxdan past sotuv, limitdan oshgan xarajat, katta kassa farqi,
-  kam qolgan tovar.
-- Tugmalar orqali: bugungi hisobot, xodimlar, qarzdorlar, xarajatni tasdiqlash.
+* **Qoldiq:** Barcha omborlardagi tovarlar soni, tannarx qiymati va kam qolgan tovarlar bo'yicha qizil indikatorlar.
+* **Kirim (Tovar qabuli):** Ta'minotchidan yangi tovar kelganda qabul qilish. Nakladnoy qog'ozini OCR bo'limida rasmga olib, avtomatik kirim qilish mumkin.
+* **Yuklamalar (Loadings):** Ertalab tarqatuvchining mashinasiga tovar ortish. Buyurtmalar asosida avtomatik yuklama shakllantirish mumkin. Yuklama qog'ozi (PDF) o'ng tomonida tarqatuvchi ismi va telefoni qalin shriftda chiqadi.
+* **Ko'chirishlar (Transfers):** Markaziy ombordan filial omborlariga tovar yuborish va qabul qilish.
+
+---
+
+## 3. Savdo va Buyurtmalar Nazorati (`/admin/sales`, `/admin/orders`)
+
+* **Sotuvlar jurnali:** Barcha yakunlangan savdolar. Har bir sotuvda to'lov turi (Naqd, Plastik, Qarz, Aralash), sotilgan tovarlar va bepul berilgan aksiya bonuslari ko'rinadi.
+* **Buyurtmalar (Orders):** Zakazchilar tomonidan olingan buyurtmalar. Buyurtmadan to'g'ridan-to'g'ri bitta bosishda omborga yuklama yaratish mumkin. Kelishilgan narxlar yuklama va chekka o'zgarishsiz o'tadi.
+* **Kun yopishni tasdiqlash (`/admin/day-close`):** Kechqurun tarqatuvchilar kunni yopganda, omborchi va menejer kassa summasi hamda mashinadan qaytgan tovar qoldiqlarini tekshirib tasdiqlaydi.
+
+---
+
+## 4. Moliya, Qarzlar va Oylik Maosh (`/admin/finance`, `/admin/payroll`)
+
+* **Moliya & Kassa:** Filial va markaziy kassalar qoldig'i, naqd pul harakati jurnali. Filialdan markazga pul o'tkazish (inkassatsiya) hujjati.
+* **Mijozlar qarzdorligi:** Muddatiga qarab (0–7 kun, 8–14 kun, 15–30 kun, 30+ kun) saralangan qarzlar ro'yxati. Har bir do'kon uchun bitta bosishda **Akt-sverka (PDF)** yuklab olish.
+* **Oylik Maosh (Payroll — 2 bosqichli):**
+  1. *Hisoblash bosqichi:* Oklad + tovarlar bo'yicha foizlar + bonuslar − kamomadlar avtomatik yig'iladi.
+  2. *Tasdiqlash va to'lash bosqichi:* Super admin tasdiqlagach, kassadan xodimga naqd yoki plastik orqali to'lanadi.
+
+---
+
+## 5. Yangilangan Tahliliy Hisobotlar (`/admin/reports`)
+
+Hisobotlar bo'limida 6 ta kuchli biznes tahlili mavjud:
+
+1. **📊 Tovar Harakati (Sotuv / Bonus) — Yangi:**
+   * Qaysi tovardan qancha pullik sotilgani (miqdor va summa).
+   * Qaysi tovardan qancha bepul aksiya bonusi berilgani (miqdor va tannarxi).
+   * Jami ombor chiqimi va aksiya ulushi (`bonus_ratio_percent`).
+   * **«Excel yuklash»** tugmasi orqali to'liq XLSX formatida eksport qilinadi.
+2. **📉 Tannarxdan Farq (Kamomad / Ortiqcha) Hisoboti:**
+   * Tovar tannarxdan arzon (zarariga/kamomad) yoki qimmat (ortiqcha daromad) sotilganini aniqlash.
+3. **📈 Ko'p O'lchamli Sotuv Konstruktori:**
+   * Kunlar, tarqatuvchilar, tovarlar, kategoriyalar, mijozlar va marshrutlar kesimida sotuv, sof foyda va marja tahlili.
+4. **🏆 ABC / XYZ Analitika:**
+   * Daromadning 80% ini keltiruvchi «A toifali» eng xaridorgir tovarlar va mijozlar reytingi.
+5. **💼 Foyda va Zarar (P&L):**
+   * Jami tushum − Tannarx − Chegirmalar − Operatsion xarajatlar = **Sof Foyda**.
+6. **🏢 1C Buxgalteriya Eksporti:**
+   * Sotuvlar va kirimlarni 1C:Enterprise dasturiga uzatish uchun XML va CSV fayllarni shakllantirish.
+
+---
+
+## 6. Jamoa va Xavfsizlik Nazorati
+
+* **Sinxronizatsiya Jurnali (`/admin/sync-log`):** Qaysi xodim qaysi telefondan qachon bog'langani, nechta operatsiya yuborgani va oflayn xatoliklar sonini kuzatish.
+* **Audit Jurnali (`/admin/audit`):** Har bir o'zgarish (narx kim tomonidan o'zgartirildi, qachon kassa to'g'rilandi) muhrlangan doimiy jurnal.
+* **Testlarni Tozalash (`/admin/system?tab=cleanup`):** Dastur o'rnatilganda kiritilgan test ma'lumotlarini xavfsiz tozalash va kassa balanslarini qayta hisoblash.

@@ -35,6 +35,7 @@ class OrderLine:
     product: object
     quantity: Decimal
     price: Decimal
+    is_bonus: bool = False
 
 
 @dataclass
@@ -119,6 +120,7 @@ def create_order(
         OrderItem(
             order=order, product=ln.product, quantity=ln.quantity,
             price=ln.price, amount=(ln.quantity or _ZERO) * (ln.price or _ZERO),
+            is_bonus=ln.is_bonus,
             created_by=user or taken_by,
         )
         for ln in lines
@@ -379,7 +381,14 @@ def fulfill_order(
         if qty <= _ZERO:
             continue
         price = Decimal(fl.price) if fl.price is not None else item.price
-        sale_lines.append(SaleLine(product=item.product, quantity=qty, price=price))
+        sale_lines.append(
+            SaleLine(
+                product=item.product,
+                quantity=qty,
+                price=price,
+                is_bonus=item.is_bonus,
+            )
+        )
         item.delivered_quantity = (item.delivered_quantity or _ZERO) + qty
         touched.append(item)
 

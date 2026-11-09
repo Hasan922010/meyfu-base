@@ -101,6 +101,7 @@ class OrderItem(BaseModel):
         _("narx"), **_MONEY, validators=[MinValueValidator(_ZERO)]
     )
     amount = models.DecimalField(_("summa"), **_MONEY, default=_ZERO)
+    is_bonus = models.BooleanField(_("bonus tovar (bepul)"), default=False, db_index=True)
 
     class Meta:
         verbose_name = _("buyurtma qatori")

@@ -61,6 +61,13 @@ def collect_debt_payment(
             code="INVALID_PAYMENT_TYPE",
         )
 
+    if hasattr(collected_by, "has_app_permission") and not collected_by.has_app_permission("can_collect_debts"):
+        raise BusinessError(
+            message="Sizda qarz / pul undirish huquqi yo'q.",
+            code="DEBT_COLLECTION_FORBIDDEN",
+            status_code=403,
+        )
+
     ensure_client_in_scope(collected_by, debt.client)
     if _off_route(collected_by, debt.client):
         raise BusinessError(

@@ -26,6 +26,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
         fields = (
             "id", "product", "product_name", "product_sku", "quantity", "price",
             "cost_price", "discount_percent", "amount", "profit", "below_min_price",
+            "is_bonus",
         )
         read_only_fields = (
             "id", "cost_price", "amount", "profit", "below_min_price",
@@ -71,6 +72,7 @@ class SaleLineInputSerializer(serializers.Serializer):
         max_digits=5, decimal_places=2, required=False, default=Decimal("0"),
         min_value=Decimal("0"), max_value=Decimal("100"),
     )
+    is_bonus = serializers.BooleanField(required=False, default=False)
 
 
 class SaleCreateSerializer(serializers.Serializer):

@@ -11,6 +11,7 @@ import { roleLabel } from '@/shared/lib/labels';
 import { useAuthStore } from '@/shared/store/authStore';
 
 import { CompanySettingsForm } from './CompanySettingsForm';
+import { StaffPermissionsMatrix } from './StaffPermissionsMatrix';
 
 export function SettingsPage(): ReactElement {
   const user = useAuthStore((s) => s.user);
@@ -41,7 +42,7 @@ export function SettingsPage(): ReactElement {
   const allowTestCleanup = sysSettings.data?.allow_test_cleanup ?? false;
 
   return (
-    <div className="max-w-2xl space-y-4">
+    <div className="max-w-4xl space-y-4">
       <h1 className="text-2xl font-bold">Sozlamalar</h1>
 
       <div className="max-w-lg rounded-xl bg-white p-4 text-sm shadow-sm dark:bg-gray-900">
@@ -160,6 +161,9 @@ export function SettingsPage(): ReactElement {
           <span>Foydalanish yo'riqnomasi — rol bo'yicha</span>
         </Link>
       </div>
+
+      {/* Xodimlar Imkoniyatlari va Ruxsatlari Matritsasi (Superuser boshqaruvi) */}
+      <StaffPermissionsMatrix />
 
       <CompanySettingsForm />
     </div>

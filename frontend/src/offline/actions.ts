@@ -8,6 +8,12 @@ export interface LocalSaleLine {
   product_name: string;
   quantity: number;
   price: number;
+  is_bonus?: boolean | undefined;
+  unit_mode?: 'base' | 'package' | undefined;
+  package_count?: number | undefined;
+  package_type?: string | undefined;
+  pack_quantity?: number | undefined;
+  unit_name?: string | undefined;
 }
 
 export interface LocalSaleInput {
@@ -54,6 +60,7 @@ export async function saveSaleLocal(input: LocalSaleInput): Promise<string> {
           product: l.product,
           quantity: String(l.quantity),
           price: String(l.price),
+          is_bonus: l.is_bonus ?? false,
         })),
       },
       `Sotuv · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
@@ -188,6 +195,7 @@ export async function saveSaleReturnLocal(input: {
           product: l.product,
           quantity: String(l.quantity),
           price: String(l.price),
+          is_bonus: l.is_bonus ?? false,
         })),
       },
       `Qaytarish · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,
@@ -222,6 +230,7 @@ export interface LocalOrderLine {
   product_name: string;
   quantity: number;
   price: number;
+  is_bonus?: boolean | undefined;
   unit_mode?: 'base' | 'package' | undefined;
   package_count?: number | undefined;
   package_type?: string | undefined;
@@ -256,6 +265,7 @@ export async function saveOrderLocal(input: {
         product: l.product,
         quantity: String(l.quantity),
         price: String(l.price),
+        is_bonus: l.is_bonus ?? false,
       })),
     },
     `Buyurtma · ${input.client_name} · ${total.toLocaleString('ru-RU')} so'm`,

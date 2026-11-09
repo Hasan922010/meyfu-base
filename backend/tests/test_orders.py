@@ -455,3 +455,37 @@ def test_distributor_cannot_order_for_client_off_own_route(
     assert resp.status_code == 409
     assert resp.data["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
 
+
+@pytest.mark.django_db
+def test_warehouse_can_create_order_and_sale(client, van_stocked):
+    """Omborchi buyurtma olish va tarqatish (sotuv) qila olishi tekshiruvi."""
+    from rest_framework.test import APIClient
+    from apps.users.models import User
+
+    warehouse_user = User.objects.create_user(
+        phone="+998909990001", password="pass12345", full_name="Omborchi Akrom",
+        role="WAREHOUSE",
+    )
+    wh_api = APIClient()
+    wh_api.force_authenticate(user=warehouse_user)
+
+    product = _product(van_stocked["product"])
+    # 1. Omborchi buyurtma yaratadi
+    resp_order = wh_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(van_stocked["client"].id),
+            "items": [{"product": str(product.id), "quantity": "3", "price": "25000"}],
+            "payment_intent": "NAQD",
+        },
+        format="json",
+    )
+    assert resp_order.status_code == 201, resp_order.data
+    order_data = resp_order.data["data"]
+    assert order_data["taken_by_name"] == "Omborchi Akrom"
+
+    # 2. Omborchi o'z buyurtmalarini ko'radi
+    resp_my = wh_api.get("/api/v1/orders/my-to-take/")
+    assert resp_my.status_code == 200
+    assert len(resp_my.data["data"]) >= 1
+

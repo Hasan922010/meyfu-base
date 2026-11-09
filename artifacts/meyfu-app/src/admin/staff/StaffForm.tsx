@@ -8,6 +8,10 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { SignedAmountInput } from '@/shared/components/SignedAmountInput';
 import { applyServerFieldErrors } from '@/shared/lib/formErrors';
+import {
+  USER_FEATURE_PERMISSIONS,
+  USER_FEATURE_PERMISSION_LABELS,
+} from '@/shared/lib/permissions';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role, User } from '@/shared/types/api';
 
@@ -89,8 +93,27 @@ export function StaffForm({
           p_daily_expense_limit: pr?.daily_expense_limit ?? '0',
           p_vehicle_number: pr?.vehicle_number ?? '',
           p_can_sell_below_price: pr?.can_sell_below_price ?? false,
+          can_receive_stock: staff.permissions?.can_receive_stock ?? staff.can_receive_stock ?? false,
+          can_take_orders: staff.permissions?.can_take_orders ?? staff.can_take_orders ?? false,
+          can_make_sales: staff.permissions?.can_make_sales ?? staff.can_make_sales ?? false,
+          can_sell_on_debt: staff.permissions?.can_sell_on_debt ?? staff.can_sell_on_debt ?? false,
+          can_collect_debts: staff.permissions?.can_collect_debts ?? staff.can_collect_debts ?? false,
+          can_record_expenses: staff.permissions?.can_record_expenses ?? staff.can_record_expenses ?? false,
+          can_see_warehouse_stock: staff.permissions?.can_see_warehouse_stock ?? staff.can_see_warehouse_stock ?? false,
+          can_scan_invoices: staff.permissions?.can_scan_invoices ?? staff.can_scan_invoices ?? false,
         }
-      : { role: 'DISTRIBUTOR', p_base_salary: '0' },
+      : {
+          role: 'DISTRIBUTOR',
+          p_base_salary: '0',
+          can_make_sales: true,
+          can_take_orders: true,
+          can_sell_on_debt: true,
+          can_collect_debts: true,
+          can_record_expenses: true,
+          can_see_warehouse_stock: true,
+          can_receive_stock: false,
+          can_scan_invoices: false,
+        },
   });
 
   const role = watch('role');
@@ -118,6 +141,15 @@ export function StaffForm({
         passport_series: v.passport_series || '',
         address: v.address || '',
         hire_date: v.hire_date || null,
+        // Individual ruxsatlar
+        can_receive_stock: Boolean(v.can_receive_stock),
+        can_take_orders: Boolean(v.can_take_orders),
+        can_make_sales: Boolean(v.can_make_sales),
+        can_sell_on_debt: Boolean(v.can_sell_on_debt),
+        can_collect_debts: Boolean(v.can_collect_debts),
+        can_record_expenses: Boolean(v.can_record_expenses),
+        can_see_warehouse_stock: Boolean(v.can_see_warehouse_stock),
+        can_scan_invoices: Boolean(v.can_scan_invoices),
         // Xodim filiali (bo'sh — markaz). Filial rahbari yuborsa — server o'z filialini qo'yadi
         ...(byBranchManager ? {} : { warehouse: v.warehouse || null }),
       };
@@ -297,53 +329,15 @@ export function StaffForm({
         {role === 'ORDER_TAKER' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
             <p className="text-xs text-gray-500">
-              Zakaz oluvchi faqat buyurtma oladi — marshrutni «Marshrutlar» bo‘limida biriktiring.
+              Zakaz oluvchi faqat buyurtma oladi — marshrutni «Marshrutlar» bo‘limida biriktiring. Komissiya har bir tovar profilida belgilangan foizlar bo‘yicha hisoblanadi.
             </p>
-            <label className="block space-y-1">
-              <span className="text-sm">Zakaz olgani uchun %</span>
-              <input
-                className="field"
-                type="number"
-                step="0.01"
-                {...register('p_order_commission_percent')}
-              />
-            </label>
           </div>
         )}
 
         {role === 'DISTRIBUTOR' && (
           <div className="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-700">
-            <p className="text-xs text-gray-500">Tarqatuvchiga xos sozlamalar</p>
+            <p className="text-xs text-gray-500">Tarqatuvchiga xos sozlamalar (komissiyalar har bir tovar profilida alohida belgilanadi)</p>
             <div className="grid grid-cols-2 gap-3">
-              <label className="block space-y-1">
-                <span className="text-sm">Zakaz olgani uchun %</span>
-                <input
-                  className="field"
-                  type="number"
-                  step="0.01"
-                  {...register('p_order_commission_percent')}
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm">Yetkazib bergani uchun %</span>
-                <input
-                  className="field"
-                  type="number"
-                  step="0.01"
-                  {...register('p_delivery_commission_percent')}
-                />
-              </label>
-              <label className="col-span-2 block space-y-1">
-                <span className="text-sm text-gray-500">
-                  Komissiya % (eski — yuqoridagi ikkitasi 0 bo'lsa ishlatiladi)
-                </span>
-                <input
-                  className="field"
-                  type="number"
-                  step="0.01"
-                  {...register('p_commission_percent')}
-                />
-              </label>
               <label className="block space-y-1">
                 <span className="text-sm">Oylik reja</span>
                 <Controller
@@ -397,6 +391,40 @@ export function StaffForm({
             </label>
           </div>
         )}
+
+        {/* Individual ruxsatlar va imkoniyatlar */}
+        <div className="space-y-2.5 border-t border-gray-200 pt-3 dark:border-gray-700">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              Xodim Imkoniyatlari va Ruxsatlari
+            </h3>
+            <p className="text-xs text-gray-500">
+              Ushbu xodim mobil ilovada va tizimda qaysi operatsiyalarni bajara olishini belgilang.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            {USER_FEATURE_PERMISSIONS.map((perm) => (
+              <label
+                key={perm}
+                className="flex items-start gap-2.5 rounded-lg border border-gray-200 p-2.5 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  className="mt-0.5 rounded text-brand focus:ring-brand"
+                  {...register(perm)}
+                />
+                <div>
+                  <span className="font-semibold block text-gray-800 dark:text-gray-200">
+                    {USER_FEATURE_PERMISSION_LABELS[perm].label}
+                  </span>
+                  <span className="text-[11px] text-gray-500 leading-tight block">
+                    {USER_FEATURE_PERMISSION_LABELS[perm].description}
+                  </span>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
 
       {mutation.isError && serverError && (

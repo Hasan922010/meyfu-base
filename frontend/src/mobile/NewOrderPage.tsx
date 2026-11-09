@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft,
   CircleCheckBig,
+  Gift,
   X,
 } from 'lucide-react';
 import { useMemo, useState, type ReactElement } from 'react';
@@ -16,6 +17,7 @@ import { UnitToggle } from '@/shared/components/UnitToggle';
 import { money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
+import { computePromotionalBonuses } from '@/shared/lib/bonusCalculator';
 
 type Step = 'client' | 'items' | 'meta' | 'done';
 type Intent = '' | 'NAQD' | 'PLASTIK' | 'OTKAZMA' | 'QARZ' | 'ARALASH';
@@ -79,13 +81,26 @@ export function NewOrderPage(): ReactElement {
     });
   }, [products, productQ]);
 
+  const productMap = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
+  const bonuses = useMemo(
+    () => computePromotionalBonuses(cart, productMap),
+    [cart, productMap],
+  );
+  const totalBonusQty = useMemo(
+    () => bonuses.reduce((s, b) => s + b.bonusQty, 0),
+    [bonuses],
+  );
+
   function suggestedPrice(productId: string): string {
-    const p = products.find((x) => x.id === productId);
+    const p = productMap.get(productId);
     return p?.wholesale_price || p?.cost_price || '';
   }
 
   function addToCart(): void {
-    const p = products.find((x) => x.id === picked);
+    const p = productMap.get(picked);
     const price = Number(pickedPrice || suggestedPrice(picked));
     if (!p || qty <= 0 || price <= 0) return;
     const pPackQty = Number(p.pack_quantity) || 1;
@@ -118,13 +133,26 @@ export function NewOrderPage(): ReactElement {
     if (!client || cart.length === 0) return;
     setSaving(true);
     try {
+      const normalLines: LocalOrderLine[] = cart.map((l) => ({
+        ...l,
+        is_bonus: false,
+      }));
+      const bonusLines: LocalOrderLine[] = bonuses.map((b) => ({
+        product: b.bonusProductId,
+        product_name: b.bonusProductName,
+        quantity: b.bonusQty,
+        price: 0,
+        is_bonus: true,
+      }));
+      const allLines = [...normalLines, ...bonusLines];
+
       await saveOrderLocal({
         client: client.id,
         client_name: client.name,
         payment_intent: intent,
         desired_date: desired || null,
         note,
-        lines: cart,
+        lines: allLines,
       });
       setStep('done');
     } finally {
@@ -375,8 +403,39 @@ export function NewOrderPage(): ReactElement {
             </ul>
           )}
 
+          {bonuses.length > 0 && (
+            <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/95 p-3.5 text-emerald-950 shadow-sm dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+              <div className="flex items-center gap-2 font-bold text-sm text-emerald-800 dark:text-emerald-200">
+                <Gift size={20} className="text-emerald-600 dark:text-emerald-400" />
+                <span>Aksiya bonusi (Buyurtmaga bepul qo'shiladi):</span>
+              </div>
+              <ul className="mt-2 space-y-1.5">
+                {bonuses.map((b, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-center justify-between rounded-xl bg-white/90 p-2 text-xs font-semibold shadow-xs dark:bg-gray-800/90"
+                  >
+                    <div>
+                      <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                        +{b.bonusQty} dona {b.bonusProductName}
+                      </span>
+                      <span className="block text-[11px] font-normal text-gray-500 dark:text-gray-400">
+                        «{b.triggeredByProductName}» xaridi uchun
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-extrabold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                      0 so'm (BEPUL)
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">Jami</span>
+            <span className="text-sm text-gray-500">
+              Jami {totalBonusQty > 0 && `(+${totalBonusQty} ta bepul bonus)`}
+            </span>
             <span className="text-lg font-bold">{money(total)}</span>
           </div>
 
@@ -403,6 +462,11 @@ export function NewOrderPage(): ReactElement {
           <div className="rounded-xl bg-white p-4 text-center shadow-sm dark:bg-gray-900">
             <div className="text-sm text-gray-500">{client?.name}</div>
             <div className="text-3xl font-bold">{money(total)}</div>
+            {totalBonusQty > 0 && (
+              <div className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                +{totalBonusQty} ta bepul aksiya bonusi bilan
+              </div>
+            )}
           </div>
 
           <label className="block space-y-1">

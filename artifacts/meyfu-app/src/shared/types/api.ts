@@ -52,6 +52,16 @@ export interface User {
   /** Omborchi biriktirilgan ombor/filial (bo'sh — barcha omborlar) */
   warehouse?: string | null;
   warehouse_name?: string | null;
+  // Xodimning individual huquq / imkoniyatlari
+  can_receive_stock?: boolean;
+  can_take_orders?: boolean;
+  can_make_sales?: boolean;
+  can_sell_on_debt?: boolean;
+  can_collect_debts?: boolean;
+  can_record_expenses?: boolean;
+  can_see_warehouse_stock?: boolean;
+  can_scan_invoices?: boolean;
+  permissions?: Record<string, boolean>;
 }
 
 export interface LoginResponse {

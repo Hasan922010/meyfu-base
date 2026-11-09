@@ -42,7 +42,7 @@ from .services import (
 )
 
 _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
-_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
+_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR, Role.WAREHOUSE)
 _SALE_MANAGE = (*_ADMIN, Role.ACCOUNTANT)
 
 
@@ -63,11 +63,11 @@ class SaleViewSet(BaseModelViewSet):
     branch_lookup = "branch"
     http_method_names = ["get", "post", "head", "options"]
     read_roles = _READ
-    write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)
+    write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN, Role.WAREHOUSE)
     action_roles = {
         "cancel": _SALE_MANAGE,
         "resolve": _SALE_MANAGE,
-        "bulk_sync": (Role.DISTRIBUTOR,),
+        "bulk_sync": (Role.DISTRIBUTOR, Role.WAREHOUSE),
         "my_today": _READ,
     }
     filterset_fields = {
@@ -110,6 +110,7 @@ class SaleViewSet(BaseModelViewSet):
                 product=products[str(row["product"])],
                 quantity=row["quantity"], price=row["price"],
                 discount_percent=row.get("discount_percent", 0),
+                is_bonus=bool(row.get("is_bonus", False)),
             )
             for row in data["items"]
         ]

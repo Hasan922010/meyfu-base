@@ -56,6 +56,83 @@
    - **Test Natijalari:** Yangi unit testlar yozildi (`NewSalePage.test.tsx`, `DayCloseWizard.test.tsx`, `MyOrdersPage.test.tsx`), jami frontend testlari: **54 ta test fayli, 226 ta test 100% muvaffaqiyatli**, `tsc -b --noEmit` 0 xato.
    - **Replit Sinxronizatsiyasi:** `artifacts/meyfu-app/` ga to'liq ko'chirildi va sinxronlandi.
 
+9. **Yangi Sotishda Qadoq Bo'yicha Kiritish, Bepul Aksiya Bonusi va Tovar Harakati Hisoboti:**
+   - **Qadoq Bo'yicha Sotish (`PackagingModal.tsx`, `SaleProductList.tsx`):** Yangi sotishda har bir mahsulot uchun dona yoki qadoq (qop, xalta, pachka, karopka) bo'yicha miqdorni kiritish, jonli hisoblash (`PriceFormulaCard`: masalan, `2 karopka × 12 dona = 24 dona`, `24 dona × 20 000 so'm = 480 000 so'm`), mashinadagi mavjud qoldiqqa cheklash va savatda `2 karopka (24 dona)` qilib ko'rsatish joriy qilindi.
+   - **Aksiya / Bonus Tovarlar Bepul Berilishi va Qoldiq Ayirilishi:** `computePromotionalBonuses` orqali xarid hajmiga qarab tegishli bonus tovarlar avtomatik hisoblanadi, `NewSalePage.tsx` va `NewOrderPage.tsx` da bepul bonus banneri ko'rsatiladi va buyurtma/sotuvga `price: 0, is_bonus: true` bilan saqlanadi. Mashina va ombor qoldig'i bonus tovarlar uchun ham to'liq hisobdan chiqariladi.
+   - **Tovar Harakati Hisoboti (`ProductMovementTab.tsx`, `product_movement.py`):** Admin panelda (`ReportsPage.tsx` -> "Tovar harakati (Sotuv / Bonus)") pullik sotuvlar (miqdor va summa), bepul aksiya bonuslari (miqdor va tannarx), jami ombor chiqimi va bonus ulushi bo'yicha batafsil hisobot va Excel (XLSX) eksporti yo'lga qo'yildi.
+   - **Test Natijalari:** Frontend 57 ta test fayli, 235 ta test 100% muvaffaqiyatli (`tsc -b --noEmit` 0 xato). Backend `test_product_movement_and_bonus.py` 100% muvaffaqiyatli.
+   - **Sinxronizatsiya:** `artifacts/meyfu-app/` deploy nusxasi to'liq yangilandi.
+
+10. **Zero-Learning-Curve UI/UX va 5-Menyuli Arxitektura (`design-intuitive-ui`, `agency-ux-architect`):**
+   - **`AdminLayout.tsx` (5 ta Mantiqiy Bo'lim):** 24 ta tarqoq menyu elementi 5 ta aniq biznes guruhiga birlashtirildi (1. Boshqaruv & Tahlil, 2. Ombor & Tovarlar, 3. Savdo & Yetkazish, 4. Moliya & Kassa, 5. Jamoa & Sozlamalar). Har bir guruh uchun rangli ikonka, qulay bo'lim sarlavhalari va real vaqtda tezkor menyu qidiruvi (`Search`) joriy qilindi.
+   - **`MobileLayout.tsx` (5 ta Ergonomik Tab):** Pastki menyu qat'iy 5 ta tabga keltirildi (Bosh, Sotuv, Buyurtma, Hamyon, Mijozlar). O'rtadagi asosiy harakat tugmasi yashil kontrastda ajratildi, 52-56px qulay barmoq zonalari ta'minlandi.
+   - **Mobil Bosh Sahifalar (`MobileHomePage.tsx`, `OrderTakerHomePage.tsx`, `WarehouseHomePage.tsx`):** "Bir ekran = Bitta asosiy harakat (Primary CTA)" qoidasi asosida katta yorqin tugmalar (`+ Yangi Sotuv`, `+ Yangi Buyurtma`, `+ Tovar Qabul Qilish`), 4 ta rangli tezkor kartochka va svetofor ranglari o'rnatildi.
+   - **Test Natijalari:** Frontend 57 ta test fayli, 235 ta test 100% muvaffaqiyatli (`tsc -b --noEmit` 0 xato).
+   - **Sinxronizatsiya:** `artifacts/meyfu-app/` ga to'liq ko'chirildi.
+
+11. **Menyular O'lchamini Kengaytirish va O'qilishini Yaxshilash (Menu Sizing & Typography Ergonomics):**
+   - **`AdminLayout.tsx`:** Sidebar eni `250px` dan `280px` ga kengaytirildi. Menyu elementlarining shrift o'lchami kichik `text-xs` (12px) dan to'laqonli `text-sm font-semibold` (14px) ga, ichki bo'shliqlar `px-3.5 py-2.5` ga, ikonka o'lchamlari 17px dan 20px ga oshirildi. Bo'lim sarlavhalari `text-xs font-bold` (16px ikonka), qidiruv paneli `py-2.5 pl-9 pr-3 text-sm`, logotip `h-10 w-10 text-lg` va mobil drawer `w-80` ga keltirildi.
+   - **`MobileLayout.tsx`:** Pastki navigatsiya tablari balandligi `min-h-[58px] min-w-[62px]` ga, matn shrifti `text-xs font-bold` (12px) ga, ikonkalar `size={22}` (asosiy harakat `size={24}`) ga kengaytirildi va kontrast oshirildi.
+   - **Mobil Bosh Sahifalar (`MobileHomePage`, `OrderTakerHomePage`, `WarehouseHomePage`, `MobileAdminHome`):** Barcha asosiy Primary CTA tugmalari `min-h-[58px] text-lg font-black` (26px ikonka), 2x2 kartochkalar `p-4 text-base font-black` (24px ikonka), qo'shimcha xizmatlar `p-3 text-xs font-bold` (22px ikonka) ga oshirildi.
+   - **Test va Sinxronizatsiya:** Frontend 57 ta test fayli, 235 ta test 100% muvaffaqiyatli (`tsc -b --noEmit` 0 xato). `artifacts/meyfu-app/` ga to'liq sinxronlandi.
+
+12. **BUG-004 (Tovar Harakati Hisobotida `categoriesQuery.data?.map is not a function` Tuzatildi):**
+   - **Sabab:** `catalogApi.categories({ page_size: 200 })` DRF orqali paginatsiyalangan obyekt `{ count: number, results: Category[] }` qaytaradi. `ProductMovementTab.tsx` esa uni to'g'ridan-to'g'ri massiv deb hisoblab `categoriesQuery.data?.map` chaqirgan va ErrorBoundary ishga tushgan.
+   - **Yechim:** `ProductMovementTab.tsx` da himoyalangan `useMemo` orqali `results` va to'g'ridan-to'g'ri massivni to'g'ri ajratib oluvchi `categories` keshlandi, `page_size: 200` uzatildi.
+   - **Test:** Yangi unit test yozildi (`ProductMovementTab.test.tsx`), jami frontend testlari: **57 ta test fayli, 236 ta test 100% muvaffaqiyatli**. `artifacts/meyfu-app/` ga sinxronlandi.
+
+13. **Aniqlangan Barcha Kamchiliklar va Bo'shliqlar Bo'yicha Keng Qamrovli Hisobot (`system_flaws_and_gap_analysis_report.md`):**
+   - **Hisobot artefakti yaratildi:** Barcha hal qilingan xatolar (BUG-001...004), dasturiy ta'minot bo'shliqlari (GAP-001...005), ma'lumotlar muhandisligi va indekslar (GAP-006...009), test muhiti (GAP-010...011) va pilot integratsiyalari (PILOT-001...003) to'liq jamlandi.
+   - **Ponytail uslubida eng kichik, to'liq yechimlar joriy etildi:**
+     - `GAP-001`: `downloadBlob` da asinxron `setTimeout(1000)` qo'yildi;
+     - `GAP-002`: `ProductMovementTab` qidiruvida null-safety `(r.product_name || '')` qo'shildi;
+     - `GAP-003`: `PackagingModal` dagi `stock!` non-null operatori xavfsiz early-return bilan almashtirildi;
+     - `GAP-004`: `ProductMovementTab` jadvaliga `min-w-[850px]` gorizontal skroll berildi;
+     - `GAP-005`: Excel eksport fayl nomiga filial nomi qo'shildi (`tovar-harakati-{branch_name}-{df}-{dt}.xlsx`);
+     - `GAP-006`: `SaleItem` ga kompozit indeks `(sale, is_bonus, product)` qo'shildi (`sales_0007_saleitem_sale_bonus_prod_idx` migratsiyasi);
+     - `GAP-010 & GAP-011`: Ildiz `pytest.ini` yaratilib, testlar avtomatik `test.py` (InMemoryChannelLayer + No Throttling) bilan ishlashi ta'minlandi;
+     - `SyncLogPage.test.tsx` qo'shildi.
+   - **Test Natijalari:** Frontend **58 ta test fayli, 237 ta test 100% muvaffaqiyatli**. Backend **60 ta test 100% muvaffaqiyatli**. `artifacts/meyfu-app/` ga sinxronlandi.
+
+14. **Foydalanish Qo'llanmalari To'liq Yangilandi (User Manual & Role Guides Overhaul):**
+    - **`docs/qollanma.md`:** Asosiy qo'llanma qayta yozildi (5 ta rol, login, 4 xonali PIN-kod, Offline PWA, Qadoq birliklari, Aksiya/Bonus tizimi, Append-only o'zgarmaslik).
+    - **`docs/qollanma-admin.md`:** 5 guruhli yangi menyu iyerarxiyasi, yagona tannarx (`cost_price`), aksiya sozlamalari, komissiya stavkalari va barcha 6 xil hisobotlar bilan boyitildi.
+    - **`docs/qollanma-tarqatuvchi.md`:** 5-tabli mobil ilova, qadoq tanlash (dona vs karopka/qop), jonli formula, 0 so'mlik bepul aksiya bonuslari, 3 bosqichli vizual DayClose va hamyon bilan yangilandi.
+    - **`docs/qollanma-zakazchi.md` (Yangi Maxsus Qo'llanma):** Pre-seller (savdo agenti) uchun: "+ Yangi Buyurtma", GPS check-in, real vaqt ombor qoldig'i (`/m/stock`), aksiya bonuslari, buyurtmalar hayotiy sikli va "Zakaz olgani uchun %" shaxsiy maosh hisobi.
+    - **`docs/qollanma-omborchi.md`:** Kirim nakladnoy (qadoq va tannarx bilan), AI OCR naklit skani, kam qolgan tovar ogohlantirishlari, yuklamalar, qaytarish qabuli va bepul bonuslarning ombor qoldig'idan hisobdan chiqarilishi.
+    - **`docs/qollanma-buxgalter.md`:** Append-only kassa jurnali, mijozlar qarzdorligi (Aging) va Akt-sverka PDF/Excel, "Tovar harakati (Sotuv / Bonus)" hisoboti va Excel eksporti, P&L, 2 bosqichli maosh va 1C eksport.
+    - **`frontend/src/shared/help/guides.ts` & `artifacts/meyfu-app/src/shared/help/guides.ts`:** Ilova ichidagi interaktiv yo'riqnomalar to'liq sinxronlandi.
+    - **Sifat Nazorati:** `tsc -b --noEmit` 0 xato, Vitest 58/58 test fayli, 237/237 test 100% muvaffaqiyatli, backend testlari 100% muvaffaqiyatli. Replit deploy nusxasi bilan 100% paritet ta'minlandi.
+
+15. **Omborchi Mobil Profiliga Buyurtma Olish va Tarqatish (Sotuv) Imkoniyatlari Qo'shildi:**
+    - **Backend API & Ruxsatlar:** `OrderViewSet` (`_WRITE`, `action_roles: cancel, fulfill, my_to_take, my_to_deliver`), `SaleViewSet` (`write_roles`, `_READ`, `action_roles: bulk_sync, my_today`), `LoadingViewSet` (`action_roles: confirm`) va `DayCloseViewSet` (`submit`, `_READ`) da `Role.WAREHOUSE` to'liq kiritildi. `_is_field_staff(user)` orqali omborchi buyurtma/sotuv olganda `taken_by`/`distributor` uning o'ziga majburlanadi.
+    - **Mobil Navigatsiya (`MobileLayout.tsx`):** `WAREHOUSE_TABS` 5 ta ergonomik tabga kengaytirildi: `Bosh` (`/m`), `Buyurtma` (`/m/orders`), `Tarqatish` (`/m/sale` — markaziy highlight CTA), `Qabul` (`/m/receive`), `Qoldiq` (`/m/stock`).
+    - **Bosh Sahifa (`WarehouseHomePage.tsx`):** 3 ta asosiy tezkor harakat (`+ Yangi Tarqatish / Sotuv`, `+ Buyurtma Olish`, `+ Tovar Qabuli`), 2x2 rangli bo'limlar (`Ombor Qoldig'i`, `Buyurtmalarim`, `Tarqatish Yuklamalari`, `Naklit Skani`, `Mijozlar`, `Boshlang'ich Qoldiq`) va tugayotgan tovarlar ogohlantirishi o'rnatildi.
+    - **Qo'llanmalar:** `docs/qollanma-omborchi.md` va `frontend/src/shared/help/guides.ts` yangi imkoniyatlar bilan boyitildi.
+    - **Test Natijalari:** Backend yangi unit testlar (`test_warehouse_can_create_order_and_sale`, `test_warehouse_can_make_sale_and_distribution`) bilan 54/54 test muvaffaqiyatli o'tdi. Frontend `tsc -b --noEmit` 0 xato, Vitest 58/58 test fayli, 237/237 test 100% muvaffaqiyatli. Replit deploy pariteti 100% ta'minlandi.
+
+16. **Xodimlar Individual Imkoniyatlari va Ruxsatlarini Superuser Boshqaruvi (Staff Granular Permissions Matrix):**
+    - **Reja Artefakti:** `staff_granular_permissions_plan.md` tasdiqlandi.
+    - **Backend 8 ta Feature Flag:** `User` modelida 8 ta mustaqil bool maydon (`can_receive_stock`, `can_take_orders`, `can_make_sales`, `can_sell_on_debt`, `can_collect_debts`, `can_record_expenses`, `can_see_warehouse_stock`, `can_scan_invoices`), `has_app_permission(perm)` metodi va `0010_user_can_collect_debts_user_can_make_sales_and_more.py` migratsiyasi joriy qilindi.
+    - **Avtorizatsiya Himoyasi:**
+      - `OrderViewSet.create` -> `can_take_orders` (403 `ORDER_TAKING_FORBIDDEN`);
+      - `create_sale` -> `can_make_sales` (403 `SALES_FORBIDDEN`) va qarzga sotuvda `can_sell_on_debt` (403 `DEBT_SALE_FORBIDDEN`);
+      - `collect_debt_payment` -> `can_collect_debts` (403 `DEBT_COLLECTION_FORBIDDEN`);
+      - `PurchaseViewSet.create` & `perform_create` -> `can_receive_stock` (403 `RECEIVE_STOCK_FORBIDDEN`);
+      - `DistributorExpenseViewSet.create` -> `can_record_expenses` (403 `EXPENSE_RECORDING_FORBIDDEN`);
+      - `StockViewSet.get_queryset` -> `can_see_warehouse_stock` (403 `WAREHOUSE_STOCK_FORBIDDEN`);
+      - `InvoiceScanViewSet.create` & `ReceiptScanView.create` -> `can_scan_invoices` (403 `INVOICE_SCAN_FORBIDDEN`).
+    - **Admin Boshqaruv Paneli:**
+      - `SettingsPage.tsx` ga `StaffPermissionsMatrix.tsx` integratsiya qilindi: superuser har qanday xodimni tanlab, uning 8 ta imkoniyatini bir bosishda yoqib/o'chirishi mumkin (bir lahzalik PATCH so'rov va vizual holat bildirishnomasi bilan).
+      - `StaffForm.tsx` (Xodim qo'shish va tahrirlash modali) da individual ruxsatlar blokiga 8 ta mustaqil almashtirgich (toggle switch) joylashtirildi.
+    - **Mobil Ilova Moslashuvi:**
+      - `NewSalePage.tsx` da `can_sell_on_debt` tekshiruvi: ruxsat bo'lmasa "Qarzga berish" va "Aralash to'lov" tugmalari bloklanadi hamda tushuntirish ogohlantirishi chiqadi.
+      - `MobileLayout.tsx` da navigatsiya tablari va sahifalar kirish huquqlari xodimning individual `can_make_sales`, `can_take_orders`, `can_receive_stock` bayroqlariga qarab dinamik tarzda ochiladi yoki yashiriladi.
+    - **Test Natijalari:**
+      - Backend `test_user_permissions.py` (7 ta yangi unit test) va mavjud `test_staff.py`, `test_orders.py` 100% muvaffaqiyatli;
+      - Frontend `tsc -b --noEmit` 0 xato, Vitest **58 ta test fayli, 240 ta test 100% muvaffaqiyatli**;
+      - Replit nusxasi (`artifacts/meyfu-app/`) bilan 100% to'liq paritet ta'minlandi.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)

@@ -90,6 +90,7 @@ def _handle_sale(payload: dict, client_uuid: str | None, user) -> dict[str, Any]
             quantity=_dec(row["quantity"]),
             price=_dec(row["price"]),
             discount_percent=_dec(row.get("discount_percent", 0)),
+            is_bonus=bool(row.get("is_bonus", False)),
         )
         for row in payload.get("items", [])
     ]
@@ -250,6 +251,7 @@ def _handle_order_create(payload: dict, client_uuid: str | None, user) -> dict[s
             product=products[str(row["product"])],
             quantity=_dec(row["quantity"]),
             price=_dec(row["price"]),
+            is_bonus=bool(row.get("is_bonus", False)),
         )
         for row in payload.get("items", [])
     ]

@@ -12,9 +12,10 @@ import {
   type AddResult,
   type CartLine,
 } from './lib/cart';
+import { PackagingModal } from './PackagingModal';
 
 // UX audit M4: tovarlar mijoz tanlangach darhol ko'rinadi, qatorga bosish = +1,
-// miqdor va narxni ustiga bosib yozish mumkin. Naqd tugmasi sahifa pastida.
+// miqdor va narxni ustiga bosib yozish yoki qadoqda kiritish mumkin. Naqd tugmasi sahifa pastida.
 
 interface Props {
   van: CachedVanStock[];
@@ -42,6 +43,7 @@ export function SaleProductList({
 }: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
   const [editing, setEditing] = useState<Editing>(null);
+  const [modalStock, setModalStock] = useState<CachedVanStock | null>(null);
 
   const q = search.trim().toLowerCase();
   const normQ = q.replace(/[‘'’`]/g, "'");
@@ -68,6 +70,61 @@ export function SaleProductList({
     };
   }
 
+  function handleAdd(v: CachedVanStock): void {
+    const line = cart.find((l) => l.product === v.product);
+    const packInfo = packInfoOf?.(v.product);
+    const packQty = Number(packInfo?.pack_quantity) || 1;
+
+    if (line?.unit_mode === 'package' && line.package_count && packQty > 1) {
+      const nextPackCount = line.package_count + 1;
+      const requestedQty = nextPackCount * packQty;
+      if (requestedQty <= v.quantity) {
+        const updated: CartLine = {
+          ...line,
+          quantity: requestedQty,
+          package_count: nextPackCount,
+          max: v.quantity,
+        };
+        onChange(
+          cart.map((l) => (l.product === v.product ? updated : l)),
+          '',
+        );
+      } else {
+        onChange(cart, `Mashinada faqat ${v.quantity} ${v.unit} bor`);
+      }
+      return;
+    }
+
+    emit(addToCart(cart, lineFor(v, 1), v.quantity), v.unit);
+  }
+
+  function handleRemoveOne(v: CachedVanStock, currentQty: number): void {
+    const line = cart.find((l) => l.product === v.product);
+    const packInfo = packInfoOf?.(v.product);
+    const packQty = Number(packInfo?.pack_quantity) || 1;
+
+    if (line?.unit_mode === 'package' && line.package_count && packQty > 1) {
+      const nextPackCount = line.package_count - 1;
+      if (nextPackCount <= 0) {
+        onChange(cart.filter((l) => l.product !== v.product), '');
+      } else {
+        const updated: CartLine = {
+          ...line,
+          quantity: nextPackCount * packQty,
+          package_count: nextPackCount,
+          max: v.quantity,
+        };
+        onChange(
+          cart.map((l) => (l.product === v.product ? updated : l)),
+          '',
+        );
+      }
+      return;
+    }
+
+    emit(setLineQuantity(cart, lineFor(v, currentQty - 1), v.quantity), v.unit);
+  }
+
   function commit(v: CachedVanStock, field: 'qty' | 'price', raw: string): void {
     setEditing(null);
     const value = Number(raw);
@@ -80,7 +137,42 @@ export function SaleProductList({
       onChange(setLinePrice(cart, v.product, value), notice);
       return;
     }
+
+    const inCart = cart.find((l) => l.product === v.product);
+    const packInfo = packInfoOf?.(v.product);
+    const packQty = Number(packInfo?.pack_quantity) || 1;
+    if (inCart?.unit_mode === 'package' && packQty > 1) {
+      const packCount = Math.floor(value);
+      if (!Number.isFinite(packCount) || packCount <= 0) {
+        onChange(cart.filter((l) => l.product !== v.product), '');
+        return;
+      }
+      const requestedQty = packCount * packQty;
+      const totalQty = Math.min(v.quantity, requestedQty);
+      const actualPackCount = Math.floor(totalQty / packQty);
+      const updated: CartLine = {
+        ...inCart,
+        quantity: totalQty,
+        package_count: actualPackCount,
+        max: v.quantity,
+      };
+      onChange(
+        cart.map((l) => (l.product === v.product ? updated : l)),
+        requestedQty > v.quantity ? `Mashinada faqat ${v.quantity} ${v.unit} bor` : '',
+      );
+      return;
+    }
+
     emit(setLineQuantity(cart, lineFor(v, value), v.quantity), v.unit);
+  }
+
+  function handleConfirmPackLine(savedLine: CartLine): void {
+    const exists = cart.some((l) => l.product === savedLine.product);
+    const nextCart = exists
+      ? cart.map((l) => (l.product === savedLine.product ? savedLine : l))
+      : [...cart, savedLine];
+    onChange(nextCart, '');
+    setModalStock(null);
   }
 
   return (
@@ -108,13 +200,27 @@ export function SaleProductList({
             thumb={thumbOf(v.product)}
             packInfo={packInfoOf?.(v.product)}
             editing={editing?.product === v.product ? editing.field : null}
-            onAdd={() => emit(addToCart(cart, lineFor(v, 1), v.quantity), v.unit)}
-            onRemoveOne={(q) => emit(setLineQuantity(cart, lineFor(v, q - 1), v.quantity), v.unit)}
+            onAdd={() => handleAdd(v)}
+            onRemoveOne={(q) => handleRemoveOne(v, q)}
             onEdit={(field) => setEditing({ product: v.product, field })}
             onCommit={(field, raw) => commit(v, field, raw)}
+            onOpenPackModal={() => setModalStock(v)}
           />
         ))}
       </ul>
+
+      {modalStock && (
+        <PackagingModal
+          open={Boolean(modalStock)}
+          stock={modalStock}
+          packInfo={packInfoOf?.(modalStock.product)}
+          currentLine={cart.find((l) => l.product === modalStock.product)}
+          defaultPrice={priceOf(modalStock.product)}
+          minPrice={minPriceOf?.(modalStock.product)}
+          onClose={() => setModalStock(null)}
+          onConfirm={handleConfirmPackLine}
+        />
+      )}
     </div>
   );
 }
@@ -131,6 +237,7 @@ interface RowProps {
   onRemoveOne: (currentQty: number) => void;
   onEdit: (field: 'qty' | 'price') => void;
   onCommit: (field: 'qty' | 'price', raw: string) => void;
+  onOpenPackModal: () => void;
 }
 
 function ProductRow({
@@ -145,10 +252,14 @@ function ProductRow({
   onRemoveOne,
   onEdit,
   onCommit,
+  onOpenPackModal,
 }: RowProps): ReactElement {
   const name = stock.product_name;
   const price = line?.price ?? defaultPrice;
   const selected = line != null;
+  const packQty = Number(packInfo?.pack_quantity) || 1;
+  const hasPackaging = Boolean(packInfo?.package_type) && packQty > 1;
+  const isPackageMode = line?.unit_mode === 'package' && Boolean(line.package_count);
 
   return (
     <li
@@ -177,12 +288,33 @@ function ProductRow({
             <span>
               {remaining} {stock.unit} qoldi
             </span>
-            {packInfo?.package_type && Number(packInfo.pack_quantity) > 1 && (
-              <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                1 {packInfo.package_type} = {packInfo.pack_quantity} {stock.unit}
+            {hasPackaging && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenPackModal();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    onOpenPackModal();
+                  }
+                }}
+                className="cursor-pointer rounded bg-brand/10 hover:bg-brand/20 px-1.5 py-0.5 text-[10px] font-semibold text-brand dark:bg-brand/20 dark:text-brand transition inline-flex items-center gap-1"
+                title="Qadoqda kiritish uchun bosing"
+              >
+                <span>1 {packInfo?.package_type} = {packInfo?.pack_quantity} {stock.unit}</span>
+                <span className="rounded bg-brand/20 px-1 text-[9px] font-bold uppercase tracking-wider">Qadoq</span>
               </span>
             )}
           </span>
+          {isPackageMode && (
+            <span className="block mt-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+              {line!.package_count} {line!.package_type || 'qadoq'} ({line!.quantity} {stock.unit})
+            </span>
+          )}
         </span>
       </button>
 
@@ -212,14 +344,25 @@ function ProductRow({
       )}
       {selected &&
         (editing === 'qty' ? (
-          <InlineNumber label={`${name} miqdori`} initial={line.quantity} onCommit={(raw) => onCommit('qty', raw)} />
+          <InlineNumber label={`${name} miqdori`} initial={isPackageMode ? line.package_count! : line.quantity} onCommit={(raw) => onCommit('qty', raw)} />
         ) : (
           <button
-            className="min-h-[48px] min-w-[3rem] shrink-0 text-center text-lg font-bold flex items-center justify-center"
-            onClick={() => onEdit('qty')}
+            className="min-h-[48px] min-w-[3rem] shrink-0 text-center text-lg font-bold flex flex-col items-center justify-center"
+            onClick={() => {
+              if (hasPackaging) {
+                onOpenPackModal();
+              } else {
+                onEdit('qty');
+              }
+            }}
             aria-label={`${name} miqdorini yozish`}
           >
-            {line.quantity}
+            <span>{isPackageMode ? line.package_count : line.quantity}</span>
+            {isPackageMode && (
+              <span className="text-[10px] font-normal text-gray-500 leading-none">
+                {line.package_type || 'qadoq'}
+              </span>
+            )}
           </button>
         ))}
       <button

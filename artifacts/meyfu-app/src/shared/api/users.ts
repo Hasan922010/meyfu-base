@@ -51,6 +51,15 @@ export interface StaffInput {
   /** Faqat yaratishda: dastlabki hisob-kitob (musbat — xodimga berilgan avans,
    * manfiy — xodimning qarzi). CLAUDE.md 5. */
   opening_balance?: string;
+  // Individual ruxsatlar
+  can_receive_stock?: boolean;
+  can_take_orders?: boolean;
+  can_make_sales?: boolean;
+  can_sell_on_debt?: boolean;
+  can_collect_debts?: boolean;
+  can_record_expenses?: boolean;
+  can_see_warehouse_stock?: boolean;
+  can_scan_invoices?: boolean;
 }
 
 export const staffApi = {

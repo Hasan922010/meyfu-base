@@ -35,7 +35,7 @@ from .serializers import (
 from .services import ReturnRow, build_snapshot, confirm_day_close, submit_day_close
 
 _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
-_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
+_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR, Role.WAREHOUSE)
 
 
 def _is_distributor(user) -> bool:
@@ -58,7 +58,7 @@ class DayCloseViewSet(
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _READ
     action_roles = {
-        "submit": (Role.DISTRIBUTOR,),
+        "submit": (Role.DISTRIBUTOR, Role.WAREHOUSE),
         "confirm": _ADMIN,
         "my_today": _READ,
     }

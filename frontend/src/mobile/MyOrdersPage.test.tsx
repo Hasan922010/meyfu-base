@@ -10,9 +10,9 @@ vi.mock('@/offline/useSync', () => ({
   useSync: () => ({ online: true, pending: 0 }),
 }));
 
-const mockFulfillOrderLocal = vi.fn(() => Promise.resolve('test-uuid-fulfill'));
+const mockFulfillOrderLocal = vi.fn((_id: unknown) => Promise.resolve('test-uuid-fulfill'));
 vi.mock('@/offline/actions', () => ({
-  fulfillOrderLocal: (...args: unknown[]) => mockFulfillOrderLocal(...args),
+  fulfillOrderLocal: (id: unknown) => mockFulfillOrderLocal(id),
 }));
 
 function renderWithClient(ui: React.ReactElement): void {

@@ -10,9 +10,9 @@ vi.mock('@/offline/useSync', () => ({
   useSync: () => ({ online: true, pending: 0 }),
 }));
 
-const mockSaveSaleLocal = vi.fn(() => Promise.resolve('test-uuid-sale'));
+const mockSaveSaleLocal = vi.fn((_payload: unknown) => Promise.resolve('test-uuid-sale'));
 vi.mock('@/offline/actions', () => ({
-  saveSaleLocal: (...args: unknown[]) => mockSaveSaleLocal(...args),
+  saveSaleLocal: (payload: unknown) => mockSaveSaleLocal(payload),
 }));
 
 vi.mock('@/shared/api/warehouse', () => ({
@@ -145,6 +145,64 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
               price: 20000,
             }),
           ],
+        }),
+      );
+    });
+  });
+
+  it('aksiyali tovar xarid qilinganda avtomatik bepul aksiya bonusi qo‘shiladi va saqlanadi', async () => {
+    // p1 mahsulotiga aksiya qo'shamiz: 10 ta olinsa -> 1 ta sovg'a
+    await db.products.update('p1', {
+      has_bonus: true,
+      bonus_trigger_qty: 10,
+      bonus_reward_qty: 1,
+      bonus_product: 'p1',
+      bonus_product_name: 'Toza Gel 1L',
+    });
+
+    renderWithClient(<NewSalePage />);
+
+    // 1. Mijoz tanlash
+    const clientBtn = await screen.findByRole('button', { name: /Guliston Savdo Do‘koni/ });
+    fireEvent.click(clientBtn);
+
+    // 2. Qadoq modalini ochish va 1 karopka (12 dona) tanlash
+    const packBtn = await screen.findByTitle('Qadoqda kiritish uchun bosing');
+    fireEvent.click(packBtn);
+
+    // Modalda tasdiqlash
+    const savePackBtn = screen.getByRole('button', { name: /Savatga qo'shish · 240 000/ });
+    fireEvent.click(savePackBtn);
+
+    // 3. Aksiya bonusi banneri paydo bo'lganini tekshirish
+    expect(await screen.findByText('Aksiya bonusi (Mijozga bepul beriladi):')).toBeInTheDocument();
+    expect(screen.getByText('+1 dona Toza Gel 1L')).toBeInTheDocument();
+    expect(screen.getByText("«Toza Gel 1L» xaridi uchun")).toBeInTheDocument();
+
+    // 4. Naqd to'lov bilan saqlash
+    const payBtn = screen.getByRole('button', { name: /Naqd · 240 000/ });
+    fireEvent.click(payBtn);
+
+    // 5. saveSaleLocal'ga bonus qatori 0 so'm va is_bonus: true bilan borganini tekshirish
+    await waitFor(() => {
+      expect(mockSaveSaleLocal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          client: 'c1',
+          payment_type: 'NAQD',
+          lines: expect.arrayContaining([
+            expect.objectContaining({
+              product: 'p1',
+              quantity: 12,
+              price: 20000,
+              is_bonus: false,
+            }),
+            expect.objectContaining({
+              product: 'p1',
+              quantity: 1,
+              price: 0,
+              is_bonus: true,
+            }),
+          ]),
         }),
       );
     });

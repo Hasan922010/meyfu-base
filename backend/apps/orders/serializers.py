@@ -19,7 +19,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = (
             "id", "product", "product_name", "product_sku", "quantity",
-            "delivered_quantity", "price", "amount",
+            "delivered_quantity", "price", "amount", "is_bonus",
         )
         read_only_fields = ("id", "delivered_quantity", "amount",
                             "product_name", "product_sku")
@@ -50,6 +50,7 @@ class OrderLineInputSerializer(serializers.Serializer):
     product = serializers.UUIDField()
     quantity = serializers.DecimalField(**_QTY, min_value=Decimal("0.001"))
     price = serializers.DecimalField(**_MONEY, min_value=Decimal("0"))
+    is_bonus = serializers.BooleanField(required=False, default=False)
 
 
 class OrderCreateSerializer(serializers.Serializer):

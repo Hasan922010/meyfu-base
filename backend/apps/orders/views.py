@@ -43,7 +43,7 @@ _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
 _WAREHOUSE = (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.WAREHOUSE,
          Role.DISTRIBUTOR, Role.ORDER_TAKER)
-_WRITE = (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.MANAGER, Role.SUPER_ADMIN)
+_WRITE = (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.MANAGER, Role.SUPER_ADMIN, Role.WAREHOUSE)
 
 
 def _is_distributor(user) -> bool:
@@ -52,7 +52,11 @@ def _is_distributor(user) -> bool:
 
 def _is_field_staff(user) -> bool:
     """O'z nomidan ishlaydigan xodim — `taken_by`/`distributor` o'ziga majburlanadi."""
-    return _is_distributor(user) or is_order_taker(user)
+    return (
+        _is_distributor(user)
+        or is_order_taker(user)
+        or (getattr(user, "role", None) == Role.WAREHOUSE and not getattr(user, "is_superuser", False))
+    )
 
 
 class OrderViewSet(BaseModelViewSet):
@@ -63,13 +67,13 @@ class OrderViewSet(BaseModelViewSet):
     write_roles = _WRITE
     action_roles = {
         "approve": _ADMIN,
-        "cancel": (Role.DISTRIBUTOR, Role.ORDER_TAKER, *_ADMIN),
+        "cancel": (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE, *_ADMIN),
         "build_loading": _WAREHOUSE,
         "for_loading": _WAREHOUSE,
-        # Yetkazish (Sale yaratadi) — faqat tarqatuvchi; zakaz oluvchi pul ushlamaydi
-        "fulfill": (Role.DISTRIBUTOR, *_ADMIN),
-        "my_to_take": (Role.DISTRIBUTOR, Role.ORDER_TAKER, *_ADMIN),
-        "my_to_deliver": (Role.DISTRIBUTOR, *_ADMIN),
+        # Yetkazish (Sale yaratadi) — tarqatuvchi, omborchi va admin
+        "fulfill": (Role.DISTRIBUTOR, Role.WAREHOUSE, *_ADMIN),
+        "my_to_take": (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE, *_ADMIN),
+        "my_to_deliver": (Role.DISTRIBUTOR, Role.WAREHOUSE, *_ADMIN),
     }
     filterset_fields = ("status", "client", "taken_by", "assigned_to", "date")
     search_fields = ("number", "client__name")
@@ -99,6 +103,13 @@ class OrderViewSet(BaseModelViewSet):
         s = OrderCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
+
+        if not request.user.has_app_permission("can_take_orders"):
+            raise BusinessError(
+                message="Sizda buyurtma olish huquqi yo'q.",
+                code="ORDER_TAKING_FORBIDDEN",
+                status_code=403,
+            )
 
         client = Client.objects.select_related("route").get(pk=data["client"])
         # Zakaz oluvchi va tarqatuvchi faqat o'z marshruti mijozlaridan buyurtma oladi (xavfsizlik
@@ -133,6 +144,7 @@ class OrderViewSet(BaseModelViewSet):
             OrderLine(
                 product=products[str(row["product"])],
                 quantity=row["quantity"], price=row["price"],
+                is_bonus=bool(row.get("is_bonus", False)),
             )
             for row in data["items"]
         ]
@@ -219,9 +231,9 @@ class OrderViewSet(BaseModelViewSet):
         # (create() dagi `taken_by` bilan bir xil himoya): aks holda bir tarqatuvchi
         # boshqasining qoldig'i/hamyoni/qarzini manipulyatsiya qila oladi.
         distributor = None
-        if data.get("distributor") and not _is_distributor(request.user):
+        if data.get("distributor") and not (_is_distributor(request.user) or getattr(request.user, "role", None) == Role.WAREHOUSE):
             distributor = User.objects.get(pk=data["distributor"])
-        elif _is_distributor(request.user):
+        elif _is_distributor(request.user) or getattr(request.user, "role", None) == Role.WAREHOUSE:
             distributor = request.user
 
         result = fulfill_order(

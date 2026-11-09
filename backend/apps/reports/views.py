@@ -592,3 +592,74 @@ class PriceVarianceReportView(_ReportView):
             branch=self._scope(request),
         )
         return ok(data)
+
+
+class ProductMovementReportView(_ReportView):
+    @extend_schema(
+        summary="Tovar harakati va sotuv turi (Sotuv vs Bonus) hisoboti",
+        parameters=[
+            OpenApiParameter("date_from", str, required=False),
+            OpenApiParameter("date_to", str, required=False),
+            OpenApiParameter("product_id", str, required=False),
+            OpenApiParameter("category_id", str, required=False),
+        ],
+        request=None, responses={200: dict},
+    )
+    def get(self, request: Request) -> Response:
+        from .services.product_movement import product_movement_report
+
+        df, dt = self._range(request)
+        product_id = request.query_params.get("product_id") or None
+        category_id = request.query_params.get("category_id") or None
+        data = product_movement_report(
+            date_from=df,
+            date_to=dt,
+            product_id=product_id,
+            category_id=category_id,
+            branch=self._scope(request),
+        )
+        return ok(data)
+
+
+class ProductMovementExportView(_ReportView):
+    @extend_schema(
+        summary="Tovar harakati hisobotini Excel formatida yuklash",
+        parameters=[
+            OpenApiParameter("date_from", str, required=False),
+            OpenApiParameter("date_to", str, required=False),
+            OpenApiParameter("product_id", str, required=False),
+            OpenApiParameter("category_id", str, required=False),
+        ],
+        request=None, responses={200: bytes},
+    )
+    def get(self, request: Request) -> HttpResponse:
+        from .services.product_movement import (
+            product_movement_report,
+            product_movement_rows_for_export,
+        )
+
+        df, dt = self._range(request)
+        branch = self._scope(request)
+        data = product_movement_report(
+            date_from=df,
+            date_to=dt,
+            product_id=request.query_params.get("product_id") or None,
+            category_id=request.query_params.get("category_id") or None,
+            branch=branch,
+        )
+        rows = product_movement_rows_for_export(data)
+        excel_bytes = rows_to_xlsx(rows, title=f"Tovar harakati ({df} - {dt})")
+        resp = HttpResponse(
+            excel_bytes,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        branch_suffix = (
+            f"-{branch.name.strip().replace(' ', '_')}"
+            if branch and hasattr(branch, "name") and branch.name
+            else ""
+        )
+        resp["Content-Disposition"] = (
+            f'attachment; filename="tovar-harakati{branch_suffix}-{df}-{dt}.xlsx"'
+        )
+        return resp
+

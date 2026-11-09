@@ -47,6 +47,7 @@ class SaleLine:
     quantity: Decimal
     price: Decimal
     discount_percent: Decimal = _ZERO
+    is_bonus: bool = False
 
 
 @dataclass
@@ -183,6 +184,21 @@ def create_sale(
     discount_amount = discount_amount or _ZERO
     _validate_amounts(lines, discount_amount, paid_amount)
 
+    if hasattr(distributor, "has_app_permission") and not distributor.has_app_permission("can_make_sales"):
+        raise BusinessError(
+            message="Sizda sotuv / tarqatish huquqi yo'q.",
+            code="SALES_FORBIDDEN",
+            status_code=403,
+        )
+
+    if payment_type in (PaymentType.DEBT, PaymentType.MIXED) and hasattr(distributor, "has_app_permission"):
+        if not distributor.has_app_permission("can_sell_on_debt"):
+            raise BusinessError(
+                message="Sizda qarzga (nasiyaga) tovar sotish huquqi yo'q. Faqat naqd yoki karta bilan sotish mumkin.",
+                code="DEBT_SALE_FORBIDDEN",
+                status_code=403,
+            )
+
     ensure_client_in_scope(distributor, client)
     flags: list[str] = []
     # 7.7 — yopilgan kunga yozilmaydi (offline — bugunga ko'chiriladi, BE-101)
@@ -228,9 +244,10 @@ def create_sale(
     for line in lines:
         product = line.product
         min_price = price_for(product, branch, price_map).min_price
-        min_total += min_price * line.quantity
+        if not line.is_bonus:
+            min_total += min_price * line.quantity
         # chegirma bilan min narxni aylanib o'tmaslik uchun — sof birlik narxi
-        below_min = _net_unit_price(line) < min_price and min_price > _ZERO
+        below_min = (not line.is_bonus) and _net_unit_price(line) < min_price and min_price > _ZERO
         if below_min:
             if strict and not can_below:
                 raise BusinessError(
@@ -317,6 +334,7 @@ def create_sale(
             sale=sale, product=line.product, quantity=line.quantity,
             price=line.price, cost_price=cost,
             discount_percent=line.discount_percent, below_min_price=below_min,
+            is_bonus=line.is_bonus,
             created_by=distributor,
         )
         item.compute()

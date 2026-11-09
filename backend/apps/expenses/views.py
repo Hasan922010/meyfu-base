@@ -10,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.business_day import business_date
+from apps.core.exceptions import BusinessError
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.constants import Role
@@ -71,6 +72,12 @@ class DistributorExpenseViewSet(BaseModelViewSet):
     @extend_schema(request=ExpenseCreateSerializer,
                    responses=DistributorExpenseSerializer)
     def create(self, request: Request, *args, **kwargs) -> Response:
+        if hasattr(request.user, "has_app_permission") and not request.user.has_app_permission("can_record_expenses"):
+            raise BusinessError(
+                message="Sizda xarajat kiritish huquqi yo'q.",
+                code="EXPENSE_RECORDING_FORBIDDEN",
+                status_code=403,
+            )
         s = ExpenseCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data

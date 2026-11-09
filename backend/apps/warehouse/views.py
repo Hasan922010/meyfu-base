@@ -243,6 +243,12 @@ class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
     }
 
     def get_queryset(self) -> QuerySet[Stock]:
+        if hasattr(self.request.user, "has_app_permission") and not self.request.user.has_app_permission("can_see_warehouse_stock"):
+            raise BusinessError(
+                message="Sizga ombor qoldiqlarini ko'rishga ruxsat berilmagan.",
+                code="WAREHOUSE_STOCK_FORBIDDEN",
+                status_code=403,
+            )
         return self.scope_to_own(super().get_queryset())
 
     def check_opening_not_locked(self, warehouse: Warehouse) -> None:
@@ -394,6 +400,24 @@ class PurchaseViewSet(_OwnWarehouseMixin, BaseModelViewSet):
 
     def get_queryset(self) -> QuerySet[Purchase]:
         return self.scope_to_own(super().get_queryset())
+
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        if hasattr(request.user, "has_app_permission") and not request.user.has_app_permission("can_receive_stock"):
+            raise BusinessError(
+                message="Sizda tovar kirim qilish (qabul) huquqi yo'q.",
+                code="RECEIVE_STOCK_FORBIDDEN",
+                status_code=403,
+            )
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer) -> None:
+        if hasattr(self.request.user, "has_app_permission") and not self.request.user.has_app_permission("can_receive_stock"):
+            raise BusinessError(
+                message="Sizda tovar kirim qilish (qabul) huquqi yo'q.",
+                code="RECEIVE_STOCK_FORBIDDEN",
+                status_code=403,
+            )
+        super().perform_create(serializer)
 
     @extend_schema(summary="Qabulni tasdiqlash — qoldiqqa kirim qiladi", request=None)
     @action(detail=True, methods=["post"])
@@ -577,7 +601,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     write_roles = _WH_WRITE
     read_roles = _LOADING_READ
     action_roles = {
-        "confirm": (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN),
+        "confirm": (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN, Role.WAREHOUSE),
         "my_today": _LOADING_READ,
     }
     filterset_fields = ("distributor", "warehouse", "status", "date")
@@ -620,6 +644,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     @action(detail=True, methods=["post"])
     def confirm(self, request: Request, pk: str | None = None) -> Response:
         loading = self.get_object()
+        role = getattr(request.user, "role", None)
         if _is_distributor(request.user):
             if loading.distributor_id != request.user.id:
                 raise BusinessError(
@@ -628,7 +653,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
                 )
         elif not (
             request.user.is_superuser
-            or getattr(request.user, "role", None) in (Role.MANAGER, Role.SUPER_ADMIN)
+            or role in (Role.MANAGER, Role.SUPER_ADMIN, Role.WAREHOUSE)
         ):
             raise BusinessError(
                 message="Yuklamani faqat tayinlangan tarqatuvchi yoki rahbar tasdiqlashi mumkin.",

@@ -154,7 +154,48 @@ export interface PriceVarianceResult {
   };
 }
 
+export interface ProductMovementRow {
+  product_id: string;
+  product_name: string;
+  product_sku: string;
+  category_name: string;
+  unit: string;
+  has_bonus: boolean;
+  bonus_trigger_qty: string;
+  bonus_reward_qty: string;
+  sold_qty: string;
+  sold_amount: string;
+  bonus_qty: string;
+  bonus_cost: string;
+  total_qty: string;
+  avg_price: string;
+  sales_count: number;
+}
+
+export interface ProductMovementResult {
+  date_from: string;
+  date_to: string;
+  rows: ProductMovementRow[];
+  summary: {
+    total_products: number;
+    total_sold_qty: string;
+    total_sold_amount: string;
+    total_bonus_qty: string;
+    total_bonus_cost: string;
+    total_movement_qty: string;
+    bonus_ratio_percent: string;
+  };
+}
+
 export const reportsAdvancedApi = {
+  /** Tovar harakati va sotuv turi (Sotuv vs Bonus) hisoboti */
+  productMovement: (params: QueryParams) =>
+    retrieve<ProductMovementResult>(`/reports/product-movement/${toQ(params)}`),
+  /** Tovar harakati hisoboti Excel eksporti */
+  exportProductMovement: async (params: QueryParams): Promise<Blob> => {
+    const resp = await api.get(`/reports/product-movement/export/${toQ(params)}`, { responseType: 'blob' });
+    return resp.data as Blob;
+  },
   /** Tannarxdan farq (Kamomad / Ortiqcha) hisoboti */
   priceVariance: (params: QueryParams) =>
     retrieve<PriceVarianceResult>(`/reports/price-variance/${toQ(params)}`),
@@ -193,5 +234,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
 }

@@ -14,6 +14,11 @@ export interface CachedProduct {
   cost_price?: string | undefined;
   pack_quantity?: string | number | undefined;
   package_type?: string | undefined;
+  has_bonus?: boolean | undefined;
+  bonus_trigger_qty?: string | number | undefined;
+  bonus_reward_qty?: string | number | undefined;
+  bonus_product?: string | null | undefined;
+  bonus_product_name?: string | null | undefined;
   is_active: boolean;
   image_thumb: string | null;
 }
@@ -56,6 +61,7 @@ export interface CachedOrder {
     quantity: string;
     delivered_quantity: string;
     price: string;
+    is_bonus?: boolean | undefined;
   }>;
 }
 

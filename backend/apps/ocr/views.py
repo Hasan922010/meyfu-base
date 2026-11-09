@@ -75,6 +75,12 @@ class InvoiceScanViewSet(
     @extend_schema(request=InvoiceScanCreateSerializer,
                    responses=InvoiceScanSerializer)
     def create(self, request: Request, *args, **kwargs) -> Response:
+        if hasattr(request.user, "has_app_permission") and not request.user.has_app_permission("can_scan_invoices"):
+            raise BusinessError(
+                message="Sizda nakladnoy/hujjatlarni skanerlash huquqi yo'q.",
+                code="INVOICE_SCAN_FORBIDDEN",
+                status_code=403,
+            )
         s = InvoiceScanCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
@@ -197,6 +203,12 @@ class ReceiptScanView(EnvelopeResponseMixin, viewsets.ViewSet):
 
     @extend_schema(request=ReceiptScanSerializer, responses={200: dict})
     def create(self, request: Request) -> Response:
+        if hasattr(request.user, "has_app_permission") and not request.user.has_app_permission("can_scan_invoices"):
+            raise BusinessError(
+                message="Sizda chek/hujjatlarni skanerlash huquqi yo'q.",
+                code="INVOICE_SCAN_FORBIDDEN",
+                status_code=403,
+            )
         s = ReceiptScanSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         img = s.validated_data["image"].read()

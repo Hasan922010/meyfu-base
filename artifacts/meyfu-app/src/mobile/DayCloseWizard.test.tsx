@@ -5,13 +5,13 @@ import { MemoryRouter } from 'react-router-dom';
 
 import { DayCloseWizard } from './DayCloseWizard';
 
-const mockSubmit = vi.fn(() => Promise.resolve({ id: 'dc-1', status: 'SUBMITTED' }));
+const mockSubmit = vi.fn((_data?: unknown) => Promise.resolve({ id: 'dc-1', status: 'SUBMITTED' }));
 const mockMyToday = vi.fn();
 
 vi.mock('@/shared/api/reports', () => ({
   dayCloseApi: {
     myToday: () => mockMyToday(),
-    submit: (...args: unknown[]) => mockSubmit(...args),
+    submit: (data: unknown) => mockSubmit(data),
   },
 }));
 

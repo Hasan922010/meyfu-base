@@ -458,3 +458,41 @@ def test_return_other_route_client_rejected(auth_api, van_stocked, routed_client
     )
     assert resp.status_code == 409
     assert resp.data["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
+
+
+@pytest.mark.django_db
+def test_warehouse_can_make_sale_and_distribution(van_stocked):
+    """Omborchi tarqatish/sotuv qila olishi tekshiruvi."""
+    from rest_framework.test import APIClient
+    from apps.users.models import User
+    from apps.warehouse.models import VanStock
+
+    wh_user = User.objects.create_user(
+        phone="+998909990002", password="pass12345", full_name="Omborchi Tarqatuvchi",
+        role="WAREHOUSE",
+    )
+    product = van_stocked["product"]
+    client = van_stocked["client"]
+    VanStock.objects.create(distributor=wh_user, product=product, quantity=Decimal("50"))
+
+    wh_api = APIClient()
+    wh_api.force_authenticate(user=wh_user)
+
+    resp = wh_api.post(
+        "/api/v1/sales/",
+        {
+            "client": str(client.id),
+            "payment_type": "NAQD",
+            "items": [{"product": str(product.id), "quantity": "5", "price": "25000"}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    sale_data = resp.data["data"]
+    assert sale_data["distributor_name"] == "Omborchi Tarqatuvchi"
+    assert sale_data["total_amount"] == "125000.00"
+
+    # Bugungi sotuvlari ro'yxatini ko'ra oladi
+    resp_today = wh_api.get("/api/v1/sales/my-today/")
+    assert resp_today.status_code == 200
+    assert len(resp_today.data["data"]) >= 1
