@@ -1,4 +1,4 @@
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Package, Plus } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import type { CachedVanStock } from '@/offline/db';
@@ -24,6 +24,8 @@ interface Props {
   thumbOf: (productId: string) => string | null | undefined;
   /** Minimal narx (0 — cheklov yo'q). Pastroq narx darhol ko'rsatiladi (FE-106). */
   minPriceOf?: (productId: string) => number;
+  /** Qadoq ma'lumotlari (dona/karopka ko'rsatish uchun) */
+  packInfoOf?: (productId: string) => { package_type?: string | undefined; pack_quantity?: string | number | undefined } | undefined;
   onChange: (cart: CartLine[], notice: string) => void;
 }
 
@@ -35,6 +37,7 @@ export function SaleProductList({
   priceOf,
   thumbOf,
   minPriceOf,
+  packInfoOf,
   onChange,
 }: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
@@ -103,6 +106,7 @@ export function SaleProductList({
             remaining={remainingFor(v.quantity, cart, v.product)}
             defaultPrice={priceOf(v.product)}
             thumb={thumbOf(v.product)}
+            packInfo={packInfoOf?.(v.product)}
             editing={editing?.product === v.product ? editing.field : null}
             onAdd={() => emit(addToCart(cart, lineFor(v, 1), v.quantity), v.unit)}
             onRemoveOne={(q) => emit(setLineQuantity(cart, lineFor(v, q - 1), v.quantity), v.unit)}
@@ -121,6 +125,7 @@ interface RowProps {
   remaining: number;
   defaultPrice: number;
   thumb: string | null | undefined;
+  packInfo?: { package_type?: string | undefined; pack_quantity?: string | number | undefined } | undefined;
   editing: 'qty' | 'price' | null;
   onAdd: () => void;
   onRemoveOne: (currentQty: number) => void;
@@ -134,6 +139,7 @@ function ProductRow({
   remaining,
   defaultPrice,
   thumb,
+  packInfo,
   editing,
   onAdd,
   onRemoveOne,
@@ -146,25 +152,36 @@ function ProductRow({
 
   return (
     <li
-      className={`flex items-center gap-2 rounded-xl bg-white p-2 shadow-sm dark:bg-gray-900 ${
-        selected ? 'ring-2 ring-brand' : ''
+      className={`flex items-center gap-2 rounded-2xl bg-white p-2.5 shadow-sm border transition-all dark:bg-gray-900 ${
+        selected
+          ? 'border-brand/40 ring-2 ring-brand/20 bg-brand/5 dark:bg-brand/10'
+          : 'border-gray-100 dark:border-gray-800'
       }`}
     >
       <button
-        className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:opacity-60"
+        className="flex min-w-0 flex-1 items-center gap-2.5 text-left disabled:opacity-60"
         onClick={onAdd}
         disabled={remaining === 0}
         aria-label={`${name} — 1 ta qo'shish`}
       >
         {thumb ? (
-          <img src={thumb} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+          <img src={thumb} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover border border-gray-100 dark:border-gray-800" />
         ) : (
-          <div className="h-10 w-10 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-400 dark:bg-gray-800">
+            <Package size={20} aria-hidden />
+          </div>
         )}
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium">{name}</span>
-          <span className="block text-xs text-gray-500">
-            {remaining} {stock.unit} qoldi
+          <span className="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{name}</span>
+          <span className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+            <span>
+              {remaining} {stock.unit} qoldi
+            </span>
+            {packInfo?.package_type && Number(packInfo.pack_quantity) > 1 && (
+              <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                1 {packInfo.package_type} = {packInfo.pack_quantity} {stock.unit}
+              </span>
+            )}
           </span>
         </span>
       </button>
@@ -173,8 +190,8 @@ function ProductRow({
         <InlineNumber label={`${name} narxi`} initial={price} onCommit={(raw) => onCommit('price', raw)} />
       ) : (
         <button
-          className={`shrink-0 rounded px-1 text-xs text-gray-600 dark:text-gray-300 ${
-            selected ? 'underline decoration-dotted' : ''
+          className={`min-h-[48px] shrink-0 rounded-xl px-2 text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center justify-center ${
+            selected ? 'underline decoration-dotted font-semibold text-brand' : ''
           }`}
           onClick={() => onEdit('price')}
           disabled={!selected}
@@ -186,11 +203,11 @@ function ProductRow({
 
       {selected && (
         <button
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800"
+          className="flex h-12 w-12 min-h-[48px] min-w-[48px] shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-transform"
           onClick={() => onRemoveOne(line.quantity)}
           aria-label={`${name} — kamaytirish`}
         >
-          <Minus size={18} aria-hidden />
+          <Minus size={20} aria-hidden />
         </button>
       )}
       {selected &&
@@ -198,7 +215,7 @@ function ProductRow({
           <InlineNumber label={`${name} miqdori`} initial={line.quantity} onCommit={(raw) => onCommit('qty', raw)} />
         ) : (
           <button
-            className="min-w-[2.5rem] shrink-0 text-center text-lg font-bold"
+            className="min-h-[48px] min-w-[3rem] shrink-0 text-center text-lg font-bold flex items-center justify-center"
             onClick={() => onEdit('qty')}
             aria-label={`${name} miqdorini yozish`}
           >
@@ -206,12 +223,12 @@ function ProductRow({
           </button>
         ))}
       <button
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand disabled:opacity-40"
+        className="flex h-12 w-12 min-h-[48px] min-w-[48px] shrink-0 items-center justify-center rounded-xl bg-brand text-brand-fg hover:brightness-110 active:scale-95 transition-transform disabled:opacity-40"
         onClick={onAdd}
         disabled={remaining === 0}
         aria-label={`${name} — ko'paytirish`}
       >
-        <Plus size={18} aria-hidden />
+        <Plus size={20} aria-hidden />
       </button>
     </li>
   );
@@ -229,7 +246,7 @@ function InlineNumber({
   const [value, setValue] = useState<string>(String(initial));
   return (
     <input
-      className="field w-20 shrink-0 px-2 py-1 text-center"
+      className="field h-12 w-20 shrink-0 px-2 py-1 text-center font-bold"
       type="number"
       inputMode="numeric"
       min="0"

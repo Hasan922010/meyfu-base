@@ -280,81 +280,139 @@ function FulfillScreen({
   return (
     <div className="space-y-4">
       <button
-        className="flex items-center gap-1.5 text-sm text-gray-500"
+        className="flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
         onClick={onDone}
       >
-        <ArrowLeft size={16} aria-hidden /> Orqaga
+        <ArrowLeft size={18} aria-hidden /> Orqaga
       </button>
 
-      <div>
-        <h1 className="text-xl font-bold">Yetkazish</h1>
-        <p className="text-sm text-gray-500">
-          {order.client_name} · {order.number}
-        </p>
+      <div className="card-minimal flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Yetkazish</h1>
+          <p className="text-xs text-gray-500">
+            {order.client_name} · #{order.number}
+          </p>
+        </div>
+        <div className="text-right">
+          <span className="text-xs text-gray-400 block">Jami buyurtma</span>
+          <span className="font-bold text-brand">{money(order.total_amount)}</span>
+        </div>
       </div>
 
-      <ul className="divide-y divide-gray-100 rounded-xl bg-white shadow-sm dark:divide-gray-800 dark:bg-gray-900">
-        {order.items.map((it) => (
-          <li key={it.id} className="space-y-1 p-3">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">{it.product_name}</span>
-              <span className="text-gray-400">
-                buyurtma: {it.quantity}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Yetkazildi</span>
-              <input
-                className="field w-24"
-                type="number"
-                inputMode="decimal"
-                value={qtys[it.id] ?? ''}
-                onChange={(e) =>
-                  setQtys((p) => ({ ...p, [it.id]: e.target.value }))
-                }
-              />
-              <span className="text-sm text-gray-400">× {money(it.price)}</span>
-            </div>
-          </li>
-        ))}
+      <ul className="space-y-2">
+        {order.items.map((it) => {
+          const remainingNeed = Math.max(0, Number(it.quantity) - Number(it.delivered_quantity));
+          const currentDelivered = Number(qtys[it.id] || 0);
+          return (
+            <li key={it.id} className="card-minimal space-y-2">
+              <div className="flex justify-between items-start">
+                <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{it.product_name}</span>
+                <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-gray-500 font-medium">
+                  buyurtma: {it.quantity} ta
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    className="btn min-h-[44px] min-w-[44px] p-0 text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl active:scale-95 transition"
+                    onClick={() => setQtys((p) => ({ ...p, [it.id]: String(Math.max(0, currentDelivered - 1)) }))}
+                    aria-label={`${it.product_name} — kamaytirish`}
+                  >
+                    -1
+                  </button>
+                  <input
+                    className="field min-h-[44px] w-20 text-center font-bold text-base"
+                    type="number"
+                    inputMode="decimal"
+                    aria-label={`${it.product_name} yetkazilgan miqdor`}
+                    value={qtys[it.id] ?? ''}
+                    onChange={(e) =>
+                      setQtys((p) => ({ ...p, [it.id]: e.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="btn min-h-[44px] min-w-[44px] p-0 text-sm font-bold bg-brand/10 text-brand rounded-xl active:scale-95 transition"
+                    onClick={() => setQtys((p) => ({ ...p, [it.id]: String(currentDelivered + 1) }))}
+                    aria-label={`${it.product_name} — ko'paytirish`}
+                  >
+                    +1
+                  </button>
+                  <button
+                    type="button"
+                    className="btn min-h-[44px] px-2.5 text-xs font-semibold text-brand hover:underline"
+                    onClick={() => setQtys((p) => ({ ...p, [it.id]: String(remainingNeed) }))}
+                  >
+                    Hammasi ({remainingNeed})
+                  </button>
+                </div>
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 shrink-0">
+                  {money(Number(qtys[it.id] || 0) * Number(it.price))}
+                </span>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500">Jami</span>
-        <span className="text-lg font-bold">{money(total)}</span>
+      <div className="card-minimal flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-500">Topshiriladigan jami</span>
+        <span className="text-xl font-extrabold text-gray-900 dark:text-gray-100">{money(total)}</span>
       </div>
 
-      <div className="grid gap-2">
+      <div className="grid gap-2.5 pt-1">
         <button
-          className="btn flex items-center justify-center gap-2 bg-success text-white"
+          className="btn min-h-[50px] flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-sm active:scale-[0.98] transition"
           disabled={saving || total <= 0}
           onClick={() => void save('NAQD')}
         >
-          <Banknote size={18} aria-hidden /> Naqd
+          <Banknote size={20} aria-hidden /> Naqd pul · {money(total)}
         </button>
         <button
-          className="btn flex items-center justify-center gap-2 bg-brand text-brand-fg"
+          className="btn min-h-[50px] flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-sm active:scale-[0.98] transition"
           disabled={saving || total <= 0}
           onClick={() => void save('PLASTIK')}
         >
-          <CreditCard size={18} aria-hidden /> Plastik
+          <CreditCard size={20} aria-hidden /> Plastik karta
         </button>
-        <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
-          <label className="mb-2 block space-y-1">
-            <span className="text-xs text-gray-500">Qarz muddati</span>
-            <input
-              className="field"
-              type="date"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-            />
-          </label>
+        <div className="card-minimal space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-500">Qarz to'lov muddati</span>
+            <div className="flex gap-1.5">
+              {[
+                { days: 7, label: '+7 kun' },
+                { days: 14, label: '+14 kun' },
+                { days: 30, label: '+30 kun' },
+              ].map((chip) => (
+                <button
+                  key={chip.days}
+                  type="button"
+                  className={`px-2 py-0.5 text-[11px] font-semibold rounded-lg border transition ${
+                    due === plusDays(chip.days)
+                      ? 'bg-amber-500 text-white border-amber-600'
+                      : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
+                  }`}
+                  onClick={() => setDue(plusDays(chip.days))}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <input
+            className="field"
+            type="date"
+            aria-label="Qarz muddati"
+            value={due}
+            onChange={(e) => setDue(e.target.value)}
+          />
           <button
-            className="btn flex w-full items-center justify-center gap-2 bg-pending text-white"
+            className="btn min-h-[48px] flex w-full items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-sm active:scale-[0.98] transition"
             disabled={saving || total <= 0}
             onClick={() => void save('QARZ')}
           >
-            <CalendarClock size={18} aria-hidden /> Qarzga
+            <CalendarClock size={20} aria-hidden /> Qarzga topshirish
           </button>
         </div>
       </div>

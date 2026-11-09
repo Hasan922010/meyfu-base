@@ -7,6 +7,7 @@ import {
   CircleCheckBig,
   CreditCard,
   RefreshCw,
+  Search,
   Split,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
@@ -127,13 +128,17 @@ export function NewSalePage(): ReactElement {
   const itemCount = cart.reduce((s, l) => s + l.quantity, 0);
 
   const products = useLiveQuery(() => db.products.toArray(), [], []);
+  const productMap = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
   const thumbById = useMemo(
     () => new Map(products.map((p) => [p.id, p.image_thumb])),
     [products],
   );
 
   function suggestedPrice(productId: string): string {
-    const p = products.find((x) => x.id === productId);
+    const p = productMap.get(productId);
     return p?.wholesale_price ?? '';
   }
 
@@ -250,28 +255,46 @@ export function NewSalePage(): ReactElement {
 
       {/* STEP: client */}
       {step === 'client' && (
-        <div className="space-y-2">
-          <input
-            className="field"
-            aria-label="Mijoz qidirish"
-            placeholder="Mijoz qidirish…"
-            value={clientSearch}
-            onChange={(e) => setClientSearch(e.target.value)}
-          />
-          <ul className="space-y-1">
+        <div className="space-y-3">
+          <div className="relative">
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
+            <input
+              className="field pl-10"
+              aria-label="Mijoz qidirish"
+              placeholder="Mijoz qidirish (nomi, manzili)…"
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <ul className="space-y-2">
             {filteredClients.slice(0, 30).map((c) => (
               <li key={c.id}>
                 <button
-                  className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left shadow-sm dark:bg-gray-900"
+                  className="flex min-h-[48px] w-full items-center justify-between rounded-2xl bg-white p-3.5 text-left shadow-sm border border-gray-100 hover:border-brand/40 active:scale-[0.99] transition dark:border-gray-800 dark:bg-gray-900"
                   onClick={() => {
                     setClientId(c.id);
                     setStep('items');
                   }}
                 >
-                  <span className="font-medium">{c.name}</span>
-                  {c.is_blocked && (
-                    <span className="text-xs text-danger">Bloklangan</span>
-                  )}
+                  <div className="min-w-0 pr-2">
+                    <span className="block font-semibold text-gray-900 dark:text-gray-100">{c.name}</span>
+                    {c.address && (
+                      <span className="block truncate text-xs text-gray-500">{c.address}</span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {Number(c.current_debt) > 0 && (
+                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+                        {money(c.current_debt)} qarz
+                      </span>
+                    )}
+                    {c.is_blocked && (
+                      <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-danger dark:bg-red-950/40">
+                        Bloklangan
+                      </span>
+                    )}
+                  </div>
                 </button>
               </li>
             ))}
@@ -282,15 +305,18 @@ export function NewSalePage(): ReactElement {
       {/* STEP: items — UX M4: tovarlar darhol, qatorga bosish = +1, Naqd pastda */}
       {step === 'items' && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">
-              Mijoz:{' '}
-              <span className="font-medium text-gray-900 dark:text-gray-100">
+          <div className="flex items-center justify-between rounded-xl bg-brand/5 p-3 text-sm border border-brand/10 dark:bg-brand/10 dark:border-brand/20">
+            <div className="min-w-0">
+              <span className="text-xs text-gray-500 block">Tanlangan mijoz</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 truncate block">
                 {client?.name || (clientQuery.isLoading ? 'Mijoz yuklanmoqda…' : '—')}
               </span>
-            </span>
-            <button className="text-brand underline" onClick={() => setStep('client')}>
-              Mijozni almashtirish
+            </div>
+            <button
+              className="btn min-h-[36px] py-1 px-3 text-xs bg-white text-brand border border-brand/20 shadow-xs hover:bg-brand/5 dark:bg-gray-800"
+              onClick={() => setStep('client')}
+            >
+              O'zgartirish
             </button>
           </div>
 
@@ -311,12 +337,12 @@ export function NewSalePage(): ReactElement {
           )}
 
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs text-gray-500">Mashinadagi tovarlar ({van.length})</span>
+            <span className="text-xs text-gray-500 font-medium">Mashinadagi tovarlar ({van.length})</span>
             <button
               type="button"
               onClick={() => void handleRefreshVan()}
               disabled={refreshingVan}
-              className="flex items-center gap-1 text-xs text-brand hover:underline"
+              className="flex items-center gap-1 text-xs text-brand hover:underline font-medium"
             >
               <RefreshCw size={13} className={refreshingVan ? 'animate-spin' : ''} />
               {refreshingVan ? 'Yangilanmoqda…' : 'Qoldiqni yangilash'}
@@ -327,8 +353,12 @@ export function NewSalePage(): ReactElement {
             van={van}
             cart={cart}
             priceOf={(id) => Number(suggestedPrice(id) || 0)}
-            minPriceOf={(id) => Number(products.find((p) => p.id === id)?.min_price ?? 0)}
+            minPriceOf={(id) => Number(productMap.get(id)?.min_price ?? 0)}
             thumbOf={(id) => thumbById.get(id)}
+            packInfoOf={(id) => {
+              const p = productMap.get(id);
+              return p ? { package_type: p.package_type, pack_quantity: p.pack_quantity } : undefined;
+            }}
             onChange={(next, message) => {
               setCart(next);
               setNotice(message);
@@ -338,26 +368,31 @@ export function NewSalePage(): ReactElement {
           {/* Pastdagi panel ro'yxatning oxirini yopmasligi uchun joy */}
           <div className="h-32" aria-hidden />
 
-          <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md space-y-2 border-t border-gray-200 bg-white/95 p-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+          <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md space-y-2 border-t border-gray-200 bg-white/95 p-3.5 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 shadow-lg">
             {notice && (
-              <p role="status" className="rounded-lg bg-pending/10 px-3 py-1.5 text-sm text-pending">
+              <p role="status" className="rounded-xl bg-pending/10 px-3 py-1.5 text-xs text-pending font-medium">
                 {notice}
               </p>
             )}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Jami ({itemCount} dona)</span>
-              <span className="text-lg font-bold">{money(total)}</span>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs text-gray-500 block">Jami summa</span>
+                <span className="text-lg font-extrabold text-gray-900 dark:text-gray-100">{money(total)}</span>
+              </div>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                {itemCount} dona tovar
+              </span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               <button
-                className="btn flex flex-1 items-center justify-center gap-2 bg-success text-white"
+                className="btn min-h-[48px] flex flex-1 items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold active:scale-[0.98] shadow-sm transition"
                 disabled={saving || cart.length === 0}
                 onClick={() => void save('NAQD')}
               >
-                <Banknote size={18} aria-hidden /> Naqd · {money(total)}
+                <Banknote size={20} aria-hidden /> Naqd · {money(total)}
               </button>
               <button
-                className="btn px-3"
+                className="btn min-h-[48px] px-4 font-semibold border border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 active:scale-[0.98] transition"
                 disabled={saving || cart.length === 0}
                 onClick={() => setStep('pay')}
               >
@@ -371,46 +406,47 @@ export function NewSalePage(): ReactElement {
       {/* STEP: pay */}
       {step === 'pay' && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-white p-4 text-center shadow-sm dark:bg-gray-900">
-            <div className="text-sm text-gray-500">{client?.name}</div>
-            <div className="text-3xl font-bold">{money(total)}</div>
+          <div className="card-minimal text-center py-6 space-y-1">
+            <div className="text-sm font-medium text-gray-500">{client?.name}</div>
+            <div className="text-3xl font-black text-gray-900 dark:text-gray-100">{money(total)}</div>
+            <div className="text-xs text-gray-400 font-medium">{itemCount} dona tovar</div>
           </div>
 
           {payMode === 'choose' && (
             <>
               <div className="grid gap-3">
                 <button
-                  className="btn flex items-center justify-center gap-2 bg-success text-white"
+                  className="btn min-h-[52px] flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition"
                   disabled={saving}
                   onClick={() => void save('NAQD')}
                 >
-                  <Banknote size={18} aria-hidden /> Naqd
+                  <Banknote size={22} aria-hidden /> Naqd pul bilan to'lash
                 </button>
                 <button
-                  className="btn flex items-center justify-center gap-2 bg-brand text-brand-fg"
+                  className="btn min-h-[52px] flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition"
                   disabled={saving}
                   onClick={() => void save('PLASTIK')}
                 >
-                  <CreditCard size={18} aria-hidden /> Plastik
+                  <CreditCard size={22} aria-hidden /> Plastik karta / O'tkazma
                 </button>
                 <button
-                  className="btn flex items-center justify-center gap-2 bg-pending text-white"
+                  className="btn min-h-[52px] flex items-center justify-center gap-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition disabled:opacity-50"
                   disabled={saving || client?.is_blocked}
                   onClick={() => setPayMode('QARZ')}
                 >
-                  <CalendarClock size={18} aria-hidden />
-                  {client?.is_blocked ? 'Qarz (bloklangan)' : 'Qarzga'}
+                  <CalendarClock size={22} aria-hidden />
+                  {client?.is_blocked ? 'Qarz (mijoz bloklangan)' : 'Qarzga berish'}
                 </button>
                 <button
-                  className="btn flex items-center justify-center gap-2"
+                  className="btn min-h-[52px] flex items-center justify-center gap-3 border-2 border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition disabled:opacity-50"
                   disabled={saving || client?.is_blocked}
                   onClick={() => setPayMode('ARALASH')}
                 >
-                  <Split size={18} aria-hidden /> Aralash (bir qism naqd)
+                  <Split size={22} aria-hidden /> Aralash (qisman naqd + qarz)
                 </button>
               </div>
               <button
-                className="btn flex w-full items-center justify-center gap-1.5"
+                className="btn min-h-[48px] flex w-full items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium"
                 onClick={() => setStep('items')}
               >
                 <ArrowLeft size={16} aria-hidden /> Orqaga
@@ -419,31 +455,57 @@ export function NewSalePage(): ReactElement {
           )}
 
           {(payMode === 'QARZ' || payMode === 'ARALASH') && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {payMode === 'ARALASH' && (
-                <div className="space-y-1">
-                  <span className="text-sm font-medium">Naqd to'lanadi</span>
+                <div className="card-minimal space-y-2">
+                  <span className="text-sm font-semibold">Naqd to'lanadigan summa</span>
                   <AmountInput
-                    className="text-lg"
+                    className="text-lg font-bold"
                     value={cashPart}
                     onChange={setCashPart}
                   />
-                  <span className="text-xs text-gray-500">
-                    Qarzga qoladi: {money(Math.max(0, total - Number(cashPart || 0)))}
-                  </span>
+                  <div className="rounded-lg bg-gray-50 p-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    Qarzga qoladigan qism:{' '}
+                    <span className="font-bold text-amber-600">
+                      {money(Math.max(0, total - Number(cashPart || 0)))}
+                    </span>
+                  </div>
                 </div>
               )}
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">Qarz muddati</span>
+              <div className="card-minimal space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Qarz muddati</span>
+                  <div className="flex gap-1.5">
+                    {[
+                      { days: 7, label: '+7 kun' },
+                      { days: 14, label: '+14 kun' },
+                      { days: 30, label: '+30 kun' },
+                    ].map((chip) => (
+                      <button
+                        key={chip.days}
+                        type="button"
+                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition ${
+                          dueDate === plusDays(chip.days)
+                            ? 'bg-amber-500 text-white border-amber-600'
+                            : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700'
+                        }`}
+                        onClick={() => setDueDate(plusDays(chip.days))}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <input
                   className="field"
                   type="date"
+                  aria-label="Qarz to'lov muddati"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                 />
-              </label>
+              </div>
               <button
-                className="btn-brand w-full"
+                className="btn-brand min-h-[50px] w-full text-base font-bold shadow-sm"
                 disabled={
                   saving ||
                   (payMode === 'ARALASH' &&
@@ -461,7 +523,7 @@ export function NewSalePage(): ReactElement {
                 Tasdiqlash
               </button>
               <button
-                className="btn flex w-full items-center justify-center gap-1.5"
+                className="btn min-h-[48px] flex w-full items-center justify-center gap-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-medium"
                 onClick={() => setPayMode('choose')}
               >
                 <ArrowLeft size={16} aria-hidden /> Orqaga

@@ -48,6 +48,14 @@
    - **Test Natijalari:** Frontend 51 ta test fayli, 222 ta test (`vitest`) barchasi muvaffaqiyatli, `tsc -b --noEmit` 0 xato.
    - **Sinxronizatsiya:** `artifacts/meyfu-app/` deploy nusxasi to'liq yangilandi.
 
+8. **Mobil Yetkazish, Sotuv va Kun Yopish Ergonomikasi (`ux_architecture_design_system.md` to'liq joriy qilindi):**
+   - **`SaleProductList.tsx`:** Tovar hisoblagich tugmalari to'liq ≥48px (`h-12 w-12`) ga keltirildi, van mahsulotlariga qadoq ko'rsatkichi (`1 karopka = 12 dona`) va `Package` placeholder ikonkasi qo'shildi.
+   - **`NewSalePage.tsx`:** Qidiruv maydoni ikonkali qilindi, mijoz kartochkalari qarz holati bilan boyitildi, pastdagi panelda yashil Naqd tugmasi (`bg-emerald-600 min-h-[48px]`), to'lov ekranida 4 ta katta barmoqqa qulay variantlar (Naqd, Plastik, Qarzga, Aralash) hamda qarz muddati uchun tezkor chiplar (`+7 kun`, `+14 kun`, `+30 kun`) o'rnatildi.
+   - **`MyOrdersPage.tsx` (FulfillScreen):** Yetkazish ekranida har bir tovar uchun -1/+1 hisoblagichlar va bir bosishda "Hammasi" to'ldirish tugmasi, yirik rangli to'lov tugmalari joriy qilindi.
+   - **`DayCloseWizard.tsx`:** 3 bosqichli vizual stepper (1. Tovar -> 2. Pul -> 3. Tasdiq), tovarlarni qaytarishda "Hammasi" va "0 qoldirish" tugmalari, kassaga kutilgan summani bir bosishda kiritish ("Kutilgan summani qo'yish") va jonli kassa farqi ko'rsatkichi qo'shildi.
+   - **Test Natijalari:** Yangi unit testlar yozildi (`NewSalePage.test.tsx`, `DayCloseWizard.test.tsx`, `MyOrdersPage.test.tsx`), jami frontend testlari: **54 ta test fayli, 226 ta test 100% muvaffaqiyatli**, `tsc -b --noEmit` 0 xato.
+   - **Replit Sinxronizatsiyasi:** `artifacts/meyfu-app/` ga to'liq ko'chirildi va sinxronlandi.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)
