@@ -1,4 +1,5 @@
 from decimal import Decimal
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -8,10 +9,10 @@ from apps.clients.models import Client
 from apps.orders.services import OrderLine, create_order, fulfill_order
 from apps.orders.services.order import FulfillLine
 from apps.reports.services.product_movement import product_movement_report
-from apps.sales.models import Sale, SaleItem
+from apps.sales.models import Sale
 from apps.sales.services import SaleLine, create_sale
 from apps.users.constants import Role
-from apps.warehouse.models import Loading, LoadingItem, VanStock
+from apps.warehouse.models import VanStock
 
 User = get_user_model()
 
@@ -219,3 +220,65 @@ def test_product_movement_report(base_data, api, manager_user):
     res_data = resp.json()["data"]
     assert res_data["summary"]["total_sold_qty"] == "20.000"
     assert res_data["summary"]["total_bonus_qty"] == "2.000"
+
+
+@pytest.mark.django_db
+def test_product_movement_export_xlsx_and_branch_filename(base_data, api, manager_user):
+    import io
+
+    from openpyxl import load_workbook
+
+    from apps.warehouse.models import Warehouse
+
+    p_main = base_data["p_main"]
+    p_bonus = base_data["p_bonus"]
+    client = base_data["client"]
+    distributor = base_data["distributor"]
+
+    create_sale(
+        distributor=distributor,
+        client=client,
+        payment_type="NAQD",
+        lines=[
+            SaleLine(product=p_main, quantity=Decimal("10"), price=Decimal("25000"), is_bonus=False),
+            SaleLine(product=p_bonus, quantity=Decimal("1"), price=Decimal("0"), is_bonus=True),
+        ],
+    )
+    today = timezone.now().date().isoformat()
+
+    api.force_authenticate(user=manager_user)
+    resp = api.get(
+        f"/api/v1/reports/product-movement/export/?date_from={today}&date_to={today}"
+    )
+    assert resp.status_code == 200
+    assert (
+        resp["Content-Type"]
+        == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert resp["Content-Disposition"].startswith('attachment; filename="tovar-harakati-')
+
+    wb = load_workbook(io.BytesIO(resp.content))
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    assert rows[0][0] == "Mahsulot"
+    assert rows[0][4] == "Sotilgan (pullik)"
+    assert rows[0][6] == "Bonus berilgan (bepul)"
+    names = {row[0] for row in rows[1:]}
+    assert names == {"Bio Kukun 3kg", "Sovun 100g"}
+
+    # Filial rahbari — fayl nomiga filial nomi tushadi
+    branch = Warehouse.objects.create(name="Samarqand Filial", is_branch=True)
+    branch_manager = User.objects.create_user(
+        phone="+998901119988",
+        full_name="Samarqand Rahbar",
+        role=Role.BRANCH_MANAGER,
+        warehouse=branch,
+        password="password123",
+    )
+    api.force_authenticate(user=branch_manager)
+    branch_resp = api.get(
+        f"/api/v1/reports/product-movement/export/?date_from={today}&date_to={today}"
+    )
+    assert branch_resp.status_code == 200
+    assert "-Samarqand_Filial-" in branch_resp["Content-Disposition"]
+

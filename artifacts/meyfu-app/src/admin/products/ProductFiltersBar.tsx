@@ -1,10 +1,10 @@
-import type { ReactElement } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { useDebounce } from '@/shared/lib/useDebounce';
+
 import type { useProductFilters } from './useProductFilters';
 
 interface Props {
@@ -26,18 +26,28 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
   }, [debouncedSearch, filters.search, setFilter]);
 
   useEffect(() => {
-    if (debouncedPriceMin !== filters.retail_price_min) setFilter('retail_price_min', debouncedPriceMin);
+    if (debouncedPriceMin !== filters.retail_price_min) {
+      setFilter('retail_price_min', debouncedPriceMin);
+    }
   }, [debouncedPriceMin, filters.retail_price_min, setFilter]);
 
   useEffect(() => {
-    if (debouncedPriceMax !== filters.retail_price_max) setFilter('retail_price_max', debouncedPriceMax);
+    if (debouncedPriceMax !== filters.retail_price_max) {
+      setFilter('retail_price_max', debouncedPriceMax);
+    }
   }, [debouncedPriceMax, filters.retail_price_max, setFilter]);
 
   useEffect(() => {
-    if (filters.search !== localSearch && filters.search !== debouncedSearch) setLocalSearch(filters.search);
-    if (filters.retail_price_min !== localPriceMin && filters.retail_price_min !== debouncedPriceMin) setLocalPriceMin(filters.retail_price_min);
-    if (filters.retail_price_max !== localPriceMax && filters.retail_price_max !== debouncedPriceMax) setLocalPriceMax(filters.retail_price_max);
-  }, [filters.search, localSearch, debouncedSearch, filters.retail_price_min, localPriceMin, debouncedPriceMin, filters.retail_price_max, localPriceMax, debouncedPriceMax]);
+    setLocalSearch(filters.search);
+  }, [filters.search]);
+
+  useEffect(() => {
+    setLocalPriceMin(filters.retail_price_min);
+  }, [filters.retail_price_min]);
+
+  useEffect(() => {
+    setLocalPriceMax(filters.retail_price_max);
+  }, [filters.retail_price_max]);
 
   const categories = useQuery({
     queryKey: ['categories', 'all'],
@@ -50,16 +60,15 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
   });
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center gap-3">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative min-w-[240px] flex-1">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
             <Search className="h-4 w-4" />
           </div>
           <input
             type="text"
-            className="field pl-9 h-10 w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+            className="field h-10 w-full border-slate-200 bg-slate-50 pl-9 dark:border-slate-700 dark:bg-slate-800"
             placeholder="Nomi, SKU yoki Shtrix-kod..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
@@ -75,9 +84,8 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
           )}
         </div>
 
-        {/* Category */}
         <select
-          className="field h-10 w-full sm:w-40 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+          className="field h-10 w-full border-slate-200 bg-slate-50 sm:w-40 dark:border-slate-700 dark:bg-slate-800"
           value={filters.category}
           onChange={(e) => setFilter('category', e.target.value)}
           aria-label="Kategoriyani tanlang"
@@ -90,9 +98,8 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
           ))}
         </select>
 
-        {/* Brand */}
         <select
-          className="field h-10 w-full sm:w-36 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+          className="field h-10 w-full border-slate-200 bg-slate-50 sm:w-36 dark:border-slate-700 dark:bg-slate-800"
           value={filters.brand}
           onChange={(e) => setFilter('brand', e.target.value)}
           aria-label="Brendni tanlang"
@@ -105,9 +112,8 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
           ))}
         </select>
 
-        {/* Status */}
         <select
-          className="field h-10 w-full sm:w-32 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+          className="field h-10 w-full border-slate-200 bg-slate-50 sm:w-32 dark:border-slate-700 dark:bg-slate-800"
           value={filters.is_active}
           onChange={(e) => setFilter('is_active', e.target.value)}
           aria-label="Holatni tanlang"
@@ -117,9 +123,8 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
           <option value="false">Nofaol</option>
         </select>
 
-        {/* Stock Status */}
         <select
-          className="field h-10 w-full sm:w-36 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+          className="field h-10 w-full border-slate-200 bg-slate-50 sm:w-36 dark:border-slate-700 dark:bg-slate-800"
           value={filters.stock_status}
           onChange={(e) => setFilter('stock_status', e.target.value)}
           aria-label="Zaxira holatini tanlang"
@@ -130,11 +135,10 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
           <option value="out">Tugagan</option>
         </select>
 
-        {/* Price Min/Max */}
         <div className="flex items-center gap-2">
           <input
             type="number"
-            className="field h-10 w-24 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 placeholder:text-slate-400"
+            className="field h-10 w-24 border-slate-200 bg-slate-50 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800"
             placeholder="Min narx"
             value={localPriceMin}
             onChange={(e) => setLocalPriceMin(e.target.value)}
@@ -142,7 +146,7 @@ export function ProductFiltersBar({ filters: { filters, setFilter } }: Props): R
           <span className="text-slate-400">-</span>
           <input
             type="number"
-            className="field h-10 w-24 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 placeholder:text-slate-400"
+            className="field h-10 w-24 border-slate-200 bg-slate-50 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800"
             placeholder="Max narx"
             value={localPriceMax}
             onChange={(e) => setLocalPriceMax(e.target.value)}

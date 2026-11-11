@@ -18,6 +18,9 @@ backend/db.sqlite3
 
 # Node
 node_modules/
+dist/
+*.tsbuildinfo
+artifacts/*/dist/
 frontend/.env
 frontend/dist/
 frontend/.vite/

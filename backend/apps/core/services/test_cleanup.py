@@ -281,10 +281,10 @@ def build_plan(label, ids, *, user):
             groups[(entry_label, tuple(getattr(entry, k) for k in keys))].append(entry)
     for (entry_label, values), entries in sorted(groups.items(), key=lambda p: str(p[0])):
         target_label, keys, amount, balance = LEDGERS[entry_label]
-        qs = _model(entry_label).objects.filter(**dict(zip(keys, values)))
+        qs = _model(entry_label).objects.filter(**dict(zip(keys, values, strict=True)))
         history = list(qs.order_by("created_at", "pk"))
         target_ids = {e.pk for e in entries}
-        lookup = dict(zip(keys, values)) if len(keys) > 1 else {"pk": values[0]}
+        lookup = dict(zip(keys, values, strict=True)) if len(keys) > 1 else {"pk": values[0]}
         target = _model(target_label).all_objects.filter(**lookup).first()
         if target is None:
             raise CleanupBlocked("Balans yozuvi topilmadi.")
@@ -395,7 +395,7 @@ def execute_cleanup(label, ids, *, user, expected_digest, reason):
         raise CleanupBlocked("Ma’lumot o‘zgargan. Ro‘yxatni yangilab, qayta tasdiqlang.")
     payload = plan.payload()
     now = timezone.now()
-    for (model_label, pk), obj in plan.rows.items():
+    for (model_label, pk), _obj in plan.rows.items():
         # Intentionally scoped exception; append-only model/admin APIs stay
         # read-only. Soft archive also preserves offline idempotency UUIDs.
         _model(model_label).all_objects.filter(pk=pk).update(is_deleted=True, updated_at=now)

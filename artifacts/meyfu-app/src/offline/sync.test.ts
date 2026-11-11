@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { post, myVanStock, clientsList } = vi.hoisted(() => ({
+const { post, myVanStock, clientsList, catalogProducts } = vi.hoisted(() => ({
   post: vi.fn(),
   myVanStock: vi.fn(),
   clientsList: vi.fn(),
+  catalogProducts: vi.fn(),
 }));
 vi.mock('@/shared/api/client', () => ({ api: { post } }));
 vi.mock('@/shared/api/warehouse', () => ({ warehouseApi: { myVanStock } }));
 vi.mock('@/shared/api/catalog', () => ({
-  catalogApi: { products: vi.fn().mockResolvedValue({ results: [] }) },
+  catalogApi: { products: catalogProducts },
 }));
 vi.mock('@/shared/api/clients', () => ({
   clientsApi: { list: clientsList },
@@ -31,10 +32,13 @@ beforeEach(async () => {
   await db.outbox.clear();
   await db.van_stock.clear();
   await db.clients.clear();
+  await db.products.clear();
   post.mockReset();
   myVanStock.mockReset();
   clientsList.mockReset();
+  catalogProducts.mockReset();
   clientsList.mockResolvedValue({ results: [], next: null });
+  catalogProducts.mockResolvedValue({ results: [], next: null });
   useAuthStore.setState({ user: null });
 });
 
@@ -163,6 +167,83 @@ describe('pullReferenceData — zakaz oluvchi', () => {
     expect(clientsList).toHaveBeenNthCalledWith(2, { page: 2, page_size: 500 });
     const rows = await db.clients.toArray();
     expect(rows.map((r) => r.id).sort()).toEqual(['c1', 'c2']);
+  });
+
+  it('mahsulotlarni barcha sahifalardan tortadi va o‘chirilgan mahsulotni tozalaydi', async () => {
+    await db.products.put({
+      id: 'stale-prod',
+      name: 'Eski Tovar',
+      sku: 'OLD-1',
+      barcode: '',
+      unit: 'dona',
+      retail_price: '1000',
+      wholesale_price: '900',
+      min_price: '800',
+      is_active: true,
+      image_thumb: null,
+    });
+    catalogProducts
+      .mockResolvedValueOnce({
+        count: 2,
+        next: '?page=2',
+        results: [
+          {
+            id: 'p1',
+            name: 'Mahsulot 1',
+            sku: 'M1',
+            barcode: '',
+            unit_name: 'dona',
+            retail_price: '10000',
+            wholesale_price: '9000',
+            min_price: '8000',
+            cost_price: '7000',
+            pack_quantity: '1',
+            package_type: '',
+            has_bonus: false,
+            bonus_trigger_qty: '0',
+            bonus_reward_qty: '0',
+            bonus_product: null,
+            bonus_product_name: null,
+            is_active: true,
+            image_thumb: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        count: 2,
+        next: null,
+        results: [
+          {
+            id: 'p2',
+            name: 'Mahsulot 2',
+            sku: 'M2',
+            barcode: '',
+            unit_name: 'dona',
+            retail_price: '20000',
+            wholesale_price: '18000',
+            min_price: '16000',
+            cost_price: '14000',
+            pack_quantity: '1',
+            package_type: '',
+            has_bonus: false,
+            bonus_trigger_qty: '0',
+            bonus_reward_qty: '0',
+            bonus_product: null,
+            bonus_product_name: null,
+            is_active: true,
+            image_thumb: null,
+          },
+        ],
+      });
+    useAuthStore.setState({ user: { role: 'ORDER_TAKER' } as User });
+
+    await pullReferenceData();
+
+    expect(catalogProducts).toHaveBeenCalledTimes(2);
+    expect(catalogProducts).toHaveBeenNthCalledWith(1, { page: 1, page_size: 500 });
+    expect(catalogProducts).toHaveBeenNthCalledWith(2, { page: 2, page_size: 500 });
+    const prods = await db.products.toArray();
+    expect(prods.map((p) => p.id).sort()).toEqual(['p1', 'p2']);
   });
 });
 

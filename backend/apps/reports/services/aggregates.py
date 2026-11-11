@@ -230,6 +230,7 @@ def debt_aging(*, branch=None) -> dict:
             buckets["d90_plus"] += rem
 
         c = overdue_clients.setdefault(str(debt.client_id), {
+            "client_id": str(debt.client_id),
             "client": debt.client.name, "phone": debt.client.phone,
             "amount": _ZERO, "max_days": 0,
         })

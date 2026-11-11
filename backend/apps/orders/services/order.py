@@ -361,7 +361,7 @@ def fulfill_order(
 
     items_by_id = {str(it.id): it for it in order.items.select_related("product")}
     sale_lines: list[SaleLine] = []
-    touched: list[OrderItem] = []
+    pending: list[tuple[OrderItem, Decimal]] = []
     for fl in fulfill_lines:
         item = items_by_id.get(str(fl.item.id if isinstance(fl.item, OrderItem)
                                    else fl.item))
@@ -381,8 +381,7 @@ def fulfill_order(
                 is_bonus=item.is_bonus,
             )
         )
-        item.delivered_quantity = (item.delivered_quantity or _ZERO) + qty
-        touched.append(item)
+        pending.append((item, qty))
 
     if not sale_lines:
         raise BusinessError(
@@ -406,7 +405,19 @@ def fulfill_order(
         order=order,
     )
 
-    for item in touched:
+    from apps.sales.constants import SaleStatus
+
+    if result.sale.status == SaleStatus.CONFLICT:
+        AuditLog.objects.create(
+            user=user or distributor, action="order.fulfill_conflict", model_name="Order",
+            object_id=str(order.id),
+            changes={"number": order.number, "sale": result.sale.number,
+                     "sale_id": str(result.sale.id)},
+        )
+        return result
+
+    for item, qty in pending:
+        item.delivered_quantity = (item.delivered_quantity or _ZERO) + qty
         item.save(update_fields=["delivered_quantity", "updated_at"])
 
     fully = all(

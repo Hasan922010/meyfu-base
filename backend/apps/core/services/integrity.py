@@ -27,8 +27,11 @@ def _wallet_mismatches() -> list[dict]:
     from apps.wallet.models import DistributorWallet
 
     out: list[dict] = []
-    for w in DistributorWallet.objects.select_related("distributor"):
-        ledger = w.transactions.aggregate(s=Sum("amount"))["s"] or _ZERO
+    qs = DistributorWallet.objects.select_related("distributor").annotate(
+        ledger=Sum("transactions__amount")
+    )
+    for w in qs:
+        ledger = w.ledger or _ZERO
         if w.balance != ledger:
             out.append({
                 "kind": "wallet",
@@ -44,11 +47,15 @@ def _wallet_mismatches() -> list[dict]:
 def _stock_mismatches() -> list[dict]:
     from apps.warehouse.models import Stock, StockMovement
 
+    movement_totals = {
+        (r["warehouse_id"], r["product_id"]): r["x"] or _ZERO
+        for r in StockMovement.objects.values("warehouse_id", "product_id").annotate(
+            x=Sum("quantity")
+        )
+    }
     out: list[dict] = []
     for s in Stock.objects.select_related("warehouse", "product"):
-        ledger = StockMovement.objects.filter(
-            warehouse_id=s.warehouse_id, product_id=s.product_id
-        ).aggregate(x=Sum("quantity"))["x"] or _ZERO
+        ledger = movement_totals.get((s.warehouse_id, s.product_id), _ZERO)
         if s.quantity != ledger:
             out.append({
                 "kind": "stock",
@@ -62,12 +69,65 @@ def _stock_mismatches() -> list[dict]:
 
 
 def _van_mismatches() -> list[dict]:
-    from apps.warehouse.models import VanStock
-    from apps.warehouse.services import van_expected_quantity
+    from apps.warehouse.constants import LoadingStatus
+    from apps.warehouse.models import LoadingItem, VanStock
+
+    loaded_map = {
+        (r["loading__distributor_id"], r["product_id"]): r["s"] or _ZERO
+        for r in LoadingItem.objects.filter(
+            loading__status__in=[LoadingStatus.CONFIRMED, LoadingStatus.CLOSED]
+        )
+        .values("loading__distributor_id", "product_id")
+        .annotate(s=Sum("quantity"))
+    }
+    sold_map: dict[tuple, Decimal] = {}
+    returned_map: dict[tuple, Decimal] = {}
+    try:
+        from apps.sales.models import SaleItem, SaleReturnItem
+
+        sold_map = {
+            (r["sale__distributor_id"], r["product_id"]): r["s"] or _ZERO
+            for r in SaleItem.objects.filter(
+                sale__status__in=["COMPLETED", "FLAGGED"]
+            )
+            .values("sale__distributor_id", "product_id")
+            .annotate(s=Sum("quantity"))
+        }
+        returned_map = {
+            (r["sale_return__distributor_id"], r["product_id"]): r["s"] or _ZERO
+            for r in SaleReturnItem.objects.filter(sale_return__restock=True)
+            .exclude(sale_return__sale__status="CANCELLED")
+            .values("sale_return__distributor_id", "product_id")
+            .annotate(s=Sum("quantity"))
+        }
+    except Exception:  # noqa: BLE001 — sales app hali migratsiya qilinmagan bo'lishi mumkin
+        pass
+
+    daily_ret_map: dict[tuple, Decimal] = {}
+    try:
+        from apps.dayclose.constants import DayCloseStatus
+        from apps.dayclose.models import DailyReturnItem
+
+        daily_ret_map = {
+            (r["daily_return__distributor_id"], r["product_id"]): r["s"] or _ZERO
+            for r in DailyReturnItem.objects.filter(
+                daily_return__day_close__status=DayCloseStatus.CLOSED
+            )
+            .values("daily_return__distributor_id", "product_id")
+            .annotate(s=Sum("quantity"))
+        }
+    except Exception:  # noqa: BLE001 — dayclose app hali migratsiya qilinmagan bo'lishi mumkin
+        pass
 
     out: list[dict] = []
     for vs in VanStock.objects.select_related("distributor", "product"):
-        expected = van_expected_quantity(vs.distributor, vs.product)
+        key = (vs.distributor_id, vs.product_id)
+        expected = (
+            loaded_map.get(key, _ZERO)
+            - sold_map.get(key, _ZERO)
+            + returned_map.get(key, _ZERO)
+            - daily_ret_map.get(key, _ZERO)
+        )
         if vs.quantity != expected:
             out.append({
                 "kind": "van_stock",
@@ -90,8 +150,8 @@ def _cash_mismatches() -> list[dict]:
 
     get_account()  # markaz kassasi har doim mavjud
     out: list[dict] = []
-    for account in CashAccount.objects.all():
-        ledger = account.transactions.aggregate(s=Sum("amount"))["s"] or _ZERO
+    for account in CashAccount.objects.annotate(ledger=Sum("transactions__amount")):
+        ledger = account.ledger or _ZERO
         if account.balance != ledger:
             out.append({
                 "kind": "cash_account",
@@ -202,43 +262,40 @@ def run_integrity_check() -> dict:
     }
 
 
+_FIX_TARGETS = {
+    "wallet": ("apps.wallet.models", "DistributorWallet", "balance"),
+    "stock": ("apps.warehouse.models", "Stock", "quantity"),
+    "van_stock": ("apps.warehouse.models", "VanStock", "quantity"),
+    "cash_account": ("apps.finance.models", "CashAccount", "balance"),
+    "supplier": ("apps.warehouse.models", "Supplier", "balance"),
+    "client_debt": ("apps.clients.models", "Client", "current_debt"),
+    "order_total": ("apps.orders.models", "Order", "total_amount"),
+}
+
+
 @transaction.atomic
+def apply_integrity_fixes(mismatches: list[dict]) -> None:
+    """Bir nechta farqni bitta tranzaksiyada model turi bo'yicha ommaviy tuzatadi."""
+    from importlib import import_module
+
+    grouped: dict[str, list[dict]] = {}
+    for m in mismatches:
+        kind = m["kind"]
+        if kind not in _FIX_TARGETS:  # pragma: no cover
+            raise ValueError(f"Noma'lum tur: {kind}")
+        grouped.setdefault(kind, []).append(m)
+
+    for kind, items in grouped.items():
+        mod_path, cls_name, field_name = _FIX_TARGETS[kind]
+        model = getattr(import_module(mod_path), cls_name)
+        objs = [model(pk=m["id"], **{field_name: Decimal(m["ledger"])}) for m in items]
+        model.objects.bulk_update(objs, [field_name], batch_size=500)
+
+
 def apply_integrity_fix(mismatch: dict) -> None:
     """Bitta farqni tuzatadi — denormalized qiymatni jurnal yig'indisiga moslaydi.
 
     Jurnal (append-only) tegilmaydi. `mismatch` — `run_integrity_check`
     qaytargan lug'atlardan biri.
     """
-    kind = mismatch["kind"]
-    target = Decimal(mismatch["ledger"])
-
-    if kind == "wallet":
-        from apps.wallet.models import DistributorWallet
-
-        DistributorWallet.objects.filter(id=mismatch["id"]).update(balance=target)
-    elif kind == "stock":
-        from apps.warehouse.models import Stock
-
-        Stock.objects.filter(id=mismatch["id"]).update(quantity=target)
-    elif kind == "van_stock":
-        from apps.warehouse.models import VanStock
-
-        VanStock.objects.filter(id=mismatch["id"]).update(quantity=target)
-    elif kind == "cash_account":
-        from apps.finance.models import CashAccount
-
-        CashAccount.objects.filter(id=mismatch["id"]).update(balance=target)
-    elif kind == "supplier":
-        from apps.warehouse.models import Supplier
-
-        Supplier.objects.filter(id=mismatch["id"]).update(balance=target)
-    elif kind == "client_debt":
-        from apps.clients.models import Client
-
-        Client.objects.filter(id=mismatch["id"]).update(current_debt=target)
-    elif kind == "order_total":
-        from apps.orders.models import Order
-
-        Order.objects.filter(id=mismatch["id"]).update(total_amount=target)
-    else:  # pragma: no cover
-        raise ValueError(f"Noma'lum tur: {kind}")
+    apply_integrity_fixes([mismatch])

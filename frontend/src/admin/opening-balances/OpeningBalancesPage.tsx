@@ -437,7 +437,7 @@ function ClientsTab(): ReactElement {
         rows={openingDebts.map((d) => ({
           id: d.id,
           date: d.created_at,
-          label: d.client_name,
+          label: d.client_phone ? `${d.client_name} (${d.client_phone})` : d.client_name,
           amount: d.amount,
           note: `Qoldiq: ${money(d.remaining)}`,
         }))}

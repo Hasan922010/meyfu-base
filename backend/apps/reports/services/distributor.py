@@ -23,7 +23,7 @@ from apps.expenses.models import DistributorExpense
 from apps.orders.constants import OrderStatus
 from apps.orders.models import Order
 from apps.payroll.models import Payroll
-from apps.payroll.services import month_bounds, resolve_two_stage
+from apps.payroll.services import month_bounds
 from apps.sales.models import Debt, DebtPayment, Sale, SaleItem, SaleReturn
 
 _ZERO = Decimal("0")
@@ -409,35 +409,14 @@ def _payroll_block(distributor, df, dt) -> dict:
             "estimated_total": _m(payroll.final_amount),
         }
 
+    from apps.payroll.services.payroll import _commission_rows
+
     profile = getattr(distributor, "distributor_profile", None)
     base = _d(getattr(profile, "base_salary", _ZERO))
-    order_pct, delivery_pct = resolve_two_stage(user=distributor)
-
-    # DELIVERY — shu odam yetkazgan sotuvlar
-    delivered_sales = _sum(
-        SaleItem.objects.filter(
-            sale__distributor=distributor,
-            sale__date__gte=period_start, sale__date__lte=dt,
-            sale__status__in=_ACTIVE,
-        ),
-        "amount",
-    )
-    # ORDER — shu odam zakazini olgan (Order'siz to'g'ridan-to'g'ri sotuv ham)
-    order_sales = _sum(
-        SaleItem.objects.filter(
-            sale__date__gte=period_start, sale__date__lte=dt,
-            sale__status__in=_ACTIVE,
-        ).filter(
-            Q(sale__order__taken_by=distributor)
-            | Q(sale__order__isnull=True, sale__distributor=distributor)
-        ),
-        "amount",
-    )
-    order_c = (order_sales * order_pct / Decimal("100")).quantize(Decimal("0.01"))
-    delivery_c = (
-        delivered_sales * delivery_pct / Decimal("100")
-    ).quantize(Decimal("0.01"))
-    commission = order_c + delivery_c
+    comp, _ = _commission_rows(distributor, period_start, dt)
+    order_c = comp.order_commission_amount
+    delivery_c = comp.delivery_commission_amount
+    commission = comp.commission_amount
     return {
         "period": str(period_start),
         "status": "ESTIMATE",
@@ -754,35 +733,113 @@ def distributor_comparison(
     date_to: date_cls | None = None,
     branch=None,
 ) -> dict:
+    from django.contrib.auth import get_user_model
+
     from apps.users.constants import Role
 
     df, dt, _pf, _pt, label = resolve_period(preset, date_from, date_to)
-    from django.contrib.auth import get_user_model
-
     User = get_user_model()
-    distributors = User.objects.filter(role=Role.DISTRIBUTOR, is_active=True)
+    qs = User.objects.filter(role=Role.DISTRIBUTOR, is_active=True).select_related(
+        "distributor_profile"
+    )
     if branch is not None:
-        distributors = distributors.filter(warehouse=branch)
+        qs = qs.filter(warehouse=branch)
+    distributors = list(qs)
+    dist_ids = [d.id for d in distributors]
+
+    sales_by_dist: dict = {}
+    profit_by_dist: dict = {}
+    expenses_by_dist: dict = {}
+    shortage_by_dist: dict = {}
+
+    if dist_ids:
+        sales_by_dist = {
+            r["distributor_id"]: r
+            for r in Sale.objects.filter(
+                distributor_id__in=dist_ids,
+                date__gte=df,
+                date__lte=dt,
+                status__in=_ACTIVE,
+            )
+            .values("distributor_id")
+            .annotate(
+                total=Coalesce(Sum("total_amount"), Value(_ZERO), output_field=_DEC),
+                count=Count("id"),
+                cash=Coalesce(
+                    Sum(
+                        "paid_amount",
+                        filter=Q(payment_type__in=("NAQD", "ARALASH")),
+                    ),
+                    Value(_ZERO),
+                    output_field=_DEC,
+                ),
+            )
+        }
+        profit_by_dist = {
+            r["sale__distributor_id"]: r["profit"]
+            for r in SaleItem.objects.filter(
+                sale__distributor_id__in=dist_ids,
+                sale__date__gte=df,
+                sale__date__lte=dt,
+                sale__status__in=_ACTIVE,
+            )
+            .values("sale__distributor_id")
+            .annotate(
+                profit=Coalesce(Sum("profit"), Value(_ZERO), output_field=_DEC)
+            )
+        }
+        expenses_by_dist = {
+            r["distributor_id"]: r["expenses"]
+            for r in DistributorExpense.objects.filter(
+                distributor_id__in=dist_ids,
+                date__gte=df,
+                date__lte=dt,
+                status="APPROVED",
+            )
+            .values("distributor_id")
+            .annotate(
+                expenses=Coalesce(Sum("amount"), Value(_ZERO), output_field=_DEC)
+            )
+        }
+        shortage_by_dist = {
+            r["distributor_id"]: r["cnt"]
+            for r in DayClose.objects.filter(
+                distributor_id__in=dist_ids,
+                date__gte=df,
+                date__lte=dt,
+                status="CLOSED",
+                cash_difference__lt=_ZERO,
+            )
+            .values("distributor_id")
+            .annotate(cnt=Count("id"))
+        }
 
     rows = []
     for dist in distributors:
-        s = _sales_raw(dist, df, dt)
-        m = _money_raw(dist, df, dt)
+        s_row = sales_by_dist.get(dist.id) or {}
+        total_amount = _d(s_row.get("total"))
+        sales_count = s_row.get("count") or 0
+        cash_collected = _d(s_row.get("cash"))
+        total_profit = _d(profit_by_dist.get(dist.id))
+        expenses_total = _d(expenses_by_dist.get(dist.id))
+        shortage_days = shortage_by_dist.get(dist.id) or 0
+        avg_check = (total_amount / sales_count) if sales_count else _ZERO
+
         profile = getattr(dist, "distributor_profile", None)
         plan = _d(getattr(profile, "monthly_plan", _ZERO))
         rows.append({
             "id": str(dist.id),
             "full_name": dist.full_name,
-            "sales": _m(s["total_amount"]),
-            "profit": _m(s["total_profit"]),
-            "sales_count": s["sales_count"],
-            "avg_check": _m(s["avg_check"]),
-            "cash_collected": _m(m["cash_collected"]),
-            "expenses": _m(m["expenses_total"]),
-            "shortage_days": m["shortage_days_count"],
+            "sales": _m(total_amount),
+            "profit": _m(total_profit),
+            "sales_count": sales_count,
+            "avg_check": _m(avg_check),
+            "cash_collected": _m(cash_collected),
+            "expenses": _m(expenses_total),
+            "shortage_days": shortage_days,
             "plan": _m(plan),
             "plan_completion_percent": (
-                round(float(s["total_amount"] / plan * 100), 1) if plan else None
+                round(float(total_amount / plan * 100), 1) if plan else None
             ),
         })
     rows.sort(key=lambda r: Decimal(r["sales"]), reverse=True)

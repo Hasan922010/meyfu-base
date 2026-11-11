@@ -12,15 +12,24 @@ const STATUS_CLASS: Record<string, string> = {
   PAID: 'text-success',
 };
 
+function normalizeDebtSearch(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  return /^[+\d\s()-]+$/.test(trimmed) ? trimmed.replace(/[\s()-]/g, '') : trimmed;
+}
+
 export function MobileAdminDebts(): ReactElement {
   const [status, setStatus] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const searchQuery = normalizeDebtSearch(search);
 
   const query = useQuery({
-    queryKey: ['admin-debts-m', { status, page }],
+    queryKey: ['admin-debts-m', { status, search: searchQuery, page }],
     queryFn: () =>
       salesApi.debts({
         status: status || undefined,
+        search: searchQuery || undefined,
         page,
         page_size: 25,
         ordering: 'due_date',
@@ -34,6 +43,17 @@ export function MobileAdminDebts(): ReactElement {
   return (
     <div className="space-y-3">
       <h1 className="text-xl font-bold">Qarzdorlik</h1>
+
+      <input
+        className="field"
+        aria-label="Qarzdor qidirish"
+        placeholder="Mijoz nomi, telefon yoki sotuv…"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
+      />
 
       <div className="flex flex-wrap gap-1">
         {[
@@ -80,6 +100,9 @@ export function MobileAdminDebts(): ReactElement {
             >
               <div>
                 <div className="font-medium">{d.client_name}</div>
+                {d.client_phone && (
+                  <div className="text-xs text-gray-500">{d.client_phone}</div>
+                )}
                 <div className="text-xs text-gray-500">
                   {d.sale_number ?? '—'}
                   {d.due_date && ` · muddat ${dateShort(d.due_date)}`}

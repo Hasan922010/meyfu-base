@@ -394,7 +394,31 @@ def test_daily_digest_builds(manager, van_stocked, auth_api):
     text = build_today_summary()
     assert "Bugungi hisobot" in text
     assert "Savdo" in text
-    assert "Muddati o'tgan qarzlar" in build_overdue_summary()
+    overdue_text = build_overdue_summary()
+    assert "Muddati o'tgan qarzlar" in overdue_text
+
+
+@pytest.mark.django_db
+def test_overdue_summary_includes_phone_for_same_name_clients(routed_clients):
+    import datetime
+
+    from apps.clients.models import Client
+    from apps.sales.models import Debt
+    from apps.telegram_bot.services.digest import build_overdue_summary
+
+    past = datetime.date.today() - datetime.timedelta(days=5)
+    c1 = Client.objects.create(
+        name="Bir Xil", phone="+998901110011", route=routed_clients["my_route"]
+    )
+    c2 = Client.objects.create(
+        name="Bir Xil", phone="+998902220022", route=routed_clients["my_route"]
+    )
+    Debt.objects.create(client=c1, amount="100000", remaining="100000", due_date=past)
+    Debt.objects.create(client=c2, amount="200000", remaining="200000", due_date=past)
+
+    summary = build_overdue_summary()
+    assert "+998901110011" in summary
+    assert "+998902220022" in summary
 
 
 @pytest.mark.django_db

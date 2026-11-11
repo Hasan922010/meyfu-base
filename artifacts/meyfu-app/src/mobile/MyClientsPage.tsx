@@ -72,7 +72,7 @@ export function MyClientsPage(): ReactElement {
                 <div>
                   <div className="font-medium">{c.name}</div>
                   <div className="text-xs text-gray-500">
-                    {c.address || c.owner_name || '—'}
+                    {[c.phone, c.address || c.owner_name].filter(Boolean).join(' · ') || '—'}
                   </div>
                 </div>
                 <div className="text-right text-xs">

@@ -154,6 +154,9 @@ class WebSocketTicket(models.Model):
     class Meta:
         indexes = [models.Index(fields=("user", "expires_at"))]
 
+    def __str__(self) -> str:
+        return f"WS ticket {self.user} ({self.expires_at:%Y-%m-%d %H:%M})"
+
     @property
     def is_usable(self) -> bool:
         return self.used_at is None and self.expires_at > timezone.now()
@@ -178,6 +181,9 @@ class PasswordResetCode(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=("user", "-created_at"))]
+
+    def __str__(self) -> str:
+        return f"Reset code {self.user} ({self.created_at:%Y-%m-%d %H:%M})"
 
     @property
     def is_usable(self) -> bool:

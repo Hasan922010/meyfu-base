@@ -243,3 +243,69 @@ def test_edit_line_rejects_negative_quantity_and_price(manager_api, catalog, war
     assert resp2.status_code == 400
     assert "final_price" in resp2.data["error"]["details"]
 
+
+@pytest.mark.django_db(transaction=True)
+def test_process_scan_calls_provider_outside_atomic_block(catalog, warehouse, manager, monkeypatch):
+    from django.db import connection
+
+    from apps.ocr.constants import ScanStatus
+    from apps.ocr.models import InvoiceScanPage
+    from apps.ocr.services import scan as scan_mod
+    from apps.ocr.services.providers import OcrResult
+
+    scan = InvoiceScan.objects.create(
+        uploaded_by=manager,
+        warehouse=warehouse["warehouse"],
+        supplier=warehouse["supplier"],
+        scan_type="INVOICE",
+        status=ScanStatus.UPLOADED,
+    )
+    InvoiceScanPage.objects.create(scan=scan, image=_jpeg(), page_number=1)
+
+    saw_atomic = []
+
+    class SpyProvider:
+        def extract(self, _images):
+            saw_atomic.append(connection.in_atomic_block)
+            return OcrResult(
+                provider="mock",
+                raw_text="{}",
+                ai_response={
+                    "supplier": "Zavod A",
+                    "invoice_number": "EXT-1",
+                    "items": [{"name": "Test kukun 3kg", "quantity": "2", "price": "20000"}],
+                    "confidence": "0.95",
+                },
+                tokens_used=10,
+                cost_usd=Decimal("0.01"),
+                processing_time_ms=12,
+            )
+
+    monkeypatch.setattr(scan_mod, "get_provider", lambda: SpyProvider())
+    updated = scan_mod.process_scan(str(scan.id))
+
+    assert saw_atomic == [False]
+    assert updated.status == ScanStatus.NEEDS_REVIEW
+    assert updated.detected_invoice_number == "EXT-1"
+
+
+@pytest.mark.django_db
+def test_enqueue_scan_defers_to_on_commit_when_not_eager(settings, monkeypatch):
+    from django.db import transaction
+
+    from apps.ocr import views as ocr_views
+
+    settings.CELERY_TASK_ALWAYS_EAGER = False
+    dispatched: list[str] = []
+    monkeypatch.setattr(ocr_views.process_scan_task, "delay", lambda sid: dispatched.append(sid))
+
+    with transaction.atomic():
+        ocr_views._enqueue_scan("scan-deferred-1")
+        assert dispatched == []
+
+    # Test tranzaksiyasi commit bo'lmasa ham callback ro'yxatga olinganini tekshiramiz
+    from django.db import connection
+
+    assert any(cb for _sids, cb, *_ in connection.run_on_commit)
+
+

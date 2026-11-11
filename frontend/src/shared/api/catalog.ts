@@ -27,12 +27,21 @@ export interface ProductImportReport {
 }
 
 export const catalogApi = {
-  products: (params?: QueryParams) => listPage<Product>('/products/', params),
+  products: (params?: QueryParams, signal?: AbortSignal) =>
+    listPage<Product>('/products/', params, signal),
   product: (id: string) =>
     api.get<ApiSuccess<Product>>(`/products/${id}/`).then((r) => r.data.data),
   createProduct: (body: ProductInput) => create<Product, ProductInput>('/products/', body),
   updateProduct: (id: string, body: Partial<ProductInput>) =>
     patch<Product, ProductInput>(`/products/${id}/`, body),
+
+  bulkActions: (body: { ids: string[]; action: 'activate' | 'deactivate' | 'delete' }) =>
+    api.post<ApiSuccess<void>>('/products/bulk/', body).then((r) => r.data),
+
+  exportProducts: async (params?: QueryParams): Promise<Blob> => {
+    const { data } = await api.get<Blob>('/products/export/', { params, responseType: 'blob' });
+    return data;
+  },
 
   uploadImages: async (productId: string, files: File[]): Promise<ProductImage[]> => {
     const form = new FormData();

@@ -5,6 +5,7 @@ import { App } from '@/App';
 import { watchAuthSession } from '@/offline/session';
 import { initTheme } from '@/shared/lib/theme';
 import '@/index.css';
+import '@/locales/i18n';
 
 initTheme();
 watchAuthSession();

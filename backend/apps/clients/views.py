@@ -42,7 +42,11 @@ from .models import (
 )
 from .opening_import import (
     TEMPLATE_HEADER as CLIENT_OPENING_HEADER,
+)
+from .opening_import import (
     TEMPLATE_SAMPLE as CLIENT_OPENING_SAMPLE,
+)
+from .opening_import import (
     import_client_opening_balances,
     inspect_client_opening_excel,
 )
@@ -369,13 +373,16 @@ class ClientViewSet(BaseModelViewSet):
     @extend_schema(summary="Mijoz qarzlari")
     @action(detail=True, methods=["get"])
     def debts(self, request: Request, pk: str | None = None) -> Response:
+        from apps.sales.serializers import DebtSerializer
+
         client = self.get_object()
+        qs = client.debts.select_related("client", "sale").order_by("-created_at")
         return ok(
             {
                 "current_debt": str(client.current_debt),
                 "debt_limit": str(client.debt_limit),
                 "debt_available": str(client.debt_available),
-                "items": [],  # Debt modeli — 5-bosqich
+                "items": DebtSerializer(qs, many=True).data,
             }
         )
 

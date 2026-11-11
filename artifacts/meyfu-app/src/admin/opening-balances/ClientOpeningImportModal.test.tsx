@@ -49,6 +49,7 @@ beforeEach(() => {
       {
         row: 2,
         client_name: 'Baraka',
+        client_phone: '+998901112233',
         assigned_to_name: 'Ali Agent',
         current_debt: '0',
         target_debt: '500000',
@@ -91,6 +92,7 @@ describe('ClientOpeningImportModal', () => {
     });
 
     expect(await screen.findByText(/Yangi mijoz \+ qarz/)).toBeInTheDocument();
+    expect(screen.getByText('+998901112233')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Tasdiqlash va yuklash/i }));
     await waitFor(() => expect(clientsApi.openingImportApply).toHaveBeenCalledTimes(2));

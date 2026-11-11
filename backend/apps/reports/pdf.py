@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import io
 from datetime import datetime
+from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
@@ -28,7 +29,7 @@ def rows_to_pdf(rows: list[list], *, title: str = "Hisobot") -> bytes:
     )
     styles = getSampleStyleSheet()
     elements = [
-        Paragraph(title, styles["Title"]),
+        Paragraph(escape(str(title)), styles["Title"]),
         Paragraph(
             datetime.now().strftime("%d.%m.%Y %H:%M"), styles["Normal"]
         ),

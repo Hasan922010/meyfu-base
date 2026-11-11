@@ -188,7 +188,9 @@ def test_debt_aging_report(manager_api, auth_api, van_stocked):
     assert d["total_outstanding"] == "270000.00"
     assert d["overdue_total"] == "270000.00"
     assert d["buckets"]["d61_90"] == "270000.00"
+    assert d["overdue_clients"][0]["client_id"] == str(client.id)
     assert d["overdue_clients"][0]["client"] == "Do'kon A"
+    assert d["overdue_clients"][0]["phone"] == client.phone
     assert d["overdue_clients"][0]["max_days"] >= 60
 
 

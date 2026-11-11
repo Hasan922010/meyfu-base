@@ -16,8 +16,6 @@ type Status = 'online' | 'offline' | 'server-down';
  */
 export function ConnectionBadge(): ReactElement {
   const { t } = useTranslation();
-  // Using true initially and testing immediately so it doesn't blink falsely, but
-  // actually wait we can just start with navigator.onLine and wait for backend check
   const [browserOnline, setBrowserOnline] = useState<boolean>(navigator.onLine);
   const [backendUp, setBackendUp] = useState<boolean>(true);
   const timer = useRef<number | undefined>(undefined);
@@ -25,7 +23,7 @@ export function ConnectionBadge(): ReactElement {
 
   const checkBackend = useCallback(async (): Promise<void> => {
     if (!navigator.onLine) {
-      if (isMounted.current) setBackendUp(true); // Don't show server down if offline
+      if (isMounted.current) setBackendUp(true);
       return;
     }
     try {
@@ -37,6 +35,7 @@ export function ConnectionBadge(): ReactElement {
         signal: ctrl.signal,
       });
       window.clearTimeout(to);
+      // 200 = sog'lom, 503 = xizmat qisman ishlamayapti — lekin server o'zi javob beryapti
       if (isMounted.current) {
         setBackendUp(resp.ok || resp.status === 503);
       }

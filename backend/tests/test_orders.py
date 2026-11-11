@@ -460,6 +460,7 @@ def test_distributor_cannot_order_for_client_off_own_route(
 def test_warehouse_can_create_order_and_sale(client, van_stocked):
     """Omborchi buyurtma olish va tarqatish (sotuv) qila olishi tekshiruvi."""
     from rest_framework.test import APIClient
+
     from apps.users.models import User
 
     warehouse_user = User.objects.create_user(
@@ -488,4 +489,190 @@ def test_warehouse_can_create_order_and_sale(client, van_stocked):
     resp_my = wh_api.get("/api/v1/orders/my-to-take/")
     assert resp_my.status_code == 200
     assert len(resp_my.data["data"]) >= 1
+
+
+@pytest.mark.django_db
+def test_order_fulfill_rejects_unknown_line_id(admin_api, auth_api, distributor, van_stocked):
+    import uuid
+
+    order = _make_order(van_stocked["client"], distributor, van_stocked["product"], qty="5")
+    approve_order(order)
+
+    bad_item_id = str(uuid.uuid4())
+    resp = auth_api.post(
+        f"/api/v1/orders/{order.id}/fulfill/",
+        {
+            "lines": [{"item": bad_item_id, "delivered_quantity": "5"}],
+            "payment_type": "NAQD",
+        },
+        format="json",
+    )
+    assert resp.status_code == 409
+    assert resp.data["error"]["code"] == "ORDER_LINE_NOT_FOUND"
+
+    sync_resp = auth_api.post(
+        "/api/v1/sales/bulk-sync/",
+        {
+            "operations": [
+                {
+                    "type": "order_fulfill",
+                    "client_uuid": str(uuid.uuid4()),
+                    "payload": {
+                        "order": str(order.id),
+                        "payment_type": "NAQD",
+                        "lines": [{"item": bad_item_id, "delivered_quantity": "5"}],
+                    },
+                }
+            ]
+        },
+        format="json",
+    )
+    assert sync_resp.status_code == 200
+    res = sync_resp.data["data"]["results"][0]
+    assert res["status"] == "FAILED"
+    assert res["error"]["code"] == "ORDER_LINE_NOT_FOUND"
+
+
+@pytest.mark.django_db
+def test_order_fulfill_conflict_and_resolve_flow(admin_api, auth_api, distributor, van_stocked):
+    import uuid
+
+    from apps.warehouse.models import VanStock
+
+    # 600 dona buyurtma, mashinada esa 500 dona bor -> CONFLICT
+    order1 = _make_order(van_stocked["client"], distributor, van_stocked["product"], qty="600")
+    approve_order(order1)
+    sync1 = auth_api.post(
+        "/api/v1/sales/bulk-sync/",
+        {
+            "operations": [
+                {
+                    "type": "order_fulfill",
+                    "client_uuid": str(uuid.uuid4()),
+                    "payload": {
+                        "order": str(order1.id),
+                        "payment_type": "NAQD",
+                        "lines": [
+                            {"item": str(order1.items.first().id), "delivered_quantity": "600"}
+                        ],
+                    },
+                }
+            ]
+        },
+        format="json",
+    )
+    r1 = sync1.data["data"]["results"][0]
+    assert r1["status"] == "CONFLICT"
+    order1.refresh_from_db()
+    assert order1.status == OrderStatus.APPROVED
+    assert order1.items.first().delivered_quantity == Decimal("0")
+
+    # Rad etilganda ham buyurtma yetkazilmaganicha qoladi
+    rej = admin_api.post(f"/api/v1/sales/{r1['server_id']}/resolve/", {"accept": False}, format="json")
+    assert rej.status_code == 200
+    order1.refresh_from_db()
+    assert order1.status == OrderStatus.APPROVED
+    assert order1.items.first().delivered_quantity == Decimal("0")
+
+    # 2-buyurtma: konflikt, keyin mashina qoldig'i to'ldirilib tasdiqlanadi (accept=True)
+    order2 = _make_order(van_stocked["client"], distributor, van_stocked["product"], qty="600")
+    approve_order(order2)
+    sync2 = auth_api.post(
+        "/api/v1/sales/bulk-sync/",
+        {
+            "operations": [
+                {
+                    "type": "order_fulfill",
+                    "client_uuid": str(uuid.uuid4()),
+                    "payload": {
+                        "order": str(order2.id),
+                        "payment_type": "NAQD",
+                        "lines": [
+                            {"item": str(order2.items.first().id), "delivered_quantity": "600"}
+                        ],
+                    },
+                }
+            ]
+        },
+        format="json",
+    )
+    r2 = sync2.data["data"]["results"][0]
+    assert r2["status"] == "CONFLICT"
+
+    VanStock.objects.filter(
+        distributor=distributor, product=van_stocked["product"]
+    ).update(quantity=Decimal("700"))
+    acc = admin_api.post(f"/api/v1/sales/{r2['server_id']}/resolve/", {"accept": True}, format="json")
+    assert acc.status_code == 200
+    order2.refresh_from_db()
+    assert order2.status == OrderStatus.DELIVERED
+    assert order2.items.first().delivered_quantity == Decimal("600.000")
+
+
+@pytest.mark.django_db
+def test_cancel_delivered_order_sale_reverts_order_status_and_qty(
+    admin_api, distributor, van_stocked
+):
+    order = _make_order(van_stocked["client"], distributor, van_stocked["product"], qty="10")
+    approve_order(order)
+    res = fulfill_order(
+        order,
+        [FulfillLine(item=order.items.first(), delivered_quantity=Decimal("10"))],
+        distributor=distributor,
+        payment_type="NAQD",
+    )
+    order.refresh_from_db()
+    assert order.status == OrderStatus.DELIVERED
+    assert order.items.first().delivered_quantity == Decimal("10.000")
+
+    cancel_resp = admin_api.post(
+        f"/api/v1/sales/{res.sale.id}/cancel/", {"reason": "Noto'g'ri yetkazildi"}, format="json"
+    )
+    assert cancel_resp.status_code == 200
+    order.refresh_from_db()
+    assert order.status == OrderStatus.APPROVED
+    assert order.items.first().delivered_quantity == Decimal("0.000")
+
+
+@pytest.mark.django_db
+def test_warehouse_order_place_and_cancel_ownership(admin_api, van_stocked):
+    from rest_framework.test import APIClient
+
+    from apps.users.models import User
+
+    wh1 = User.objects.create_user(
+        phone="+998907770011", password="pass12345", full_name="Ombor 1", role="WAREHOUSE"
+    )
+    wh2 = User.objects.create_user(
+        phone="+998907770012", password="pass12345", full_name="Ombor 2", role="WAREHOUSE"
+    )
+    api1, api2 = APIClient(), APIClient()
+    api1.force_authenticate(user=wh1)
+    api2.force_authenticate(user=wh2)
+
+    product = _product(van_stocked["product"])
+    created = api1.post(
+        "/api/v1/orders/",
+        {
+            "client": str(van_stocked["client"].id),
+            "items": [{"product": str(product.id), "quantity": "2", "price": "27000"}],
+            "payment_intent": "NAQD",
+            "place": False,
+        },
+        format="json",
+    )
+    assert created.status_code == 201
+    oid = created.data["data"]["id"]
+
+    # Boshqa omborchi begona buyurtmani yubora olmaydi ham, bekor qila olmaydi ham
+    assert api2.post(f"/api/v1/orders/{oid}/place/").status_code == 403
+    assert api2.post(f"/api/v1/orders/{oid}/cancel/", {}, format="json").status_code == 403
+
+    # O'zi yuboradi -> admin tasdiqlaydi -> endi omborchi tasdiqlangan buyurtmani bekor qila olmaydi
+    assert api1.post(f"/api/v1/orders/{oid}/place/").status_code == 200
+    assert admin_api.post(f"/api/v1/orders/{oid}/approve/").status_code == 200
+    too_late = api1.post(f"/api/v1/orders/{oid}/cancel/", {}, format="json")
+    assert too_late.status_code == 400
+    assert too_late.data["error"]["code"] == "ORDER_CANNOT_BE_CANCELLED"
+
 

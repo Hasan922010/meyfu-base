@@ -773,6 +773,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clients/opening-balance/import/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mijozlar boshlang'ich qarzini Excel'dan ustun moslab import qilish
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["clients_opening_balance_import_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clients/opening-import-template/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mijoz boshlang'ich qarzi importi uchun Excel shablon
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["clients_opening_import_template_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clients/opening-sheet/": {
         parameters: {
             query?: never;
@@ -2443,6 +2487,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mahsulotlar ustida ommaviy amal
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["products_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mahsulotlar ro'yxatini CSV eksport qilish
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        get: operations["products_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/import/": {
         parameters: {
             query?: never;
@@ -2889,6 +2977,60 @@ export interface paths {
          * @description 1C uchun fayl eksporti — XML yoki CSV (v5: C6).
          */
         get: operations["reports_export_1c_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/price-variance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tannarxdan farq (Kamomad / Ortiqcha) hisoboti
+         * @description Tannarx va sotuv narxi farqi (Kamomad va Ortiqcha) hisoboti.
+         */
+        get: operations["reports_price_variance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/product-movement/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tovar harakati va sotuv turi (Sotuv vs Bonus) hisoboti */
+        get: operations["reports_product_movement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/product-movement/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tovar harakati hisobotini Excel formatida yuklash */
+        get: operations["reports_product_movement_export_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3368,6 +3510,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stock/lock-opening/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ombor boshlang'ich qoldig'ini tasdiqlash va qulflash (faqat ADMIN)
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+         */
+        post: operations["stock_lock_opening_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stock/low/": {
         parameters: {
             query?: never;
@@ -3442,6 +3604,26 @@ export interface paths {
         get: operations["stock_opening_sheet_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stock/unlock-opening/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ombor boshlang'ich qoldig'ini qayta ochish (SUPER_ADMIN, MANAGER yoki filial rahbari)
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+         */
+        post: operations["stock_unlock_opening_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3560,7 +3742,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)
+         * Ta'minotchi boshlang'ich qoldig'i (SUPER_ADMIN va ACCOUNTANT)
          * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
          *
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
@@ -3682,11 +3864,139 @@ export interface paths {
         };
         /**
          * Mijozlar sinxronizatsiyasi (delta)
-         * @description Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z marshruti.
+         * @description Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z mijozi/marshruti.
          */
         get: operations["sync_clients_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/backups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Zaxiralar ro'yxati
+         * @description Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+         */
+        get: operations["system_backups_retrieve"];
+        put?: never;
+        /**
+         * Yangi zaxira yaratish
+         * @description Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+         */
+        post: operations["system_backups_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/backups/{filename}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Zaxira faylini o'chirish
+         * @description Zaxira faylini o'chirish.
+         */
+        delete: operations["system_backups_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/backups/{filename}/download/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Zaxira faylini yuklab olish
+         * @description Zaxira faylini yuklab olish.
+         */
+        get: operations["system_backups_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/backups/{filename}/restore/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Zaxiradan tiklash
+         * @description Zaxira nusxasidan ma'lumotlarni tiklash.
+         */
+        post: operations["system_backups_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/backups/create/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Zaxiralar ro'yxati
+         * @description Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+         */
+        get: operations["system_backups_create_retrieve"];
+        put?: never;
+        /**
+         * Yangi zaxira yaratish
+         * @description Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+         */
+        post: operations["system_backups_create_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/backups/upload/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Zaxira faylini yuklash
+         * @description Tashqi zaxira faylini yuklash.
+         */
+        post: operations["system_backups_upload_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3717,6 +4027,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/settings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tizim xavfsizlik sozlamalari
+         * @description Tizim sozlamalari — soxta operatsiyalarni tozalashga ruxsat berish/o'chirish.
+         */
+        get: operations["system_settings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Tizim xavfsizlik sozlamalarini yangilash (SUPER_ADMIN)
+         * @description Tizim sozlamalari — soxta operatsiyalarni tozalashga ruxsat berish/o'chirish.
+         */
+        patch: operations["system_settings_partial_update"];
+        trace?: never;
+    };
     "/api/v1/system/status/": {
         parameters: {
             query?: never;
@@ -3731,6 +4065,66 @@ export interface paths {
         get: operations["system_status_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/test-cleanup/entries/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tanlangan jurnal bo'yicha oxirgi operatsiyalar
+         * @description Soxta operatsiyalarni tozalash uchun jurnal yozuvlari ro'yxati (SUPER_ADMIN).
+         */
+        get: operations["system_test_cleanup_entries_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/test-cleanup/execute/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Soxta operatsiyalarni tasdiqlab tozalash (SUPER_ADMIN)
+         * @description Tanlangan soxta operatsiyalarni tasdiqlab tozalash.
+         */
+        post: operations["system_test_cleanup_execute_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/test-cleanup/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Soxta operatsiyalarni tozalash ta'sirini oldindan ko'rish
+         * @description Tanlangan soxta operatsiyalarni tozalash rejasini tekshirish (preview).
+         */
+        post: operations["system_test_cleanup_preview_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4380,6 +4774,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description * `activate` - activate
+         *     * `deactivate` - deactivate
+         *     * `delete` - delete
+         *     * `soft-delete` - soft-delete
+         * @enum {string}
+         */
+        ActionEnum: "activate" | "deactivate" | "delete" | "soft-delete";
         Advance: {
             /** Format: uuid */
             readonly id: string;
@@ -4753,6 +5155,12 @@ export interface components {
             readonly route_name: string;
             /** Marshrutdagi tartib */
             readonly route_order: number;
+            /**
+             * Mas'ul xodim
+             * Format: uuid
+             */
+            assigned_to?: string | null;
+            readonly assigned_to_name: string;
             /** Turi */
             client_type?: components["schemas"]["ClientTypeEnum"];
             readonly client_type_display: string;
@@ -4824,6 +5232,11 @@ export interface components {
              * Format: uuid
              */
             readonly route: string | null;
+            /**
+             * Mas'ul xodim
+             * Format: uuid
+             */
+            readonly assigned_to: string | null;
             /** Turi */
             readonly client_type: components["schemas"]["ClientTypeEnum"];
             /**
@@ -4882,6 +5295,11 @@ export interface components {
              * Format: uuid
              */
             route?: string | null;
+            /**
+             * Mas'ul xodim
+             * Format: uuid
+             */
+            assigned_to?: string | null;
             /** Turi */
             client_type?: components["schemas"]["ClientTypeEnum"];
             /**
@@ -5430,6 +5848,8 @@ export interface components {
              */
             readonly client: string;
             readonly client_name: string;
+            /** @default  */
+            readonly client_phone: string;
             /**
              * Sotuv
              * Format: uuid
@@ -5474,6 +5894,8 @@ export interface components {
              */
             debt: string;
             readonly client_name: string;
+            /** @default  */
+            readonly client_phone: string;
             /**
              * Summa
              * Format: decimal
@@ -6342,6 +6764,11 @@ export interface components {
             code: string;
             current: string;
         };
+        /** @description Ommaviy boshlang'ich qoldiq qaysi omborga yoziladi. */
+        OpeningWarehouseRequest: {
+            /** Format: uuid */
+            warehouse: string;
+        };
         Order: {
             /** Format: uuid */
             readonly id: string;
@@ -6491,6 +6918,8 @@ export interface components {
              * Format: decimal
              */
             readonly amount: string;
+            /** Bonus tovar (bepul) */
+            is_bonus?: boolean;
         };
         OrderLineInputRequest: {
             /** Format: uuid */
@@ -6499,6 +6928,8 @@ export interface components {
             quantity: string;
             /** Format: decimal */
             price: string;
+            /** @default false */
+            is_bonus: boolean;
         };
         /**
          * @description * `DRAFT` - Qoralama
@@ -7226,6 +7657,11 @@ export interface components {
              * Format: uuid
              */
             route?: string | null;
+            /**
+             * Mas'ul xodim
+             * Format: uuid
+             */
+            assigned_to?: string | null;
             /** Turi */
             client_type?: components["schemas"]["ClientTypeEnum"];
             /**
@@ -7355,15 +7791,9 @@ export interface components {
              * Format: uuid
              */
             final_product?: string | null;
-            /**
-             * Yakuniy miqdor
-             * Format: decimal
-             */
+            /** Format: decimal */
             final_quantity?: string | null;
-            /**
-             * Yakuniy narx
-             * Format: decimal
-             */
+            /** Format: decimal */
             final_price?: string | null;
         };
         /** @description Yetkazib beruvchi / raqam / sanani tuzatish (tekshirish ekrani). */
@@ -7456,7 +7886,41 @@ export interface components {
              */
             pack_quantity?: string;
             /**
-             * Komissiya foizi
+             * Qadoq turi
+             * @description Masalan: qop, xalta, pachka, karopka, blok
+             */
+            package_type?: string;
+            /**
+             * Buyurtma komissiya foizi
+             * Format: decimal
+             */
+            order_commission_rate?: string;
+            /**
+             * Tarqatish komissiya foizi
+             * Format: decimal
+             */
+            delivery_commission_rate?: string;
+            /** Bonus mavjud */
+            has_bonus?: boolean;
+            /**
+             * Bonus berilishi uchun minimal xarid miqdori
+             * Format: decimal
+             */
+            bonus_trigger_qty?: string;
+            /**
+             * Bonus beriladigan miqdor
+             * Format: decimal
+             */
+            bonus_reward_qty?: string;
+            /**
+             * Bonus tovar (bo'sh bo'lsa o'zidan)
+             * Format: uuid
+             */
+            bonus_product?: string | null;
+            /** Tannarxdan farqni hisobotda kuzatish */
+            track_variance?: boolean;
+            /**
+             * Komissiya foizi (umumiy)
              * Format: decimal
              */
             commission_percent?: string;
@@ -7538,6 +8002,10 @@ export interface components {
             /** Faol */
             is_active?: boolean;
         };
+        /** @description Tizim xavfsizligi va ruxsat sozlamalari (SUPER_ADMIN). */
+        PatchedSystemSettingsRequest: {
+            allow_test_cleanup?: boolean;
+        };
         PatchedTransferRequest: {
             /**
              * Qayerdan
@@ -7602,6 +8070,22 @@ export interface components {
              * Format: uuid
              */
             warehouse?: string | null;
+            /** Tovar kirim qilish */
+            can_receive_stock?: boolean;
+            /** Buyurtma olish */
+            can_take_orders?: boolean;
+            /** Tarqatish / sotuv qilish */
+            can_make_sales?: boolean;
+            /** Qarzga berish */
+            can_sell_on_debt?: boolean;
+            /** Pul / qarz undirish */
+            can_collect_debts?: boolean;
+            /** Xarajat kiritish */
+            can_record_expenses?: boolean;
+            /** Ombor qoldig'ini ko'rish */
+            can_see_warehouse_stock?: boolean;
+            /** Naklit skani (AI OCR) */
+            can_scan_invoices?: boolean;
         };
         PatchedWarehouseRequest: {
             /** Nomi */
@@ -8001,7 +8485,42 @@ export interface components {
              */
             pack_quantity?: string;
             /**
-             * Komissiya foizi
+             * Qadoq turi
+             * @description Masalan: qop, xalta, pachka, karopka, blok
+             */
+            package_type?: string;
+            /**
+             * Buyurtma komissiya foizi
+             * Format: decimal
+             */
+            order_commission_rate?: string;
+            /**
+             * Tarqatish komissiya foizi
+             * Format: decimal
+             */
+            delivery_commission_rate?: string;
+            /** Bonus mavjud */
+            has_bonus?: boolean;
+            /**
+             * Bonus berilishi uchun minimal xarid miqdori
+             * Format: decimal
+             */
+            bonus_trigger_qty?: string;
+            /**
+             * Bonus beriladigan miqdor
+             * Format: decimal
+             */
+            bonus_reward_qty?: string;
+            /**
+             * Bonus tovar (bo'sh bo'lsa o'zidan)
+             * Format: uuid
+             */
+            bonus_product?: string | null;
+            readonly bonus_product_name: string | null;
+            /** Tannarxdan farqni hisobotda kuzatish */
+            track_variance?: boolean;
+            /**
+             * Komissiya foizi (umumiy)
              * Format: decimal
              */
             commission_percent?: string;
@@ -8010,6 +8529,13 @@ export interface components {
              * Format: decimal
              */
             min_stock_alert?: string;
+            /** Format: decimal */
+            readonly total_stock: string;
+            /** Format: decimal */
+            readonly reserved_stock: string;
+            /** Format: decimal */
+            readonly available_stock: string;
+            readonly stock_status: string;
             /** Faol */
             is_active?: boolean;
             /**
@@ -8022,6 +8548,18 @@ export interface components {
              * Format: date-time
              */
             readonly updated_at: string;
+        };
+        ProductBulkRequest: {
+            /** @description Ko'pi bilan 100 ta mahsulot IDsi. */
+            ids: string[];
+            action: components["schemas"]["ActionEnum"];
+        };
+        ProductBulkResult: {
+            action: string;
+            requested: number;
+            updated: number;
+            missing_ids: string[];
+            errors: string[];
         };
         ProductImage: {
             /** Format: uuid */
@@ -8190,7 +8728,41 @@ export interface components {
              */
             pack_quantity?: string;
             /**
-             * Komissiya foizi
+             * Qadoq turi
+             * @description Masalan: qop, xalta, pachka, karopka, blok
+             */
+            package_type?: string;
+            /**
+             * Buyurtma komissiya foizi
+             * Format: decimal
+             */
+            order_commission_rate?: string;
+            /**
+             * Tarqatish komissiya foizi
+             * Format: decimal
+             */
+            delivery_commission_rate?: string;
+            /** Bonus mavjud */
+            has_bonus?: boolean;
+            /**
+             * Bonus berilishi uchun minimal xarid miqdori
+             * Format: decimal
+             */
+            bonus_trigger_qty?: string;
+            /**
+             * Bonus beriladigan miqdor
+             * Format: decimal
+             */
+            bonus_reward_qty?: string;
+            /**
+             * Bonus tovar (bo'sh bo'lsa o'zidan)
+             * Format: uuid
+             */
+            bonus_product?: string | null;
+            /** Tannarxdan farqni hisobotda kuzatish */
+            track_variance?: boolean;
+            /**
+             * Komissiya foizi (umumiy)
              * Format: decimal
              */
             commission_percent?: string;
@@ -8595,6 +9167,8 @@ export interface components {
             readonly profit: string;
             /** Minimal narxdan past */
             readonly below_min_price: boolean;
+            /** Bonus tovar (bepul) */
+            is_bonus?: boolean;
         };
         SaleItemRequest: {
             /**
@@ -8617,6 +9191,8 @@ export interface components {
              * Format: decimal
              */
             discount_percent?: string;
+            /** Bonus tovar (bepul) */
+            is_bonus?: boolean;
         };
         SaleLineInputRequest: {
             /** Format: uuid */
@@ -8630,6 +9206,8 @@ export interface components {
              * @default 0.00
              */
             discount_percent: string;
+            /** @default false */
+            is_bonus: boolean;
         };
         SaleReturn: {
             /** Format: uuid */
@@ -8958,9 +9536,28 @@ export interface components {
             /** Davomiyligi (ms) */
             readonly duration_ms: number;
         };
+        /** @description Tizim xavfsizligi va ruxsat sozlamalari (SUPER_ADMIN). */
+        SystemSettings: {
+            allow_test_cleanup: boolean;
+        };
         TelegramBotConnectRequest: {
             /** @description Telegram bot tokeni (masalan: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11) */
             token: string;
+        };
+        /** @description Soxta operatsiyalarni tasdiqlab tozalash. */
+        TestCleanupExecuteRequest: {
+            ledger: string;
+            ids: string[];
+            cleanup_token: string;
+            reason: string;
+            confirmation: string;
+            password: string;
+            acknowledged: boolean;
+        };
+        /** @description Soxta operatsiyalarni tozalashdan oldin tekshirish (preview). */
+        TestCleanupPreviewRequest: {
+            ledger: string;
+            ids: string[];
         };
         TokenRefresh: {
             readonly access: string;
@@ -9157,6 +9754,25 @@ export interface components {
              */
             readonly warehouse: string | null;
             readonly warehouse_name: string;
+            /** Tovar kirim qilish */
+            can_receive_stock?: boolean;
+            /** Buyurtma olish */
+            can_take_orders?: boolean;
+            /** Tarqatish / sotuv qilish */
+            can_make_sales?: boolean;
+            /** Qarzga berish */
+            can_sell_on_debt?: boolean;
+            /** Pul / qarz undirish */
+            can_collect_debts?: boolean;
+            /** Xarajat kiritish */
+            can_record_expenses?: boolean;
+            /** Ombor qoldig'ini ko'rish */
+            can_see_warehouse_stock?: boolean;
+            /** Naklit skani (AI OCR) */
+            can_scan_invoices?: boolean;
+            readonly permissions: {
+                [key: string]: boolean;
+            };
         };
         /**
          * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
@@ -9196,6 +9812,22 @@ export interface components {
              */
             warehouse?: string | null;
             readonly warehouse_name: string;
+            /** Tovar kirim qilish */
+            can_receive_stock?: boolean;
+            /** Buyurtma olish */
+            can_take_orders?: boolean;
+            /** Tarqatish / sotuv qilish */
+            can_make_sales?: boolean;
+            /** Qarzga berish */
+            can_sell_on_debt?: boolean;
+            /** Pul / qarz undirish */
+            can_collect_debts?: boolean;
+            /** Xarajat kiritish */
+            can_record_expenses?: boolean;
+            /** Ombor qoldig'ini ko'rish */
+            can_see_warehouse_stock?: boolean;
+            /** Naklit skani (AI OCR) */
+            can_scan_invoices?: boolean;
         };
         /**
          * @description Xodim yaratish/tahrirlash (faqat SUPER_ADMIN). CLAUDE.md 2, 5, 6.
@@ -9235,6 +9867,22 @@ export interface components {
              * Format: uuid
              */
             warehouse?: string | null;
+            /** Tovar kirim qilish */
+            can_receive_stock?: boolean;
+            /** Buyurtma olish */
+            can_take_orders?: boolean;
+            /** Tarqatish / sotuv qilish */
+            can_make_sales?: boolean;
+            /** Qarzga berish */
+            can_sell_on_debt?: boolean;
+            /** Pul / qarz undirish */
+            can_collect_debts?: boolean;
+            /** Xarajat kiritish */
+            can_record_expenses?: boolean;
+            /** Ombor qoldig'ini ko'rish */
+            can_see_warehouse_stock?: boolean;
+            /** Naklit skani (AI OCR) */
+            can_scan_invoices?: boolean;
         };
         VanStock: {
             /** Format: uuid */
@@ -9365,6 +10013,19 @@ export interface components {
              */
             manager?: string | null;
             readonly manager_name: string;
+            /** Boshlang'ich qoldiq tasdiqlangan */
+            readonly is_opening_locked: boolean;
+            /**
+             * Tasdiqlangan vaqt
+             * Format: date-time
+             */
+            readonly opening_confirmed_at: string | null;
+            /**
+             * Tasdiqlagan admin
+             * Format: uuid
+             */
+            readonly opening_confirmed_by: string | null;
+            readonly opening_confirmed_by_name: string;
             /**
              * Yaratilgan vaqti
              * Format: date-time
@@ -10522,6 +11183,7 @@ export interface operations {
     clients_list: {
         parameters: {
             query?: {
+                assigned_to?: string;
                 /**
                  * @description * `SHOP` - Do'kon
                  *     * `MARKET` - Bozor
@@ -10803,9 +11465,63 @@ export interface operations {
             };
         };
     };
+    clients_opening_balance_import_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                    mode?: string;
+                    mapping?: string;
+                    default_assigned_to?: string;
+                    auto_create_missing?: boolean;
+                    note?: string;
+                    dry_run?: boolean;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    clients_opening_import_template_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
     clients_opening_sheet_list: {
         parameters: {
             query?: {
+                assigned_to?: string;
                 /**
                  * @description * `SHOP` - Do'kon
                  *     * `MARKET` - Bozor
@@ -13158,9 +13874,18 @@ export interface operations {
                 /** @description Number of results to return per page. */
                 page_size?: number;
                 price_lte?: number;
+                retail_price_max?: number;
+                retail_price_min?: number;
                 /** @description A search term. */
                 search?: string;
+                /**
+                 * @description * `out` - out
+                 *     * `low` - low
+                 *     * `ok` - ok
+                 */
+                stock_status?: "low" | "ok" | "out";
                 unit?: string;
+                warehouse?: string;
             };
             header?: never;
             path?: never;
@@ -13316,9 +14041,18 @@ export interface operations {
                 /** @description Number of results to return per page. */
                 page_size?: number;
                 price_lte?: number;
+                retail_price_max?: number;
+                retail_price_min?: number;
                 /** @description A search term. */
                 search?: string;
+                /**
+                 * @description * `out` - out
+                 *     * `low` - low
+                 *     * `ok` - ok
+                 */
+                stock_status?: "low" | "ok" | "out";
                 unit?: string;
+                warehouse?: string;
             };
             header?: never;
             path: {
@@ -13411,9 +14145,18 @@ export interface operations {
                 /** @description Number of results to return per page. */
                 page_size?: number;
                 price_lte?: number;
+                retail_price_max?: number;
+                retail_price_min?: number;
                 /** @description A search term. */
                 search?: string;
+                /**
+                 * @description * `out` - out
+                 *     * `low` - low
+                 *     * `ok` - ok
+                 */
+                stock_status?: "low" | "ok" | "out";
                 unit?: string;
+                warehouse?: string;
             };
             header?: never;
             path: {
@@ -13452,6 +14195,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    products_bulk_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductBulkRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductBulkRequest"];
+                "multipart/form-data": components["schemas"]["ProductBulkRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductBulkResult"];
+                };
+            };
+        };
+    };
+    products_export_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description UTF-8 BOM bilan CSV fayl. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
         };
@@ -14158,6 +14946,82 @@ export interface operations {
                 content: {
                     "application/xml": string;
                     "text/csv": string;
+                };
+            };
+        };
+    };
+    reports_price_variance_retrieve: {
+        parameters: {
+            query?: {
+                all_products?: boolean;
+                date_from?: string;
+                date_to?: string;
+                product_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_product_movement_retrieve: {
+        parameters: {
+            query?: {
+                category_id?: string;
+                date_from?: string;
+                date_to?: string;
+                product_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    reports_product_movement_export_retrieve: {
+        parameters: {
+            query?: {
+                category_id?: string;
+                date_from?: string;
+                date_to?: string;
+                product_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
         };
@@ -14901,6 +15765,31 @@ export interface operations {
             };
         };
     };
+    stock_lock_opening_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningWarehouseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningWarehouseRequest"];
+                "multipart/form-data": components["schemas"]["OpeningWarehouseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stock"];
+                };
+            };
+        };
+    };
     stock_low_retrieve: {
         parameters: {
             query?: never;
@@ -14996,6 +15885,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    stock_unlock_opening_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningWarehouseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpeningWarehouseRequest"];
+                "multipart/form-data": components["schemas"]["OpeningWarehouseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stock"];
                 };
             };
         };
@@ -15383,6 +16297,214 @@ export interface operations {
             };
         };
     };
+    system_backups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_backups_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+                "application/x-www-form-urlencoded": {
+                    [key: string]: unknown;
+                };
+                "multipart/form-data": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_backups_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_backups_download_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    system_backups_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+                "application/x-www-form-urlencoded": {
+                    [key: string]: unknown;
+                };
+                "multipart/form-data": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_backups_create_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_backups_create_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+                "application/x-www-form-urlencoded": {
+                    [key: string]: unknown;
+                };
+                "multipart/form-data": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_backups_upload_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     system_integrity_retrieve: {
         parameters: {
             query?: never;
@@ -15425,6 +16547,50 @@ export interface operations {
             };
         };
     };
+    system_settings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemSettings"];
+                };
+            };
+        };
+    };
+    system_settings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSystemSettingsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSystemSettingsRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSystemSettingsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemSettings"];
+                };
+            };
+        };
+    };
     system_status_retrieve: {
         parameters: {
             query?: never;
@@ -15433,6 +16599,84 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_test_cleanup_entries_retrieve: {
+        parameters: {
+            query: {
+                ledger: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_test_cleanup_execute_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestCleanupExecuteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TestCleanupExecuteRequest"];
+                "multipart/form-data": components["schemas"]["TestCleanupExecuteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    system_test_cleanup_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestCleanupPreviewRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TestCleanupPreviewRequest"];
+                "multipart/form-data": components["schemas"]["TestCleanupPreviewRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

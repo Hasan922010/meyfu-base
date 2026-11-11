@@ -287,6 +287,7 @@ def test_assigned_to_client_ownership_and_filtering(
 @pytest.mark.django_db
 def test_field_staff_create_client_auto_assigns_to_self(distributor, manager_api):
     from rest_framework.test import APIClient
+
     from apps.users.models import User
 
     wh = User.objects.create_user(
@@ -361,3 +362,30 @@ def test_central_admin_assigning_branch_staff_propagates_branch_and_rejects_mism
         format="json",
     )
     assert mismatch.status_code == 400
+
+
+@pytest.mark.django_db
+def test_client_debts_endpoint_returns_serialized_items(auth_api, manager_api, van_stocked):
+    client = van_stocked["client"]
+    product = van_stocked["product"]
+
+    sale_resp = auth_api.post(
+        "/api/v1/sales/",
+        {
+            "client": str(client.id),
+            "payment_type": "QARZ",
+            "due_date": "2026-12-01",
+            "items": [{"product": str(product.id), "quantity": "2", "price": "25000"}],
+        },
+        format="json",
+    )
+    assert sale_resp.status_code == 201
+
+    resp = manager_api.get(f"/api/v1/clients/{client.id}/debts/")
+    assert resp.status_code == 200
+    data = resp.data["data"]
+    assert data["current_debt"] == "50000.00"
+    assert len(data["items"]) == 1
+    assert data["items"][0]["remaining"] == "50000.00"
+    assert data["items"][0]["client_phone"] == client.phone
+

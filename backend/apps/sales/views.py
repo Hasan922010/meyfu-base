@@ -14,7 +14,6 @@ from apps.clients.models import Client
 from apps.core.business_day import business_date
 from apps.core.formatting import fmt_money
 from apps.core.models import SyncLog
-from apps.core.permissions import is_order_taker
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet, BaseReadOnlyViewSet
 from apps.users.constants import Role
@@ -46,8 +45,11 @@ _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR, Role
 _SALE_MANAGE = (*_ADMIN, Role.ACCOUNTANT)
 
 
-def _is_distributor(user) -> bool:
-    return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
+def _is_self_only(user) -> bool:
+    return (
+        getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.WAREHOUSE)
+        and not user.is_superuser
+    )
 
 
 def _resolve_products(rows: list[dict]) -> dict[str, Product]:
@@ -89,7 +91,7 @@ class SaleViewSet(BaseModelViewSet):
         qs = Sale.objects.select_related("distributor", "client").prefetch_related(
             Prefetch("items", queryset=SaleItem.objects.select_related("product"))
         )
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
 
@@ -214,7 +216,7 @@ class DebtViewSet(BaseReadOnlyViewSet):
     branch_lookup = "client__branch"
     read_roles = (*_READ, Role.ORDER_TAKER)
     filterset_fields = ("client", "status")
-    search_fields = ("client__name", "sale__number")
+    search_fields = ("client__name", "client__phone", "sale__number")
     ordering_fields = ("created_at", "due_date", "remaining")
 
     def get_queryset(self) -> QuerySet[Debt]:
@@ -247,13 +249,14 @@ class DebtPaymentViewSet(BaseModelViewSet):
     branch_lookup = "debt__client__branch"
     http_method_names = ["get", "post", "head", "options"]
     read_roles = _READ
-    write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
+    write_roles = (Role.DISTRIBUTOR, Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
     filterset_fields = ("debt", "payment_type")
+    search_fields = ("debt__client__name", "debt__client__phone")
     ordering_fields = ("date", "created_at")
 
     def get_queryset(self) -> QuerySet[DebtPayment]:
         qs = DebtPayment.objects.select_related("debt__client", "collected_by")
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(collected_by=self.request.user)
         return qs
 
@@ -283,8 +286,8 @@ class SaleReturnViewSet(BaseModelViewSet):
     serializer_class = SaleReturnSerializer
     branch_lookup = "branch"
     http_method_names = ["get", "post", "head", "options"]
-    read_roles = (*_READ, Role.WAREHOUSE)
-    write_roles = (Role.DISTRIBUTOR, Role.MANAGER, Role.SUPER_ADMIN)
+    read_roles = _READ
+    write_roles = (Role.DISTRIBUTOR, Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN)
     filterset_fields = ("distributor", "client", "reason")
     ordering_fields = ("date", "created_at")
 
@@ -292,7 +295,7 @@ class SaleReturnViewSet(BaseModelViewSet):
         qs = SaleReturn.objects.select_related("distributor", "client", "sale").prefetch_related(
             "items__product"
         )
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
 

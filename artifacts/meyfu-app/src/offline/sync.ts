@@ -14,8 +14,9 @@ import { assertApiShape } from '@/shared/lib/validate';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { ApiSuccess } from '@/shared/types/api';
 import type { Client } from '@/shared/types/clients';
+import type { Product } from '@/shared/types/catalog';
 
-import { db, getMeta, setMeta, type OutboxOp } from './db';
+import { db, setMeta, type OutboxOp } from './db';
 import {
   applyResult,
   dueOps,
@@ -39,31 +40,38 @@ let syncing = false;
 
 /** Katalog + mijoz + mashina qoldig'ini serverdan lokal bazaga tortadi. */
 export async function pullReferenceData(): Promise<void> {
-  const since = await getMeta('catalog_since');
-  const catalog = await catalogApi.products({ page_size: 500 });
-  assertApiShape(productListShape, catalog.results, 'sync/catalog');
-  await db.products.bulkPut(
-    catalog.results.map((p) => ({
-      id: p.id,
-      name: p.name,
-      sku: p.sku,
-      barcode: p.barcode,
-      unit: p.unit_name,
-      retail_price: p.retail_price,
-      wholesale_price: p.wholesale_price,
-      min_price: p.min_price,
-      cost_price: p.cost_price,
-      pack_quantity: p.pack_quantity ?? '1',
-      package_type: p.package_type ?? '',
-      has_bonus: p.has_bonus,
-      bonus_trigger_qty: p.bonus_trigger_qty,
-      bonus_reward_qty: p.bonus_reward_qty,
-      bonus_product: p.bonus_product,
-      bonus_product_name: p.bonus_product_name,
-      is_active: p.is_active,
-      image_thumb: p.image_thumb ?? null,
-    })),
-  );
+  const allProducts: Product[] = [];
+  for (let page = 1; ; page += 1) {
+    const catalog = await catalogApi.products({ page, page_size: 500 });
+    assertApiShape(productListShape, catalog.results, 'sync/catalog');
+    allProducts.push(...catalog.results);
+    if (!catalog.next) break;
+  }
+  await db.transaction('rw', db.products, async () => {
+    await db.products.clear();
+    await db.products.bulkPut(
+      allProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        barcode: p.barcode,
+        unit: p.unit_name,
+        retail_price: p.retail_price,
+        wholesale_price: p.wholesale_price,
+        min_price: p.min_price,
+        cost_price: p.cost_price,
+        pack_quantity: p.pack_quantity ?? '1',
+        package_type: p.package_type ?? '',
+        has_bonus: p.has_bonus,
+        bonus_trigger_qty: p.bonus_trigger_qty,
+        bonus_reward_qty: p.bonus_reward_qty,
+        bonus_product: p.bonus_product,
+        bonus_product_name: p.bonus_product_name,
+        is_active: p.is_active,
+        image_thumb: p.image_thumb ?? null,
+      })),
+    );
+  });
 
   const allClients: Client[] = [];
   for (let page = 1; ; page += 1) {
@@ -105,7 +113,6 @@ export async function pullReferenceData(): Promise<void> {
   }
 
   await setMeta('last_pull', new Date().toISOString());
-  if (!since) await setMeta('catalog_since', new Date().toISOString());
 }
 
 /**

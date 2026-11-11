@@ -170,7 +170,7 @@ def client_opening_sheet(branch=None) -> list[dict]:
     """
     return [
         sheet_row(id=c.id, name=c.name, code=c.phone, current=c.current_debt)
-        for c in _opening_clients(branch).order_by("name", "pk")
+        for c in _opening_clients(branch).order_by("name", "phone", "pk")
     ]
 
 

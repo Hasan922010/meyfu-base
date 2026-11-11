@@ -12,6 +12,7 @@ export interface DebtAging {
     d90_plus: string;
   };
   overdue_clients: Array<{
+    client_id?: string;
     client: string;
     phone: string;
     amount: string;

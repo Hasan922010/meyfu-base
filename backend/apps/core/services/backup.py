@@ -21,15 +21,19 @@ import logging
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
+import tempfile
+from collections import defaultdict, deque
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 from typing import Any
 
+from django.apps import apps
 from django.conf import settings
 from django.core.management import call_command
-from django.db import connection, transaction
+from django.db import connection, connections, transaction
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -257,7 +261,7 @@ def _dump_django_json(out_path: Path) -> None:
         format="json",
         indent=2,
         natural_foreign=True,
-        natural_primary=True,
+        natural_primary=False,
         exclude=EXCLUDE_MODELS_FOR_JSON,
         stdout=buf,
     )
@@ -408,7 +412,7 @@ def _restore_postgres_sql(file_path: Path) -> None:
     if db_conf.get("PASSWORD"):
         env["PGPASSWORD"] = str(db_conf["PASSWORD"])
 
-    cmd = [psql]
+    cmd = [psql, "-v", "ON_ERROR_STOP=1", "--single-transaction"]
     if db_conf.get("HOST"):
         cmd.extend(["-h", str(db_conf["HOST"])])
     if db_conf.get("PORT"):
@@ -435,10 +439,71 @@ def _restore_postgres_sql(file_path: Path) -> None:
         raise RestoreError(f"psql tiklash xatosi (kod {proc.returncode}): {stderr.decode(errors='replace')}")
 
 
-def _restore_django_json(file_path: Path) -> None:
-    """Django loaddata orqali ma'lumotlarni tiklaydi."""
-    import tempfile
+_SYSTEM_KEEP_MODELS = {
+    "contenttypes.contenttype",
+    "auth.permission",
+    "sessions.session",
+    "admin.logentry",
+}
 
+
+def _clear_non_system_rows() -> None:
+    """Zaxiradan keyin qo'shilgan qatorlarni teskari FK tartibida tozalaydi."""
+    models = [
+        m
+        for m in apps.get_models(include_auto_created=True)
+        if m._meta.managed
+        and not m._meta.proxy
+        and m._meta.label_lower not in _SYSTEM_KEEP_MODELS
+    ]
+    model_set = set(models)
+
+    # Avval o'z-o'ziga bog'langan ixtiyoriy FK'larni bo'shatamiz (masalan Category.parent)
+    for model in models:
+        self_fk_updates = {
+            f.name: None
+            for f in model._meta.concrete_fields
+            if f.is_relation and f.related_model is model and f.null
+        }
+        if self_fk_updates:
+            model._base_manager.update(**self_fk_updates)
+
+    # Topologik tartib: parent -> child, o'chirishda esa child -> parent
+    children_map: dict[Any, list[Any]] = defaultdict(list)
+    indegree: dict[Any, int] = {m: 0 for m in models}
+    for model in models:
+        seen_parents: set[Any] = set()
+        for f in model._meta.concrete_fields:
+            if not f.is_relation:
+                continue
+            parent = f.related_model
+            if parent in model_set and parent is not model and parent not in seen_parents:
+                seen_parents.add(parent)
+                children_map[parent].append(model)
+                indegree[model] += 1
+
+    queue: deque[Any] = deque(m for m, deg in indegree.items() if deg == 0)
+    ordered: list[Any] = []
+    while queue:
+        cur = queue.popleft()
+        ordered.append(cur)
+        for nxt in children_map[cur]:
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                queue.append(nxt)
+
+    # Sikl qolgan bo'lsa ham barcha modellar qo'shilsin
+    if len(ordered) < len(models):
+        remaining = [m for m in models if m not in set(ordered)]
+        ordered.extend(remaining)
+
+    alias = connection.alias
+    for model in reversed(ordered):
+        model._base_manager.all()._raw_delete(using=alias)
+
+
+def _restore_django_json(file_path: Path) -> None:
+    """Django loaddata orqali ma'lumotlarni tozalab tiklaydi."""
     # Gzip bo'lsa vaqtinchalik .json faylga ochamiz
     if file_path.name.endswith(".gz"):
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
@@ -450,12 +515,66 @@ def _restore_django_json(file_path: Path) -> None:
 
     try:
         with transaction.atomic():
+            _clear_non_system_rows()
             call_command("loaddata", str(tmp_path), ignorenonexistent=True)
     except Exception as exc:
         raise RestoreError(f"loaddata xatosi: {exc}") from exc
     finally:
         if file_path.name.endswith(".gz") and tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
+
+
+def _restore_sqlite(file_path: Path) -> None:
+    """SQLite zaxirasini tekshirib faylga tiklaydi (xotiradagi baza bo'lsa JSON fallback)."""
+    db_name = str(settings.DATABASES["default"]["NAME"])
+    if db_name == ":memory:":
+        # Test muhiti :memory: bazasida _dump_sqlite JSON yozgan bo'ladi
+        with gzip.open(file_path, "rb") if file_path.name.endswith(".gz") else file_path.open("rb") as f_in:
+            header = f_in.read(16)
+        if header == b"SQLite format 3\x00":
+            raise RestoreError("Xotiradagi SQLite bazasiga binary fayl tiklab bo'lmaydi.")
+        _restore_django_json(file_path)
+        return
+
+    dest_path = Path(db_name)
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=dest_path.parent, prefix=".restore_", suffix=".sqlite3", delete=False
+    ) as tmp:
+        tmp_path = Path(tmp.name)
+        if file_path.name.endswith(".gz"):
+            with gzip.open(file_path, "rb") as gz_in:
+                shutil.copyfileobj(gz_in, tmp)
+        else:
+            with file_path.open("rb") as src_in:
+                shutil.copyfileobj(src_in, tmp)
+
+    try:
+        header = tmp_path.read_bytes()[:16] if tmp_path.stat().st_size >= 16 else b""
+        if header != b"SQLite format 3\x00":
+            tmp_path.unlink(missing_ok=True)
+            _restore_django_json(file_path)
+            return
+
+        con = sqlite3.connect(str(tmp_path))
+        try:
+            row = con.execute("PRAGMA integrity_check").fetchone()
+            if not row or row[0] != "ok":
+                raise RestoreError(f"SQLite butunlik tekshiruvi muvaffaqiyatsiz: {row}")
+        finally:
+            con.close()
+
+        connections.close_all()
+        os.replace(tmp_path, dest_path)
+        for suffix in ("-wal", "-shm"):
+            Path(f"{dest_path}{suffix}").unlink(missing_ok=True)
+        connection.ensure_connection()
+    except RestoreError:
+        raise
+    except Exception as exc:
+        raise RestoreError(f"SQLite tiklash xatosi: {exc}") from exc
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 def restore_backup(
@@ -494,14 +613,19 @@ def restore_backup(
     # 2. Tiklash jarayoni
     logger.info("Tiklash boshlandi: %s", filename)
     db_engine = connection.vendor
-    is_sql = ".sql" in filename
-    is_json = ".json" in filename
+    is_sql = filename.endswith((".sql.gz", ".sql"))
+    is_json = filename.endswith((".json.gz", ".json"))
+    is_sqlite = filename.endswith((".sqlite3.gz", ".sqlite3", ".sqlite"))
 
     try:
         if is_sql and db_engine == "postgresql" and shutil.which("psql"):
             _restore_postgres_sql(file_path)
+        elif is_sqlite and db_engine == "sqlite":
+            _restore_sqlite(file_path)
         elif is_json:
             _restore_django_json(file_path)
+        elif is_sqlite:
+            raise RestoreError("SQLite zaxirasini faqat SQLite bazasiga tiklash mumkin.")
         else:
             # Agar mos SQL tiklash vositasi bo'lmasa, loaddata orqali urinib ko'rish
             _restore_django_json(file_path)
@@ -516,19 +640,28 @@ def restore_backup(
 
         integrity_result = run_integrity_check()
 
-        # 5. AuditLog
+        # 5. AuditLog (tiklangan bazada user mavjud bo'lmasa FK xatosini oldini olish)
         try:
             from apps.core.models import AuditLog
+            from apps.users.models import User as UserModel
+
+            actor = None
+            if user and getattr(user, "is_authenticated", False) and getattr(user, "pk", None):
+                actor = UserModel.objects.filter(pk=user.pk).first()
+
+            changes_payload: dict[str, Any] = {
+                "restored_file": filename,
+                "safety_backup": safety_meta.get("filename") if safety_meta else None,
+                "integrity_ok": integrity_result.get("ok"),
+                "mismatch_count": integrity_result.get("mismatch_count"),
+            }
+            if actor is None and user and getattr(user, "phone", None):
+                changes_payload["triggered_by_phone"] = str(user.phone)
 
             AuditLog.objects.create(
-                user=user if user and getattr(user, "is_authenticated", False) else None,
+                user=actor,
                 action="backup.restored",
-                changes={
-                    "restored_file": filename,
-                    "safety_backup": safety_meta.get("filename") if safety_meta else None,
-                    "integrity_ok": integrity_result.get("ok"),
-                    "mismatch_count": integrity_result.get("mismatch_count"),
-                },
+                changes=changes_payload,
             )
         except Exception as audit_err:  # noqa: BLE001
             logger.warning("AuditLog ga yozishda ogohlantirish: %s", audit_err)

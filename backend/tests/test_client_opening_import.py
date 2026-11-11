@@ -205,6 +205,7 @@ def test_client_opening_import_forbidden_for_distributor(auth_api):
 @pytest.mark.django_db
 def test_client_opening_import_branch_manager_isolation():
     from rest_framework.test import APIClient
+
     from apps.users.models import User
     from apps.warehouse.models import Warehouse
 
@@ -330,6 +331,7 @@ def test_client_opening_import_central_propagates_staff_branch_and_rejects_misma
 @pytest.mark.django_db
 def test_client_opening_import_accountant_forbidden():
     from rest_framework.test import APIClient
+
     from apps.users.models import User
 
     acc = User.objects.create_user(
@@ -377,3 +379,110 @@ def test_client_opening_import_rechecks_locked_debt_on_apply(
     # 250k - 100k = 150k qo'shiladi -> jami 250k bo'ladi (ikki barobar 350k emas!)
     existing.refresh_from_db()
     assert existing.current_debt == Decimal("250000.00")
+
+
+@pytest.mark.django_db
+def test_client_opening_import_differentiates_same_name_clients_by_phone(
+    manager_api, distributor, routed_clients
+):
+    c1 = Client.objects.create(
+        name="Omad Market",
+        phone="+998901111111",
+        assigned_to=distributor,
+        route=routed_clients["my_route"],
+    )
+    c2 = Client.objects.create(
+        name="Omad Market",
+        phone="+998902222222",
+        assigned_to=distributor,
+        route=routed_clients["my_route"],
+    )
+    mapping = json.dumps({"name": 0, "phone": 1, "amount": 2})
+
+    # Bir xil nom + har xil telefon -> har biriga o'z qarzi tushadi
+    rows = [
+        ["Do'kon", "Telefon", "Qarz"],
+        ["Omad Market", "+998901111111", 120000],
+        ["Omad Market", "90 222 22 22", 340000],
+    ]
+    resp = manager_api.post(
+        IMPORT_URL,
+        {"file": _xlsx(rows), "mapping": mapping, "dry_run": "false"},
+        format="multipart",
+    )
+    assert resp.status_code == 200, resp.data
+    data = resp.json()["data"]
+    assert data["errors"] == 0, data
+    assert data["existing_clients"] == 2
+    assert data["debts_applied"] == 2
+    assert data["rows"][0]["client_phone"] == "+998901111111"
+    assert data["rows"][1]["client_phone"] == "+998902222222"
+
+    c1.refresh_from_db()
+    c2.refresh_from_db()
+    assert c1.current_debt == Decimal("120000.00")
+    assert c2.current_debt == Decimal("340000.00")
+
+    # Telefon ko'rsatilmasa — qaysi Omad Market ekani noaniq bo'lib xato qaytadi
+    ambiguous = _xlsx([
+        ["Do'kon", "Telefon", "Qarz"],
+        ["Omad Market", "", 500000],
+    ])
+    err_resp = manager_api.post(
+        IMPORT_URL,
+        {"file": ambiguous, "mapping": mapping, "dry_run": "true"},
+        format="multipart",
+    )
+    assert err_resp.status_code == 200
+    err_data = err_resp.json()["data"]
+    assert err_data["errors"] == 1
+    assert "telefon" in err_data["rows"][0]["errors"][0].lower()
+
+
+@pytest.mark.django_db
+def test_client_opening_import_creates_separate_client_for_same_name_different_phone(
+    manager_api, distributor, routed_clients
+):
+    existing = Client.objects.create(
+        name="Baraka Market",
+        phone="+998901111111",
+        assigned_to=distributor,
+        route=routed_clients["my_route"],
+    )
+    rows = [
+        ["Do'kon", "Xodim", "Telefon", "Qarz"],
+        ["Baraka Market", distributor.full_name, "+998901111111", 100000],
+        ["Baraka Market", distributor.full_name, "+998902222222", 250000],
+        ["Yangi Bir Xil", distributor.full_name, "+998903333333", 300000],
+        ["Yangi Bir Xil", distributor.full_name, "+998904444444", 400000],
+    ]
+    mapping = json.dumps({"name": 0, "assigned_to": 1, "phone": 2, "amount": 3})
+
+    resp = manager_api.post(
+        IMPORT_URL,
+        {
+            "file": _xlsx(rows),
+            "mapping": mapping,
+            "auto_create_missing": "true",
+            "dry_run": "false",
+        },
+        format="multipart",
+    )
+    assert resp.status_code == 200, resp.data
+    data = resp.json()["data"]
+    assert data["errors"] == 0, data
+    assert data["existing_clients"] == 1
+    assert data["created_clients"] == 3
+    assert data["debts_applied"] == 4
+
+    existing.refresh_from_db()
+    assert existing.current_debt == Decimal("100000.00")
+
+    baraka_second = Client.objects.get(name="Baraka Market", phone="+998902222222")
+    assert baraka_second.id != existing.id
+    assert baraka_second.current_debt == Decimal("250000.00")
+
+    yangi_1 = Client.objects.get(name="Yangi Bir Xil", phone="+998903333333")
+    yangi_2 = Client.objects.get(name="Yangi Bir Xil", phone="+998904444444")
+    assert yangi_1.current_debt == Decimal("300000.00")
+    assert yangi_2.current_debt == Decimal("400000.00")

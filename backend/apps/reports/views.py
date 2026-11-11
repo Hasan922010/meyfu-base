@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
@@ -19,6 +20,7 @@ from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.users.constants import Role
+from apps.warehouse.models import Warehouse
 
 from .export import rows_to_xlsx
 from .pdf import rows_to_pdf
@@ -648,16 +650,22 @@ class ProductMovementExportView(_ReportView):
             branch=branch,
         )
         rows = product_movement_rows_for_export(data)
-        excel_bytes = rows_to_xlsx(rows, title=f"Tovar harakati ({df} - {dt})")
+        excel_bytes = rows_to_xlsx(rows, sheet_name=f"Tovar harakati ({df} - {dt})")
         resp = HttpResponse(
             excel_bytes,
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
-        branch_suffix = (
-            f"-{branch.name.strip().replace(' ', '_')}"
-            if branch and hasattr(branch, "name") and branch.name
+        branch_name = (
+            Warehouse.objects.filter(pk=branch).values_list("name", flat=True).first()
+            if branch is not None and branch != _NOWHERE
+            else None
+        )
+        safe_branch = (
+            re.sub(r"[^a-zA-Z0-9_\-]+", "_", branch_name.strip()).strip("_")
+            if branch_name
             else ""
         )
+        branch_suffix = f"-{safe_branch}" if safe_branch else ""
         resp["Content-Disposition"] = (
             f'attachment; filename="tovar-harakati{branch_suffix}-{df}-{dt}.xlsx"'
         )

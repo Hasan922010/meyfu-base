@@ -60,6 +60,10 @@ export interface Product {
   commission_percent: string;
   min_stock_alert: string;
   is_active: boolean;
+  total_stock?: string | number;
+  reserved_stock?: string | number;
+  available_stock?: string | number;
+  stock_status?: 'out' | 'low' | 'ok';
   created_at: string;
   updated_at: string;
 }

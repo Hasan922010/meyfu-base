@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -10,13 +11,12 @@ from apps.catalog.models import Category, Product, Unit
 from apps.clients.models import Client, Route
 from apps.core.business_day import business_date
 from apps.expenses.models import ExpenseCategory
-from apps.orders.models import Order
 from apps.sales.constants import PaymentType
-from apps.sales.models import Debt, Sale
+from apps.sales.models import Debt
 from apps.sales.services import SaleLine, create_sale
 from apps.users.constants import Role
 from apps.users.models import DistributorProfile
-from apps.warehouse.models import Purchase, Stock, Supplier, VanStock, Warehouse
+from apps.warehouse.models import Stock, Supplier, VanStock, Warehouse
 
 User = get_user_model()
 

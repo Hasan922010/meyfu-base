@@ -127,9 +127,16 @@ export function NewSalePage(): ReactElement {
     [cart],
   );
 
-  const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(clientSearch.toLowerCase()),
-  );
+  const searchNeedle = clientSearch.trim().toLowerCase();
+  const clientDigits = searchNeedle.replace(/\D/g, '');
+  const filteredClients = clients.filter((c) => {
+    if (!searchNeedle) return true;
+    if (c.name.toLowerCase().includes(searchNeedle)) return true;
+    if ((c.address || '').toLowerCase().includes(searchNeedle)) return true;
+    const phone = (c.phone || '').toLowerCase();
+    if (phone.includes(searchNeedle)) return true;
+    return clientDigits.length >= 3 && phone.replace(/\D/g, '').includes(clientDigits);
+  });
   const itemCount = cart.reduce((s, l) => s + l.quantity, 0);
 
   const products = useLiveQuery(() => db.products.toArray(), [], []);
@@ -312,7 +319,7 @@ export function NewSalePage(): ReactElement {
             <input
               className="field pl-10"
               aria-label="Mijoz qidirish"
-              placeholder="Mijoz qidirish (nomi, manzili)…"
+              placeholder="Mijoz qidirish (nomi, telefon, manzili)…"
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
               autoFocus
@@ -330,8 +337,10 @@ export function NewSalePage(): ReactElement {
                 >
                   <div className="min-w-0 pr-2">
                     <span className="block font-semibold text-gray-900 dark:text-gray-100">{c.name}</span>
-                    {c.address && (
-                      <span className="block truncate text-xs text-gray-500">{c.address}</span>
+                    {(c.phone || c.address) && (
+                      <span className="block truncate text-xs text-gray-500">
+                        {[c.phone, c.address].filter(Boolean).join(' · ')}
+                      </span>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">

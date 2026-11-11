@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from django.conf import settings
+from django.db import transaction
 from django.db.models import QuerySet
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
@@ -26,12 +28,20 @@ from .serializers import (
     InvoiceScanUpdateSerializer,
     ReceiptScanSerializer,
 )
-from .services import compute_metrics, confirm_scan, process_scan
+from .services import compute_metrics, confirm_scan
 from .services.preprocess import preprocess_image
 from .services.providers import get_provider
+from .tasks import process_scan_task
 
 _OCR = (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (*_OCR, Role.ACCOUNTANT)
+
+
+def _enqueue_scan(scan_id: str) -> None:
+    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        process_scan_task.delay(scan_id)
+    else:
+        transaction.on_commit(lambda sid=scan_id: process_scan_task.delay(sid))
 
 
 class InvoiceScanViewSet(
@@ -102,8 +112,7 @@ class InvoiceScanViewSet(
                 scan=scan, image=image, page_number=i, created_by=request.user
             )
 
-        # Sinxron ishlov (Celery bo'lsa .delay() ga o'zgartiring)
-        process_scan(str(scan.id))
+        _enqueue_scan(str(scan.id))
         scan.refresh_from_db()
         return ok(InvoiceScanSerializer(scan).data, status_code=201)
 
@@ -116,7 +125,7 @@ class InvoiceScanViewSet(
                                 code="ALREADY_CONFIRMED")
         scan.status = ScanStatus.UPLOADED
         scan.save(update_fields=["status", "updated_at"])
-        process_scan(str(scan.id))
+        _enqueue_scan(str(scan.id))
         scan.refresh_from_db()
         return ok(InvoiceScanSerializer(scan).data)
 

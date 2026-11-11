@@ -1,5 +1,5 @@
-import { useCallback, useState, type PropsWithChildren, type ReactElement } from 'react';
 import { X } from 'lucide-react';
+import { useCallback, useState, type PropsWithChildren, type ReactElement } from 'react';
 
 import { ToastContext, type Toast, type ToastKind } from '@/shared/lib/toast';
 
@@ -36,7 +36,7 @@ export function ToastProvider({ children }: PropsWithChildren): ReactElement {
           <div
             key={t.id}
             role="alert"
-            className={`pointer-events-auto rounded-xl border-l-4 p-3 text-sm shadow-lg flex items-start justify-between gap-2 ${KIND_CLASS[t.kind]}`}
+            className={`pointer-events-auto flex items-start justify-between gap-2 rounded-xl border-l-4 p-3 text-sm shadow-lg ${KIND_CLASS[t.kind]}`}
           >
             <div>
               <div className="font-semibold">{t.title}</div>
@@ -44,7 +44,7 @@ export function ToastProvider({ children }: PropsWithChildren): ReactElement {
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand"
+              className="shrink-0 rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand dark:hover:text-gray-300"
               aria-label="Yopish"
             >
               <X size={16} aria-hidden />

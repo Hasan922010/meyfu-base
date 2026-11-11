@@ -22,19 +22,28 @@ type AgingBuckets = {
   d90_plus: string;
 };
 
+function normalizeDebtSearch(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  return /^[+\d\s()-]+$/.test(trimmed) ? trimmed.replace(/[\s()-]/g, '') : trimmed;
+}
+
 export function DebtsPage(): ReactElement {
   const [status, setStatus] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const searchQuery = normalizeDebtSearch(search);
 
   const aging = useQuery({
     queryKey: ['debt-aging'],
     queryFn: () => financeApi.debtAging(),
   });
   const list = useQuery({
-    queryKey: ['debts', { status, page }],
+    queryKey: ['debts', { status, search: searchQuery, page }],
     queryFn: () =>
       debtsApi.list({
         status: status || undefined,
+        search: searchQuery || undefined,
         page,
         page_size: 25,
         ordering: 'due_date',
@@ -95,7 +104,7 @@ export function DebtsPage(): ReactElement {
                   <tbody>
                     {aging.data.overdue_clients.map((c) => (
                       <tr
-                        key={c.client}
+                        key={c.client_id ?? `${c.client}-${c.phone}`}
                         className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                       >
                         <td className="p-3 font-medium">{c.client}</td>
@@ -113,22 +122,35 @@ export function DebtsPage(): ReactElement {
       </DataState>
 
       <div>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">Barcha qarzlar</h2>
-          <select
-            className="field max-w-[160px]"
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Hammasi</option>
-            <option value="ACTIVE">Faol</option>
-            <option value="PARTIAL">Qisman</option>
-            <option value="OVERDUE">Muddati o'tgan</option>
-            <option value="PAID">To'langan</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              className="field max-w-[240px]"
+              aria-label="Qarzlarni qidirish"
+              placeholder="Mijoz nomi, telefon yoki sotuv…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+            <select
+              className="field max-w-[160px]"
+              aria-label="Holat"
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Hammasi</option>
+              <option value="ACTIVE">Faol</option>
+              <option value="PARTIAL">Qisman</option>
+              <option value="OVERDUE">Muddati o'tgan</option>
+              <option value="PAID">To'langan</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
@@ -142,6 +164,7 @@ export function DebtsPage(): ReactElement {
               <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
                 <tr>
                   <th className="p-3">Mijoz</th>
+                  <th className="p-3">Telefon</th>
                   <th className="p-3">Sotuv</th>
                   <th className="p-3 text-right">Summa</th>
                   <th className="p-3 text-right">Qoldiq</th>
@@ -156,6 +179,7 @@ export function DebtsPage(): ReactElement {
                     className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                   >
                     <td className="p-3 font-medium">{d.client_name}</td>
+                    <td className="p-3 text-gray-600 dark:text-gray-300">{d.client_phone || '—'}</td>
                     <td className="p-3 font-mono text-xs">{d.sale_number ?? '—'}</td>
                     <td className="p-3 text-right">{money(d.amount)}</td>
                     <td className="p-3 text-right font-medium">{money(d.remaining)}</td>

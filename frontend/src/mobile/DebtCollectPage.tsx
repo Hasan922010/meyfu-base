@@ -16,6 +16,7 @@ export function DebtCollectPage(): ReactElement {
   const [selected, setSelected] = useState<Debt | null>(null);
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'NAQD' | 'PLASTIK' | 'OTKAZMA'>('NAQD');
+  const [search, setSearch] = useState<string>('');
   const [saved, setSaved] = useState<boolean>(false);
 
   const query = useQuery({
@@ -29,6 +30,7 @@ export function DebtCollectPage(): ReactElement {
       await saveDebtPaymentLocal({
         debt: selected.id,
         client_name: selected.client_name,
+        client_phone: selected.client_phone,
         amount: Number(amount),
         payment_type: type,
       });
@@ -40,7 +42,17 @@ export function DebtCollectPage(): ReactElement {
   });
 
   const rows = query.data ?? [];
-  const totalOwed = rows.reduce((s, d) => s + Number(d.remaining), 0);
+  const q = search.trim().toLowerCase();
+  const qDigits = q.replace(/\D/g, '');
+  const visibleRows = rows.filter((d) => {
+    if (!q) return true;
+    if (d.client_name.toLowerCase().includes(q)) return true;
+    if ((d.sale_number ?? '').toLowerCase().includes(q)) return true;
+    const phone = (d.client_phone || '').toLowerCase();
+    if (phone.includes(q)) return true;
+    return qDigits.length >= 3 && phone.replace(/\D/g, '').includes(qDigits);
+  });
+  const totalOwed = visibleRows.reduce((s, d) => s + Number(d.remaining), 0);
 
   function close(): void {
     setSelected(null);
@@ -58,14 +70,22 @@ export function DebtCollectPage(): ReactElement {
         </div>
       </div>
 
+      <input
+        className="field"
+        aria-label="Qarzdor qidirish"
+        placeholder="Mijoz nomi yoki telefon raqami…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
       <DataState
         isLoading={query.isLoading}
         isError={query.isError}
-        isEmpty={!query.isLoading && rows.length === 0}
+        isEmpty={!query.isLoading && visibleRows.length === 0}
         emptyText="Qarzdor yo'q"
       >
         <ul className="space-y-2">
-          {rows.map((d) => (
+          {visibleRows.map((d) => (
             <li key={d.id}>
               <button
                 onClick={() => {
@@ -76,8 +96,11 @@ export function DebtCollectPage(): ReactElement {
               >
                 <div>
                   <div className="font-medium">{d.client_name}</div>
+                  {d.client_phone && (
+                    <div className="text-xs text-gray-500">{d.client_phone}</div>
+                  )}
                   <div className="text-xs text-gray-500">
-                    {d.sale_number ?? ''}
+                    {d.sale_number ?? "Boshlang'ich qarz"}
                     {d.due_date && ` · muddat ${dateShort(d.due_date)}`}
                     {d.status === 'OVERDUE' && (
                       <span className="ml-1 text-danger">muddati o'tgan</span>
@@ -93,7 +116,11 @@ export function DebtCollectPage(): ReactElement {
 
       <Modal
         open={selected !== null}
-        title={selected ? `Qarz: ${selected.client_name}` : ''}
+        title={
+          selected
+            ? `Qarz: ${selected.client_name}${selected.client_phone ? ` (${selected.client_phone})` : ''}`
+            : ''
+        }
         onClose={close}
       >
         {saved ? (

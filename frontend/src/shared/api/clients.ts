@@ -48,6 +48,7 @@ export interface ClientOpeningInspect {
 export interface ClientOpeningImportRow {
   row: number;
   client_name: string;
+  client_phone?: string;
   assigned_to_name: string;
   current_debt: string;
   target_debt: string;

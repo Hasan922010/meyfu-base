@@ -26,3 +26,4 @@ describe('UnitToggle component', () => {
     expect(onChange).toHaveBeenCalledWith('package');
   });
 });
+

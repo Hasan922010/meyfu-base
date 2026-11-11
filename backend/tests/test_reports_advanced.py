@@ -189,3 +189,14 @@ def test_export_pnl_xlsx_and_pdf(manager_api, auth_api, van_stocked):
     pdf = manager_api.get("/api/v1/reports/export/?type=pnl&fmt=pdf")
     assert pdf.status_code == 200
     assert pdf.content[:4] == b"%PDF"
+
+
+def test_rows_to_pdf_escapes_xml_special_chars():
+    from apps.reports.pdf import rows_to_pdf
+
+    pdf_bytes = rows_to_pdf(
+        [["Nom", "Summa"], ["Test & Co <A>", "150000"]],
+        title="Ombor <1> & Filial > Test",
+    )
+    assert pdf_bytes[:4] == b"%PDF"
+

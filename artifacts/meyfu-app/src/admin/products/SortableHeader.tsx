@@ -23,16 +23,18 @@ export function SortableHeader({
 
   return (
     <th
-      className={`p-3 text-sm font-semibold text-slate-600 dark:text-slate-300 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 ${
+      className={`cursor-pointer p-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800 ${
         align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
       } ${className}`}
       onClick={() => onSort(field)}
       role="columnheader"
       aria-sort={isSorted ? (isDesc ? 'descending' : 'ascending') : 'none'}
     >
-      <div className={`flex items-center gap-1.5 inline-flex ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+      <div
+        className={`inline-flex items-center gap-1.5 ${align === 'right' ? 'flex-row-reverse' : ''}`}
+      >
         <span>{children}</span>
-        <span className="text-slate-400 flex-shrink-0">
+        <span className="flex-shrink-0 text-slate-400">
           {isSorted ? (
             isDesc ? (
               <ArrowDown className="h-3.5 w-3.5 text-brand" />

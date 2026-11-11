@@ -110,6 +110,8 @@ def statement_pdf(data: dict) -> bytes:
     # Paragraph XML sifatida o'qiydi — nomlardagi & < > buzmasin
     company_name = escape(company.legal_name or company.name or "Kompaniya")
     client_name = escape(data["client"]["name"])
+    client_phone = escape(data["client"].get("phone") or "")
+    client_label = f"{client_name} ({client_phone})" if client_phone else client_name
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm,
@@ -119,7 +121,7 @@ def statement_pdf(data: dict) -> bytes:
     period = f"{_ddmmyyyy(data['date_from'])} - {_ddmmyyyy(data['date_to'])}"
     elements = [
         Paragraph("Solishtirma dalolatnoma (akt-sverka)", styles["Title"]),
-        Paragraph(f"{company_name} va {client_name}", styles["Heading3"]),
+        Paragraph(f"{company_name} va {client_label}", styles["Heading3"]),
         Paragraph(f"Davr: {period}", styles["Normal"]),
         Spacer(1, 5 * mm),
     ]

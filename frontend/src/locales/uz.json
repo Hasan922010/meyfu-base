@@ -72,6 +72,11 @@
     "menu": "Menyu",
     "close": "Yopish"
   },
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "markAllRead": "Hammasini o'qildi",
+    "empty": "Bildirishnoma yo'q"
+  },
   "notFound": {
     "title": "Sahifa topilmadi",
     "body": "Bunday manzil mavjud emas yoki ko'chirilgan.",

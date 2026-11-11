@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
+import { PermissionDenied } from '@/shared/components/PermissionDenied';
+import { canAccessRoute } from '@/shared/lib/rolePolicy';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Role } from '@/shared/types/api';
-import { canAccessRoute } from '@/shared/lib/rolePolicy';
-import { PermissionDenied } from '@/shared/components/PermissionDenied';
 
 interface Props {
   children: ReactElement;
@@ -16,7 +16,7 @@ export function ProtectedRoute({ children, roles }: Props): ReactElement {
   const access = useAuthStore((s) => s.access);
   const user = useAuthStore((s) => s.user);
 
-  if (!access || !user) {
+  if (!access) {
     return (
       <Navigate
         to="/login"
@@ -26,13 +26,11 @@ export function ProtectedRoute({ children, roles }: Props): ReactElement {
     );
   }
 
-  // 1. Check array of explicitly passed roles
-  if (roles && !roles.includes(user.role)) {
+  if (roles && user && !roles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
-  // 2. Check centralized route policy
-  if (!canAccessRoute(location.pathname, user.role)) {
+  if (user && !canAccessRoute(location.pathname, user.role)) {
     return <PermissionDenied />;
   }
 

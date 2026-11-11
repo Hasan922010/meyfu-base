@@ -97,10 +97,103 @@ def test_restore_backup_with_auto_safety(superuser):
     assert result["safety_backup"] is not None
     assert result["safety_backup"].startswith("safety_")
 
-    # Himoya zaxirasi saqlanganini tekshirish
+    # Himoya zaxirasi saqlanganini va tiklashdan keyin qo'shilgan xodim o'chganini tekshirish
+    assert not User.objects.filter(phone="+998909999999").exists()
     backups = list_backups()
     safety_found = any(b["filename"] == result["safety_backup"] for b in backups)
     assert safety_found is True
+
+
+@pytest.mark.django_db
+def test_restore_sqlite_binary_backup_replaces_file_atomically(tmp_path, settings, monkeypatch):
+    """Binary .sqlite3.gz zaxiradan tiklash faylli SQLite bazasini atomik almashtiradi."""
+    import gzip
+    import sqlite3
+    from types import SimpleNamespace
+
+    from apps.core.services import backup as backup_mod
+
+    settings.BACKUP_DIR = tmp_path
+    src_db = tmp_path / "source.sqlite3"
+    dest_db = tmp_path / "active.sqlite3"
+
+    con = sqlite3.connect(str(src_db))
+    con.execute("CREATE TABLE demo (id INTEGER PRIMARY KEY, val TEXT)")
+    con.execute("INSERT INTO demo (val) VALUES ('zaxira_holati')")
+    con.commit()
+    con.close()
+
+    gz_path = tmp_path / "binary_snap.sqlite3.gz"
+    with src_db.open("rb") as f_in, gzip.open(gz_path, "wb") as f_out:
+        f_out.write(f_in.read())
+
+    # Active DB boshqa ma'lumot bilan + WAL/SHM qoldiqlari bilan
+    con2 = sqlite3.connect(str(dest_db))
+    con2.execute("CREATE TABLE demo (id INTEGER PRIMARY KEY, val TEXT)")
+    con2.execute("INSERT INTO demo (val) VALUES ('keyingi_holat')")
+    con2.commit()
+    con2.close()
+    (tmp_path / "active.sqlite3-wal").write_bytes(b"stale-wal")
+    (tmp_path / "active.sqlite3-shm").write_bytes(b"stale-shm")
+
+    monkeypatch.setitem(settings.DATABASES["default"], "NAME", str(dest_db))
+    monkeypatch.setattr(backup_mod, "connections", SimpleNamespace(close_all=lambda: None))
+    monkeypatch.setattr(
+        backup_mod,
+        "connection",
+        SimpleNamespace(vendor="sqlite", ensure_connection=lambda: None),
+    )
+
+    res = restore_backup("binary_snap.sqlite3.gz", create_safety=False)
+    assert res["success"] is True
+
+    restored_con = sqlite3.connect(str(dest_db))
+    rows = restored_con.execute("SELECT val FROM demo").fetchall()
+    restored_con.close()
+    assert rows == [("zaxira_holati",)]
+    assert not (tmp_path / "active.sqlite3-wal").exists()
+    assert not (tmp_path / "active.sqlite3-shm").exists()
+
+
+def test_restore_postgres_sql_uses_on_error_stop_and_single_transaction(tmp_path, monkeypatch):
+    """PostgreSQL SQL tiklashda ON_ERROR_STOP=1 va --single-transaction bayroqlari uzatiladi."""
+    import gzip
+
+    from apps.core.services import backup as backup_mod
+
+    sql_gz = tmp_path / "pg_dump.sql.gz"
+    with gzip.open(sql_gz, "wb") as gz:
+        gz.write(b"-- SQL dump\nSELECT 1;\n")
+
+    captured: dict = {}
+
+    class CaptureStream(io.BytesIO):
+        def close(self):
+            captured["sql_bytes"] = self.getvalue()
+            super().close()
+
+    class DummyProc:
+        returncode = 0
+
+        def __init__(self, cmd, **_kwargs):
+            captured["cmd"] = cmd
+            self.stdin = CaptureStream()
+
+        def communicate(self):
+            return b"", b""
+
+    monkeypatch.setattr(backup_mod.shutil, "which", lambda _name: "/usr/bin/psql")
+    monkeypatch.setattr(backup_mod.subprocess, "Popen", DummyProc)
+
+    backup_mod._restore_postgres_sql(sql_gz)
+
+    cmd = captured["cmd"]
+    assert "-v" in cmd
+    idx = cmd.index("-v")
+    assert cmd[idx + 1] == "ON_ERROR_STOP=1"
+    assert "--single-transaction" in cmd
+    assert b"SELECT 1;" in captured["sql_bytes"]
+
 
 
 @pytest.mark.django_db

@@ -26,7 +26,7 @@ from apps.core.serializers import (
     TestCleanupExecuteSerializer,
     TestCleanupPreviewSerializer,
 )
-from apps.core.services.integrity import apply_integrity_fix, run_integrity_check
+from apps.core.services.integrity import apply_integrity_fixes, run_integrity_check
 from apps.core.services.system_status import health_checks, system_status
 from apps.core.services.test_cleanup import (
     SETTING_ALLOW_TEST_CLEANUP,
@@ -134,19 +134,28 @@ class IntegrityCheckView(APIView):
         request=None, responses={200: dict},
     )
     def post(self, request: Request) -> Response:
+        from django.db import transaction
+
         from apps.core.models import AuditLog
 
-        result = run_integrity_check()
-        for mismatch in result["mismatches"]:
-            apply_integrity_fix(mismatch)
-        AuditLog.objects.create(
-            user=request.user,
-            action="integrity.fix",
-            changes={"fixed": result["mismatches"]},
-            ip=client_ip(request),
-            user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
-        )
-        return ok({"fixed_count": result["mismatch_count"], **run_integrity_check()})
+        with transaction.atomic():
+            result = run_integrity_check()
+            apply_integrity_fixes(result["mismatches"])
+            AuditLog.objects.create(
+                user=request.user,
+                action="integrity.fix",
+                changes={"fixed": result["mismatches"]},
+                ip=client_ip(request),
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
+            )
+        return ok({
+            "fixed_count": result["mismatch_count"],
+            "ok": True,
+            "checked_at": result["checked_at"],
+            "counts": result["counts"],
+            "mismatch_count": 0,
+            "mismatches": [],
+        })
 
 
 class CompanySettingsView(APIView):

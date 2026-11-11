@@ -11,7 +11,7 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -230,11 +230,20 @@ class UserViewSet(BaseModelViewSet):
             )
         return {"warehouse": user_branch(actor)}
 
+    def _assert_branch_manageable(self, target) -> None:
+        if branch_scope(self.request.user) is None:
+            return
+        if target.pk != self.request.user.pk and target.role not in BRANCH_STAFF_ROLES:
+            raise PermissionDenied(
+                "Bu rolga ega xodimni boshqarishga huquqingiz yo'q."
+            )
+
     def perform_create(self, serializer) -> None:
         user = serializer.save(**self._branch_extra(serializer))
         self._audit("user.create", user, {"role": user.role, "phone": user.phone})
 
     def perform_update(self, serializer) -> None:
+        self._assert_branch_manageable(serializer.instance)
         before = {
             "role": serializer.instance.role,
             "is_active": serializer.instance.is_active,
@@ -249,6 +258,7 @@ class UserViewSet(BaseModelViewSet):
     @action(detail=True, methods=["post"])
     def toggle_active(self, request: Request, pk: str | None = None) -> Response:
         user = self.get_object()
+        self._assert_branch_manageable(user)
         if user == request.user:
             raise ValidationError("O'zingizni bloklay olmaysiz.")
         user.is_active = not user.is_active
@@ -263,6 +273,7 @@ class UserViewSet(BaseModelViewSet):
         return super().get_queryset().filter(is_deleted=False)
 
     def perform_destroy(self, instance) -> None:
+        self._assert_branch_manageable(instance)
         if instance == self.request.user:
             raise ValidationError("O'zingizni o'chira olmaysiz.")
         # Qattiq o'chirish emas — FK'lar PROTECT (masalan Payroll.distributor),

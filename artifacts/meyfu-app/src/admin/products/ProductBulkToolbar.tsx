@@ -1,6 +1,6 @@
-import type { ReactElement } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, XCircle, Trash2, X } from 'lucide-react';
+import { CheckCircle2, Trash2, X, XCircle } from 'lucide-react';
+import type { ReactElement } from 'react';
 
 import { catalogApi } from '@/shared/api/catalog';
 import { extractApiError } from '@/shared/api/client';
@@ -25,17 +25,17 @@ export function ProductBulkToolbar({ selectedIds, onClear }: Props): ReactElemen
   if (selectedIds.size === 0) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 px-4 py-3 shadow-xl dark:bg-white text-white dark:text-slate-900 max-w-[90vw] w-max border border-slate-800 dark:border-slate-200">
-      <div className="flex items-center gap-2 whitespace-nowrap px-2 border-r border-slate-700 dark:border-slate-200 text-sm font-medium">
-        <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-brand text-white text-xs">
+    <div className="fixed bottom-6 left-1/2 z-50 flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-white shadow-xl dark:border-slate-200 dark:bg-white dark:text-slate-900">
+      <div className="flex items-center gap-2 whitespace-nowrap border-r border-slate-700 px-2 text-sm font-medium dark:border-slate-200">
+        <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-brand text-xs text-white">
           {selectedIds.size}
         </span>
         tanlandi
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="no-scrollbar flex items-center gap-2 overflow-x-auto">
         <button
-          className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-emerald-400 hover:bg-slate-800 dark:text-emerald-600 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-emerald-400 transition-colors hover:bg-slate-800 disabled:opacity-50 dark:text-emerald-600 dark:hover:bg-slate-100"
           onClick={() => mutation.mutate('activate')}
           disabled={mutation.isPending}
         >
@@ -44,7 +44,7 @@ export function ProductBulkToolbar({ selectedIds, onClear }: Props): ReactElemen
         </button>
 
         <button
-          className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 dark:text-slate-600 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-50 dark:text-slate-600 dark:hover:bg-slate-100"
           onClick={() => mutation.mutate('deactivate')}
           disabled={mutation.isPending}
         >
@@ -53,7 +53,7 @@ export function ProductBulkToolbar({ selectedIds, onClear }: Props): ReactElemen
         </button>
 
         <button
-          className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-red-400 hover:bg-slate-800 dark:text-red-600 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-slate-800 disabled:opacity-50 dark:text-red-600 dark:hover:bg-slate-100"
           onClick={() => {
             if (window.confirm('Rostdan ham o‘chirmoqchimisiz?')) {
               mutation.mutate('delete');

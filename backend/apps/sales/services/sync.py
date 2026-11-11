@@ -151,6 +151,12 @@ def _handle_debt_payment(payload: dict, client_uuid: str | None, user) -> dict[s
 
 
 def _handle_return(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
+    if not user.has_app_permission("can_make_sales"):
+        raise BusinessError(
+            message="Sizda sotuv va qaytarish huquqi yo'q.",
+            code="SALES_FORBIDDEN",
+            status_code=403,
+        )
     client = Client.objects.get(pk=payload["client"])
     products = {
         str(p.id): p
@@ -213,6 +219,12 @@ def _handle_visit(payload: dict, client_uuid: str | None, user) -> dict[str, Any
 
 
 def _handle_expense(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
+    if not user.has_app_permission("can_record_expenses"):
+        raise BusinessError(
+            message="Sizda xarajat yozish huquqi yo'q.",
+            code="EXPENSE_RECORDING_FORBIDDEN",
+            status_code=403,
+        )
     category = ExpenseCategory.objects.get(pk=payload["category"])
     res = create_expense(
         offline=True,
@@ -240,6 +252,12 @@ def _handle_expense(payload: dict, client_uuid: str | None, user) -> dict[str, A
 
 
 def _handle_order_create(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
+    if not user.has_app_permission("can_take_orders"):
+        raise BusinessError(
+            message="Sizda buyurtma olish huquqi yo'q.",
+            code="ORDER_TAKING_FORBIDDEN",
+            status_code=403,
+        )
     from apps.clients.models import is_client_off_route
     from apps.core.permissions import is_order_taker
     from apps.orders.services import OrderLine, create_order
@@ -301,15 +319,21 @@ def _handle_order_fulfill(payload: dict, client_uuid: str | None, user) -> dict[
 
     order = Order.objects.get(pk=payload["order"])
     by_id = {str(it.id): it for it in order.items.all()}
-    fulfill_lines = [
-        FulfillLine(
-            item=by_id[str(row["item"])],
-            delivered_quantity=_dec(row["delivered_quantity"]),
-            price=_dec(row["price"]) if row.get("price") not in (None, "") else None,
+    fulfill_lines: list[FulfillLine] = []
+    for row in payload.get("lines", []):
+        item = by_id.get(str(row["item"]))
+        if item is None:
+            raise BusinessError(
+                message="Buyurtma qatori topilmadi.",
+                code="ORDER_LINE_NOT_FOUND",
+            )
+        fulfill_lines.append(
+            FulfillLine(
+                item=item,
+                delivered_quantity=_dec(row["delivered_quantity"]),
+                price=_dec(row["price"]) if row.get("price") not in (None, "") else None,
+            )
         )
-        for row in payload.get("lines", [])
-        if str(row["item"]) in by_id
-    ]
     result = fulfill_order(
         order,
         fulfill_lines,

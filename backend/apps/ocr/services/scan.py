@@ -50,56 +50,69 @@ def check_cost_limit() -> str | None:
     return None
 
 
-@transaction.atomic
 def process_scan(scan_id: str) -> InvoiceScan:
-    scan = InvoiceScan.objects.select_for_update().get(pk=scan_id)
-    if scan.status not in (ScanStatus.UPLOADED, ScanStatus.FAILED):
-        return scan
+    """Nakladnoy rasmini OCR bilan tahlil qiladi; tashqi API chaqiruvi qulfsiz."""
+    raw_pages: list[bytes] = []
+    image_h = ""
 
-    scan.status = ScanStatus.PROCESSING
-    scan.save(update_fields=["status", "updated_at"])
+    with transaction.atomic():
+        scan = InvoiceScan.objects.select_for_update().get(pk=scan_id)
+        if scan.status not in (ScanStatus.UPLOADED, ScanStatus.FAILED):
+            return scan
 
-    pages = list(scan.pages.order_by("page_number"))
-    if not pages:
-        return _fail(scan, "Rasm yo'q")
+        scan.status = ScanStatus.PROCESSING
+        scan.save(update_fields=["status", "updated_at"])
 
-    # rasm hash — dublikat bo'lsa keshdan
-    first_bytes = pages[0].image.read()
-    pages[0].image.seek(0)
-    h = image_hash(first_bytes)
-    scan.image_hash = h
-    cached = (
-        InvoiceScan.objects.filter(
-            image_hash=h, status=ScanStatus.CONFIRMED
-        ).exclude(pk=scan.pk).order_by("-created_at").first()
-    )
-    if cached and cached.ai_response:
-        return _apply_ai(scan, cached.ai_response, from_cache=True)
+        pages = list(scan.pages.order_by("page_number"))
+        if not pages:
+            return _fail(scan, "Rasm yo'q")
 
-    limit = check_cost_limit()
-    if limit:
-        return _fail(scan, f"OCR xarajat limiti: {limit}", notify=True)
+        for page in pages:
+            raw = page.image.read()
+            page.image.seek(0)
+            raw_pages.append(raw)
 
-    processed_bytes = []
-    for page in pages:
-        raw = page.image.read()
-        page.image.seek(0)
-        pre = preprocess_image(raw)
-        processed_bytes.append(pre)
+        # rasm hash — dublikat bo'lsa keshdan
+        image_h = image_hash(raw_pages[0])
+        scan.image_hash = image_h
+        cached = (
+            InvoiceScan.objects.filter(
+                image_hash=image_h, status=ScanStatus.CONFIRMED
+            )
+            .exclude(pk=scan.pk)
+            .order_by("-created_at")
+            .first()
+        )
+        if cached and cached.ai_response:
+            return _apply_ai(scan, cached.ai_response, from_cache=True)
 
-    provider = get_provider()
-    result = provider.extract(processed_bytes)
+        limit = check_cost_limit()
+        if limit:
+            return _fail(scan, f"OCR xarajat limiti: {limit}", notify=True)
 
-    scan.provider = result.provider
-    scan.tokens_used = result.tokens_used
-    scan.cost_usd = result.cost_usd
-    scan.processing_time_ms = result.processing_time_ms
-    scan.raw_text = result.raw_text
+    # Tashqi API so'rovi (5-20s) DB tranzaksiyasi va row-lockdan tashqarida
+    try:
+        processed_bytes = [preprocess_image(raw) for raw in raw_pages]
+        result = get_provider().extract(processed_bytes)
+    except Exception as exc:  # noqa: BLE001
+        with transaction.atomic():
+            scan = InvoiceScan.objects.select_for_update().get(pk=scan_id)
+            scan.image_hash = image_h
+            return _fail(scan, f"OCR xatosi: {exc}")
 
-    if result.error:
-        return _fail(scan, result.error)
+    with transaction.atomic():
+        scan = InvoiceScan.objects.select_for_update().get(pk=scan_id)
+        scan.image_hash = image_h
+        scan.provider = result.provider
+        scan.tokens_used = result.tokens_used
+        scan.cost_usd = result.cost_usd
+        scan.processing_time_ms = result.processing_time_ms
+        scan.raw_text = result.raw_text
 
-    return _apply_ai(scan, result.ai_response)
+        if result.error:
+            return _fail(scan, result.error)
+
+        return _apply_ai(scan, result.ai_response)
 
 
 def _apply_ai(scan: InvoiceScan, ai: dict, *, from_cache: bool = False) -> InvoiceScan:

@@ -1,19 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { notificationsApi } from '@/shared/api/notifications';
+import { DataState } from '@/shared/components/DataState';
 import { dateShort } from '@/shared/lib/format';
 
 export function NotificationBell(): ReactElement {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [open, setOpen] = useState<boolean>(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const count = useQuery({
     queryKey: ['notifications', 'unread'],
     queryFn: () => notificationsApi.unreadCount(),
     refetchInterval: 60_000,
   });
+
   const list = useQuery({
     queryKey: ['notifications', 'list'],
     queryFn: () => notificationsApi.list({ page_size: 20 }),
@@ -27,12 +32,28 @@ export function NotificationBell(): ReactElement {
 
   const unread = count.data?.count ?? 0;
 
+  useEffect(() => {
+    if (!open) return;
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
     <div className="relative">
       <button
+        ref={buttonRef}
         onClick={() => setOpen((v) => !v)}
-        className="relative rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-        aria-label="Bildirishnomalar"
+        className="relative rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
+        aria-label={t('notifications.title', 'Bildirishnomalar')}
+        aria-expanded={open}
+        aria-controls="notification-dropdown"
       >
         <Bell size={20} aria-hidden />
         {unread > 0 && (
@@ -44,39 +65,50 @@ export function NotificationBell(): ReactElement {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          {/* Telefonda qo'ng'iroq o'rtaroqda — w-80 chapga chiqib ketardi (UX m1): chetlardan 16px */}
-          <div className="fixed inset-x-4 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 dark:border-gray-800 dark:bg-gray-900">
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
+          <div
+            id="notification-dropdown"
+            className="fixed inset-x-4 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 dark:border-gray-800 dark:bg-gray-900"
+            role="region"
+            aria-label={t('notifications.title', 'Bildirishnomalar')}
+          >
             <div className="flex items-center justify-between border-b border-gray-100 p-3 dark:border-gray-800">
-              <span className="text-sm font-semibold">Bildirishnomalar</span>
+              <span className="text-sm font-semibold">
+                {t('notifications.title', 'Bildirishnomalar')}
+              </span>
               <button
-                className="text-xs text-brand hover:underline"
+                className="rounded text-xs text-brand hover:underline disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand"
                 onClick={() => markAll.mutate()}
+                disabled={markAll.isPending || unread === 0}
               >
-                Hammasini o'qildi
+                {t('notifications.markAllRead', "Hammasini o'qildi")}
               </button>
             </div>
-            <ul>
-              {list.data?.results.map((n) => (
-                <li
-                  key={n.id}
-                  className={`border-b border-gray-50 p-3 text-sm last:border-0 dark:border-gray-800 ${
-                    n.is_read ? '' : 'bg-brand/5'
-                  }`}
-                >
-                  <div className="font-medium">{n.title}</div>
-                  {n.body && <div className="text-xs text-gray-500">{n.body}</div>}
-                  <div className="mt-0.5 text-[10px] text-gray-400">
-                    {dateShort(n.created_at)}
-                  </div>
-                </li>
-              ))}
-              {(list.data?.results.length ?? 0) === 0 && (
-                <li className="p-6 text-center text-sm text-gray-400">
-                  Bildirishnoma yo'q
-                </li>
-              )}
-            </ul>
+            <DataState
+              isLoading={list.isLoading}
+              isError={list.isError}
+              error={list.error}
+              isEmpty={(list.data?.results.length ?? 0) === 0}
+              emptyText={t('notifications.empty', "Bildirishnoma yo'q")}
+              onRetry={() => void list.refetch()}
+            >
+              <ul>
+                {list.data?.results.map((n) => (
+                  <li
+                    key={n.id}
+                    className={`border-b border-gray-50 p-3 text-sm last:border-0 dark:border-gray-800 ${
+                      n.is_read ? '' : 'bg-brand/5'
+                    }`}
+                  >
+                    <div className="font-medium">{n.title}</div>
+                    {n.body && <div className="text-xs text-gray-500">{n.body}</div>}
+                    <div className="mt-0.5 text-[10px] text-gray-400">
+                      {dateShort(n.created_at)}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </DataState>
           </div>
         </>
       )}

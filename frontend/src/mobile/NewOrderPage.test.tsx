@@ -55,7 +55,8 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     );
 
     // 1. Mijozni tanlash
-    const clientBtn = await screen.findByRole('button', { name: 'Oqtepa Do‘koni' });
+    const clientBtn = await screen.findByRole('button', { name: /Oqtepa Do‘koni/ });
+    expect(screen.getByText(/\+998901234567/)).toBeInTheDocument();
     fireEvent.click(clientBtn);
 
     // 2. Tovarni qidirish va tanlash
@@ -105,7 +106,7 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     );
 
     // 1. Mijoz tanlash
-    const clientBtn = await screen.findByRole('button', { name: 'Oqtepa Do‘koni' });
+    const clientBtn = await screen.findByRole('button', { name: /Oqtepa Do‘koni/ });
     fireEvent.click(clientBtn);
 
     // 2. Tovarni qidirish va 1 karopka (12 dona) tanlash

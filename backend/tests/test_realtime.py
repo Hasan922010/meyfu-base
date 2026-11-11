@@ -148,6 +148,7 @@ async def test_branch_manager_joins_only_own_branch_dashboard():
 def test_check_overdue_debts_notifies_assigned_to(distributor):
     from datetime import timedelta
     from decimal import Decimal
+
     from apps.clients.models import Client
     from apps.notifications.models import Notification
     from apps.sales.models import Debt
@@ -168,3 +169,44 @@ def test_check_overdue_debts_notifies_assigned_to(distributor):
     debt.refresh_from_db()
     assert debt.status == "OVERDUE"
     assert Notification.objects.filter(user=distributor, type="debt.overdue").exists()
+
+
+@pytest.mark.django_db
+def test_check_overdue_debts_branch_scoped_and_uses_business_date(distributor):
+    from datetime import timedelta
+    from decimal import Decimal
+
+    from apps.clients.models import Client
+    from apps.core.business_day import business_date
+    from apps.notifications.models import Notification
+    from apps.sales.models import Debt
+    from apps.users.constants import Role
+    from apps.users.models import User
+    from apps.warehouse.models import Warehouse
+    from realtime.tasks import check_overdue_debts
+
+    branch_a = Warehouse.objects.create(name="Filial A Overdue", is_branch=True)
+    branch_b = Warehouse.objects.create(name="Filial B Overdue", is_branch=True)
+    bm_a = User.objects.create_user(
+        phone="+998907710001", password="pass12345", full_name="BM A",
+        role=Role.BRANCH_MANAGER, warehouse=branch_a,
+    )
+    bm_b = User.objects.create_user(
+        phone="+998907710002", password="pass12345", full_name="BM B",
+        role=Role.BRANCH_MANAGER, warehouse=branch_b,
+    )
+    client_a = Client.objects.create(name="Filial A Qarz", branch=branch_a, assigned_to=distributor)
+    Debt.objects.create(
+        client=client_a,
+        amount=Decimal("120000"),
+        remaining=Decimal("120000"),
+        due_date=business_date() - timedelta(days=1),
+        status="ACTIVE",
+        created_by=distributor,
+    )
+
+    check_overdue_debts()
+
+    assert Notification.objects.filter(user=bm_a, type="debt.overdue").exists()
+    assert not Notification.objects.filter(user=bm_b, type="debt.overdue").exists()
+

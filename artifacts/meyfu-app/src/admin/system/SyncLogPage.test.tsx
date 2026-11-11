@@ -49,3 +49,4 @@ describe('SyncLogPage', () => {
     expect(screen.getByText('device-abc-123')).toBeInTheDocument();
   });
 });
+

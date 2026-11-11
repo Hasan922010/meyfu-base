@@ -29,30 +29,31 @@ export function DataState({
   if (isLoading) {
     return (
       <div aria-live="polite" aria-busy="true">
-        {loadingComponent ? <>{loadingComponent}</> : <p className="p-4 text-gray-500">{t('common.loading')}</p>}
+        {loadingComponent ?? <p className="p-4 text-gray-500">{t('common.loading')}</p>}
       </div>
     );
   }
-
   if (isError) {
     return (
       <div
         role="alert"
         aria-live="assertive"
-        className="p-8 text-center text-danger border border-danger/20 rounded-xl bg-danger/5"
+        className="rounded-xl border border-danger/20 bg-danger/5 p-8 text-center text-danger"
       >
         <p className="mb-3 font-medium">
           {error != null ? extractApiError(error) : t('common.error')}
         </p>
         {onRetry && (
-          <button className="btn px-4 bg-danger text-white hover:brightness-110" onClick={onRetry}>
+          <button
+            className="btn bg-danger px-4 text-white hover:brightness-110"
+            onClick={onRetry}
+          >
             {t('common.retry')}
           </button>
         )}
       </div>
     );
   }
-
   if (isEmpty) {
     return (
       <div role="status" aria-live="polite" className="p-8 text-center text-gray-400">
@@ -60,6 +61,5 @@ export function DataState({
       </div>
     );
   }
-
   return <>{children}</>;
 }

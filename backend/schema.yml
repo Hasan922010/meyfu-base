@@ -1449,6 +1449,11 @@ paths:
         View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
       parameters:
       - in: query
+        name: assigned_to
+        schema:
+          type: string
+          format: uuid
+      - in: query
         name: client_type
         schema:
           type: string
@@ -1817,6 +1822,67 @@ paths:
               schema:
                 $ref: '#/components/schemas/Client'
           description: ''
+  /api/v1/clients/opening-balance/import/:
+    post:
+      operationId: clients_opening_balance_import_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mijozlar boshlang'ich qarzini Excel'dan ustun moslab import qilish
+      tags:
+      - clients
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                mode:
+                  type: string
+                mapping:
+                  type: string
+                default_assigned_to:
+                  type: string
+                auto_create_missing:
+                  type: boolean
+                note:
+                  type: string
+                dry_run:
+                  type: boolean
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/clients/opening-import-template/:
+    get:
+      operationId: clients_opening_import_template_retrieve
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mijoz boshlang'ich qarzi importi uchun Excel shablon
+      tags:
+      - clients
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/v1/clients/opening-sheet/:
     get:
       operationId: clients_opening_sheet_list
@@ -1826,6 +1892,11 @@ paths:
         View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
       summary: Boshlang'ich qarz uchun mijozlar ro'yxati (joriy qarzi bilan)
       parameters:
+      - in: query
+        name: assigned_to
+        schema:
+          type: string
+          format: uuid
       - in: query
         name: client_type
         schema:
@@ -4932,6 +5003,14 @@ paths:
         name: price_lte
         schema:
           type: number
+      - in: query
+        name: retail_price_max
+        schema:
+          type: number
+      - in: query
+        name: retail_price_min
+        schema:
+          type: number
       - name: search
         required: false
         in: query
@@ -4939,7 +5018,24 @@ paths:
         schema:
           type: string
       - in: query
+        name: stock_status
+        schema:
+          type: string
+          enum:
+          - low
+          - ok
+          - out
+        description: |-
+          * `out` - out
+          * `low` - low
+          * `ok` - ok
+      - in: query
         name: unit
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: warehouse
         schema:
           type: string
           format: uuid
@@ -5159,6 +5255,14 @@ paths:
         name: price_lte
         schema:
           type: number
+      - in: query
+        name: retail_price_max
+        schema:
+          type: number
+      - in: query
+        name: retail_price_min
+        schema:
+          type: number
       - name: search
         required: false
         in: query
@@ -5166,7 +5270,24 @@ paths:
         schema:
           type: string
       - in: query
+        name: stock_status
+        schema:
+          type: string
+          enum:
+          - low
+          - ok
+          - out
+        description: |-
+          * `out` - out
+          * `low` - low
+          * `ok` - ok
+      - in: query
         name: unit
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: warehouse
         schema:
           type: string
           format: uuid
@@ -5320,6 +5441,14 @@ paths:
         name: price_lte
         schema:
           type: number
+      - in: query
+        name: retail_price_max
+        schema:
+          type: number
+      - in: query
+        name: retail_price_min
+        schema:
+          type: number
       - name: search
         required: false
         in: query
@@ -5327,7 +5456,24 @@ paths:
         schema:
           type: string
       - in: query
+        name: stock_status
+        schema:
+          type: string
+          enum:
+          - low
+          - ok
+          - out
+        description: |-
+          * `out` - out
+          * `low` - low
+          * `ok` - ok
+      - in: query
         name: unit
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: warehouse
         schema:
           type: string
           format: uuid
@@ -5369,6 +5515,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
           description: ''
+  /api/v1/products/bulk/:
+    post:
+      operationId: products_bulk_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mahsulotlar ustida ommaviy amal
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductBulkRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductBulkRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductBulkRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductBulkResult'
+          description: ''
+  /api/v1/products/export/:
+    get:
+      operationId: products_export_retrieve
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mahsulotlar ro'yxatini CSV eksport qilish
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: UTF-8 BOM bilan CSV fayl.
   /api/v1/products/import/:
     post:
       operationId: products_import_create
@@ -6296,6 +6493,106 @@ paths:
                 type: string
                 format: binary
             text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/reports/price-variance/:
+    get:
+      operationId: reports_price_variance_retrieve
+      description: Tannarx va sotuv narxi farqi (Kamomad va Ortiqcha) hisoboti.
+      summary: Tannarxdan farq (Kamomad / Ortiqcha) hisoboti
+      parameters:
+      - in: query
+        name: all_products
+        schema:
+          type: boolean
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: product_id
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/product-movement/:
+    get:
+      operationId: reports_product_movement_retrieve
+      summary: Tovar harakati va sotuv turi (Sotuv vs Bonus) hisoboti
+      parameters:
+      - in: query
+        name: category_id
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: product_id
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/reports/product-movement/export/:
+    get:
+      operationId: reports_product_movement_export_retrieve
+      summary: Tovar harakati hisobotini Excel formatida yuklash
+      parameters:
+      - in: query
+        name: category_id
+        schema:
+          type: string
+      - in: query
+        name: date_from
+        schema:
+          type: string
+      - in: query
+        name: date_to
+        schema:
+          type: string
+      - in: query
+        name: product_id
+        schema:
+          type: string
+      tags:
+      - reports
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
               schema:
                 type: string
                 format: binary
@@ -7318,6 +7615,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/Stock'
           description: ''
+  /api/v1/stock/lock-opening/:
+    post:
+      operationId: stock_lock_opening_create
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+      summary: Ombor boshlang'ich qoldig'ini tasdiqlash va qulflash (faqat ADMIN)
+      tags:
+      - stock
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpeningWarehouseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpeningWarehouseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpeningWarehouseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
+          description: ''
   /api/v1/stock/low/:
     get:
       operationId: stock_low_retrieve
@@ -7440,6 +7765,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedOpeningSheetRowList'
+          description: ''
+  /api/v1/stock/unlock-opening/:
+    post:
+      operationId: stock_unlock_opening_create
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+      summary: Ombor boshlang'ich qoldig'ini qayta ochish (SUPER_ADMIN, MANAGER yoki
+        filial rahbari)
+      tags:
+      - stock
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpeningWarehouseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpeningWarehouseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpeningWarehouseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
           description: ''
   /api/v1/supplier-transactions/:
     get:
@@ -7723,7 +8077,7 @@ paths:
         `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
 
         View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-      summary: Ta'minotchi boshlang'ich qoldig'i (faqat SUPER_ADMIN)
+      summary: Ta'minotchi boshlang'ich qoldig'i (SUPER_ADMIN va ACCOUNTANT)
       tags:
       - suppliers
       requestBody:
@@ -7941,7 +8295,7 @@ paths:
     get:
       operationId: sync_clients_list
       description: Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat
-        o'z marshruti.
+        o'z mijozi/marshruti.
       summary: Mijozlar sinxronizatsiyasi (delta)
       parameters:
       - in: query
@@ -7960,6 +8314,202 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ClientLite'
+          description: ''
+  /api/v1/system/backups/:
+    get:
+      operationId: system_backups_retrieve
+      description: Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+      summary: Zaxiralar ro'yxati
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+    post:
+      operationId: system_backups_create
+      description: Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+      summary: Yangi zaxira yaratish
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/backups/{filename}/:
+    delete:
+      operationId: system_backups_destroy
+      description: Zaxira faylini o'chirish.
+      summary: Zaxira faylini o'chirish
+      parameters:
+      - in: path
+        name: filename
+        schema:
+          type: string
+        required: true
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/backups/{filename}/download/:
+    get:
+      operationId: system_backups_download_retrieve
+      description: Zaxira faylini yuklab olish.
+      summary: Zaxira faylini yuklab olish
+      parameters:
+      - in: path
+        name: filename
+        schema:
+          type: string
+        required: true
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/v1/system/backups/{filename}/restore/:
+    post:
+      operationId: system_backups_restore_create
+      description: Zaxira nusxasidan ma'lumotlarni tiklash.
+      summary: Zaxiradan tiklash
+      parameters:
+      - in: path
+        name: filename
+        schema:
+          type: string
+        required: true
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/backups/create/:
+    get:
+      operationId: system_backups_create_retrieve
+      description: Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+      summary: Zaxiralar ro'yxati
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+    post:
+      operationId: system_backups_create_create
+      description: Mavjud barcha zaxiralar ro'yxati va yangi zaxira yaratish.
+      summary: Yangi zaxira yaratish
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/backups/upload/:
+    post:
+      operationId: system_backups_upload_create
+      description: Tashqi zaxira faylini yuklash.
+      summary: Zaxira faylini yuklash
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/system/integrity/:
     get:
@@ -7994,6 +8544,48 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/system/settings/:
+    get:
+      operationId: system_settings_retrieve
+      description: Tizim sozlamalari — soxta operatsiyalarni tozalashga ruxsat berish/o'chirish.
+      summary: Tizim xavfsizlik sozlamalari
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+          description: ''
+    patch:
+      operationId: system_settings_partial_update
+      description: Tizim sozlamalari — soxta operatsiyalarni tozalashga ruxsat berish/o'chirish.
+      summary: Tizim xavfsizlik sozlamalarini yangilash (SUPER_ADMIN)
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSystemSettingsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSystemSettingsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSystemSettingsRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+          description: ''
   /api/v1/system/status/:
     get:
       operationId: system_status_retrieve
@@ -8002,6 +8594,92 @@ paths:
       summary: Tizim holati — salomatlik, butunlik, backup, sinxronizatsiya, OCR
       tags:
       - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/test-cleanup/entries/:
+    get:
+      operationId: system_test_cleanup_entries_retrieve
+      description: Soxta operatsiyalarni tozalash uchun jurnal yozuvlari ro'yxati
+        (SUPER_ADMIN).
+      summary: Tanlangan jurnal bo'yicha oxirgi operatsiyalar
+      parameters:
+      - in: query
+        name: ledger
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+      tags:
+      - system
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/test-cleanup/execute/:
+    post:
+      operationId: system_test_cleanup_execute_create
+      description: Tanlangan soxta operatsiyalarni tasdiqlab tozalash.
+      summary: Soxta operatsiyalarni tasdiqlab tozalash (SUPER_ADMIN)
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestCleanupExecuteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TestCleanupExecuteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TestCleanupExecuteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/system/test-cleanup/preview/:
+    post:
+      operationId: system_test_cleanup_preview_create
+      description: Tanlangan soxta operatsiyalarni tozalash rejasini tekshirish (preview).
+      summary: Soxta operatsiyalarni tozalash ta'sirini oldindan ko'rish
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestCleanupPreviewRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TestCleanupPreviewRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TestCleanupPreviewRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -9398,6 +10076,18 @@ paths:
           description: No response body
 components:
   schemas:
+    ActionEnum:
+      enum:
+      - activate
+      - deactivate
+      - delete
+      - soft-delete
+      type: string
+      description: |-
+        * `activate` - activate
+        * `deactivate` - deactivate
+        * `delete` - delete
+        * `soft-delete` - soft-delete
     Advance:
       type: object
       properties:
@@ -10032,6 +10722,14 @@ components:
           type: integer
           readOnly: true
           title: Marshrutdagi tartib
+        assigned_to:
+          type: string
+          format: uuid
+          nullable: true
+          title: Mas'ul xodim
+        assigned_to_name:
+          type: string
+          readOnly: true
         client_type:
           allOf:
           - $ref: '#/components/schemas/ClientTypeEnum'
@@ -10091,6 +10789,7 @@ components:
           readOnly: true
           title: Yangilangan vaqti
       required:
+      - assigned_to_name
       - branch_name
       - client_type_display
       - created_at
@@ -10145,6 +10844,12 @@ components:
           readOnly: true
           nullable: true
           title: Marshrut
+        assigned_to:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Mas'ul xodim
         client_type:
           allOf:
           - $ref: '#/components/schemas/ClientTypeEnum'
@@ -10178,6 +10883,7 @@ components:
           title: Yangilangan vaqti
       required:
       - address
+      - assigned_to
       - client_type
       - current_debt
       - debt_limit
@@ -10249,6 +10955,11 @@ components:
           format: uuid
           nullable: true
           title: Marshrut
+        assigned_to:
+          type: string
+          format: uuid
+          nullable: true
+          title: Mas'ul xodim
         client_type:
           allOf:
           - $ref: '#/components/schemas/ClientTypeEnum'
@@ -11085,6 +11796,10 @@ components:
         client_name:
           type: string
           readOnly: true
+        client_phone:
+          type: string
+          readOnly: true
+          default: ''
         sale:
           type: string
           format: uuid
@@ -11135,6 +11850,7 @@ components:
       - amount
       - client
       - client_name
+      - client_phone
       - created_at
       - due_date
       - id
@@ -11158,6 +11874,10 @@ components:
         client_name:
           type: string
           readOnly: true
+        client_phone:
+          type: string
+          readOnly: true
+          default: ''
         amount:
           type: string
           format: decimal
@@ -11196,6 +11916,7 @@ components:
       required:
       - amount
       - client_name
+      - client_phone
       - collected_by
       - created_at
       - date
@@ -12642,6 +13363,15 @@ components:
       - current
       - id
       - name
+    OpeningWarehouseRequest:
+      type: object
+      description: Ommaviy boshlang'ich qoldiq qaysi omborga yoziladi.
+      properties:
+        warehouse:
+          type: string
+          format: uuid
+      required:
+      - warehouse
     Order:
       type: object
       properties:
@@ -12908,6 +13638,9 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
           title: Summa
+        is_bonus:
+          type: boolean
+          title: Bonus tovar (bepul)
       required:
       - amount
       - delivered_quantity
@@ -12931,6 +13664,9 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        is_bonus:
+          type: boolean
+          default: false
       required:
       - price
       - product
@@ -14051,6 +14787,11 @@ components:
           format: uuid
           nullable: true
           title: Marshrut
+        assigned_to:
+          type: string
+          format: uuid
+          nullable: true
+          title: Mas'ul xodim
         client_type:
           allOf:
           - $ref: '#/components/schemas/ClientTypeEnum'
@@ -14230,13 +14971,11 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           nullable: true
-          title: Yakuniy miqdor
         final_price:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           nullable: true
-          title: Yakuniy narx
     PatchedInvoiceScanUpdateRequest:
       type: object
       description: Yetkazib beruvchi / raqam / sanani tuzatish (tekshirish ekrani).
@@ -14346,11 +15085,47 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           title: Qadoqdagi soni
+        package_type:
+          type: string
+          title: Qadoq turi
+          description: 'Masalan: qop, xalta, pachka, karopka, blok'
+          maxLength: 64
+        order_commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          title: Buyurtma komissiya foizi
+        delivery_commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          title: Tarqatish komissiya foizi
+        has_bonus:
+          type: boolean
+          title: Bonus mavjud
+        bonus_trigger_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Bonus berilishi uchun minimal xarid miqdori
+        bonus_reward_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Bonus beriladigan miqdor
+        bonus_product:
+          type: string
+          format: uuid
+          nullable: true
+          title: Bonus tovar (bo'sh bo'lsa o'zidan)
+        track_variance:
+          type: boolean
+          title: Tannarxdan farqni hisobotda kuzatish
         commission_percent:
           type: string
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
-          title: Komissiya foizi
+          title: Komissiya foizi (umumiy)
         min_stock_alert:
           type: string
           format: decimal
@@ -14461,6 +15236,12 @@ components:
         is_active:
           type: boolean
           title: Faol
+    PatchedSystemSettingsRequest:
+      type: object
+      description: Tizim xavfsizligi va ruxsat sozlamalari (SUPER_ADMIN).
+      properties:
+        allow_test_cleanup:
+          type: boolean
     PatchedTransferRequest:
       type: object
       properties:
@@ -14556,6 +15337,30 @@ components:
           format: uuid
           nullable: true
           title: Ombor / filial
+        can_receive_stock:
+          type: boolean
+          title: Tovar kirim qilish
+        can_take_orders:
+          type: boolean
+          title: Buyurtma olish
+        can_make_sales:
+          type: boolean
+          title: Tarqatish / sotuv qilish
+        can_sell_on_debt:
+          type: boolean
+          title: Qarzga berish
+        can_collect_debts:
+          type: boolean
+          title: Pul / qarz undirish
+        can_record_expenses:
+          type: boolean
+          title: Xarajat kiritish
+        can_see_warehouse_stock:
+          type: boolean
+          title: Ombor qoldig'ini ko'rish
+        can_scan_invoices:
+          type: boolean
+          title: Naklit skani (AI OCR)
     PatchedWarehouseRequest:
       type: object
       properties:
@@ -15168,16 +15973,74 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           title: Qadoqdagi soni
+        package_type:
+          type: string
+          title: Qadoq turi
+          description: 'Masalan: qop, xalta, pachka, karopka, blok'
+          maxLength: 64
+        order_commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          title: Buyurtma komissiya foizi
+        delivery_commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          title: Tarqatish komissiya foizi
+        has_bonus:
+          type: boolean
+          title: Bonus mavjud
+        bonus_trigger_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Bonus berilishi uchun minimal xarid miqdori
+        bonus_reward_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Bonus beriladigan miqdor
+        bonus_product:
+          type: string
+          format: uuid
+          nullable: true
+          title: Bonus tovar (bo'sh bo'lsa o'zidan)
+        bonus_product_name:
+          type: string
+          readOnly: true
+          nullable: true
+        track_variance:
+          type: boolean
+          title: Tannarxdan farqni hisobotda kuzatish
         commission_percent:
           type: string
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
-          title: Komissiya foizi
+          title: Komissiya foizi (umumiy)
         min_stock_alert:
           type: string
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           title: Kam qoldiq ogohlantirishi
+        total_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        reserved_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        available_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        stock_status:
+          type: string
+          readOnly: true
         is_active:
           type: boolean
           title: Faol
@@ -15192,6 +16055,8 @@ components:
           readOnly: true
           title: Yangilangan vaqti
       required:
+      - available_stock
+      - bonus_product_name
       - brand_name
       - category
       - category_name
@@ -15200,10 +16065,52 @@ components:
       - image_thumb
       - images
       - name
+      - reserved_stock
       - sku
+      - stock_status
+      - total_stock
       - unit
       - unit_name
       - updated_at
+    ProductBulkRequest:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ko'pi bilan 100 ta mahsulot IDsi.
+          maxItems: 100
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+      required:
+      - action
+      - ids
+    ProductBulkResult:
+      type: object
+      properties:
+        action:
+          type: string
+        requested:
+          type: integer
+        updated:
+          type: integer
+        missing_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        errors:
+          type: array
+          items:
+            type: string
+      required:
+      - action
+      - errors
+      - missing_ids
+      - requested
+      - updated
     ProductImage:
       type: object
       properties:
@@ -15457,11 +16364,47 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           title: Qadoqdagi soni
+        package_type:
+          type: string
+          title: Qadoq turi
+          description: 'Masalan: qop, xalta, pachka, karopka, blok'
+          maxLength: 64
+        order_commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          title: Buyurtma komissiya foizi
+        delivery_commission_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          title: Tarqatish komissiya foizi
+        has_bonus:
+          type: boolean
+          title: Bonus mavjud
+        bonus_trigger_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Bonus berilishi uchun minimal xarid miqdori
+        bonus_reward_qty:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Bonus beriladigan miqdor
+        bonus_product:
+          type: string
+          format: uuid
+          nullable: true
+          title: Bonus tovar (bo'sh bo'lsa o'zidan)
+        track_variance:
+          type: boolean
+          title: Tannarxdan farqni hisobotda kuzatish
         commission_percent:
           type: string
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
-          title: Komissiya foizi
+          title: Komissiya foizi (umumiy)
         min_stock_alert:
           type: string
           format: decimal
@@ -16111,6 +17054,9 @@ components:
           type: boolean
           readOnly: true
           title: Minimal narxdan past
+        is_bonus:
+          type: boolean
+          title: Bonus tovar (bepul)
       required:
       - amount
       - below_min_price
@@ -16144,6 +17090,9 @@ components:
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
           title: Chegirma %
+        is_bonus:
+          type: boolean
+          title: Bonus tovar (bepul)
       required:
       - price
       - product
@@ -16167,6 +17116,9 @@ components:
           format: decimal
           pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
           default: '0.00'
+        is_bonus:
+          type: boolean
+          default: false
       required:
       - price
       - product
@@ -16764,6 +17716,14 @@ components:
       - operations_count
       - user
       - user_name
+    SystemSettings:
+      type: object
+      description: Tizim xavfsizligi va ruxsat sozlamalari (SUPER_ADMIN).
+      properties:
+        allow_test_cleanup:
+          type: boolean
+      required:
+      - allow_test_cleanup
     TelegramBotConnectRequest:
       type: object
       properties:
@@ -16774,6 +17734,60 @@ components:
           description: 'Telegram bot tokeni (masalan: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)'
       required:
       - token
+    TestCleanupExecuteRequest:
+      type: object
+      description: Soxta operatsiyalarni tasdiqlab tozalash.
+      properties:
+        ledger:
+          type: string
+          minLength: 1
+        ids:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          maxItems: 100
+        cleanup_token:
+          type: string
+          minLength: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        confirmation:
+          type: string
+          minLength: 1
+          maxLength: 20
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        acknowledged:
+          type: boolean
+      required:
+      - acknowledged
+      - cleanup_token
+      - confirmation
+      - ids
+      - ledger
+      - password
+      - reason
+    TestCleanupPreviewRequest:
+      type: object
+      description: Soxta operatsiyalarni tozalashdan oldin tekshirish (preview).
+      properties:
+        ledger:
+          type: string
+          minLength: 1
+        ids:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          maxItems: 100
+      required:
+      - ids
+      - ledger
     TokenRefresh:
       type: object
       properties:
@@ -17121,11 +18135,41 @@ components:
         warehouse_name:
           type: string
           readOnly: true
+        can_receive_stock:
+          type: boolean
+          title: Tovar kirim qilish
+        can_take_orders:
+          type: boolean
+          title: Buyurtma olish
+        can_make_sales:
+          type: boolean
+          title: Tarqatish / sotuv qilish
+        can_sell_on_debt:
+          type: boolean
+          title: Qarzga berish
+        can_collect_debts:
+          type: boolean
+          title: Pul / qarz undirish
+        can_record_expenses:
+          type: boolean
+          title: Xarajat kiritish
+        can_see_warehouse_stock:
+          type: boolean
+          title: Ombor qoldig'ini ko'rish
+        can_scan_invoices:
+          type: boolean
+          title: Naklit skani (AI OCR)
+        permissions:
+          type: object
+          additionalProperties:
+            type: boolean
+          readOnly: true
       required:
       - distributor_profile
       - full_name
       - id
       - last_seen_at
+      - permissions
       - phone
       - role
       - warehouse
@@ -17184,6 +18228,30 @@ components:
         warehouse_name:
           type: string
           readOnly: true
+        can_receive_stock:
+          type: boolean
+          title: Tovar kirim qilish
+        can_take_orders:
+          type: boolean
+          title: Buyurtma olish
+        can_make_sales:
+          type: boolean
+          title: Tarqatish / sotuv qilish
+        can_sell_on_debt:
+          type: boolean
+          title: Qarzga berish
+        can_collect_debts:
+          type: boolean
+          title: Pul / qarz undirish
+        can_record_expenses:
+          type: boolean
+          title: Xarajat kiritish
+        can_see_warehouse_stock:
+          type: boolean
+          title: Ombor qoldig'ini ko'rish
+        can_scan_invoices:
+          type: boolean
+          title: Naklit skani (AI OCR)
       required:
       - full_name
       - id
@@ -17248,6 +18316,30 @@ components:
           format: uuid
           nullable: true
           title: Ombor / filial
+        can_receive_stock:
+          type: boolean
+          title: Tovar kirim qilish
+        can_take_orders:
+          type: boolean
+          title: Buyurtma olish
+        can_make_sales:
+          type: boolean
+          title: Tarqatish / sotuv qilish
+        can_sell_on_debt:
+          type: boolean
+          title: Qarzga berish
+        can_collect_debts:
+          type: boolean
+          title: Pul / qarz undirish
+        can_record_expenses:
+          type: boolean
+          title: Xarajat kiritish
+        can_see_warehouse_stock:
+          type: boolean
+          title: Ombor qoldig'ini ko'rish
+        can_scan_invoices:
+          type: boolean
+          title: Naklit skani (AI OCR)
       required:
       - full_name
       - phone
@@ -17480,6 +18572,25 @@ components:
         manager_name:
           type: string
           readOnly: true
+        is_opening_locked:
+          type: boolean
+          readOnly: true
+          title: Boshlang'ich qoldiq tasdiqlangan
+        opening_confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Tasdiqlangan vaqt
+        opening_confirmed_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Tasdiqlagan admin
+        opening_confirmed_by_name:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -17488,8 +18599,12 @@ components:
       required:
       - created_at
       - id
+      - is_opening_locked
       - manager_name
       - name
+      - opening_confirmed_at
+      - opening_confirmed_by
+      - opening_confirmed_by_name
     WarehouseRequest:
       type: object
       properties:

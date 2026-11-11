@@ -86,6 +86,53 @@ def _setting_percent(key: str) -> Decimal:
         return _ZERO
 
 
+def load_active_rules(date_from: date_cls, date_to: date_cls) -> list[CommissionRule]:
+    """Davrda faol barcha komissiya qoidalarini bir so'rovda yuklaydi."""
+    return list(
+        CommissionRule.objects.filter(is_active=True, valid_from__lte=date_to)
+        .filter(Q(valid_to__isnull=True) | Q(valid_to__gte=date_from))
+        .order_by("-priority", "-created_at")
+    )
+
+
+def resolve_rule_percent(
+    *,
+    rules: list[CommissionRule],
+    distributor_id,
+    product,
+    on_date: date_cls,
+    scopes: tuple[str, ...] | None = None,
+) -> Decimal | None:
+    """Oldindan yuklangan qoidalardan berilgan sana/mahsulot/xodim uchun eng aniq foiz."""
+    matches: list[CommissionRule] = []
+    for rule in rules:
+        if scopes is not None and rule.scope not in scopes:
+            continue
+        if rule.valid_from > on_date:
+            continue
+        if rule.valid_to is not None and rule.valid_to < on_date:
+            continue
+        if rule.scope == CommissionScope.GLOBAL:
+            matches.append(rule)
+        elif rule.scope == CommissionScope.DISTRIBUTOR and rule.target_id == distributor_id:
+            matches.append(rule)
+        elif rule.scope == CommissionScope.PRODUCT and rule.target_id == product.id:
+            matches.append(rule)
+        elif (
+            rule.scope == CommissionScope.CATEGORY
+            and product.category_id
+            and rule.target_id == product.category_id
+        ):
+            matches.append(rule)
+    if not matches:
+        return None
+    best = max(
+        matches,
+        key=lambda r: (SCOPE_SPECIFICITY[r.scope], r.priority, r.created_at),
+    )
+    return best.percent
+
+
 def resolve_two_stage(*, user, on_date=None) -> tuple[Decimal, Decimal]:
     """(order_percent, delivery_percent) — v4 T1.
 

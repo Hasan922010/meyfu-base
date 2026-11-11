@@ -65,7 +65,11 @@ export function CheckInSheet({
     <>
       <Modal
         open={client !== null && !showStatement}
-        title={client ? `Tashrif: ${client.name}` : 'Tashrif'}
+        title={
+          client
+            ? `Tashrif: ${client.name}${client.phone ? ` (${client.phone})` : ''}`
+            : 'Tashrif'
+        }
         onClose={onClose}
       >
         <div className="space-y-4">
@@ -124,7 +128,7 @@ export function CheckInSheet({
     {client && (
       <Modal
         open={showStatement}
-        title={`Akt-sverka: ${client.name}`}
+        title={`Akt-sverka: ${client.name}${client.phone ? ` (${client.phone})` : ''}`}
         onClose={() => setShowStatement(false)}
       >
         <ClientStatement clientId={client.id} />

@@ -83,7 +83,8 @@ def build_overdue_summary(branch=None) -> str:
     if not a["overdue_clients"]:
         lines.append("Muddati o'tgan qarz yo'q ✅")
     for c in a["overdue_clients"][:20]:
-        lines.append(f"• {c['client']} — {_fmt(c['amount'])} ({c['max_days']} kun)")
+        phone_part = f" ({c['phone']})" if c.get("phone") else ""
+        lines.append(f"• {c['client']}{phone_part} — {_fmt(c['amount'])} ({c['max_days']} kun)")
     return "\n".join(lines)
 
 

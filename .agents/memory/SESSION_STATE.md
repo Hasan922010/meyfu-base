@@ -154,13 +154,36 @@
     - **Frontend Offline Sinxronizatsiya, UI va ESLint Tozaligi:** `offline/sync.ts` `/clients/` ni barcha sahifalar bo'yicha (`next` tugaguncha) yuklab `db.clients` ni atomik almashtiradi; `ClientOpeningImportModal.tsx` va `ProductImport.tsx` da fayl input `value` tozalanadi (bir xil faylni qayta tanlash uchun) va modal holati reset qilinadi; barcha `eslint` xato va ogohlantirishlari (13 ta holat -> 0) tozalandi.
     - **Yakuniy Verifikatsiya:** Backend **638/638 test 100% muvaffaqiyatli**, `makemigrations --check --dry-run` ("No changes detected"); Frontend `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 xato/ogohlantirish, Vitest **59/59 test fayli, 244/244 test 100% muvaffaqiyatli**; o'zgartirilgan/yangi barcha `frontend/src/` fayllari `artifacts/meyfu-app/src/` bilan 1:1 sinxronlandi.
 
+19. **Bir Xil Nomli Mijozlarning Qarzdorligini Telefon Raqami Orqali Farqlash (`Qarzdorlik Telefon nomeri orqali farqlansin`):**
+    - **API va Qidiruv (`backend/apps/sales/serializers.py`, `backend/apps/sales/views.py`, `backend/apps/sales/services/debt.py`):** `DebtSerializer` va `DebtPaymentSerializer` ga `client_phone` (`client.phone` / `debt.client.phone`, N+1 so'rovsiz `select_related`) qo'shildi; `DebtViewSet` va `DebtPaymentViewSet` `search_fields` da `client__phone` / `debt__client__phone` bo'yicha qidiruv yoqildi; `client_opening_sheet` (`name`, `phone`, `pk`) bo'yicha saralandi. `backend/schema.yml` va `frontend/src/shared/types/api.gen.ts` qayta generatsiya qilindi.
+    - **Hisobotlar, Telegram va Akt-sverka (`aggregates.py`, `digest.py`, `statement.py`):** `debt_aging()` da har bir qatorga `client_id` qo'shildi (frontenda `key` to'qnashuvini oldini olish uchun); `build_overdue_summary()` Telegram xulosasida va `statement_pdf()` Akt-sverka sarlavhasida mijoz telefoni ko'rsatildi.
+    - **Excel Boshlang'ich Qarz Importi (`backend/apps/clients/opening_import.py`):** `_ClientIndex.match` da telefon raqami birlamchi ajratuvchi kalitga aylantirildi — bir xil nomli, lekin har xil telefonli mijozlar alohida mijoz sifatida farqlanadi (`auto_create_missing=true` bo'lsa yangi mijoz yaratiladi, bazadagisi bilan to'qnashmaydi; telefonsiz bir nechta mos nom bo'lsa telefon so'raladi; `seen_new_keys` ham `(name, phone)` bo'yicha ajratiladi; `ClientOpeningRowResult.client_phone` oldindan ko'rish jadvaliga qaytariladi).
+    - **Web Admin va Mobil UI (`frontend/src/` + `artifacts/meyfu-app/src/` 1:1):** `DebtsPage.tsx` (`Telefon` ustuni, qidiruv, `client_id` kaliti), `DebtCollectPage.tsx` (karta va to'lov modalida telefon, telefon/nom bo'yicha qidiruv, offline outbox yozuviga telefon), `MobileAdminDebts.tsx` (telefon va qidiruv), `OpeningBalancesPage.tsx`, `ClientOpeningImportModal.tsx`, `ClientsPage.tsx`, `CheckInSheet.tsx`, `NewSalePage.tsx`, `NewOrderPage.tsx`, `MyClientsPage.tsx` yangilandi; `DebtsPage.test.tsx` va `DebtCollectPage.test.tsx` qo'shildi.
+    - **Yakuniy Verifikatsiya:** Frontend `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **61/61 test fayli, 246/246 test** (`artifacts/meyfu-app` bilan 1:1 sinxron); Backend **642/642 test** (`pytest`) 100% muvaffaqiyatli, `makemigrations --check --dry-run` ("No changes detected").
+
+20. **`/ponytail-audit` Bo'yicha Aniqlangan Barcha 1–17 Kamchiliklar To'liq Tuzatildi (`1-17 -bandlarni tuzat`):**
+    - **1. Deployable `artifacts/meyfu-app` & Paritet (1, 15):** `scripts/sync-frontend.sh` (`--sync` / `--check`) yaratildi va `frontend/{src,public}` -> `artifacts/meyfu-app/{src,public}` 1:1 baytma-bayt sinxronlandi; ortiqcha `artifacts/mockup-sandbox/` va gitda saqlangan 85 ta `*/dist/*` / `*.tsbuildinfo` fayllari olib tashlanib `.gitignore` ga qo'shildi; `replit.md` yangilandi.
+    - **2. Tovar Harakati Excel Eksporti (`ProductMovementExportView`):** `title=` -> `sheet_name=` tuzatildi, `product_movement_rows_for_export` sarlavha + `list[list]` qaytaradi, filial fayl nomi haqiqiy `Warehouse` nomidan olinadi.
+    - **3. `cancel_sale` va `van_expected_quantity` (`SaleReturn` ziddiyati):** Qaytarish (`SaleReturn`) mavjud sotuvni `cancel_sale` bilan bekor qilish bloklandi; `van_expected_quantity` bekor qilingan sotuvga bog'liq qaytarishlarni hisobdan chiqardi.
+    - **4. `fulfill_order` va `CONFLICT` / Bekor Qilingan Yetkazish:** `CONFLICT` sotuvda buyurtma `delivered_quantity`/`status` ga yozilmaydi (faqat `resolve_conflict(accept=True)` da yoziladi), noma'lum qator ID (`ORDER_LINE_NOT_FOUND`) xato beradi, `cancel_sale` yetkazilgan buyurtma miqdori va statusini orqaga qaytaradi.
+    - **5 va 9. Maosh (`pay_payroll`) va `CommissionRule`:** `final_amount <= 0` bo'lsa kassaga 0/manfiy xarajat yozmay `PAID` ga o'tadi; `resolve_two_stage`, `_commission_rows` va 360° xodim kartasi (`distributor.py`) `CommissionRule` qoidalari va `SaleReturnItem` chegiruvlarini to'liq hisoblaydi.
+    - **6. Katalog CSV Eksporti va `stock` (`catalog/views.py`):** `export` `(*_CATALOG_WRITE, Role.ACCOUNTANT)` ga cheklandi, barcha matn kataklari `_safe_cell` bilan formula inyeksiyasidan himoyalandi, `stock` `scope_queryset` bilan filial omboriga cheklandi.
+    - **7. Filial Rahbari (`BRANCH_MANAGER`) Chegarasi (`users/views.py`):** `toggle_active` va `perform_destroy` da yuqori/boshqa boshqaruv rollarini (`BRANCH_STAFF_ROLES` dan tashqari) bloklash/o'chirish 403 bilan taqiqlandi.
+    - **8. Omborchi (`WAREHOUSE`) va Oflayn `bulk-sync` Ruxsatlari:** `WAREHOUSE` roli `DebtPaymentViewSet`, `SaleReturnViewSet`, `DistributorExpenseViewSet`, `WalletViewSet`, `DayCloseViewSet` va `OrderViewSet` (`place`/`cancel`) da qo'llab-quvvatlandi va `_is_self_only` izolyatsiyasi joriy qilindi; `bulk-sync` `_handle_expense` (`can_record_expenses`) va `_handle_order_create` (`can_take_orders`) ruxsatlarini tekshiradi.
+    - **10. Zaxiradan Tiklash (`backup.py`):** `.sqlite3.gz` atomik fayl almashtirish (`connections.close_all()` bilan) tiklashi qo'shildi, JSON tiklashdan oldin jadvallar `_clear_non_system_rows` bilan tozalanadi, PostgreSQL `psql` chaqiruviga `-v ON_ERROR_STOP=1 --single-transaction` qo'shildi.
+    - **12. OCR Async va Tranzaksiya (`ocr/services/scan.py`, `ocr/views.py`):** `process_scan` tashqi provayder chaqiruvini `transaction.atomic()` dan tashqariga chiqardi; view'larda Celery faol bo'lganda `transaction.on_commit` bilan `process_scan_task.delay(...)` ishga tushiriladi.
+    - **13. N+1 Optimallashtirish (`integrity.py`, `core/views.py`, `distributor.py`):** `run_integrity_check` guruhlangan `Sum`/`GROUP BY` so'rovlariga o'tkazildi, `apply_integrity_fixes` (`bulk_update`) joriy etilib `IntegrityCheckView.post` dagi ortiqcha ikkinchi to'liq tekshiruv olib tashlandi; `distributor_comparison` guruhlangan agregatsiyalarga o'tkazildi.
+    - **14. Oflayn Katalog, PDF va Filial Bildirishnomalari:** `pullReferenceData` (`frontend/` + `artifacts/meyfu-app/`) `next` bo'yicha to'liq sahifalab yuklaydi; `rows_to_pdf` sarlavha va hujayralarni XML-escape qiladi; `check_overdue_debts` hamda `_notify_flagged` `business_date()` va filial kesimida ishlaydi.
+    - **16 va 17. Tozalash va Lint:** `ClientViewSet.debts` haqiqiy `Debt` yozuvlariga ulandi; o'lik kod va ishlatilmagan 3 ta paket (`@replit/connectors-sdk`, `@hookform/resolvers`, `django-extensions`) olib tashlandi; `ruff` ogohlantirishlari (`--ignore E501`) 0 ga tushirildi.
+    - **11. Regressiya Testlari va Yakuniy Verifikatsiya:** 12 ta backend test fayliga barcha yuqoridagi bandlar uchun 22 ta yangi regressiya testi qo'shildi. Backend: **664/664 test (`pytest`)**, `ruff` 0 xato, `makemigrations --check --dry-run` ("No changes detected"); `frontend/`: `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **62/62 test fayli (256/256 test)**, `vite build` muvaffaqiyatli; `artifacts/meyfu-app/`: Vitest **62/62 (256/256)**, `tsc -b --noEmit` 0 xato, `vite build` muvaffaqiyatli, `scripts/sync-frontend.sh --check` OK; `pnpm run typecheck` (`tsc --build`, `manage.py check`, `scripts`, `meyfu-app`) 0 xato.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)
 
-- **Backend:** Python 3.12 · Django 5.1 · DRF · Channels/Daphne (`backend/`) — lokal port: `8001`
-- **Frontend (GitHub source):** React 18 · TypeScript · Vite · Dexie PWA (`frontend/`) — lokal port: `5173`
-- **Deployable Web Artifact (Replit):** `artifacts/meyfu-app/` (`frontend/` dagi o'zgarishlar publish oldidan shu yerga ham sinxronlanishi shart)
+- **Backend:** Python 3.12 · Django 5.2 · DRF · Channels/Daphne (`backend/`) — lokal port: `8001` (`664/664` pytest)
+- **Frontend (GitHub source):** React 18 · TypeScript · Vite · Dexie PWA (`frontend/`) — lokal port: `5173` (`62` test fayli / `256` test)
+- **Deployable Web Artifact (Replit):** `artifacts/meyfu-app/` — `bash scripts/sync-frontend.sh --check` orqali `frontend/{src,public}` bilan 1:1 paritet (`62` test fayli / `256` test)
 - **Ishga tushirish:** `./start.sh` (Backend `:8001`, Frontend `:5173`) yoki pnpm workspace skriptlari
 - **Bilimlar grafi:** `graphify-out/` (kod o'zgarganda `graphify update .` bilan yangilanadi)
 
@@ -170,14 +193,13 @@
 
 Yangi seansda foydalanuvchi aniq topshiriq bermasa yoki "qayerdan davom etamiz?" deb so'rasa, quyidagi ustuvor yo'nalishlar bo'yicha davom etiladi:
 
-1. **SyncLog UI sahifasi (`docs/v5-imkoniyatlar-hisoboti.md` — B6):**
-   - Backendda `SyncLog` modeli va `/api/v1/sync-logs/` endpointi tayyor, lekin Admin panelda qurilmalar sinxronizatsiya tarixi va konfliktlarini ko'rish uchun maxsus UI sahifasi qo'shilishi mumkin.
-2. **`frontend/` va `artifacts/meyfu-app/` sinxronizatsiyasi:**
-   - `frontend/` da qilingan so'nggi o'zgarishlar (masalan, `TestCleanupSection.tsx` va boshqa tuzatishlar) Replit deploy artefakti `artifacts/meyfu-app/` bilan to'liq sinxron ekanligini tekshirish.
-3. **Production Pilot va Real Qurilma Sinovlari (`docs/pilot.md`):**
+1. **O'zgarishlarni Commit/Push Qilish va Replit Publish:**
+   - Git staging (`git add -A`) bilan kerakli o'zgarishlarni (`frontend/`, `artifacts/`, `backend/`, `.gitignore`, `.agents/memory/`) toza commit qilish.
+   - `frontend/` o'zgarganda har doim `bash scripts/sync-frontend.sh --sync` va `--check` bajarish.
+2. **Production Pilot va Real Qurilma Sinovlari (`docs/pilot.md`):**
    - Android Chrome'da Web Bluetooth termal printer (`ESC/POS` 58/80mm) sinovi;
    - Buxgalter bilan 1C XML/CSV import formatini yakuniy tasdiqlash;
-   - `meyfu-base.uz` domeniga production deploy va SSL/DNS tekshiruvi.
+   - `meyfu-base.uz` domeniga production deploy (PostgreSQL, Redis/Celery, Anthropic OCR, SSL/DNS tekshiruvi).
 
 ---
 

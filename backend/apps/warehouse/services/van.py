@@ -60,11 +60,16 @@ def van_expected_quantity(distributor, product: Product) -> Decimal:
             sale__status__in=["COMPLETED", "FLAGGED"],
             product=product,
         ).aggregate(s=Sum("quantity"))["s"] or _ZERO
-        returned = SaleReturnItem.objects.filter(
-            sale_return__distributor=distributor,
-            sale_return__restock=True,
-            product=product,
-        ).aggregate(s=Sum("quantity"))["s"] or _ZERO
+        returned = (
+            SaleReturnItem.objects.filter(
+                sale_return__distributor=distributor,
+                sale_return__restock=True,
+                product=product,
+            )
+            .exclude(sale_return__sale__status="CANCELLED")
+            .aggregate(s=Sum("quantity"))["s"]
+            or _ZERO
+        )
     except Exception:  # noqa: BLE001 — sales app hali migratsiya qilinmagan bo'lishi mumkin
         sold = returned = _ZERO
 

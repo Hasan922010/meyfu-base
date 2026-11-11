@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q, Sum
 from django.utils import timezone
 
 from apps.clients.models import Client
@@ -27,7 +27,7 @@ from apps.wallet.constants import TransactionType
 from apps.wallet.services import reverse_reference, wallet_apply
 from apps.warehouse.models import VanStock
 from apps.warehouse.services.van import van_apply
-from realtime.broadcast import broadcast, broadcast_admin
+from realtime.broadcast import broadcast_admin
 
 from ..constants import PaymentType, SaleStatus
 from ..models import Debt, Sale, SaleItem
@@ -413,6 +413,140 @@ def _apply_stock_and_debt(sale: Sale, lines: list[SaleLine], distributor, client
         )
 
 
+def _guard_sale_has_no_returns(sale: Sale) -> None:
+    from ..models import SaleReturn, SaleReturnItem
+
+    if SaleReturn.objects.filter(sale=sale).exists():
+        raise BusinessError(
+            message="Bu sotuv bo'yicha tovar qaytarilgan — bekor qilib bo'lmaydi.",
+            code="SALE_HAS_RETURNS",
+        )
+    sold_pids = list(sale.items.values_list("product_id", flat=True).distinct())
+    if not sold_pids:
+        return
+    ret_by_prod = {
+        r["product_id"]: r["s"]
+        for r in SaleReturnItem.objects.filter(
+            sale_return__client_id=sale.client_id,
+            product_id__in=sold_pids,
+        )
+        .filter(
+            Q(sale_return__sale__isnull=True)
+            | Q(
+                sale_return__sale__status__in=(
+                    SaleStatus.COMPLETED,
+                    SaleStatus.FLAGGED,
+                )
+            )
+        )
+        .values("product_id")
+        .annotate(s=Sum("quantity"))
+    }
+    if not ret_by_prod:
+        return
+    other_sold = {
+        r["product_id"]: r["s"]
+        for r in SaleItem.objects.filter(
+            sale__client_id=sale.client_id,
+            sale__status__in=(SaleStatus.COMPLETED, SaleStatus.FLAGGED),
+            product_id__in=sold_pids,
+        )
+        .exclude(sale_id=sale.id)
+        .values("product_id")
+        .annotate(s=Sum("quantity"))
+    }
+    for pid, ret_qty in ret_by_prod.items():
+        if (other_sold.get(pid) or _ZERO) < (ret_qty or _ZERO):
+            raise BusinessError(
+                message="Bu sotuv bo'yicha tovar qaytarilgan — bekor qilib bo'lmaydi.",
+                code="SALE_HAS_RETURNS",
+            )
+
+
+def _revert_order_delivery(sale: Sale) -> None:
+    if not sale.order_id:
+        return
+    from apps.orders.constants import OrderStatus
+    from apps.orders.models import Order
+
+    order = Order.objects.select_for_update().get(pk=sale.order_id)
+    order_items = list(order.items.order_by("created_at"))
+    touched: set = set()
+    for s_item in sale.items.all():
+        rem = s_item.quantity or _ZERO
+        candidates = [
+            oi
+            for oi in reversed(order_items)
+            if oi.product_id == s_item.product_id
+            and oi.is_bonus == s_item.is_bonus
+            and (oi.delivered_quantity or _ZERO) > _ZERO
+        ]
+        if not candidates:
+            candidates = [
+                oi
+                for oi in reversed(order_items)
+                if oi.product_id == s_item.product_id
+                and (oi.delivered_quantity or _ZERO) > _ZERO
+            ]
+        for oi in candidates:
+            if rem <= _ZERO:
+                break
+            take = min(oi.delivered_quantity or _ZERO, rem)
+            oi.delivered_quantity = (oi.delivered_quantity or _ZERO) - take
+            rem -= take
+            touched.add(oi)
+    for oi in touched:
+        oi.save(update_fields=["delivered_quantity", "updated_at"])
+    has_partial = any((oi.delivered_quantity or _ZERO) > _ZERO for oi in order_items)
+    order.status = (
+        OrderStatus.PARTIALLY_DELIVERED
+        if has_partial
+        else (OrderStatus.LOADED if order.loading_id else OrderStatus.APPROVED)
+    )
+    order.save(update_fields=["status", "updated_at"])
+
+
+def _apply_order_delivery(sale: Sale) -> None:
+    if not sale.order_id:
+        return
+    from apps.orders.constants import OrderStatus
+    from apps.orders.models import Order
+
+    order = Order.objects.select_for_update().get(pk=sale.order_id)
+    order_items = list(order.items.order_by("created_at"))
+    touched: set = set()
+    for s_item in sale.items.all():
+        rem = s_item.quantity or _ZERO
+        exact = [
+            oi
+            for oi in order_items
+            if oi.product_id == s_item.product_id and oi.is_bonus == s_item.is_bonus
+        ]
+        matches = exact or [oi for oi in order_items if oi.product_id == s_item.product_id]
+        for oi in matches:
+            if rem <= _ZERO:
+                break
+            room = (oi.quantity or _ZERO) - (oi.delivered_quantity or _ZERO)
+            if room <= _ZERO:
+                continue
+            take = min(room, rem)
+            oi.delivered_quantity = (oi.delivered_quantity or _ZERO) + take
+            rem -= take
+            touched.add(oi)
+        if rem > _ZERO and matches:
+            matches[-1].delivered_quantity = (
+                (matches[-1].delivered_quantity or _ZERO) + rem
+            )
+            touched.add(matches[-1])
+    for oi in touched:
+        oi.save(update_fields=["delivered_quantity", "updated_at"])
+    if order.assigned_to_id is None:
+        order.assigned_to = sale.distributor
+    fully = all((oi.delivered_quantity or _ZERO) >= oi.quantity for oi in order_items)
+    order.status = OrderStatus.DELIVERED if fully else OrderStatus.PARTIALLY_DELIVERED
+    order.save(update_fields=["status", "assigned_to", "updated_at"])
+
+
 @transaction.atomic
 def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
     """Sotuvni bekor qiladi: mashina qoldig'ini va qarzni qaytaradi."""
@@ -424,17 +558,19 @@ def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
         raise BusinessError(message="Sotuv allaqachon bekor qilingan.",
                             code="ALREADY_CANCELLED")
 
-    if sale.status in (SaleStatus.COMPLETED, SaleStatus.FLAGGED):
+    prev_status = sale.status
+    if prev_status in (SaleStatus.COMPLETED, SaleStatus.FLAGGED):
+        _guard_sale_has_no_returns(sale)
+        debt = getattr(sale, "debt", None)
+        if debt is not None and debt.paid_amount > _ZERO:
+            raise BusinessError(
+                message="Qarzga to'lov qilingan — avval to'lovni bekor qiling.",
+                code="DEBT_HAS_PAYMENTS",
+            )
         for item in sale.items.select_related("product"):
             van_apply(distributor=sale.distributor, product=item.product,
                       quantity=item.quantity)
-        debt = getattr(sale, "debt", None)
         if debt is not None:
-            if debt.paid_amount > _ZERO:
-                raise BusinessError(
-                    message="Qarzga to'lov qilingan — avval to'lovni bekor qiling.",
-                    code="DEBT_HAS_PAYMENTS",
-                )
             Client.objects.filter(pk=sale.client_id).update(
                 current_debt=F("current_debt") - debt.remaining
             )
@@ -445,6 +581,7 @@ def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
             distributor=sale.distributor, reference_type="sale",
             reference_id=sale.id, user=user, note=f"Sotuv {sale.number} bekor qilindi",
         )
+        _revert_order_delivery(sale)
 
     sale.status = SaleStatus.CANCELLED
     sale.cancelled_at = timezone.now()
@@ -476,7 +613,13 @@ def resolve_conflict(sale: Sale, *, accept: bool, user=None) -> Sale:
         return sale
 
     lines = [
-        SaleLine(product=i.product, quantity=i.quantity, price=i.price)
+        SaleLine(
+            product=i.product,
+            quantity=i.quantity,
+            price=i.price,
+            discount_percent=i.discount_percent,
+            is_bonus=i.is_bonus,
+        )
         for i in sale.items.select_related("product")
     ]
     for line in lines:
@@ -488,6 +631,7 @@ def resolve_conflict(sale: Sale, *, accept: bool, user=None) -> Sale:
     sale.status = SaleStatus.FLAGGED if sale.flag_reason else SaleStatus.COMPLETED
     sale.save(update_fields=["status", "updated_at"])
     _apply_debt_only(sale)
+    _apply_order_delivery(sale)
     return sale
 
 
@@ -522,8 +666,8 @@ def _notify_flagged(sale: Sale) -> None:
         changes={"reason": sale.flag_reason, "status": sale.status,
                  "number": sale.number},
     )
-    broadcast(
-        "admin_dashboard",
+    broadcast_admin(
+        sale.branch_id,
         "sale.flagged",
         {"sale_id": str(sale.id), "number": sale.number,
          "reason": sale.flag_reason, "status": sale.status},

@@ -100,6 +100,9 @@ class SaleCreateSerializer(serializers.Serializer):
 
 class DebtSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source="client.name", read_only=True)
+    client_phone = serializers.CharField(
+        source="client.phone", read_only=True, default=""
+    )
     sale_number = serializers.CharField(
         source="sale.number", read_only=True, default=None
     )
@@ -110,7 +113,7 @@ class DebtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Debt
         fields = (
-            "id", "client", "client_name", "sale", "sale_number",
+            "id", "client", "client_name", "client_phone", "sale", "sale_number",
             "amount", "paid_amount", "remaining", "due_date",
             "status", "status_display", "created_at",
         )
@@ -121,15 +124,18 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(
         source="debt.client.name", read_only=True
     )
+    client_phone = serializers.CharField(
+        source="debt.client.phone", read_only=True, default=""
+    )
 
     class Meta:
         model = DebtPayment
         fields = (
-            "id", "debt", "client_name", "amount", "payment_type",
+            "id", "debt", "client_name", "client_phone", "amount", "payment_type",
             "collected_by", "date", "client_uuid", "device_time", "note",
             "created_at",
         )
-        read_only_fields = ("id", "collected_by", "client_name", "created_at")
+        read_only_fields = ("id", "collected_by", "client_name", "client_phone", "created_at")
 
 
 class DebtPaymentCreateSerializer(serializers.Serializer):

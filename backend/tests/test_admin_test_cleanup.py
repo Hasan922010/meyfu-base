@@ -237,7 +237,7 @@ def test_sale_archive_restores_van_stock_debt_and_wallet(
     admin_user, distributor, warehouse, catalog,
 ):
     from apps.clients.models import Client
-    from apps.sales.models import Sale, SaleItem, Debt
+    from apps.sales.models import Debt, Sale, SaleItem
     from apps.wallet.services import wallet_apply
     from apps.warehouse.models import Loading, LoadingItem, VanStock
 

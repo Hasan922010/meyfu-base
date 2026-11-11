@@ -26,12 +26,14 @@ function saleContract(s: Sale, i: SaleItem, d: Debt): boolean {
   ];
   const itemDiscount: string | undefined = i.discount_percent;
   const debtSaleNumber: string | null = d.sale_number;
+  const debtClientPhone: string = d.client_phone;
   const pt: PaymentType = 'NAQD';
   const st: SaleStatus = 'COMPLETED';
   return (
     saleFields.length === 7 &&
     typeof itemDiscount !== 'number' &&
     debtSaleNumber !== undefined &&
+    typeof debtClientPhone === 'string' &&
     pt === 'NAQD' &&
     st === 'COMPLETED'
   );

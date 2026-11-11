@@ -131,6 +131,7 @@ class ClientOpeningRowResult:
     delta: str
     action: str  # CREATE_AND_DEBT | CREATE_CLIENT | ADD_DEBT | SKIP | ERROR
     errors: list[str] = field(default_factory=list)
+    client_phone: str = ""
 
 
 @dataclass
@@ -165,6 +166,7 @@ class _ExistingPlan:
     target_debt: Decimal | None
     assign_staff: User | None
     note: str
+    assign_phone: str = ""
 
 
 @dataclass
@@ -352,6 +354,11 @@ class _ClientIndex:
                 self._by_phone.setdefault(c.phone, []).append(c)
             self._by_name.setdefault(norm_key(c.name), []).append(c)
 
+    def bind_phone(self, client: Client, phone: str) -> None:
+        if phone and not client.phone:
+            client.phone = phone
+            self._by_phone.setdefault(phone, []).append(client)
+
     def match(
         self, *, name: str, phone: str, staff: User | None
     ) -> tuple[Client | None, str | None]:
@@ -382,24 +389,26 @@ class _ClientIndex:
                     )
                 return None, f"«{phone}» raqami bir nechta mijozga biriktirilgan."
 
+            # Telefon ko'rsatilgan, lekin bazada shu raqam topilmadi:
+            # agar bazada ayni shu nomli faqat 1 ta telefonsiz mijoz bo'lsa — bog'lanadi;
+            # boshqa raqamli (bir xil nomli) mijoz bo'lsa — yangi mijoz sifatida farqlanadi.
+            by_name = self._by_name.get(name_k, [])
+            if len(by_name) == 1 and not by_name[0].phone:
+                return by_name[0], None
+            return None, None
+
         by_name = self._by_name.get(name_k, [])
         if not by_name:
             return None, None
         if len(by_name) == 1:
-            only = by_name[0]
-            if phone and only.phone and only.phone != phone:
-                return (
-                    None,
-                    f"«{only.name}» bazada «{only.phone}» raqami bilan mavjud — telefonni tekshiring.",
-                )
-            return only, None
+            return by_name[0], None
         if staff is not None:
             by_staff = [c for c in by_name if c.assigned_to_id == staff.id]
             if len(by_staff) == 1:
                 return by_staff[0], None
         return (
             None,
-            f"«{name}» nomli bir nechta mijoz bor — telefon yoki mas'ul xodimni ko'rsating.",
+            f"«{name}» nomli bir nechta mijoz bor — qarzdorlikni farqlash uchun telefon raqamini ko'rsating.",
         )
 
 
@@ -457,6 +466,7 @@ def import_client_opening_balances(
         staff_label: str,
         errors: list[str],
         *,
+        client_phone: str = "",
         current: str = "0",
         target: str = "0",
     ) -> None:
@@ -470,6 +480,7 @@ def import_client_opening_balances(
                 delta="0",
                 action="ERROR",
                 errors=errors,
+                client_phone=client_phone,
             )
         )
 
@@ -521,6 +532,7 @@ def import_client_opening_balances(
                 name or "—",
                 staff_label,
                 row_errors,
+                client_phone=phone or raw_phone,
                 target=cell_text(raw_amount) or "0",
             )
             continue
@@ -532,6 +544,7 @@ def import_client_opening_balances(
                 name,
                 staff_label,
                 [match_err],
+                client_phone=phone,
                 target=str(amount_val if amount_val is not None else _ZERO),
             )
             continue
@@ -544,6 +557,7 @@ def import_client_opening_balances(
             effective_staff = matched.assigned_to or staff
             effective_staff_name = effective_staff.full_name if effective_staff else "—"
             target_str = str(amount_val if amount_val is not None else matched.current_debt)
+            report_phone = phone or matched.phone
 
             if cid in seen_existing:
                 add_error(
@@ -551,6 +565,7 @@ def import_client_opening_balances(
                     matched.name,
                     effective_staff_name,
                     ["Bu mijoz faylda takrorlangan."],
+                    client_phone=report_phone,
                     current=str(matched.current_debt),
                     target=target_str,
                 )
@@ -563,6 +578,7 @@ def import_client_opening_balances(
                     matched.name,
                     effective_staff_name,
                     ["Bloklangan mijozga boshlang'ich qarz kiritib bo'lmaydi."],
+                    client_phone=report_phone,
                     current=str(matched.current_debt),
                     target=target_str,
                 )
@@ -574,10 +590,15 @@ def import_client_opening_balances(
                     matched.name,
                     effective_staff_name,
                     [f"«{matched.name}» boshqa filialga tegishli, «{staff.full_name}» esa boshqa filial xodimi."],
+                    client_phone=report_phone,
                     current=str(matched.current_debt),
                     target=target_str,
                 )
                 continue
+
+            assign_phone = phone if (phone and not matched.phone) else ""
+            if assign_phone:
+                client_index.bind_phone(matched, assign_phone)
 
             report.existing_clients += 1
             current = matched.current_debt
@@ -595,11 +616,14 @@ def import_client_opening_balances(
                         target_debt=str(current),
                         delta="0",
                         action="SKIP",
+                        client_phone=report_phone,
                     )
                 )
-                if assign_staff is not None:
+                if assign_staff is not None or assign_phone:
                     existing_plans.append(
-                        _ExistingPlan(report_idx, matched.id, None, assign_staff, row_note)
+                        _ExistingPlan(
+                            report_idx, matched.id, None, assign_staff, row_note, assign_phone
+                        )
                     )
                 continue
 
@@ -618,6 +642,7 @@ def import_client_opening_balances(
                             f"Joriy qarz ({current}) kiritilgan summadan ({amount_val}) katta — "
                             "kamaytirish qarz to'lovi orqali kiritiladi."
                         ],
+                        client_phone=report_phone,
                     )
                 )
                 continue
@@ -634,6 +659,7 @@ def import_client_opening_balances(
                         target_debt=str(amount_val),
                         delta="0",
                         action="SKIP",
+                        client_phone=report_phone,
                     )
                 )
             else:
@@ -647,20 +673,25 @@ def import_client_opening_balances(
                         target_debt=str(amount_val),
                         delta=str(delta),
                         action="ADD_DEBT",
+                        client_phone=report_phone,
                     )
                 )
             existing_plans.append(
-                _ExistingPlan(report_idx, matched.id, amount_val, assign_staff, row_note)
+                _ExistingPlan(
+                    report_idx, matched.id, amount_val, assign_staff, row_note, assign_phone
+                )
             )
             continue
 
         # Bazada yo'q mijoz
         if not auto_create_missing:
+            missing_label = f"{name} ({phone})" if phone else name
             add_error(
                 number,
                 name,
                 staff_label,
-                [f"«{name}» bazada topilmadi."],
+                [f"«{missing_label}» bazada topilmadi."],
+                client_phone=phone,
                 target=str(amount_val if amount_val is not None else _ZERO),
             )
             continue
@@ -671,17 +702,23 @@ def import_client_opening_balances(
                 name,
                 staff_label,
                 [f"«{phone}» raqami faylda takrorlangan."],
+                client_phone=phone,
                 target=str(amount_val if amount_val is not None else _ZERO),
             )
             continue
 
-        dedup_new_key = f"{norm_key(name)}::{staff.id if staff else ''}"
+        dedup_new_key = (
+            f"{norm_key(name)}::{phone}"
+            if phone
+            else f"{norm_key(name)}::{staff.id if staff else ''}"
+        )
         if dedup_new_key in seen_new_keys:
             add_error(
                 number,
                 name,
                 staff_label,
                 ["Bu yangi mijoz faylda takrorlangan."],
+                client_phone=phone,
                 target=str(amount_val if amount_val is not None else _ZERO),
             )
             continue
@@ -698,6 +735,7 @@ def import_client_opening_balances(
                 name,
                 staff_label,
                 [f"«{route_name}» marshruti boshqa filialga tegishli, «{staff.full_name}» bilan mos emas."],
+                client_phone=phone,
                 target=str(amount_val if amount_val is not None else _ZERO),
             )
             continue
@@ -742,6 +780,7 @@ def import_client_opening_balances(
                 target_debt=str(target_val),
                 delta=str(target_val),
                 action=action,
+                client_phone=phone,
             )
         )
 
@@ -769,6 +808,9 @@ def import_client_opening_balances(
                         continue
 
                     update_fields: list[str] = []
+                    if not client.phone and plan.assign_phone:
+                        client.phone = plan.assign_phone
+                        update_fields.append("phone")
                     if client.assigned_to_id is None and plan.assign_staff is not None:
                         client.assigned_to = plan.assign_staff
                         update_fields.append("assigned_to")

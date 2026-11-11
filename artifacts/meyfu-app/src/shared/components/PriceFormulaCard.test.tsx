@@ -40,3 +40,4 @@ describe('PriceFormulaCard component', () => {
     expect(screen.getByText(/100 000/)).toBeInTheDocument();
   });
 });
+

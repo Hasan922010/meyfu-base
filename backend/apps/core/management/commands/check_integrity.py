@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand
 
-from apps.core.services.integrity import apply_integrity_fix, run_integrity_check
+from apps.core.services.integrity import apply_integrity_fixes, run_integrity_check
 
 
 class Command(BaseCommand):
@@ -53,8 +53,7 @@ class Command(BaseCommand):
                 )
 
         if opts["fix"]:
-            for m in result["mismatches"]:
-                apply_integrity_fix(m)
+            apply_integrity_fixes(result["mismatches"])
             self.stdout.write(self.style.SUCCESS(
                 f"{result['mismatch_count']} ta qiymat jurnalga moslandi."
             ))

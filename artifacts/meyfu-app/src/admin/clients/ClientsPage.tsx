@@ -264,7 +264,11 @@ export function ClientsPage(): ReactElement {
 
       <Modal
         open={statementOf !== null}
-        title={`Akt-sverka — ${statementOf?.name ?? ''}`}
+        title={
+          statementOf
+            ? `Akt-sverka — ${statementOf.name}${statementOf.phone ? ` (${statementOf.phone})` : ''}`
+            : 'Akt-sverka'
+        }
         size="xl"
         onClose={() => setStatementOf(null)}
       >

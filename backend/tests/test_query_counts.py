@@ -106,3 +106,55 @@ def test_dashboard_query_count_is_bounded(
     with django_assert_max_num_queries(40):
         resp = admin_api.get("/api/v1/reports/dashboard/")
     assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_integrity_check_post_query_count_is_bounded(
+    admin_api, van_stocked, catalog, distributor, django_assert_max_num_queries
+):
+    from apps.catalog.models import Product
+    from apps.wallet.models import DistributorWallet
+    from apps.warehouse.models import VanStock
+
+    # Ko'p tovar va VanStock farqlari bo'lsa ham N+1 so'rovga aylanmasin
+    for i in range(8):
+        p = Product.objects.create(
+            name=f"Int P{i}",
+            sku=f"INT-{i}",
+            category=catalog["category"],
+            unit=catalog["unit"],
+            cost_price="1000",
+            wholesale_price="1500",
+            retail_price="2000",
+            min_price="1200",
+        )
+        VanStock.objects.create(distributor=distributor, product=p, quantity=Decimal("5"))
+    DistributorWallet.objects.get_or_create(distributor=distributor, defaults={"balance": Decimal("1")})
+
+    with django_assert_max_num_queries(35):
+        resp = admin_api.post("/api/v1/system/integrity/")
+    assert resp.status_code == 200
+    assert resp.data["data"]["ok"] is True
+
+
+@pytest.mark.django_db
+def test_distributor_comparison_query_count_is_bounded(
+    auth_api, manager_api, van_stocked, django_assert_max_num_queries
+):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    for i in range(6):
+        User.objects.create_user(
+            phone=f"+99890666000{i}",
+            password="pass12345",
+            full_name=f"Solishtirma Dist {i}",
+            role="DISTRIBUTOR",
+        )
+    _make_sales(auth_api, van_stocked, 3)
+
+    with django_assert_max_num_queries(15):
+        resp = manager_api.get("/api/v1/reports/distributor-comparison/")
+    assert resp.status_code == 200
+    assert len(resp.data["data"]["rows"]) >= 7
+

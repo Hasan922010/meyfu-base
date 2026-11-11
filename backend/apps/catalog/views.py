@@ -1,9 +1,20 @@
 from __future__ import annotations
 
 import csv
+from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Case, CharField, DecimalField, F, Q, QuerySet, Sum, Value, When
+from django.db.models import (
+    Case,
+    CharField,
+    DecimalField,
+    F,
+    Q,
+    QuerySet,
+    Sum,
+    Value,
+    When,
+)
 from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -16,13 +27,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.audit import diff_fields, write_audit
-from apps.core.branch import branch_scope, ensure_same_branch, user_branch
+from apps.core.branch import branch_scope, ensure_same_branch, scope_queryset, user_branch
 from apps.core.exceptions import BusinessError
 from apps.core.models import AuditLog
 from apps.core.permissions import RolePermission
 from apps.core.response import ok
 from apps.core.viewsets import BaseModelViewSet
-from apps.reports.export import rows_to_xlsx
+from apps.reports.export import _safe_cell, rows_to_xlsx
 from apps.users.constants import Role
 from apps.warehouse.constants import MovementType
 from apps.warehouse.services import apply_movement
@@ -37,17 +48,17 @@ from .models import (
     ProductPrice,
     Unit,
 )
-from .pricing import PRICE_FIELDS, branch_price_map
+from .pricing import PRICE_FIELDS, branch_price_map, price_for
 from .serializers import (
     BranchPriceSerializer,
     BrandSerializer,
     CategorySerializer,
+    ProductBulkResultSerializer,
+    ProductBulkSerializer,
     ProductImagePatchSerializer,
     ProductImageSerializer,
     ProductImageUploadSerializer,
     ProductLiteSerializer,
-    ProductBulkResultSerializer,
-    ProductBulkSerializer,
     ProductPriceSerializer,
     ProductSerializer,
     UnitSerializer,
@@ -145,12 +156,16 @@ class ProductViewSet(BaseModelViewSet):
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
         "bulk": _CATALOG_WRITE,
+        "export": (*_CATALOG_WRITE, Role.ACCOUNTANT),
         "import_excel": _CATALOG_WRITE,
         "import_template": _CATALOG_WRITE,
     }
 
     def get_queryset(self):
+        branch = user_branch(self.request.user)
         stock_q = Q(stocks__is_deleted=False)
+        if branch is not None:
+            stock_q &= Q(stocks__warehouse=branch)
         return super().get_queryset().annotate(
             total_stock=Sum(
                 "stocks__quantity", filter=stock_q,
@@ -319,6 +334,8 @@ class ProductViewSet(BaseModelViewSet):
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request: Request) -> HttpResponse:
         queryset = self.filter_queryset(self.get_queryset())
+        branch = user_branch(request.user)
+        bmap = branch_price_map(branch) if branch is not None else {}
         response = HttpResponse(content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = 'attachment; filename="products.csv"'
         response.write("\ufeff")
@@ -329,12 +346,23 @@ class ProductViewSet(BaseModelViewSet):
             "total_stock", "reserved_stock", "available_stock", "stock_status",
         ])
         for product in queryset.iterator(chunk_size=500):
+            prices = price_for(product, branch, bmap)
             writer.writerow([
-                product.id, product.name, product.sku, product.barcode,
-                product.category.name, product.brand.name if product.brand_id else "",
-                product.is_active, product.cost_price, product.wholesale_price,
-                product.retail_price, product.min_price, product.total_stock,
-                product.reserved_stock, product.available_stock, product.stock_status,
+                _safe_cell(str(product.id)),
+                _safe_cell(product.name),
+                _safe_cell(product.sku),
+                _safe_cell(product.barcode),
+                _safe_cell(product.category.name),
+                _safe_cell(product.brand.name if product.brand_id else ""),
+                product.is_active,
+                product.cost_price,
+                prices.wholesale_price,
+                prices.retail_price,
+                prices.min_price,
+                product.total_stock,
+                product.reserved_stock,
+                product.available_stock,
+                _safe_cell(product.stock_status),
             ])
         return response
 
@@ -342,7 +370,13 @@ class ProductViewSet(BaseModelViewSet):
     @action(detail=True, methods=["get"])
     def stock(self, request: Request, pk: str | None = None) -> Response:
         product = self.get_object()
-        rows = product.stocks.select_related("warehouse").all()
+        rows = list(
+            scope_queryset(
+                product.stocks.select_related("warehouse").all(),
+                request.user,
+                "warehouse",
+            )
+        )
         data = [
             {
                 "warehouse_id": str(s.warehouse_id),
@@ -353,7 +387,7 @@ class ProductViewSet(BaseModelViewSet):
             }
             for s in rows
         ]
-        total = sum((s.quantity for s in rows), start=0)
+        total = sum((s.quantity for s in rows), Decimal("0"))
         return ok(
             {
                 "product_id": str(product.id),

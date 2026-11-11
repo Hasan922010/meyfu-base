@@ -26,12 +26,15 @@ from .serializers import (
 from .services import approve_expense, create_expense, reject_expense
 
 _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
-_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
+_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR, Role.WAREHOUSE)
 _ZERO = Decimal("0")
 
 
-def _is_distributor(user) -> bool:
-    return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
+def _is_self_only(user) -> bool:
+    return (
+        getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.WAREHOUSE)
+        and not user.is_superuser
+    )
 
 
 class ExpenseCategoryViewSet(BaseModelViewSet):
@@ -49,7 +52,7 @@ class DistributorExpenseViewSet(BaseModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     read_roles = _READ
-    write_roles = (Role.DISTRIBUTOR,)
+    write_roles = (Role.DISTRIBUTOR, Role.WAREHOUSE)
     action_roles = {
         "approve": _ADMIN,
         "reject": _ADMIN,
@@ -65,7 +68,7 @@ class DistributorExpenseViewSet(BaseModelViewSet):
         qs = DistributorExpense.objects.select_related(
             "distributor", "category", "approved_by"
         )
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
 

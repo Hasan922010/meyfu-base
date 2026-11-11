@@ -158,21 +158,34 @@ def product_movement_report(
     }
 
 
-def product_movement_rows_for_export(data: dict[str, Any]) -> list[dict[str, Any]]:
-    export_rows = []
+def product_movement_rows_for_export(data: dict[str, Any]) -> list[list[Any]]:
+    header = [
+        "Mahsulot",
+        "Artikul (SKU)",
+        "Kategoriya",
+        "Birlik",
+        "Sotilgan (pullik)",
+        "Sotuv summasi (so'm)",
+        "Bonus berilgan (bepul)",
+        "Bonus tannarxi (so'm)",
+        "Jami chiqim",
+        "O'rtacha narx",
+        "Sotuvlar soni",
+    ]
+    export_rows: list[list[Any]] = [header]
     for r in data.get("rows", []):
-        export_rows.append({
-            "Mahsulot": r["product_name"],
-            "Artikul (SKU)": r["product_sku"],
-            "Kategoriya": r["category_name"],
-            "Birlik": r["unit"],
-            "Sotilgan (pullik)": r["sold_qty"],
-            "Sotuv summasi (so'm)": r["sold_amount"],
-            "Bonus berilgan (bepul)": r["bonus_qty"],
-            "Bonus tannarxi (so'm)": r["bonus_cost"],
-            "Jami chiqim": r["total_qty"],
-            "O'rtacha narx": r["avg_price"],
-            "Sotuvlar soni": r["sales_count"],
-        })
+        export_rows.append([
+            r["product_name"],
+            r["product_sku"],
+            r["category_name"],
+            r["unit"],
+            Decimal(r["sold_qty"]),
+            Decimal(r["sold_amount"]),
+            Decimal(r["bonus_qty"]),
+            Decimal(r["bonus_cost"]),
+            Decimal(r["total_qty"]),
+            Decimal(r["avg_price"]),
+            int(r["sales_count"]),
+        ])
     return export_rows
 

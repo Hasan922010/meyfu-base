@@ -1,17 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
-import { useState, useRef, useEffect, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { notificationsApi } from '@/shared/api/notifications';
-import { dateShort } from '@/shared/lib/format';
 import { DataState } from '@/shared/components/DataState';
+import { dateShort } from '@/shared/lib/format';
 
 export function NotificationBell(): ReactElement {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [open, setOpen] = useState<boolean>(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const count = useQuery({
@@ -69,15 +68,16 @@ export function NotificationBell(): ReactElement {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden="true" />
           <div
             id="notification-dropdown"
-            ref={dropdownRef}
             className="fixed inset-x-4 top-16 z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80 dark:border-gray-800 dark:bg-gray-900"
             role="region"
             aria-label={t('notifications.title', 'Bildirishnomalar')}
           >
             <div className="flex items-center justify-between border-b border-gray-100 p-3 dark:border-gray-800">
-              <span className="text-sm font-semibold">{t('notifications.title', 'Bildirishnomalar')}</span>
+              <span className="text-sm font-semibold">
+                {t('notifications.title', 'Bildirishnomalar')}
+              </span>
               <button
-                className="text-xs text-brand hover:underline disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand rounded"
+                className="rounded text-xs text-brand hover:underline disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand"
                 onClick={() => markAll.mutate()}
                 disabled={markAll.isPending || unread === 0}
               >

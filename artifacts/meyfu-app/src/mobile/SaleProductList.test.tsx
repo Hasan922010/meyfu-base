@@ -97,3 +97,4 @@ describe('SaleProductList (UX M4)', () => {
     expect(screen.queryByText('Bio kukun 3kg')).not.toBeInTheDocument();
   });
 });
+

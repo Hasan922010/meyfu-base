@@ -62,13 +62,18 @@ export function NewOrderPage(): ReactElement {
     [cart],
   );
 
-  const filteredClients = useMemo(
-    () =>
-      clients.filter((c) =>
-        c.name.toLowerCase().includes(clientSearch.toLowerCase()),
-      ),
-    [clients, clientSearch],
-  );
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    return clients.filter((c) => {
+      if (!q) return true;
+      if (c.name.toLowerCase().includes(q)) return true;
+      if ((c.address || '').toLowerCase().includes(q)) return true;
+      const phone = (c.phone || '').toLowerCase();
+      if (phone.includes(q)) return true;
+      return qDigits.length >= 3 && phone.replace(/\D/g, '').includes(qDigits);
+    });
+  }, [clients, clientSearch]);
   const productQ = productSearch.trim().toLowerCase().replace(/[‘'’`]/g, "'");
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -205,7 +210,7 @@ export function NewOrderPage(): ReactElement {
           <input
             className="field"
             aria-label="Mijoz qidirish"
-            placeholder="Mijoz qidirish…"
+            placeholder="Mijoz qidirish (nomi, telefon, manzili)…"
             value={clientSearch}
             onChange={(e) => setClientSearch(e.target.value)}
           />
@@ -213,13 +218,25 @@ export function NewOrderPage(): ReactElement {
             {filteredClients.slice(0, 30).map((c) => (
               <li key={c.id}>
                 <button
-                  className="w-full rounded-xl bg-white p-3 text-left font-medium shadow-sm dark:bg-gray-900"
+                  className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left font-medium shadow-sm dark:bg-gray-900"
                   onClick={() => {
                     setClientId(c.id);
                     setStep('items');
                   }}
                 >
-                  {c.name}
+                  <div className="min-w-0 pr-2">
+                    <span className="block font-medium">{c.name}</span>
+                    {(c.phone || c.address) && (
+                      <span className="block truncate text-xs font-normal text-gray-500">
+                        {[c.phone, c.address].filter(Boolean).join(' · ')}
+                      </span>
+                    )}
+                  </div>
+                  {Number(c.current_debt) > 0 && (
+                    <span className="shrink-0 text-xs font-semibold text-danger">
+                      {money(c.current_debt)} qarz
+                    </span>
+                  )}
                 </button>
               </li>
             ))}

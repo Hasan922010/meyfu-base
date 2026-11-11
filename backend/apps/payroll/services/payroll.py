@@ -25,11 +25,16 @@ from apps.dayclose.models import DayClose
 from apps.expenses.constants import ExpenseStatus, PaymentSource
 from apps.expenses.models import DistributorExpense
 from apps.finance.constants import CompanyExpenseCategory
-from apps.sales.models import SaleItem
+from apps.sales.models import SaleItem, SaleReturnItem
 
-from ..constants import SETTING_AUTO_DEDUCT, CommissionRole, PayrollStatus
+from ..constants import (
+    SETTING_AUTO_DEDUCT,
+    CommissionRole,
+    CommissionScope,
+    PayrollStatus,
+)
 from ..models import Advance, Payroll, PayrollDetail
-from .commission import resolve_two_stage
+from .commission import load_active_rules, resolve_rule_percent, resolve_two_stage
 
 _ZERO = Decimal("0")
 _CENT = Decimal("0.01")
@@ -52,7 +57,7 @@ def month_bounds(any_day: date_cls) -> tuple[date_cls, date_cls]:
 
 
 def _commission_rows(distributor, date_from, date_to):
-    """Ikki bosqichli komissiya (v4 T1).
+    """Ikki bosqichli komissiya (v4 T1) + CommissionRule + qaytarishlar chegirishi.
 
     DELIVERY: `sale.distributor == distributor` bo'lgan qatorlar.
     ORDER:    zakazni shu odam olgan qatorlar —
@@ -61,6 +66,7 @@ def _commission_rows(distributor, date_from, date_to):
     Bir odam ham zakaz olib, ham yetkazgan bo'lsa — ikkala komissiyani ham oladi
     (ikkita alohida PayrollDetail).
     total_sales / total_profit — faqat DELIVERY tomonidan (ikki marta sanamaslik uchun).
+    Mijoz qaytargan tovarlar (`SaleReturnItem`) sotuv, foyda va komissiyadan ayriladi.
     """
     base_qs = (
         SaleItem.objects.filter(
@@ -72,6 +78,34 @@ def _commission_rows(distributor, date_from, date_to):
         .order_by("sale__date", "created_at")
     )
     order_pct, delivery_pct = resolve_two_stage(user=distributor)
+    rules = load_active_rules(date_from, date_to)
+    dist_scopes = (CommissionScope.DISTRIBUTOR,)
+
+    def _delivery_pct_for(product, on_date) -> Decimal:
+        rule_pct = resolve_rule_percent(
+            rules=rules,
+            distributor_id=distributor.id,
+            product=product,
+            on_date=on_date,
+        )
+        if rule_pct is not None:
+            return rule_pct
+        prod_pct = getattr(product, "delivery_commission_rate", _ZERO) or _ZERO
+        return prod_pct if prod_pct > _ZERO else delivery_pct
+
+    def _order_pct_for(product, on_date, *, has_separate_taker: bool) -> Decimal:
+        if has_separate_taker:
+            rule_pct = resolve_rule_percent(
+                rules=rules,
+                distributor_id=distributor.id,
+                product=product,
+                on_date=on_date,
+                scopes=dist_scopes,
+            )
+            if rule_pct is not None:
+                return rule_pct
+        prod_pct = getattr(product, "order_commission_rate", _ZERO) or _ZERO
+        return prod_pct if prod_pct > _ZERO else order_pct
 
     comp = PayrollComponents()
     details: list[PayrollDetail] = []
@@ -79,9 +113,7 @@ def _commission_rows(distributor, date_from, date_to):
     for item in base_qs.filter(sale__distributor=distributor):
         comp.total_sales += item.amount
         comp.total_profit += item.profit
-        # Mahsulot bo'yicha belgilangan tarqatish komissiyasi foizi, agar bo'sh/nol bo'lsa xodim/standart foizi
-        prod_delivery_pct = getattr(item.product, "delivery_commission_rate", _ZERO) or _ZERO
-        active_delivery_pct = prod_delivery_pct if prod_delivery_pct > _ZERO else delivery_pct
+        active_delivery_pct = _delivery_pct_for(item.product, item.sale.date)
         if active_delivery_pct <= _ZERO:
             continue
         commission = (item.amount * active_delivery_pct / Decimal("100")).quantize(_CENT)
@@ -99,9 +131,14 @@ def _commission_rows(distributor, date_from, date_to):
         | Q(sale__order__isnull=True, sale__distributor=distributor)
     )
     for item in order_items:
-        # Mahsulot bo'yicha belgilangan buyurtma komissiyasi foizi, agar bo'sh/nol bo'lsa xodim/standart foizi
-        prod_order_pct = getattr(item.product, "order_commission_rate", _ZERO) or _ZERO
-        active_order_pct = prod_order_pct if prod_order_pct > _ZERO else order_pct
+        separate_taker = bool(
+            item.sale.order_id
+            and item.sale.order.taken_by_id == distributor.id
+            and item.sale.distributor_id != distributor.id
+        )
+        active_order_pct = _order_pct_for(
+            item.product, item.sale.date, has_separate_taker=separate_taker
+        )
         if active_order_pct <= _ZERO:
             continue
         commission = (item.amount * active_order_pct / Decimal("100")).quantize(_CENT)
@@ -113,6 +150,75 @@ def _commission_rows(distributor, date_from, date_to):
                 base_amount=item.amount, commission_amount=commission,
             )
         )
+
+    # Mijoz qaytargan tovarlar: sotuv, foyda va komissiyadan chegiramiz
+    ret_qs = (
+        SaleReturnItem.objects.filter(
+            sale_return__date__gte=date_from,
+            sale_return__date__lte=date_to,
+        )
+        .filter(
+            Q(sale_return__sale__isnull=True)
+            | Q(sale_return__sale__status__in=_ACTIVE_SALE)
+        )
+        .select_related(
+            "product", "sale_return", "sale_return__sale", "sale_return__sale__order"
+        )
+        .prefetch_related("sale_return__sale__items")
+    )
+    min_rule_date = date_from
+    max_rule_date = date_to
+
+    def _return_rule_date(sr) -> date_cls:
+        return sr.sale.date if sr.sale_id else sr.date
+
+    def _ensure_rule_for_date(on_date: date_cls):
+        nonlocal rules, min_rule_date, max_rule_date
+        if on_date < min_rule_date or on_date > max_rule_date:
+            min_rule_date = min(min_rule_date, on_date)
+            max_rule_date = max(max_rule_date, on_date)
+            rules = load_active_rules(min_rule_date, max_rule_date)
+
+    for ret in ret_qs.filter(sale_return__distributor=distributor):
+        sr = ret.sale_return
+        ret_date = _return_rule_date(sr)
+        _ensure_rule_for_date(ret_date)
+        cost = ret.product.cost_price
+        if sr.sale_id:
+            matched_si = next(
+                (si for si in sr.sale.items.all() if si.product_id == ret.product_id),
+                None,
+            )
+            if matched_si is not None:
+                cost = matched_si.cost_price
+        comp.total_sales -= ret.amount
+        comp.total_profit -= (ret.amount - (ret.quantity * cost)).quantize(_CENT)
+        active_delivery_pct = _delivery_pct_for(ret.product, ret_date)
+        if active_delivery_pct > _ZERO:
+            ret_comm = (ret.amount * active_delivery_pct / Decimal("100")).quantize(_CENT)
+            comp.delivery_commission_amount -= ret_comm
+
+    order_returns = ret_qs.filter(
+        Q(sale_return__sale__order__taken_by=distributor)
+        | Q(sale_return__sale__isnull=True, sale_return__distributor=distributor)
+        | Q(sale_return__sale__order__isnull=True, sale_return__distributor=distributor)
+    )
+    for ret in order_returns:
+        sr = ret.sale_return
+        ret_date = _return_rule_date(sr)
+        _ensure_rule_for_date(ret_date)
+        separate_taker = bool(
+            sr.sale_id
+            and sr.sale.order_id
+            and sr.sale.order.taken_by_id == distributor.id
+            and sr.sale.distributor_id != distributor.id
+        )
+        active_order_pct = _order_pct_for(
+            ret.product, ret_date, has_separate_taker=separate_taker
+        )
+        if active_order_pct > _ZERO:
+            ret_comm = (ret.amount * active_order_pct / Decimal("100")).quantize(_CENT)
+            comp.order_commission_amount -= ret_comm
 
     comp.commission_amount = (
         comp.order_commission_amount + comp.delivery_commission_amount
@@ -292,17 +398,19 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
     from apps.core.branch import staff_branch
     from apps.finance.services.company_expense import create_company_expense
 
-    expense = create_company_expense(
-        category=CompanyExpenseCategory.SALARY,
-        amount=payroll.final_amount,
-        date=business_date(),
-        description=(
-            f"{payroll.distributor.full_name} · {payroll.period:%Y-%m}"
-        ),
-        paid_from_cash=paid_from_cash,
-        user=user,
-        branch=staff_branch(payroll.distributor),
-    )
+    expense = None
+    if payroll.final_amount > _ZERO:
+        expense = create_company_expense(
+            category=CompanyExpenseCategory.SALARY,
+            amount=payroll.final_amount,
+            date=business_date(),
+            description=(
+                f"{payroll.distributor.full_name} · {payroll.period:%Y-%m}"
+            ),
+            paid_from_cash=paid_from_cash,
+            user=user,
+            branch=staff_branch(payroll.distributor),
+        )
 
     payroll.status = PayrollStatus.PAID
     payroll.paid_at = timezone.now()
@@ -320,7 +428,7 @@ def pay_payroll(payroll: Payroll, *, user=None, paid_from_cash: bool = True) -> 
         user=user, action="payroll.paid", model_name="Payroll",
         object_id=str(payroll.id),
         changes={"final": str(payroll.final_amount),
-                 "company_expense": str(expense.id)},
+                 "company_expense": str(expense.id) if expense else None},
     )
     from apps.notifications.services import notify
 

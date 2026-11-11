@@ -597,3 +597,25 @@ def test_distributor_cannot_sell_to_unrouted_client_of_other_branch(world, catal
 
     assert resp.status_code == 409
     assert resp.data["error"]["code"] == "BRANCH_MISMATCH"
+
+
+def test_branch_manager_cannot_block_or_delete_senior_staff_in_same_branch(world):
+    senior = _user("+998903000099", "MANAGER", world["a"]["branch"], "Filialdagi Menejer")
+    admin_in_branch = _user("+998903000098", "SUPER_ADMIN", world["a"]["branch"], "Filialdagi Admin")
+    api = _login(world["a"]["manager"].phone)
+
+    for target in (senior, admin_in_branch):
+        assert api.post(f"/api/v1/users/{target.pk}/toggle_active/").status_code == 403
+        assert (
+            api.patch(
+                f"/api/v1/users/{target.pk}/", {"full_name": "O'zgargan"}, format="json"
+            ).status_code
+            == 403
+        )
+        assert api.delete(f"/api/v1/users/{target.pk}/").status_code == 403
+
+    senior.refresh_from_db()
+    admin_in_branch.refresh_from_db()
+    assert senior.is_active is True and senior.is_deleted is False
+    assert admin_in_branch.is_active is True and admin_in_branch.is_deleted is False
+

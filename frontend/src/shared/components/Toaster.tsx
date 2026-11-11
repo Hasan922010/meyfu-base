@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useCallback, useState, type PropsWithChildren, type ReactElement } from 'react';
 
 import { ToastContext, type Toast, type ToastKind } from '@/shared/lib/toast';
@@ -20,18 +21,34 @@ export function ToastProvider({ children }: PropsWithChildren): ReactElement {
     }, 6000);
   }, []);
 
+  const removeToast = (id: number) => {
+    setToasts((prev) => prev.filter((x) => x.id !== id));
+  };
+
   return (
     <ToastContext.Provider value={{ push }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 top-3 z-[100] mx-auto flex max-w-sm flex-col gap-2 px-3">
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 top-3 z-[100] mx-auto flex max-w-sm flex-col gap-2 px-3"
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto rounded-xl border-l-4 p-3 text-sm shadow-lg ${KIND_CLASS[t.kind]}`}
-            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+            role="alert"
+            className={`pointer-events-auto flex items-start justify-between gap-2 rounded-xl border-l-4 p-3 text-sm shadow-lg ${KIND_CLASS[t.kind]}`}
           >
-            <div className="font-semibold">{t.title}</div>
-            {t.body && <div className="mt-0.5 text-gray-500">{t.body}</div>}
+            <div>
+              <div className="font-semibold">{t.title}</div>
+              {t.body && <div className="mt-0.5 text-gray-500">{t.body}</div>}
+            </div>
+            <button
+              onClick={() => removeToast(t.id)}
+              className="shrink-0 rounded-md p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand dark:hover:text-gray-300"
+              aria-label="Yopish"
+            >
+              <X size={16} aria-hidden />
+            </button>
           </div>
         ))}
       </div>

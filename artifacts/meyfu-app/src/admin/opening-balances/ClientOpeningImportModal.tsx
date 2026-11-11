@@ -344,7 +344,12 @@ export function ClientOpeningImportModal({ open, onClose, onDone }: Props): Reac
                     {preview.rows.map((r) => (
                       <tr key={r.row} className="border-t border-gray-100 dark:border-gray-800">
                         <td className="p-2">{r.row}</td>
-                        <td className="p-2 font-medium">{r.client_name}</td>
+                        <td className="p-2 font-medium">
+                          <div>{r.client_name}</div>
+                          {r.client_phone && (
+                            <div className="text-[11px] font-normal text-gray-500">{r.client_phone}</div>
+                          )}
+                        </td>
                         <td className="p-2">{r.assigned_to_name || '—'}</td>
                         <td className="p-2 text-right">
                           {money(r.current_debt)} → {money(r.target_debt)}

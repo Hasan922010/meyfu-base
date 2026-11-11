@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export function useProductFilters() {
@@ -16,27 +17,30 @@ export function useProductFilters() {
   const retailPriceMin = params.get('retail_price_min') || '';
   const retailPriceMax = params.get('retail_price_max') || '';
 
-  const setFilter = (key: string, value: string) => {
-    setParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (value) {
-          next.set(key, value);
-        } else {
-          next.delete(key);
-        }
-        if (key !== 'page' && key !== 'page_size') {
-          next.set('page', '1');
-        }
-        return next;
-      },
-      { replace: true }
-    );
-  };
+  const setFilter = useCallback(
+    (key: string, value: string) => {
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (value) {
+            next.set(key, value);
+          } else {
+            next.delete(key);
+          }
+          if (key !== 'page' && key !== 'page_size') {
+            next.set('page', '1');
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setParams],
+  );
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setParams(new URLSearchParams(), { replace: true });
-  };
+  }, [setParams]);
 
   return {
     filters: {

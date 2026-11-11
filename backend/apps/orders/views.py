@@ -164,8 +164,14 @@ class OrderViewSet(BaseModelViewSet):
     @extend_schema(summary="Buyurtmani berish (DRAFT → PLACED)", request=None)
     @action(detail=True, methods=["post"])
     def place(self, request: Request, pk: str | None = None) -> Response:
-        return ok(OrderSerializer(place_order(self.get_object(),
-                                              user=request.user)).data)
+        order = self.get_object()
+        if _is_field_staff(request.user) and order.taken_by_id != request.user.id:
+            raise BusinessError(
+                message="Faqat o'zingiz olgan buyurtmani yubora olasiz.",
+                code="NOT_YOUR_ORDER",
+                status_code=403,
+            )
+        return ok(OrderSerializer(place_order(order, user=request.user)).data)
 
     @extend_schema(summary="Buyurtmani tasdiqlash", request=None)
     @action(detail=True, methods=["post"])
@@ -178,8 +184,7 @@ class OrderViewSet(BaseModelViewSet):
     def cancel(self, request: Request, pk: str | None = None) -> Response:
         order = self.get_object()
         user = request.user
-        role = getattr(user, "role", None)
-        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+        if _is_field_staff(user):
             if order.taken_by_id != user.id and order.assigned_to_id != user.id:
                 raise BusinessError(
                     message="Faqat o'zingiz olgan buyurtmani bekor qila olasiz.",
@@ -212,23 +217,29 @@ class OrderViewSet(BaseModelViewSet):
         order = self.get_object()
 
         by_id = {str(it.id): it for it in order.items.all()}
-        fulfill_lines = [
-            FulfillLine(
-                item=by_id[str(row["item"])],
-                delivered_quantity=row["delivered_quantity"],
-                price=row.get("price"),
+        fulfill_lines: list[FulfillLine] = []
+        for row in data["lines"]:
+            item = by_id.get(str(row["item"]))
+            if item is None:
+                raise BusinessError(
+                    message="Buyurtma qatori topilmadi.",
+                    code="ORDER_LINE_NOT_FOUND",
+                )
+            fulfill_lines.append(
+                FulfillLine(
+                    item=item,
+                    delivered_quantity=row["delivered_quantity"],
+                    price=row.get("price"),
+                )
             )
-            for row in data["lines"]
-            if str(row["item"]) in by_id
-        ]
         # `distributor` override faqat admin/managerga ruxsat etiladi. Tarqatuvchi
         # o'zgacha `distributor` yuborsa — e'tiborsiz qoldiriladi va o'ziga majburlanadi
         # (create() dagi `taken_by` bilan bir xil himoya): aks holda bir tarqatuvchi
         # boshqasining qoldig'i/hamyoni/qarzini manipulyatsiya qila oladi.
         distributor = None
-        if data.get("distributor") and not (_is_distributor(request.user) or getattr(request.user, "role", None) == Role.WAREHOUSE):
+        if data.get("distributor") and not _is_field_staff(request.user):
             distributor = User.objects.get(pk=data["distributor"])
-        elif _is_distributor(request.user) or getattr(request.user, "role", None) == Role.WAREHOUSE:
+        elif _is_field_staff(request.user):
             distributor = request.user
 
         result = fulfill_order(

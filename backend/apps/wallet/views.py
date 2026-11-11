@@ -30,12 +30,15 @@ from .services import (
 
 User = get_user_model()
 
-_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
+_READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR, Role.WAREHOUSE)
 _ZERO = Decimal("0")
 
 
-def _is_distributor(user) -> bool:
-    return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
+def _is_self_only(user) -> bool:
+    return (
+        getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.WAREHOUSE)
+        and not user.is_superuser
+    )
 
 
 def _pending_expense_total(distributor) -> Decimal:
@@ -64,7 +67,7 @@ class WalletViewSet(BaseReadOnlyViewSet):
 
     def get_queryset(self) -> QuerySet[DistributorWallet]:
         qs = super().get_queryset()
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
 
@@ -138,6 +141,6 @@ class WalletTransactionViewSet(BaseReadOnlyViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(wallet__distributor=self.request.user)
         return qs

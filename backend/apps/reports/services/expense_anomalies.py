@@ -50,7 +50,7 @@ def expense_anomalies(*, date_from: date_cls, date_to: date_cls, branch=None) ->
             continue
         amounts = [float(e.amount) for e in items]
         total, total_sq = sum(amounts), sum(a * a for a in amounts)
-        for exp, x in zip(items, amounts):
+        for exp, x in zip(items, amounts, strict=True):
             if not date_from <= exp.date <= date_to:
                 continue
             mean, std = _stats_without(total, total_sq, n, x)

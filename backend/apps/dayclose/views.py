@@ -38,6 +38,13 @@ _ADMIN = (Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR, Role.WAREHOUSE)
 
 
+def _is_self_only(user) -> bool:
+    return (
+        getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.WAREHOUSE)
+        and not user.is_superuser
+    )
+
+
 def _is_distributor(user) -> bool:
     return getattr(user, "role", None) == Role.DISTRIBUTOR and not user.is_superuser
 
@@ -71,7 +78,7 @@ class DayCloseViewSet(
         )
         if self.request.query_params.get("has_difference") == "true":
             qs = qs.exclude(Q(cash_difference=0) & Q(stock_difference_qty=0))
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
 
@@ -173,7 +180,7 @@ class CashHandoverViewSet(BaseReadOnlyViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        if _is_distributor(self.request.user):
+        if _is_self_only(self.request.user):
             return qs.filter(distributor=self.request.user)
         return qs
 

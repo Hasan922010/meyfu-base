@@ -1,24 +1,25 @@
 from decimal import Decimal
+
 import pytest
 from django.utils import timezone
 
-from apps.catalog.models import Product, Category, Unit
+from apps.catalog.models import Category, Product, Unit
 from apps.clients.models import Client, Route
 from apps.reports.services.price_variance import price_variance_report
 from apps.sales.constants import PaymentType
 from apps.sales.services.sale import SaleLine, create_sale
 from apps.users.constants import Role
 from apps.users.models import User
-from apps.warehouse.models import Warehouse, StockMovement
+from apps.warehouse.models import Warehouse
 
 
 @pytest.mark.django_db
 def test_price_variance_report_calculation():
-    admin = User.objects.create(phone="+998901234567", role=Role.SUPER_ADMIN.value)
+    User.objects.create(phone="+998901234567", role=Role.SUPER_ADMIN.value)
     dist = User.objects.create(phone="+998907654321", role=Role.DISTRIBUTOR.value, full_name="Sardor")
     cat = Category.objects.create(name="Sovunlar")
     unit = Unit.objects.create(name="dona", short_name="dona")
-    wh = Warehouse.objects.create(name="Markaziy ombor")
+    Warehouse.objects.create(name="Markaziy ombor")
 
     # P1: faqat tannarx belgilangan, qolgan narxlar 0
     p1 = Product.objects.create(

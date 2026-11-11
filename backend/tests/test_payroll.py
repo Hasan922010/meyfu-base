@@ -347,3 +347,70 @@ def test_edit_bonus_recalculates(admin_api, paid_distributor, van_stocked):
     )
     assert edit.status_code == 200, edit.data
     assert Decimal(edit.data["data"]["final_amount"]) == before + Decimal("200000")
+
+
+@pytest.mark.django_db
+def test_pay_payroll_with_non_positive_final_amount_marks_paid_without_expense(
+    paid_distributor, van_stocked, admin_user
+):
+    from apps.finance.models import CompanyExpense
+    from apps.payroll.services import approve_payroll, create_advance, pay_payroll
+
+    create_advance(
+        distributor=paid_distributor,
+        amount=Decimal("4000000"),
+        date=datetime.date(2026, 9, 5),
+        user=admin_user,
+    )
+    payroll = calculate_payroll(distributor=paid_distributor, period=PERIOD)
+    assert payroll.final_amount <= Decimal("0")
+
+    approve_payroll(payroll, user=admin_user)
+    before_expenses = CompanyExpense.objects.count()
+    pay_payroll(payroll, user=admin_user, paid_from_cash=True)
+
+    payroll.refresh_from_db()
+    assert payroll.status == PayrollStatus.PAID
+    assert payroll.company_expense is None
+    assert CompanyExpense.objects.count() == before_expenses
+
+
+@pytest.mark.django_db
+def test_commission_rule_and_sale_return_affect_payroll_and_360_card(
+    admin_api, paid_distributor, van_stocked
+):
+    from apps.sales.services.sale_return import ReturnLine, create_sale_return
+
+    product = van_stocked["product"]
+    # Mahsulot uchun maxsus 10% komissiya qoidasi
+    CommissionRule.objects.create(
+        scope=CommissionScope.PRODUCT,
+        target_id=product.id,
+        percent=Decimal("10"),
+        valid_from=PERIOD,
+    )
+    # 10 × 27 000 = 270 000 sotuv, 4 × 27 000 = 108 000 qaytarish -> sof 162 000 -> 10% = 16 200
+    sale = _make_sale(paid_distributor, van_stocked["client"], product, qty="10", price="27000")
+    create_sale_return(
+        distributor=paid_distributor,
+        client=van_stocked["client"],
+        reason="MUDDAT",
+        lines=[ReturnLine(product=product, quantity=Decimal("4"), price=Decimal("27000"))],
+        sale=sale,
+        date=SALE_DAY,
+        restock=True,
+    )
+
+    # 360 karta (ESTIMATE) va calculate_payroll bir xil raqam berishi kerak
+    card = admin_api.get(
+        f"/api/v1/reports/distributor/{paid_distributor.id}/full/"
+        f"?preset=custom&date_from=2026-09-01&date_to=2026-09-30"
+    )
+    assert card.status_code == 200, card.data
+    assert card.data["data"]["payroll"]["commission_earned"] == "16200.00"
+
+    payroll = calculate_payroll(distributor=paid_distributor, period=PERIOD)
+    assert payroll.total_sales == Decimal("162000.00")
+    assert payroll.delivery_commission_amount == Decimal("16200.00")
+    assert payroll.commission_amount == Decimal("16200.00")
+

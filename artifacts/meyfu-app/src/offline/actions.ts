@@ -116,9 +116,13 @@ export async function saveExpenseLocal(input: {
 export async function saveDebtPaymentLocal(input: {
   debt: string;
   client_name: string;
+  client_phone?: string;
   amount: number;
   payment_type: 'NAQD' | 'PLASTIK' | 'OTKAZMA';
 }): Promise<string> {
+  const clientLabel = input.client_phone
+    ? `${input.client_name} (${input.client_phone})`
+    : input.client_name;
   const uuid = await enqueue(
     'debt_payment',
     {
@@ -128,7 +132,7 @@ export async function saveDebtPaymentLocal(input: {
       date: todayISO(),
       device_time: new Date().toISOString(),
     },
-    `Qarz to'lovi · ${input.client_name} · ${input.amount.toLocaleString('ru-RU')} so'm`,
+    `Qarz to'lovi · ${clientLabel} · ${input.amount.toLocaleString('ru-RU')} so'm`,
   );
   void pushOutbox();
   return uuid;

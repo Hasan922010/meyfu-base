@@ -20,10 +20,10 @@ MeyFu is a distribution and sales management system for warehouse, field sales, 
 
 ## Where things live
 
-- `artifacts/meyfu-app/` — deployable React frontend
+- `frontend/` — canonical React application source (`frontend/src`, `frontend/public`), synced into `artifacts/meyfu-app/` via `bash scripts/sync-frontend.sh --sync`
+- `artifacts/meyfu-app/` — deployable Replit React workspace mirror (verify parity with `bash scripts/sync-frontend.sh --check`)
 - `backend/` — Django application, models, migrations, API, background tasks
 - `artifacts/api-server/` — Replit launch scripts for the Django API
-- `frontend/` — original imported frontend source retained as an upstream reference
 
 ## Architecture decisions
 
