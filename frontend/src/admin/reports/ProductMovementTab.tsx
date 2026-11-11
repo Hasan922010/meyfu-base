@@ -48,7 +48,7 @@ export function ProductMovementTab({ range }: Props): ReactElement {
   });
 
   const summary = query.data?.summary;
-  const rows = query.data?.rows ?? [];
+  const rows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();

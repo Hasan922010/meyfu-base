@@ -4,7 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const clientsApi = vi.hoisted(() => ({ list: vi.fn(), routes: vi.fn(), remove: vi.fn() }));
+const authApi = vi.hoisted(() => ({ staff: vi.fn() }));
 vi.mock('@/shared/api/clients', () => ({ clientsApi }));
+vi.mock('@/shared/api/users', () => ({ authApi }));
 vi.mock('@/shared/store/authStore', () => ({
   useAuthStore: (sel: (s: { user: { role: string } }) => unknown) =>
     sel({ user: { role: 'MANAGER' } }),
@@ -17,9 +19,19 @@ const page = <T,>(results: T[]) => ({ count: results.length, next: null, previou
 beforeEach(() => {
   vi.clearAllMocks();
   clientsApi.list.mockResolvedValue(
-    page([{ id: 'c1', name: 'UX Test', phone: '', route_name: '', debt_limit: '0', current_debt: '0', is_blocked: false }]),
+    page([{
+      id: 'c1',
+      name: 'UX Test',
+      phone: '',
+      assigned_to_name: 'Ali Agent',
+      route_name: '',
+      debt_limit: '0',
+      current_debt: '0',
+      is_blocked: false,
+    }]),
   );
   clientsApi.routes.mockResolvedValue(page([]));
+  authApi.staff.mockResolvedValue([{ id: 'u1', full_name: 'Ali Agent', role: 'DISTRIBUTOR' }]);
   clientsApi.remove.mockResolvedValue(undefined);
 });
 

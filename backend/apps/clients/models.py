@@ -70,6 +70,10 @@ class Client(BaseModel):
         Route, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="clients", verbose_name=_("marshrut"),
     )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="assigned_clients", verbose_name=_("mas'ul xodim"),
+    )
     # Marshrutdagi tashrif tartibi (v5: C4 — optimallashtirish yozadi, 0 — tartibsiz)
     route_order = models.PositiveIntegerField(
         _("marshrutdagi tartib"), default=0, db_default=0
@@ -102,6 +106,7 @@ class Client(BaseModel):
         ordering = ("name",)
         indexes = [
             models.Index(fields=["route", "name"]),
+            models.Index(fields=["assigned_to", "name"]),
             models.Index(fields=["is_blocked"]),
         ]
 
@@ -150,3 +155,64 @@ class ClientVisit(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.client.name} · {self.get_result_display()}"
+
+
+def own_clients_q(user, prefix: str = "") -> models.Q | None:
+    """Maydon xodimiga ko'rinadigan mijozlar filtri; rahbar/buxgalter uchun `None`.
+
+    - `assigned_to` belgilangan mijoz — faqat o'sha xodimga tegishli.
+    - `assigned_to` bo'sh (`None`) mijoz — eski marshrut qoidasiga ko'ra.
+    """
+    from apps.core.permissions import is_order_taker
+    from apps.users.constants import Role
+
+    if getattr(user, "is_superuser", False):
+        return None
+    role = getattr(user, "role", None)
+    assigned_key = f"{prefix}assigned_to"
+    assigned_null = f"{prefix}assigned_to__isnull"
+    if role == Role.DISTRIBUTOR:
+        return models.Q(**{assigned_key: user}) | (
+            models.Q(**{assigned_null: True})
+            & models.Q(**{f"{prefix}route__distributor": user})
+        )
+    if is_order_taker(user):
+        return models.Q(**{assigned_key: user}) | (
+            models.Q(**{assigned_null: True})
+            & models.Q(**{f"{prefix}route__order_taker": user})
+        )
+    if role == Role.WAREHOUSE:
+        return models.Q(**{assigned_key: user}) | models.Q(**{assigned_null: True})
+    return None
+
+
+def is_client_off_route(
+    user, client: Client, *, require_owner_if_unassigned: bool = False
+) -> bool:
+    """Xodim ushbu mijoz bilan ishlash huquqiga ega emasmi (`True` = ruxsat yo'q)?"""
+    from apps.users.constants import Role
+
+    if getattr(user, "is_superuser", False):
+        return False
+    role = getattr(user, "role", None)
+    if role not in (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE):
+        return False
+
+    assigned_id = getattr(client, "assigned_to_id", None)
+    if assigned_id is not None:
+        return assigned_id != user.id
+
+    if role == Role.WAREHOUSE:
+        return False
+
+    route_id = getattr(client, "route_id", None)
+    if role == Role.DISTRIBUTOR:
+        owner_id = client.route.distributor_id if route_id and client.route else None
+    else:
+        owner_id = client.route.order_taker_id if route_id and client.route else None
+        if owner_id is None:
+            return True if require_owner_if_unassigned else False
+
+    if require_owner_if_unassigned:
+        return owner_id != user.id
+    return owner_id is not None and owner_id != user.id

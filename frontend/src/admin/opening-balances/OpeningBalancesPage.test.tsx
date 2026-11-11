@@ -18,7 +18,10 @@ vi.mock('@/shared/api/clients', () => ({ clientsApi: emptyApi() }));
 vi.mock('@/shared/api/debts', () => ({ debtsApi: emptyApi() }));
 vi.mock('@/shared/api/finance', () => ({ walletApi: emptyApi() }));
 vi.mock('@/shared/api/finance2', () => ({ financeApi: emptyApi() }));
-vi.mock('@/shared/api/users', () => ({ staffApi: emptyApi() }));
+vi.mock('@/shared/api/users', () => ({
+  staffApi: emptyApi(),
+  authApi: { staff: () => Promise.resolve([]) },
+}));
 vi.mock('@/shared/api/warehouse', () => ({ warehouseApi: emptyApi() }));
 vi.mock('@/shared/api/opening', () => ({
   openingApi: { sheet: () => Promise.resolve([]), bulk: vi.fn() },
@@ -64,5 +67,18 @@ describe('OpeningBalancesPage — rolga qarab yozish (audit K3b)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Kassa' }));
     expect(await screen.findByText(/Faqat ko‘rish/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Saqlash' })).not.toBeInTheDocument();
+  });
+
+  it('Exceldan import tugmasi faqat Mijozlar bo‘limida va yozish huquqi borga chiqadi', async () => {
+    auth.role = 'MANAGER';
+    renderPage();
+
+    // Tovarlar tabida yo'q
+    expect(await screen.findByText(/omborni tanlang/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Exceldan import/i })).not.toBeInTheDocument();
+
+    // Mijozlar tabida chiqadi
+    fireEvent.click(screen.getByRole('button', { name: 'Mijozlar' }));
+    expect(await screen.findByRole('button', { name: /Exceldan import/i })).toBeInTheDocument();
   });
 });

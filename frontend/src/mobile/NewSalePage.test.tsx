@@ -184,27 +184,26 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
     fireEvent.click(payBtn);
 
     // 5. saveSaleLocal'ga bonus qatori 0 so'm va is_bonus: true bilan borganini tekshirish
-    await waitFor(() => {
-      expect(mockSaveSaleLocal).toHaveBeenCalledWith(
-        expect.objectContaining({
-          client: 'c1',
-          payment_type: 'NAQD',
-          lines: expect.arrayContaining([
-            expect.objectContaining({
-              product: 'p1',
-              quantity: 12,
-              price: 20000,
-              is_bonus: false,
-            }),
-            expect.objectContaining({
-              product: 'p1',
-              quantity: 1,
-              price: 0,
-              is_bonus: true,
-            }),
-          ]),
-        }),
-      );
+    await waitFor(() => expect(mockSaveSaleLocal).toHaveBeenCalledTimes(1));
+    const saved = mockSaveSaleLocal.mock.calls[0]?.[0] as {
+      client: string;
+      payment_type: string;
+      lines: Array<{ product: string; quantity: number; price: number; is_bonus?: boolean }>;
+    };
+    expect(saved.client).toBe('c1');
+    expect(saved.payment_type).toBe('NAQD');
+    expect(saved.lines).toHaveLength(2);
+    expect(saved.lines[0]).toMatchObject({
+      product: 'p1',
+      quantity: 12,
+      price: 20000,
+      is_bonus: false,
+    });
+    expect(saved.lines[1]).toMatchObject({
+      product: 'p1',
+      quantity: 1,
+      price: 0,
+      is_bonus: true,
     });
   });
 });

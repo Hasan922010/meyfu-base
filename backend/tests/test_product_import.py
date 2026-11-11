@@ -125,7 +125,124 @@ def test_distributor_cannot_import(auth_api):
 
 @pytest.mark.django_db
 def test_template_download(manager_api):
+    from openpyxl import load_workbook
+
     resp = manager_api.get("/api/v1/products/import-template/")
 
     assert resp.status_code == 200
     assert resp["Content-Type"].startswith("application/vnd.openxml")
+    wb = load_workbook(io.BytesIO(resp.content))
+    ws = wb.active
+    headers = [c for c in next(ws.iter_rows(values_only=True))]
+    assert "tannarx" in headers
+    assert "farqni kuzatish" in headers
+    assert "zakaz komissiyasi" in headers
+    assert "tarqatish komissiyasi" in headers
+    assert "bonus" in headers
+    assert "qadoq turi" in headers
+    assert "kam qoldiq" in headers
+    assert "faol" in headers
+    assert "optom narx" not in headers
+
+    # Shablonni to'g'ridan-to'g'ri import qilish ham to'liq ishlashi kerak
+    f = SimpleUploadedFile(
+        "mahsulot-shablon.xlsx",
+        resp.content,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    imp = manager_api.post(URL, {"file": f, "dry_run": "false"}, format="multipart")
+    assert imp.status_code == 200
+    data = imp.json()["data"]
+    assert data["errors"] == 0, data
+    assert data["created"] == 1
+    p = Product.objects.get(sku="ARL-3")
+    assert p.cost_price == Decimal("95000")
+    assert p.track_variance is False
+    assert p.order_commission_rate == Decimal("1")
+    assert p.delivery_commission_rate == Decimal("2")
+    assert p.has_bonus is True
+    assert p.bonus_trigger_qty == Decimal("10")
+    assert p.bonus_reward_qty == Decimal("1")
+    assert p.package_type == "qop"
+    assert p.pack_quantity == Decimal("4")
+    assert p.min_stock_alert == Decimal("10")
+    assert p.is_active is True
+
+    # Qayta import o'zgarishsiz SKIP qaytaradi
+    f2 = SimpleUploadedFile(
+        "mahsulot-shablon.xlsx",
+        resp.content,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    again = manager_api.post(URL, {"file": f2, "dry_run": "false"}, format="multipart")
+    assert again.json()["data"]["unchanged"] == 1
+
+
+@pytest.mark.django_db
+def test_bonus_product_sku_cross_reference_and_validation(admin_api):
+    header = [
+        "nomi", "artikul", "kategoriya", "birlik", "tannarx",
+        "bonus", "bonus sharti", "bonus soni", "bonus tovar", "faol",
+    ]
+    rows = [
+        header,
+        ["Katta Paket", "BIG-1", "Kukunlar", "dona", 50000, "ha", 5, 1, "GIFT-1", "yo'q"],
+        ["Sovg'a Sovun", "GIFT-1", "Sovun", "dona", 5000, "yo'q", 0, 0, "", "ha"],
+    ]
+    data = _post(admin_api, rows, dry_run=False).json()["data"]
+    assert data["errors"] == 0, data
+    assert data["created"] == 2
+    big = Product.objects.get(sku="BIG-1")
+    gift = Product.objects.get(sku="GIFT-1")
+    assert big.bonus_product_id == gift.id
+    assert big.is_active is False
+
+    # Noto'g'ri bonus sharti -> xato
+    bad_rows = [
+        header,
+        ["Xato Bonus", "ERR-B", "Kukunlar", "dona", 10000, "ha", 0, 1, "", "ha"],
+    ]
+    bad = _post(admin_api, bad_rows, dry_run=True).json()["data"]
+    assert bad["errors"] == 1
+
+
+@pytest.mark.django_db
+def test_product_import_bonus_clear_preserve_and_commissions(admin_api, manager_api):
+    # 1. Bonus tovarli mahsulot yaratish
+    create_header = [
+        "nomi", "artikul", "kategoriya", "birlik", "tannarx",
+        "zakaz komissiyasi", "tarqatish komissiyasi",
+        "bonus", "bonus sharti", "bonus soni", "bonus tovar",
+    ]
+    create_rows = [
+        create_header,
+        ["Sovg'a", "GFT-1", "Kukunlar", "dona", 5000, 1, 2, "yo'q", 0, 0, ""],
+        ["Asosiy", "MAIN-1", "Kukunlar", "dona", 20000, 1, 2, "ha", 5, 1, "GFT-1"],
+    ]
+    assert _post(admin_api, create_rows, dry_run=False).json()["data"]["errors"] == 0
+    main = Product.objects.get(sku="MAIN-1")
+    gift = Product.objects.get(sku="GFT-1")
+    assert main.bonus_product_id == gift.id
+
+    # 2. Bonus tovar ustunisiz yangilash -> bonus_product saqlanib qoladi
+    no_bonus_col = [["nomi", "artikul"], ["Asosiy Yangi", "MAIN-1"]]
+    assert _post(admin_api, no_bonus_col, dry_run=False).json()["data"]["updated"] == 1
+    main.refresh_from_db()
+    assert main.bonus_product_id == gift.id
+
+    # 3. Bonus tovar ustunini bo'sh qoldirish -> o'z mahsulotiga (None) qaytadi
+    clear_bonus_col = [["nomi", "artikul", "bonus tovar"], ["Asosiy Yangi", "MAIN-1", ""]]
+    assert _post(admin_api, clear_bonus_col, dry_run=False).json()["data"]["updated"] == 1
+    main.refresh_from_db()
+    assert main.bonus_product_id is None
+
+    # 4. Komissiya foizini SUPER_ADMIN o'zgartira oladi, MANAGER esa rad etiladi
+    comm_rows = [
+        ["nomi", "artikul", "zakaz komissiyasi", "tarqatish komissiyasi"],
+        ["Asosiy Yangi", "MAIN-1", 3.5, 4.5],
+    ]
+    assert _post(manager_api, comm_rows, dry_run=True).json()["data"]["errors"] == 1
+    assert _post(admin_api, comm_rows, dry_run=False).json()["data"]["updated"] == 1
+    main.refresh_from_db()
+    assert main.order_commission_rate == Decimal("3.50")
+    assert main.delivery_commission_rate == Decimal("4.50")

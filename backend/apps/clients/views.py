@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from django.db.models import Count, Q, QuerySet
 from django.http import HttpResponse
 from django.utils import timezone
@@ -7,6 +9,7 @@ from django.utils.dateparse import parse_date, parse_datetime
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -27,9 +30,22 @@ from apps.core.permissions import RolePermission, is_order_taker
 from apps.core.response import ok
 from apps.core.serializers import OpeningBulkSerializer, OpeningSheetRowSerializer
 from apps.core.viewsets import BaseModelViewSet, BranchScopedMixin, EnvelopeResponseMixin
+from apps.reports.export import rows_to_xlsx
 from apps.users.constants import Role
 
-from .models import Client, ClientVisit, Route
+from .models import (
+    Client,
+    ClientVisit,
+    Route,
+    is_client_off_route,
+    own_clients_q,
+)
+from .opening_import import (
+    TEMPLATE_HEADER as CLIENT_OPENING_HEADER,
+    TEMPLATE_SAMPLE as CLIENT_OPENING_SAMPLE,
+    import_client_opening_balances,
+    inspect_client_opening_excel,
+)
 from .route_optimize import apply_route_order, optimize_route
 from .serializers import (
     ClientLiteSerializer,
@@ -40,11 +56,12 @@ from .serializers import (
 )
 from .statement import client_statement, statement_pdf
 
+_XLSX_CT = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
 _MANAGE = (Role.MANAGER, Role.SUPER_ADMIN)
 _READ = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.DISTRIBUTOR)
-# Zakaz oluvchi — faqat marshrut va mijozlarni o'qiydi (tashrif/yozish yo'q)
-_CLIENTS_READ = (*_READ, Role.ORDER_TAKER)
-_CLIENTS_CREATE = (*_MANAGE, Role.DISTRIBUTOR, Role.ORDER_TAKER)
+_CLIENTS_READ = (*_READ, Role.ORDER_TAKER, Role.WAREHOUSE)
+_CLIENTS_CREATE = (*_MANAGE, Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE)
 
 
 def _is_distributor(user) -> bool:
@@ -149,66 +166,110 @@ class RouteViewSet(BaseModelViewSet):
         return ok(self.get_serializer(qs, many=True).data)
 
 
-_AUDITED_CLIENT_FIELDS = ("is_blocked", "debt_limit", "branch", "route")
+_AUDITED_CLIENT_FIELDS = ("is_blocked", "debt_limit", "branch", "route", "assigned_to")
 
 
-_CLIENTS_WRITE = (*_MANAGE, Role.DISTRIBUTOR, Role.ORDER_TAKER)
+_CLIENTS_WRITE = (*_MANAGE, Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE)
 
 
 class ClientViewSet(BaseModelViewSet):
     serializer_class = ClientSerializer
     write_roles = _CLIENTS_WRITE
     read_roles = _CLIENTS_READ
-    filterset_fields = ("route", "client_type", "is_blocked")
-    search_fields = ("name", "owner_name", "phone", "phone2", "inn")
+    filterset_fields = ("route", "assigned_to", "client_type", "is_blocked")
+    search_fields = ("name", "owner_name", "phone", "phone2", "inn", "assigned_to__full_name")
     # Admin jadvalidagi har bir ustun (UI: shared/table)
     ordering_fields = (
-        "name", "owner_name", "phone", "route__name", "route_order", "current_debt",
-        "debt_limit", "is_blocked", "created_at",
+        "name", "owner_name", "phone", "route__name", "assigned_to", "assigned_to__full_name",
+        "route_order", "current_debt", "debt_limit", "is_blocked", "created_at",
     )
     action_roles = {
         "create": _CLIENTS_CREATE,
         "opening_balance": (*_MANAGE, Role.ACCOUNTANT),
         "opening_sheet": (*_MANAGE, Role.ACCOUNTANT),
         "opening_balance_bulk": (*_MANAGE, Role.ACCOUNTANT),
+        "opening_import_template": _MANAGE,
+        "opening_balance_import": _MANAGE,
         "statement": _CLIENTS_READ,
     }
     branch_lookup = "branch"
 
     def get_queryset(self) -> QuerySet[Client]:
-        qs = Client.objects.select_related("route", "branch")
-        own = _own_routes(self.request.user, prefix="route__")
+        qs = Client.objects.select_related("route", "branch", "assigned_to")
+        own = own_clients_q(self.request.user)
         return qs.filter(own) if own is not None else qs
 
     def _save_in_branch(self, serializer, **extra) -> None:
-        """Mijoz filiali = marshrut filiali; filial xodimi uchun — o'z filiali."""
+        """Mijoz filiali = marshrut/xodim filiali; filial xodimi uchun — o'z filiali."""
+        from rest_framework.exceptions import ValidationError
+
         user = self.request.user
-        route = serializer.validated_data.get(
-            "route", getattr(serializer.instance, "route", None)
+        data = serializer.validated_data
+        route = data.get("route", getattr(serializer.instance, "route", None))
+        assigned_to = data.get(
+            "assigned_to", getattr(serializer.instance, "assigned_to", None)
         )
+        r_branch = route.branch if route is not None else None
+        s_branch = staff_branch(assigned_to)
+
         if branch_scope(user) is not None:
             if route is not None:
                 ensure_same_branch(user, route.branch_id, "route")
+            if assigned_to is not None:
+                ensure_same_branch(user, _staff_branch_id(assigned_to), "assigned_to")
             extra["branch"] = user_branch(user)
-        elif route is not None and "branch" not in serializer.validated_data:
-            extra["branch"] = route.branch
+        else:
+            if r_branch is not None and s_branch is not None and r_branch.pk != s_branch.pk:
+                raise ValidationError(
+                    {"assigned_to": "Mas'ul xodim va marshrut bir xil filialda bo'lishi kerak."}
+                )
+            target_branch = (
+                data["branch"]
+                if "branch" in data
+                else getattr(serializer.instance, "branch", None)
+            )
+            derived = r_branch or s_branch
+            if "branch" in data:
+                t_id = target_branch.pk if target_branch is not None else None
+                if r_branch is not None and r_branch.pk != t_id:
+                    raise ValidationError(
+                        {"route": "Marshrut tanlangan filialga tegishli emas."}
+                    )
+                if s_branch is not None and s_branch.pk != t_id:
+                    raise ValidationError(
+                        {"assigned_to": "Mas'ul xodim tanlangan filialga tegishli emas."}
+                    )
+            elif target_branch is not None:
+                if r_branch is not None and r_branch.pk != target_branch.pk:
+                    raise ValidationError(
+                        {"route": "Marshrut mijoz filialiga tegishli emas."}
+                    )
+                if s_branch is not None and s_branch.pk != target_branch.pk:
+                    raise ValidationError(
+                        {"assigned_to": "Mas'ul xodim mijoz filialiga tegishli emas."}
+                    )
+            elif derived is not None:
+                extra["branch"] = derived
         serializer.save(**extra)
 
     def perform_create(self, serializer) -> None:
         user = self.request.user
         role = getattr(user, "role", None)
-        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE) and not user.is_superuser:
+            assigned_to = serializer.validated_data.get("assigned_to")
+            if assigned_to is not None and assigned_to != user:
+                raise BusinessError(
+                    message="Faqat o'zingizga biriktirilgan mijoz yaratishingiz mumkin.",
+                    code="PERMISSION_DENIED",
+                )
+            if assigned_to is None:
+                serializer.validated_data["assigned_to"] = user
             route = serializer.validated_data.get("route")
             if route is None:
                 own_filter = _own_routes(user)
                 own_qs = Route.objects.filter(own_filter, is_active=True) if own_filter else Route.objects.none()
                 if own_qs.count() == 1:
                     serializer.validated_data["route"] = own_qs.first()
-                else:
-                    raise BusinessError(
-                        message="Marshrutingizni tanlang.",
-                        code="ROUTE_REQUIRED",
-                    )
             else:
                 if role == Role.DISTRIBUTOR and route.distributor_id != user.id:
                     raise BusinessError(
@@ -225,21 +286,20 @@ class ClientViewSet(BaseModelViewSet):
     def perform_update(self, serializer) -> None:
         user = self.request.user
         role = getattr(user, "role", None)
-        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+        if role in (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE) and not user.is_superuser:
             instance = serializer.instance
-            if role == Role.DISTRIBUTOR and (not instance.route or instance.route.distributor_id != user.id):
+            forbidden = (
+                instance.assigned_to_id != user.id
+                if role == Role.WAREHOUSE
+                else is_client_off_route(user, instance, require_owner_if_unassigned=True)
+            )
+            if forbidden:
                 raise BusinessError(
-                    message="Faqat o'zingizga biriktirilgan marshrutdagi mijozni tahrirlashingiz mumkin.",
+                    message="Faqat o'zingizga biriktirilgan mijozni tahrirlashingiz mumkin.",
                     code="PERMISSION_DENIED",
                     status_code=403,
                 )
-            if role == Role.ORDER_TAKER and (not instance.route or instance.route.order_taker_id != user.id):
-                raise BusinessError(
-                    message="Faqat o'zingizga biriktirilgan marshrutdagi mijozni tahrirlashingiz mumkin.",
-                    code="PERMISSION_DENIED",
-                    status_code=403,
-                )
-            for field in ("debt_limit", "is_blocked", "branch", "route"):
+            for field in ("debt_limit", "is_blocked", "branch", "route", "assigned_to"):
                 if field in serializer.validated_data and serializer.validated_data[field] != getattr(instance, field):
                     raise BusinessError(
                         message=f"{field} maydonini o'zgartirishga ruxsat yo'q.",
@@ -256,7 +316,7 @@ class ClientViewSet(BaseModelViewSet):
 
     def perform_destroy(self, instance) -> None:
         user = self.request.user
-        if getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.ORDER_TAKER) and not user.is_superuser:
+        if getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE) and not user.is_superuser:
             raise BusinessError(
                 message="Mijozni o'chirishga ruxsat yo'q.",
                 code="PERMISSION_DENIED",
@@ -367,6 +427,83 @@ class ClientViewSet(BaseModelViewSet):
         )
         return ok(DebtSerializer(debt).data, status_code=201)
 
+    @extend_schema(summary="Mijoz boshlang'ich qarzi importi uchun Excel shablon", responses={200: bytes})
+    @action(detail=False, methods=["get"], url_path="opening-import-template")
+    def opening_import_template(self, request: Request) -> HttpResponse:
+        content = rows_to_xlsx(
+            [CLIENT_OPENING_HEADER, CLIENT_OPENING_SAMPLE],
+            sheet_name="Mijozlar",
+        )
+        response = HttpResponse(content, content_type=_XLSX_CT)
+        response["Content-Disposition"] = 'attachment; filename="mijoz-boshlangich-qarz-shablon.xlsx"'
+        return response
+
+    @extend_schema(
+        summary="Mijozlar boshlang'ich qarzini Excel'dan ustun moslab import qilish",
+        request={
+            "multipart/form-data": {
+                "type": "object",
+                "properties": {
+                    "file": {"type": "string", "format": "binary"},
+                    "mode": {"type": "string"},
+                    "mapping": {"type": "string"},
+                    "default_assigned_to": {"type": "string"},
+                    "auto_create_missing": {"type": "boolean"},
+                    "note": {"type": "string"},
+                    "dry_run": {"type": "boolean"},
+                },
+            }
+        },
+        responses={200: dict},
+    )
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="opening-balance/import",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def opening_balance_import(self, request: Request) -> Response:
+        upload = request.FILES.get("file")
+        if upload is None:
+            raise BusinessError(message="Excel faylni tanlang.", code="FILE_REQUIRED")
+
+        mode = str(request.data.get("mode", "")).strip().lower()
+        raw_mapping = request.data.get("mapping")
+        if mode == "inspect" or not raw_mapping:
+            return ok(inspect_client_opening_excel(upload))
+
+        if isinstance(raw_mapping, str):
+            try:
+                mapping = json.loads(raw_mapping)
+            except json.JSONDecodeError as exc:
+                raise BusinessError(
+                    message="Ustunlar mosligi JSON formatda bo'lishi kerak.",
+                    code="INVALID_MAPPING",
+                ) from exc
+        elif isinstance(raw_mapping, dict):
+            mapping = raw_mapping
+        else:
+            raise BusinessError(message="Ustunlar mosligi noto'g'ri.", code="INVALID_MAPPING")
+
+        dry_run = str(request.data.get("dry_run", "true")).lower() in ("1", "true", "yes")
+        auto_create_missing = str(
+            request.data.get("auto_create_missing", "true")
+        ).lower() in ("1", "true", "yes")
+        default_assigned_to = str(request.data.get("default_assigned_to") or "").strip() or None
+        note = str(request.data.get("note") or "").strip()
+
+        report = import_client_opening_balances(
+            upload,
+            mapping=mapping,
+            default_assigned_to_id=default_assigned_to,
+            auto_create_missing=auto_create_missing,
+            note=note,
+            user=request.user,
+            branch=acting_branch(request.user),
+            dry_run=dry_run,
+        )
+        return ok(report.as_dict())
+
 
 class ClientVisitViewSet(
     BranchScopedMixin,
@@ -378,7 +515,7 @@ class ClientVisitViewSet(
     serializer_class = ClientVisitSerializer
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _CLIENTS_READ
-    write_roles = (Role.DISTRIBUTOR, Role.ORDER_TAKER)
+    write_roles = (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE)
     branch_lookup = "distributor__warehouse"
     filterset_fields = ("client", "result")
     ordering = ("-checked_in_at",)
@@ -386,7 +523,7 @@ class ClientVisitViewSet(
     def get_queryset(self) -> QuerySet[ClientVisit]:
         qs = ClientVisit.objects.select_related("client", "distributor")
         user = self.request.user
-        if _is_distributor(user) or is_order_taker(user):
+        if getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE) and not user.is_superuser:
             return qs.filter(distributor=user)
         return qs
 
@@ -395,21 +532,12 @@ class ClientVisitViewSet(
         user = self.request.user
         from apps.sales.services.sale import ensure_client_in_scope
         ensure_client_in_scope(user, client)
-        if _is_distributor(user) and (
-            client.route_id is None
-            or client.route.distributor_id != user.id
+        role = getattr(user, "role", None)
+        if is_client_off_route(
+            user, client, require_owner_if_unassigned=(role != Role.WAREHOUSE)
         ):
             raise BusinessError(
-                message="Bu mijoz sizning marshrutingizda emas.",
-                code="CLIENT_NOT_ON_ROUTE",
-                status_code=403,
-            )
-        if is_order_taker(user) and (
-            client.route_id is None
-            or client.route.order_taker_id != user.id
-        ):
-            raise BusinessError(
-                message="Bu mijoz sizning marshrutingizda emas.",
+                message="Bu mijoz sizning mijozingiz yoki marshrutingizda emas.",
                 code="CLIENT_NOT_ON_ROUTE",
                 status_code=403,
             )
@@ -422,7 +550,7 @@ class ClientVisitViewSet(
 
 
 class ClientSyncView(APIView):
-    """Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z marshruti."""
+    """Offline mijoz delta (CLAUDE.md 4.1, 10). Maydon xodimi — faqat o'z mijozi/marshruti."""
 
     permission_classes = [IsAuthenticated, RolePermission]
     read_roles = _CLIENTS_READ
@@ -434,7 +562,7 @@ class ClientSyncView(APIView):
     )
     def get(self, request: Request) -> Response:
         qs = scope_queryset(Client.all_objects.all(), request.user, "branch")
-        own = _own_routes(request.user, prefix="route__")
+        own = own_clients_q(request.user)
         if own is not None:
             qs = qs.filter(own)
 

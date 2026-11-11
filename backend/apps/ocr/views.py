@@ -203,7 +203,15 @@ class ReceiptScanView(EnvelopeResponseMixin, viewsets.ViewSet):
 
     @extend_schema(request=ReceiptScanSerializer, responses={200: dict})
     def create(self, request: Request) -> Response:
-        if hasattr(request.user, "has_app_permission") and not request.user.has_app_permission("can_scan_invoices"):
+        user = request.user
+        if (
+            getattr(user, "role", None) != Role.ACCOUNTANT
+            and hasattr(user, "has_app_permission")
+            and not (
+                user.has_app_permission("can_record_expenses")
+                or user.has_app_permission("can_scan_invoices")
+            )
+        ):
             raise BusinessError(
                 message="Sizda chek/hujjatlarni skanerlash huquqi yo'q.",
                 code="INVOICE_SCAN_FORBIDDEN",

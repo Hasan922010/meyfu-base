@@ -7,6 +7,7 @@ import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
 import { Modal } from '@/shared/components/Modal';
 import { useToast } from '@/shared/lib/toast';
+import { useAuthStore } from '@/shared/store/authStore';
 import type { Client, ClientInput, Route } from '@/shared/types/clients';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 export function NewClientModal({ open, onClose, onCreated }: Props): ReactElement {
   const qc = useQueryClient();
   const toast = useToast();
+  const currentUser = useAuthStore((s) => s.user);
 
   const [name, setName] = useState('');
   const [ownerName, setOwnerName] = useState('');
@@ -117,10 +119,6 @@ export function NewClientModal({ open, onClose, onCreated }: Props): ReactElemen
       toast.push({ kind: 'danger', title: 'Telefon raqamini kiriting' });
       return;
     }
-    if (!routeId) {
-      toast.push({ kind: 'danger', title: 'Marshrutni tanlang' });
-      return;
-    }
 
     const payload: ClientInput = {
       name: name.trim(),
@@ -128,7 +126,8 @@ export function NewClientModal({ open, onClose, onCreated }: Props): ReactElemen
       phone: phone.trim(),
       phone2: phone2.trim(),
       address: address.trim(),
-      route: routeId,
+      route: routeId || null,
+      assigned_to: currentUser?.id ?? null,
       latitude: coords ? coords.lat : null,
       longitude: coords ? coords.lng : null,
     };
@@ -190,15 +189,20 @@ export function NewClientModal({ open, onClose, onCreated }: Props): ReactElemen
           </label>
         </div>
 
+        {currentUser && (
+          <div className="rounded-lg bg-brand/5 px-3 py-2 text-xs text-gray-700 dark:text-gray-300">
+            Mas'ul xodim (mijoz egasi): <b>{currentUser.full_name}</b>
+          </div>
+        )}
+
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Marshrut *</span>
+          <span className="text-sm font-medium">Marshrut</span>
           <select
             className="field"
             value={routeId}
             onChange={(e) => setRouteId(e.target.value)}
-            required
           >
-            <option value="">— Marshrutni tanlang —</option>
+            <option value="">— Marshrut (ixtiyoriy) —</option>
             {routes.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}

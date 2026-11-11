@@ -48,6 +48,9 @@ class ClientSerializer(serializers.ModelSerializer):
     route_name = serializers.CharField(
         source="route.name", read_only=True, default=None
     )
+    assigned_to_name = serializers.CharField(
+        source="assigned_to.full_name", read_only=True, default=None
+    )
     client_type_display = serializers.CharField(
         source="get_client_type_display", read_only=True
     )
@@ -61,6 +64,7 @@ class ClientSerializer(serializers.ModelSerializer):
         fields = (
             "id", "name", "owner_name", "phone", "phone2", "address",
             "latitude", "longitude", "route", "route_name", "route_order",
+            "assigned_to", "assigned_to_name",
             "client_type", "client_type_display",
             "debt_limit", "current_debt", "debt_available",
             "inn", "photo", "is_blocked", "note", "branch", "branch_name",
@@ -106,7 +110,7 @@ class ClientLiteSerializer(serializers.ModelSerializer):
         model = Client
         fields = (
             "id", "name", "owner_name", "phone", "address",
-            "latitude", "longitude", "route", "client_type",
+            "latitude", "longitude", "route", "assigned_to", "client_type",
             "debt_limit", "current_debt", "is_blocked",
             "is_deleted", "updated_at",
         )

@@ -13,6 +13,7 @@ import { warehouseApi } from '@/shared/api/warehouse';
 import { assertApiShape } from '@/shared/lib/validate';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { ApiSuccess } from '@/shared/types/api';
+import type { Client } from '@/shared/types/clients';
 
 import { db, getMeta, setMeta, type OutboxOp } from './db';
 import {
@@ -64,21 +65,29 @@ export async function pullReferenceData(): Promise<void> {
     })),
   );
 
-  const clients = await clientsApi.list({ page_size: 500 });
-  assertApiShape(clientListShape, clients.results, 'sync/clients');
-  await db.clients.bulkPut(
-    clients.results.map((c) => ({
-      id: c.id,
-      name: c.name,
-      owner_name: c.owner_name,
-      phone: c.phone,
-      address: c.address,
-      route: c.route,
-      debt_limit: c.debt_limit,
-      current_debt: c.current_debt,
-      is_blocked: c.is_blocked,
-    })),
-  );
+  const allClients: Client[] = [];
+  for (let page = 1; ; page += 1) {
+    const clients = await clientsApi.list({ page, page_size: 500 });
+    assertApiShape(clientListShape, clients.results, 'sync/clients');
+    allClients.push(...clients.results);
+    if (!clients.next) break;
+  }
+  await db.transaction('rw', db.clients, async () => {
+    await db.clients.clear();
+    await db.clients.bulkPut(
+      allClients.map((c) => ({
+        id: c.id,
+        name: c.name,
+        owner_name: c.owner_name,
+        phone: c.phone,
+        address: c.address,
+        route: c.route,
+        debt_limit: c.debt_limit,
+        current_debt: c.current_debt,
+        is_blocked: c.is_blocked,
+      })),
+    );
+  });
 
   // Zakaz oluvchida mashina qoldig'i va yetkazish yo'q (backend 403 qaytaradi)
   if (useAuthStore.getState().user?.role !== 'ORDER_TAKER') {

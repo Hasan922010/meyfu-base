@@ -112,21 +112,16 @@ class OrderViewSet(BaseModelViewSet):
             )
 
         client = Client.objects.select_related("route").get(pk=data["client"])
-        # Zakaz oluvchi va tarqatuvchi faqat o'z marshruti mijozlaridan buyurtma oladi (xavfsizlik
-        # tekshiruvi: aks holda istalgan mijoz UUID'iga buyurtma yozish mumkin edi)
-        from apps.sales.services.sale import _off_route, ensure_client_in_scope
+        # Zakaz oluvchi va tarqatuvchi faqat o'z mijozi/marshruti uchun buyurtma oladi
+        from apps.clients.models import is_client_off_route
+        from apps.sales.services.sale import ensure_client_in_scope
+
         ensure_client_in_scope(request.user, client)
-        if is_order_taker(request.user) and (
-            client.route is None or client.route.order_taker_id != request.user.id
+        if is_client_off_route(
+            request.user, client, require_owner_if_unassigned=is_order_taker(request.user)
         ):
             raise BusinessError(
-                message=f"«{client.name}» sizning marshrutingizda emas.",
-                code="CLIENT_NOT_ON_ROUTE",
-                details={"client_id": str(client.id)},
-            )
-        if _is_distributor(request.user) and _off_route(request.user, client):
-            raise BusinessError(
-                message=f"«{client.name}» sizning marshrutingizda emas.",
+                message=f"«{client.name}» sizning mijozingiz yoki marshrutingizda emas.",
                 code="CLIENT_NOT_ON_ROUTE",
                 details={"client_id": str(client.id)},
             )

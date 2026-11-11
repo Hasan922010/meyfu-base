@@ -310,9 +310,9 @@ function ProductRow({
               </span>
             )}
           </span>
-          {isPackageMode && (
+          {line != null && isPackageMode && (
             <span className="block mt-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-              {line!.package_count} {line!.package_type || 'qadoq'} ({line!.quantity} {stock.unit})
+              {line.package_count} {line.package_type || 'qadoq'} ({line.quantity} {stock.unit})
             </span>
           )}
         </span>

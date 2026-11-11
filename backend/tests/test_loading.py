@@ -214,3 +214,21 @@ def test_warehouse_operator_cannot_confirm_loading(stocked, distributor):
     resp = wh_api.post(f"/api/v1/loadings/{loading.id}/confirm/")
     assert resp.status_code == 403
 
+
+@pytest.mark.django_db
+def test_warehouse_operator_can_confirm_own_loading(stocked):
+    from tests.conftest import User, _bearer
+
+    wh, prod = stocked["warehouse"], stocked["product"]
+    wh_user = User.objects.create_user(
+        phone="+998901239998", password="pass12345", full_name="Omborchi Haydovchi",
+        role="WAREHOUSE", warehouse=wh,
+    )
+    loading = _make_loading(wh_user, wh, prod)
+    send_loading(loading)
+
+    wh_api = _bearer("+998901239998")
+    resp = wh_api.post(f"/api/v1/loadings/{loading.id}/confirm/")
+    assert resp.status_code == 200, resp.data
+    assert resp.data["data"]["status"] == "CONFIRMED"
+

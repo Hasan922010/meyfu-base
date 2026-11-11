@@ -44,6 +44,8 @@ export interface Client {
   longitude: string | null;
   route: string | null;
   route_name: string | null;
+  assigned_to?: string | null;
+  assigned_to_name?: string | null;
   client_type: ClientType;
   client_type_display: string;
   debt_limit: string;
@@ -66,6 +68,7 @@ export interface ClientInput {
   latitude?: string | null;
   longitude?: string | null;
   route?: string | null;
+  assigned_to?: string | null;
   client_type?: ClientType;
   debt_limit?: string;
   inn?: string;

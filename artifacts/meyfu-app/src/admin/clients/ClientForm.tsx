@@ -3,9 +3,12 @@ import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { clientsApi } from '@/shared/api/clients';
+import { authApi } from '@/shared/api/users';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
+import { ROLE_LABELS } from '@/shared/lib/labels';
 import { useToast } from '@/shared/lib/toast';
+import type { User } from '@/shared/types/api';
 import type { Client, ClientInput, Route } from '@/shared/types/clients';
 
 const TYPES: Array<{ value: string; label: string }> = [
@@ -26,22 +29,38 @@ export function ClientForm({ client, onDone }: Props): ReactElement {
     queryKey: ['routes'],
     queryFn: () => clientsApi.routes({ page_size: 200 }),
   });
-  // Forma marshrutlar kelgach mount qilinadi — aks holda tahrirda marshrut
-  // select'i option'siz bo'lib, mijozning marshruti bo'sh ko'rinadi (audit m2, K8 kabi)
-  if (routes.isError) {
+  const staff = useQuery({
+    queryKey: ['staff', 'active'],
+    queryFn: authApi.staff,
+  });
+  // Forma ma'lumotnomalar kelgach mount qilinadi — aks holda tahrirda select
+  // option'siz bo'lib, qiymatlar bo'sh ko'rinadi (audit m2, K8 kabi)
+  if (routes.isError || staff.isError) {
     return (
       <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-        Marshrutlarni yuklab bo'lmadi. Oynani yopib, qayta oching.
+        Ma'lumotlarni yuklab bo'lmadi. Oynani yopib, qayta oching.
       </p>
     );
   }
-  if (!routes.data) {
+  if (!routes.data || !staff.data) {
     return <p className="py-6 text-center text-sm text-gray-500">Yuklanmoqda…</p>;
   }
-  return <ClientFormFields client={client} onDone={onDone} routes={routes.data.results} />;
+  return (
+    <ClientFormFields
+      client={client}
+      onDone={onDone}
+      routes={routes.data.results}
+      staff={staff.data}
+    />
+  );
 }
 
-function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] }): ReactElement {
+function ClientFormFields({
+  client,
+  onDone,
+  routes,
+  staff,
+}: Props & { routes: Route[]; staff: User[] }): ReactElement {
   const qc = useQueryClient();
   const toast = useToast();
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -62,18 +81,23 @@ function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] 
           phone2: client.phone2,
           address: client.address,
           route: client.route ?? '',
+          assigned_to: client.assigned_to ?? '',
           client_type: client.client_type,
           debt_limit: client.debt_limit,
           inn: client.inn,
           is_blocked: client.is_blocked,
           note: client.note,
         }
-      : { client_type: 'SHOP', is_blocked: false },
+      : { client_type: 'SHOP', is_blocked: false, assigned_to: '' },
   });
 
   const mutation = useMutation({
     mutationFn: (values: ClientInput) => {
-      const body: ClientInput = { ...values, route: values.route || null };
+      const body: ClientInput = {
+        ...values,
+        route: values.route || null,
+        assigned_to: values.assigned_to || null,
+      };
       // Bo'sh limit = "qarzga berilmaydi": serverning standart 0 qiymati qoladi
       if (!body.debt_limit) delete body.debt_limit;
       return client ? clientsApi.update(client.id, body) : clientsApi.create(body);
@@ -136,6 +160,24 @@ function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] 
         </label>
         <div className="space-y-1">
           <label className="block space-y-1">
+            <span className="text-sm font-medium">Mas'ul xodim (kimning mijozi)</span>
+            <select className="field" {...register('assigned_to')}>
+              <option value="">—</option>
+              {staff.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name} ({ROLE_LABELS[u.role] ?? u.role})
+                </option>
+              ))}
+            </select>
+          </label>
+          {!watch('assigned_to') && watch('route') && (
+            <p className="text-xs text-gray-500">
+              Xodim tanlanmasa, marshrut xodimiga ko‘rinadi.
+            </p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <label className="block space-y-1">
             <span className="text-sm font-medium">Marshrut</span>
             <select className="field" {...register('route')}>
               <option value="">—</option>
@@ -146,9 +188,9 @@ function ClientFormFields({ client, onDone, routes }: Props & { routes: Route[] 
               ))}
             </select>
           </label>
-          {!watch('route') && (
+          {!watch('route') && !watch('assigned_to') && (
             <p className="text-xs text-pending">
-              Marshrutsiz mijoz hech bir tarqatuvchiga ko‘rinmaydi.
+              Xodim ham, marshrut ham tanlanmasa, mijoz hech bir tarqatuvchiga ko‘rinmaydi.
             </p>
           )}
         </div>

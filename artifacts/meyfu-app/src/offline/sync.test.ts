@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { post, myVanStock } = vi.hoisted(() => ({ post: vi.fn(), myVanStock: vi.fn() }));
+const { post, myVanStock, clientsList } = vi.hoisted(() => ({
+  post: vi.fn(),
+  myVanStock: vi.fn(),
+  clientsList: vi.fn(),
+}));
 vi.mock('@/shared/api/client', () => ({ api: { post } }));
 vi.mock('@/shared/api/warehouse', () => ({ warehouseApi: { myVanStock } }));
 vi.mock('@/shared/api/catalog', () => ({
   catalogApi: { products: vi.fn().mockResolvedValue({ results: [] }) },
 }));
 vi.mock('@/shared/api/clients', () => ({
-  clientsApi: { list: vi.fn().mockResolvedValue({ results: [] }) },
+  clientsApi: { list: clientsList },
 }));
 vi.mock('@/shared/api/orders', () => ({
   ordersApi: { myToDeliver: vi.fn().mockResolvedValue([]) },
@@ -26,8 +30,11 @@ import { fullSync, pullReferenceData, pullVanStock, pushOutbox } from './sync';
 beforeEach(async () => {
   await db.outbox.clear();
   await db.van_stock.clear();
+  await db.clients.clear();
   post.mockReset();
   myVanStock.mockReset();
+  clientsList.mockReset();
+  clientsList.mockResolvedValue({ results: [], next: null });
   useAuthStore.setState({ user: null });
 });
 
@@ -112,6 +119,50 @@ describe('pullReferenceData — zakaz oluvchi', () => {
 
     // Assert
     expect(myVanStock).not.toHaveBeenCalled();
+  });
+
+  it('mijozlar ro‘yxatini sahifalab tortadi va o‘chirilgan/boshqaga o‘tgan mijozni tozalaydi', async () => {
+    await db.clients.put({
+      id: 'stale',
+      name: 'Eski Mijoz',
+      owner_name: '',
+      phone: '',
+      address: '',
+      route: null,
+      debt_limit: '0',
+      current_debt: '0',
+      is_blocked: false,
+    });
+    clientsList
+      .mockResolvedValueOnce({
+        count: 2,
+        next: '?page=2',
+        results: [
+          {
+            id: 'c1', name: 'Birinchi', owner_name: '', phone: '+998901112233',
+            address: '', route: null, debt_limit: '0', current_debt: '0', is_blocked: false,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        count: 2,
+        next: null,
+        results: [
+          {
+            id: 'c2', name: 'Ikkinchi', owner_name: '', phone: '+998902223344',
+            address: '', route: null, debt_limit: '0', current_debt: '0', is_blocked: false,
+          },
+        ],
+      });
+    useAuthStore.setState({ user: { role: 'ORDER_TAKER' } as User });
+
+    await pullReferenceData();
+
+    expect(clientsList).toHaveBeenCalledTimes(2);
+    expect(clientsList).toHaveBeenNthCalledWith(1, { page: 1, page_size: 500 });
+    expect(clientsList).toHaveBeenNthCalledWith(2, { page: 2, page_size: 500 });
+    const rows = await db.clients.toArray();
+    expect(rows.map((r) => r.id).sort()).toEqual(['c1', 'c2']);
   });
 });
 

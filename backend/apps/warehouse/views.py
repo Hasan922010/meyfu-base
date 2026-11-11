@@ -645,7 +645,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
     def confirm(self, request: Request, pk: str | None = None) -> Response:
         loading = self.get_object()
         role = getattr(request.user, "role", None)
-        if _is_distributor(request.user):
+        if role in (Role.DISTRIBUTOR, Role.WAREHOUSE) and not request.user.is_superuser:
             if loading.distributor_id != request.user.id:
                 raise BusinessError(
                     message="Bu yuklama sizga tegishli emas.",
@@ -653,7 +653,7 @@ class LoadingViewSet(_OwnWarehouseMixin, BaseModelViewSet):
                 )
         elif not (
             request.user.is_superuser
-            or role in (Role.MANAGER, Role.SUPER_ADMIN, Role.WAREHOUSE)
+            or role in (Role.MANAGER, Role.SUPER_ADMIN)
         ):
             raise BusinessError(
                 message="Yuklamani faqat tayinlangan tarqatuvchi yoki rahbar tasdiqlashi mumkin.",

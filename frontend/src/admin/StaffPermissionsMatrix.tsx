@@ -50,7 +50,10 @@ export function StaffPermissionsMatrix(): ReactElement {
     queryFn: () => staffApi.list({ page_size: 200 }),
   });
 
-  const staffList = staffQuery.data?.results ?? [];
+  const staffList = useMemo(
+    () => staffQuery.data?.results ?? [],
+    [staffQuery.data?.results],
+  );
 
   const filteredStaff = useMemo(() => {
     const q = search.trim().toLowerCase();

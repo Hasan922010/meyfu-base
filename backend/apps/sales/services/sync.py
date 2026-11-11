@@ -14,19 +14,21 @@ from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
 from apps.catalog.models import Product
-from apps.clients.models import Client, ClientVisit
+from apps.clients.models import Client, ClientVisit, is_client_off_route
 from apps.core.exceptions import BusinessError
 from apps.expenses.models import ExpenseCategory
 from apps.expenses.services import create_expense
 from apps.orders.models import Order
+from apps.users.constants import Role
 
 from ..constants import SaleStatus
 from ..models import Debt
 from .debt import collect_debt_payment
-from .sale import SaleLine, create_sale
+from .sale import SaleLine, create_sale, ensure_client_in_scope
 from .sale_return import ReturnLine, create_sale_return
 
 logger = logging.getLogger("apps.sales")
@@ -184,20 +186,29 @@ def _handle_visit(payload: dict, client_uuid: str | None, user) -> dict[str, Any
         obj = ClientVisit.objects.get(client_uuid=client_uuid)
         return {"client_uuid": client_uuid, "status": "DUPLICATE",
                 "server_id": str(obj.id)}
-    client = Client.objects.get(pk=payload["client"])
+    client = Client.objects.select_related("route").get(pk=payload["client"])
+    ensure_client_in_scope(user, client)
+    if is_client_off_route(
+        user,
+        client,
+        require_owner_if_unassigned=(getattr(user, "role", None) != Role.WAREHOUSE),
+    ):
+        raise BusinessError(
+            message="Bu mijoz sizning mijozingiz yoki marshrutingizda emas.",
+            code="CLIENT_NOT_ON_ROUTE",
+            status_code=403,
+        )
+    raw_checked_in = payload.get("checked_in_at")
+    checked_in_at = parse_datetime(raw_checked_in) if raw_checked_in else None
+    if checked_in_at is None:
+        checked_in_at = timezone.now()
     visit = ClientVisit.objects.create(
         distributor=user, client=client, result=payload["result"],
-        checked_in_at=parse_datetime(payload["checked_in_at"])
-        if payload.get("checked_in_at") else None,
+        checked_in_at=checked_in_at,
         latitude=payload.get("latitude"), longitude=payload.get("longitude"),
         note=payload.get("note", ""), client_uuid=client_uuid or None,
         created_by=user,
     )
-    if visit.checked_in_at is None:
-        from django.utils import timezone
-
-        visit.checked_in_at = timezone.now()
-        visit.save(update_fields=["checked_in_at"])
     return {"client_uuid": client_uuid, "status": "SENT", "server_id": str(visit.id)}
 
 
@@ -229,14 +240,18 @@ def _handle_expense(payload: dict, client_uuid: str | None, user) -> dict[str, A
 
 
 def _handle_order_create(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
+    from apps.clients.models import is_client_off_route
+    from apps.core.permissions import is_order_taker
     from apps.orders.services import OrderLine, create_order
-    from apps.sales.services.sale import _off_route, ensure_client_in_scope
+    from apps.sales.services.sale import ensure_client_in_scope
 
     client = Client.objects.select_related("route").get(pk=payload["client"])
     ensure_client_in_scope(user, client)
-    if _off_route(user, client):
+    if is_client_off_route(
+        user, client, require_owner_if_unassigned=is_order_taker(user)
+    ):
         raise BusinessError(
-            message=f"«{client.name}» sizning marshrutingizda emas.",
+            message=f"«{client.name}» sizning mijozingiz yoki marshrutingizda emas.",
             code="CLIENT_NOT_ON_ROUTE",
             details={"client_id": str(client.id)},
         )

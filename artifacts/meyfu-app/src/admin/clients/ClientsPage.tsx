@@ -8,6 +8,7 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { clientsApi } from '@/shared/api/clients';
+import { authApi } from '@/shared/api/users';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
@@ -26,6 +27,7 @@ export function ClientsPage(): ReactElement {
   const qc = useQueryClient();
   const role = useAuthStore((s) => s.user?.role);
   const canWrite = role === 'MANAGER' || role === 'BRANCH_MANAGER' || role === 'SUPER_ADMIN';
+  const canReadStaff = canWrite || role === 'ACCOUNTANT';
 
   const [deleting, setDeleting] = useState<Client | null>(null);
   const del = useMutation({
@@ -48,6 +50,11 @@ export function ClientsPage(): ReactElement {
     queryKey: ['routes'],
     queryFn: () => clientsApi.routes({ page_size: 200 }),
   });
+  const staff = useQuery({
+    queryKey: ['staff', 'active'],
+    queryFn: authApi.staff,
+    enabled: canReadStaff,
+  });
 
   const query = useQuery({
     queryKey: ['clients', table.params],
@@ -58,6 +65,15 @@ export function ClientsPage(): ReactElement {
   const rows = query.data?.results ?? [];
   const th = { sort: table.sort, onSort: table.onSort };
   const filters: TableFilter[] = [
+    ...(canReadStaff
+      ? [
+          {
+            key: 'assigned_to',
+            label: 'Xodim',
+            options: (staff.data ?? []).map((u) => ({ value: u.id, label: u.full_name })),
+          },
+        ]
+      : []),
     {
       key: 'route',
       label: 'Marshrut',
@@ -128,6 +144,7 @@ export function ClientsPage(): ReactElement {
                 <SortableTh sortKey="name" {...th}>Do'kon</SortableTh>
                 <SortableTh sortKey="owner_name" {...th}>Egasi</SortableTh>
                 <SortableTh sortKey="phone" {...th}>Telefon</SortableTh>
+                <SortableTh sortKey="assigned_to__full_name" {...th}>Mas'ul xodim</SortableTh>
                 <SortableTh sortKey="route__name" {...th}>Marshrut</SortableTh>
                 <SortableTh sortKey="current_debt" align="right" className="p-3 text-right" {...th}>
                   Qarz / limit
@@ -145,6 +162,7 @@ export function ClientsPage(): ReactElement {
                   <td className="p-3 font-medium">{c.name}</td>
                   <td className="p-3">{c.owner_name || '—'}</td>
                   <td className="p-3">{c.phone || '—'}</td>
+                  <td className="p-3">{c.assigned_to_name ?? '—'}</td>
                   <td className="p-3">{c.route_name ?? '—'}</td>
                   <td className="p-3 text-right">
                     <span className={Number(c.current_debt) > 0 ? 'text-danger' : ''}>

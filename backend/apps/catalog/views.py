@@ -415,8 +415,26 @@ class ProductViewSet(BaseModelViewSet):
     @extend_schema(summary="Import uchun Excel shablon", responses={200: bytes})
     @action(detail=False, methods=["get"], url_path="import-template")
     def import_template(self, request: Request) -> HttpResponse:
-        sample = ["ARL-3", "Ariel 3 kg", "Kir yuvish kukuni", "dona", "Ariel", "",
-                  95000, 110000, 125000, 105000, 4]
+        sample = [
+            "Ariel 3 kg",          # nomi
+            "ARL-3",               # artikul
+            "",                    # shtrix-kod
+            "Kir yuvish kukuni",   # kategoriya
+            "dona",                # birlik
+            "Ariel",               # brend
+            95000,                 # tannarx
+            "yo'q",                # farqni kuzatish
+            1,                     # zakaz komissiyasi (%)
+            2,                     # tarqatish komissiyasi (%)
+            "ha",                  # bonus
+            10,                    # bonus sharti
+            1,                     # bonus soni
+            "",                    # bonus tovar (artikul; bo'sh = o'zidan)
+            "qop",                 # qadoq turi
+            4,                     # qadoqdagi soni
+            10,                    # kam qoldiq
+            "ha",                  # faol
+        ]
         content = rows_to_xlsx([TEMPLATE_HEADER, sample], sheet_name="Mahsulotlar")
         response = HttpResponse(content, content_type=_XLSX_CT)
         response["Content-Disposition"] = 'attachment; filename="mahsulot-shablon.xlsx"'

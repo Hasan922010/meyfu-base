@@ -49,9 +49,11 @@ export function ProductImport({ onDone }: { onDone: () => void }): ReactElement 
   return (
     <div className="space-y-4 text-sm">
       <p className="text-gray-500">
-        Birinchi qatorda ustun nomlari bo‘lsin: <b>artikul</b>, <b>nomi</b>, kategoriya, birlik,
-        brend, shtrix-kod, tannarx, optom narx, chakana narx, minimal narx, qadoqdagi soni.
-        Artikul bo‘yicha bor mahsulot yangilanadi, yo‘g‘i yaratiladi.
+        Birinchi qatorda ustun nomlari bo‘lsin: <b>nomi</b>, <b>artikul</b>, shtrix-kod, kategoriya,
+        birlik, brend, tannarx, farqni kuzatish (ha/yo‘q), zakaz komissiyasi (%), tarqatish
+        komissiyasi (%), bonus (ha/yo‘q), bonus sharti, bonus soni, bonus tovar (artikul), qadoq
+        turi, qadoqdagi soni, kam qoldiq, faol (ha/yo‘q). Artikul bo‘yicha bor mahsulot yangilanadi,
+        yo‘g‘i yaratiladi.
       </p>
       <button className="btn flex items-center gap-1.5 px-3" onClick={() => void downloadTemplate()}>
         <Download size={16} aria-hidden /> Shablonni yuklab olish
@@ -66,6 +68,7 @@ export function ProductImport({ onDone }: { onDone: () => void }): ReactElement 
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
+            e.currentTarget.value = '';
             setFile(f);
             setPreview(null);
             if (f) check.mutate(f);

@@ -108,21 +108,10 @@ def _next_number(date) -> str:
 
 
 def _off_route(distributor, client) -> bool:
-    """Tarqatuvchi shu mijozga sotish/undirish huquqiga ega emasmi?
+    """Xodim shu mijozga sotish/undirish huquqiga ega emasmi?"""
+    from apps.clients.models import is_client_off_route
 
-    Faqat DISTRIBUTOR roli cheklanadi. Mijoz marshrutga biriktirilmagan bo'lsa
-    (`route` = None) — aniqlab bo'lmaydi, ruxsat beriladi.
-    """
-    from apps.users.constants import Role
-
-    if getattr(distributor, "role", None) != Role.DISTRIBUTOR:
-        return False
-    if getattr(distributor, "is_superuser", False):
-        return False
-    route_owner_id = (
-        client.route.distributor_id if getattr(client, "route_id", None) else None
-    )
-    return route_owner_id is not None and route_owner_id != distributor.id
+    return is_client_off_route(distributor, client, require_owner_if_unassigned=False)
 
 
 def ensure_client_in_scope(user, client) -> None:

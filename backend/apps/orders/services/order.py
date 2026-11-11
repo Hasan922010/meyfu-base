@@ -79,24 +79,16 @@ def create_order(
 
     actor = user
     if actor and not getattr(actor, "is_superuser", False):
+        from apps.clients.models import is_client_off_route
         from apps.core.permissions import is_order_taker
         from apps.sales.services.sale import ensure_client_in_scope
-        from apps.users.constants import Role
 
         ensure_client_in_scope(actor, client)
-        if getattr(actor, "role", None) == Role.DISTRIBUTOR and (
-            client.route and client.route.distributor_id != actor.id
+        if is_client_off_route(
+            actor, client, require_owner_if_unassigned=is_order_taker(actor)
         ):
             raise BusinessError(
-                message=f"«{client.name}» sizning marshrutingizda emas.",
-                code="CLIENT_NOT_ON_ROUTE",
-                details={"client_id": str(client.id)},
-            )
-        if is_order_taker(actor) and (
-            client.route is None or client.route.order_taker_id != actor.id
-        ):
-            raise BusinessError(
-                message=f"«{client.name}» sizning marshrutingizda emas.",
+                message=f"«{client.name}» sizning mijozingiz yoki marshrutingizda emas.",
                 code="CLIENT_NOT_ON_ROUTE",
                 details={"client_id": str(client.id)},
             )

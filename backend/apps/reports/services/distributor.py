@@ -260,7 +260,8 @@ def _debts_block(distributor, df, dt) -> dict:
         "amount",
     )
     route_debts = Debt.objects.filter(
-        client__route__distributor=distributor
+        Q(client__assigned_to=distributor)
+        | (Q(client__assigned_to__isnull=True) & Q(client__route__distributor=distributor))
     ).exclude(status="PAID")
     outstanding = _sum(route_debts, "remaining")
     today = business_date()

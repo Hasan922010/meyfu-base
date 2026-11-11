@@ -218,16 +218,17 @@ class DebtViewSet(BaseReadOnlyViewSet):
     ordering_fields = ("created_at", "due_date", "remaining")
 
     def get_queryset(self) -> QuerySet[Debt]:
+        from apps.clients.models import own_clients_q
+
         qs = Debt.objects.select_related("client", "sale")
-        if _is_distributor(self.request.user):
-            return qs.filter(client__route__distributor=self.request.user)
-        if is_order_taker(self.request.user):
-            return qs.filter(client__route__order_taker=self.request.user)
-        return qs
+        own = own_clients_q(self.request.user, prefix="client__")
+        return qs.filter(own) if own is not None else qs
 
     @extend_schema(summary="Marshrutimdagi qarzdorlar")
     @action(detail=False, methods=["get"], url_path="my")
     def my(self, request: Request) -> Response:
+        from apps.clients.models import own_clients_q
+
         qs = (
             Debt.objects.select_related("client", "sale")
             .filter(
@@ -235,10 +236,9 @@ class DebtViewSet(BaseReadOnlyViewSet):
             )
             .order_by("due_date")
         )
-        if _is_distributor(request.user):
-            qs = qs.filter(client__route__distributor=request.user)
-        elif is_order_taker(request.user):
-            qs = qs.filter(client__route__order_taker=request.user)
+        own = own_clients_q(request.user, prefix="client__")
+        if own is not None:
+            qs = qs.filter(own)
         return ok(DebtSerializer(qs, many=True).data)
 
 

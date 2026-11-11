@@ -215,3 +215,149 @@ def test_client_local_phone_is_normalized(manager_api):
     )
     assert resp.status_code == 201, resp.data
     assert resp.data["data"]["phone"] == "+998901234567"
+
+
+@pytest.mark.django_db
+def test_assigned_to_client_ownership_and_filtering(
+    manager_api, auth_api, distributor, routed_clients
+):
+    from tests.conftest import _bearer
+
+    other = routed_clients["other_distributor"]
+    other_api = _bearer(other.phone)
+
+    # 1. Rahbar marshrutsiz, lekin to'g'ridan-to'g'ri xodimga biriktirilgan mijoz yaratadi
+    c1 = manager_api.post(
+        "/api/v1/clients/",
+        {
+            "name": "Ali Shaxsiy Do'koni",
+            "assigned_to": str(distributor.id),
+            "phone": "+998901010101",
+        },
+        format="json",
+    )
+    assert c1.status_code == 201, c1.data
+    assert str(c1.data["data"]["assigned_to"]) == str(distributor.id)
+    assert c1.data["data"]["assigned_to_name"] == distributor.full_name
+
+    # 2. Mijoz other_route'da bo'lsa ham assigned_to=distributor ustuvor
+    c2 = manager_api.post(
+        "/api/v1/clients/",
+        {
+            "name": "Biriktirilgan Qayta",
+            "route": str(routed_clients["other_route"].id),
+            "assigned_to": str(distributor.id),
+        },
+        format="json",
+    )
+    assert c2.status_code == 201, c2.data
+
+    my_names = {c["name"] for c in auth_api.get("/api/v1/clients/").data["data"]["results"]}
+    assert "Ali Shaxsiy Do'koni" in my_names
+    assert "Biriktirilgan Qayta" in my_names
+
+    other_names = {c["name"] for c in other_api.get("/api/v1/clients/").data["data"]["results"]}
+    assert "Ali Shaxsiy Do'koni" not in other_names
+    assert "Biriktirilgan Qayta" not in other_names
+
+    # Filtr va saralash
+    filtered = manager_api.get(f"/api/v1/clients/?assigned_to={distributor.id}&ordering=assigned_to__full_name")
+    assert filtered.status_code == 200
+    assert {c["name"] for c in filtered.data["data"]["results"]} == {
+        "Ali Shaxsiy Do'koni",
+        "Biriktirilgan Qayta",
+    }
+
+    # Tashrif va begona xodimni rad etish
+    visit_ok = auth_api.post(
+        "/api/v1/client-visits/",
+        {"client": c1.data["data"]["id"], "result": "SOTUV"},
+        format="json",
+    )
+    assert visit_ok.status_code == 201
+
+    visit_bad = other_api.post(
+        "/api/v1/client-visits/",
+        {"client": c1.data["data"]["id"], "result": "SOTUV"},
+        format="json",
+    )
+    assert visit_bad.status_code == 403
+
+
+@pytest.mark.django_db
+def test_field_staff_create_client_auto_assigns_to_self(distributor, manager_api):
+    from rest_framework.test import APIClient
+    from apps.users.models import User
+
+    wh = User.objects.create_user(
+        phone="+998904443322", password="pass12345", full_name="Omborchi Mijoz", role="WAREHOUSE"
+    )
+    wh_api = APIClient()
+    wh_api.force_authenticate(user=wh)
+
+    # Omborchi marshrutsiz o'z mijozini yaratadi -> avtomatik assigned_to=wh
+    resp = wh_api.post(
+        "/api/v1/clients/",
+        {"name": "Omborchi Mijozi", "phone": "+998902221100"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+    assert str(resp.data["data"]["assigned_to"]) == str(wh.id)
+
+    # Boshqa xodimga yozib bo'lmaydi
+    resp_other = wh_api.post(
+        "/api/v1/clients/",
+        {"name": "Begona", "assigned_to": str(distributor.id)},
+        format="json",
+    )
+    assert resp_other.status_code == 409
+
+    # O'z mijozining mas'ul xodimini o'zgartira olmaydi
+    patch_resp = wh_api.patch(
+        f"/api/v1/clients/{resp.data['data']['id']}/",
+        {"assigned_to": str(distributor.id)},
+        format="json",
+    )
+    assert patch_resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_central_admin_assigning_branch_staff_propagates_branch_and_rejects_mismatch(admin_api):
+    from apps.clients.models import Route
+    from apps.users.models import User
+    from apps.warehouse.models import Warehouse
+    from tests.conftest import _bearer
+
+    branch_a = Warehouse.objects.create(name="Filial A", is_branch=True)
+    branch_b = Warehouse.objects.create(name="Filial B", is_branch=True)
+    dist_a = User.objects.create_user(
+        phone="+998907110001", password="pass12345", full_name="Agent Filial A",
+        role="DISTRIBUTOR", warehouse=branch_a,
+    )
+    route_b = Route.objects.create(name="Marshrut B", branch=branch_b)
+
+    # Markaz rahbari marshrutsiz mijozni Filial A xodimiga biriktiradi -> filial avtomatik o'tadi
+    created = admin_api.post(
+        "/api/v1/clients/",
+        {"name": "Filial A Do'koni", "assigned_to": str(dist_a.id)},
+        format="json",
+    )
+    assert created.status_code == 201, created.data
+    assert str(created.data["data"]["branch"]) == str(branch_a.id)
+
+    dist_a_api = _bearer("+998907110001")
+    my_clients = dist_a_api.get("/api/v1/clients/")
+    assert my_clients.status_code == 200
+    assert [c["name"] for c in my_clients.data["data"]["results"]] == ["Filial A Do'koni"]
+
+    # Filial B marshruti bilan Filial A xodimini aralashtirish -> 400 xato
+    mismatch = admin_api.post(
+        "/api/v1/clients/",
+        {
+            "name": "Aralash Xato",
+            "assigned_to": str(dist_a.id),
+            "route": str(route_b.id),
+        },
+        format="json",
+    )
+    assert mismatch.status_code == 400

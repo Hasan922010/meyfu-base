@@ -30,7 +30,9 @@ def check_overdue_debts() -> None:
     newly = list(
         Debt.objects.filter(
             due_date__lt=today, status__in=["ACTIVE", "PARTIAL"]
-        ).select_related("client", "client__route", "client__route__distributor")
+        ).select_related(
+            "client", "client__assigned_to", "client__route", "client__route__distributor"
+        )
     )
     if not newly:
         return
@@ -43,11 +45,13 @@ def check_overdue_debts() -> None:
         body=f"{len(newly)} ta qarz muddati o'tdi",
     )
 
-    # Har marshrut tarqatuvchisiga o'z mijozlari bo'yicha eslatma
+    # Har mijozning mas'ul xodimiga (yoki marshrut tarqatuvchisiga) eslatma
     by_distributor: dict = {}
     for debt in newly:
         route = getattr(debt.client, "route", None)
-        dist = getattr(route, "distributor", None) if route else None
+        dist = getattr(debt.client, "assigned_to", None) or (
+            getattr(route, "distributor", None) if route else None
+        )
         if dist is not None:
             by_distributor.setdefault(dist, []).append(debt)
 

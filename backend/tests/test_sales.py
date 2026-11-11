@@ -496,3 +496,28 @@ def test_warehouse_can_make_sale_and_distribution(van_stocked):
     resp_today = wh_api.get("/api/v1/sales/my-today/")
     assert resp_today.status_code == 200
     assert len(resp_today.data["data"]) >= 1
+
+
+@pytest.mark.django_db
+def test_bulk_sync_visit_enforces_scope_and_ownership(auth_api, van_stocked, routed_clients):
+    from apps.clients.models import Client
+    from apps.warehouse.models import Warehouse
+
+    dist = van_stocked["distributor"]
+    own_direct = Client.objects.create(name="Shaxsiy Mijoz", assigned_to=dist)
+    branch = Warehouse.objects.create(name="Boshqa Filial", is_branch=True)
+    branch_client = Client.objects.create(name="Filial Mijoz", branch=branch, assigned_to=dist)
+
+    ops = [
+        {"type": "visit", "client_uuid": str(uuid.uuid4()), "payload": {"client": str(routed_clients["other_client"].id), "result": "SOTUV"}},
+        {"type": "visit", "client_uuid": str(uuid.uuid4()), "payload": {"client": str(branch_client.id), "result": "SOTUV"}},
+        {"type": "visit", "client_uuid": str(uuid.uuid4()), "payload": {"client": str(own_direct.id), "result": "SOTUVSIZ"}},
+    ]
+    resp = auth_api.post("/api/v1/sales/bulk-sync/", {"operations": ops}, format="json")
+    assert resp.status_code == 200, resp.data
+    results = resp.data["data"]["results"]
+    assert results[0]["status"] == "FAILED"
+    assert results[0]["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
+    assert results[1]["status"] == "FAILED"
+    assert results[1]["error"]["code"] == "BRANCH_MISMATCH"
+    assert results[2]["status"] == "SENT"

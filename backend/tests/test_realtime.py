@@ -142,3 +142,29 @@ async def test_branch_manager_joins_only_own_branch_dashboard():
     assert "admin_dashboard" not in groups
     assert f"admin_dashboard_{branch.pk}" in groups
     await comm.disconnect()
+
+
+@pytest.mark.django_db
+def test_check_overdue_debts_notifies_assigned_to(distributor):
+    from datetime import timedelta
+    from decimal import Decimal
+    from apps.clients.models import Client
+    from apps.notifications.models import Notification
+    from apps.sales.models import Debt
+    from realtime.tasks import check_overdue_debts
+
+    direct_client = Client.objects.create(name="Shaxsiy Qarz Do'kon", assigned_to=distributor)
+    debt = Debt.objects.create(
+        client=direct_client,
+        amount=Decimal("250000"),
+        remaining=Decimal("250000"),
+        due_date=timezone.localdate() - timedelta(days=2),
+        status="ACTIVE",
+        created_by=distributor,
+    )
+
+    check_overdue_debts()
+
+    debt.refresh_from_db()
+    assert debt.status == "OVERDUE"
+    assert Notification.objects.filter(user=distributor, type="debt.overdue").exists()

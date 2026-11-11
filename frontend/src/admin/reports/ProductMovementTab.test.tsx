@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
-import type { ProductMovementResult } from '@/shared/api/reportsAdvanced';
 import type { PaginatedData } from '@/shared/types/api';
 import type { Category } from '@/shared/types/catalog';
 import { ProductMovementTab } from './ProductMovementTab';
@@ -77,7 +76,7 @@ describe('ProductMovementTab', () => {
         total_movement_qty: '160',
         bonus_ratio_percent: '6.25',
       },
-    } as unknown as ProductMovementResult);
+    });
 
     renderWithClient(
       <ProductMovementTab range={{ date_from: '2026-11-01', date_to: '2026-11-09' }} />,
@@ -120,7 +119,7 @@ describe('ProductMovementTab', () => {
         total_movement_qty: '0',
         bonus_ratio_percent: '0',
       },
-    } as unknown as ProductMovementResult);
+    });
 
     renderWithClient(
       <ProductMovementTab range={{ date_from: '2026-11-01', date_to: '2026-11-09' }} />,

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileSpreadsheet } from 'lucide-react';
 import {
   createContext,
   useContext,
@@ -19,6 +20,7 @@ import { useAuthStore } from '@/shared/store/authStore';
 import type { Role } from '@/shared/types/api';
 
 import { BalanceGrid } from './BalanceGrid';
+import { ClientOpeningImportModal } from './ClientOpeningImportModal';
 
 type TabId = 'products' | 'cash' | 'suppliers' | 'clients' | 'staff';
 
@@ -391,6 +393,7 @@ function SuppliersTab(): ReactElement {
 
 function ClientsTab(): ReactElement {
   const qc = useQueryClient();
+  const [importOpen, setImportOpen] = useState(false);
   const history = useQuery({
     queryKey: ['debts', 'opening'],
     queryFn: () => debtsApi.list({ page_size: 50, ordering: '-created_at' }),
@@ -401,6 +404,15 @@ function ClientsTab(): ReactElement {
   return (
     <div className="space-y-4">
       <WriteGate>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="btn flex items-center gap-1.5 px-3"
+            onClick={() => setImportOpen(true)}
+          >
+            <FileSpreadsheet size={16} aria-hidden /> Exceldan import
+          </button>
+        </div>
         <BalanceGrid
           kind="clients"
           rules={{ allowNegative: false, increaseOnly: true }}
@@ -408,6 +420,13 @@ function ClientsTab(): ReactElement {
           onSaved={() => {
             void qc.invalidateQueries({ queryKey: ['debts'] });
             void qc.invalidateQueries({ queryKey: ['clients-all'] });
+          }}
+        />
+        <ClientOpeningImportModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onDone={() => {
+            setImportOpen(false);
           }}
         />
       </WriteGate>

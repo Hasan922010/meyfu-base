@@ -131,24 +131,20 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     const saveBtn = screen.getByRole('button', { name: 'Buyurtmani saqlash' });
     fireEvent.click(saveBtn);
 
-    expect(saveOrderLocal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        client: 'c1',
-        lines: expect.arrayContaining([
-          expect.objectContaining({
-            product: 'p1',
-            quantity: 12,
-            price: 25000,
-            is_bonus: false,
-          }),
-          expect.objectContaining({
-            product: 'p1',
-            quantity: 1,
-            price: 0,
-            is_bonus: true,
-          }),
-        ]),
-      }),
-    );
+    const saved = vi.mocked(saveOrderLocal).mock.calls[0]?.[0];
+    expect(saved?.client).toBe('c1');
+    expect(saved?.lines).toHaveLength(2);
+    expect(saved?.lines[0]).toMatchObject({
+      product: 'p1',
+      quantity: 12,
+      price: 25000,
+      is_bonus: false,
+    });
+    expect(saved?.lines[1]).toMatchObject({
+      product: 'p1',
+      quantity: 1,
+      price: 0,
+      is_bonus: true,
+    });
   });
 });
