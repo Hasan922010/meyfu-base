@@ -82,3 +82,4 @@ export function ProductBulkToolbar({ selectedIds, onClear }: Props): ReactElemen
     </div>
   );
 }
+

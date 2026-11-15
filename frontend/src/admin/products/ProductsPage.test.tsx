@@ -145,4 +145,78 @@ describe('ProductsPage', () => {
     await screen.findAllByText('Bio kukun 3kg');
     expect(screen.getByRole('button', { name: /Eksport/i })).toBeInTheDocument();
   });
+
+  it('preserves continued typing across debounce and does not resurrect cleared search', async () => {
+    renderPage();
+    await screen.findAllByText('Bio kukun 3kg');
+
+    const searchInput = screen.getByLabelText('Mahsulot qidirish');
+    fireEvent.change(searchInput, { target: { value: 'Bio' } });
+
+    await waitFor(
+      () => {
+        expect(catalogApi.products).toHaveBeenCalledWith(
+          expect.objectContaining({ search: 'Bio' }),
+          expect.any(AbortSignal),
+        );
+      },
+      { timeout: 1000 },
+    );
+
+    // Type further right after first debounce commits
+    fireEvent.change(searchInput, { target: { value: 'Bio kukun' } });
+    expect(searchInput).toHaveValue('Bio kukun');
+
+    await waitFor(
+      () => {
+        expect(catalogApi.products).toHaveBeenCalledWith(
+          expect.objectContaining({ search: 'Bio kukun' }),
+          expect.any(AbortSignal),
+        );
+      },
+      { timeout: 1000 },
+    );
+    expect(searchInput).toHaveValue('Bio kukun');
+
+    // Clear search and ensure old term is not re-applied after debounce window
+    const clearBtn = screen.getByRole('button', { name: 'Qidiruvni tozalash' });
+    fireEvent.click(clearBtn);
+    expect(searchInput).toHaveValue('');
+
+    await waitFor(
+      () => {
+        const lastCall = catalogApi.products.mock.calls.at(-1)?.[0] as { search?: string };
+        expect(lastCall?.search).toBeUndefined();
+      },
+      { timeout: 1000 },
+    );
+  });
+
+  it('exposes accessible labels, mobile filter toggle, and inline clear button when filters are active', async () => {
+    renderPage();
+    await screen.findAllByText('Bio kukun 3kg');
+
+    expect(screen.getByRole('button', { name: 'Eksport' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Minimal narx')).toBeInTheDocument();
+    expect(screen.getByLabelText('Maksimal narx')).toBeInTheDocument();
+
+    const mobileToggle = screen.getByRole('button', { name: /Filtrlar/i });
+    expect(mobileToggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(mobileToggle);
+    expect(mobileToggle).toHaveAttribute('aria-expanded', 'true');
+
+    expect(screen.queryByRole('button', { name: 'Tozalash' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Zaxira holatini tanlang'), {
+      target: { value: 'low' },
+    });
+
+    const clearAllBtn = await screen.findByRole('button', { name: 'Tozalash' });
+    fireEvent.click(clearAllBtn);
+
+    await waitFor(() => {
+      const lastCall = catalogApi.products.mock.calls.at(-1)?.[0] as { stock_status?: string };
+      expect(lastCall?.stock_status).toBeUndefined();
+    });
+  });
 });

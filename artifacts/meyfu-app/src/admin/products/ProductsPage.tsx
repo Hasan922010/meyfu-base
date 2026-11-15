@@ -169,6 +169,8 @@ export function ProductsPage(): ReactElement {
               className="btn flex items-center gap-2 border border-slate-200 bg-white px-4 font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               onClick={() => void handleExport()}
               disabled={isExporting}
+              aria-label="Eksport"
+              title="Eksport"
             >
               {isExporting ? (
                 <RefreshCcw className="h-4 w-4 animate-spin" />

@@ -131,3 +131,22 @@ def test_wallet_my_endpoint(auth_api, van_stocked, expense_categories):
     assert d["balance"] == "270000.00"
     assert d["pending_expense_amount"] == "30000.00"
     assert d["live_balance"] == "240000.00"
+
+
+@pytest.mark.django_db
+def test_reverse_reference_idempotent(van_stocked):
+    from apps.wallet.services import reverse_reference, wallet_apply
+
+    dist = van_stocked["distributor"]
+    wallet_apply(
+        distributor=dist,
+        transaction_type="SALE_CASH",
+        amount=Decimal("50000"),
+        reference_type="sale",
+        reference_id="ref-1",
+    )
+    first = reverse_reference(distributor=dist, reference_type="sale", reference_id="ref-1")
+    second = reverse_reference(distributor=dist, reference_type="sale", reference_id="ref-1")
+    assert len(first) == 1
+    assert second == []
+    assert DistributorWallet.objects.get(distributor=dist).balance == Decimal("0.00")

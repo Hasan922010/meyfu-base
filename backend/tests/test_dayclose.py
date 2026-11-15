@@ -320,3 +320,33 @@ def test_rejecting_expense_recomputes_closed_day(
     assert AuditLog.objects.filter(
         action="dayclose.snapshot_refresh", object_id=str(dc["id"])
     ).exists()
+
+
+@pytest.mark.django_db
+def test_negative_cash_handed_rejected(auth_api, van_stocked):
+    product = van_stocked["product"]
+    resp = auth_api.post(
+        "/api/v1/day-close/submit/",
+        {
+            "warehouse": str(van_stocked["warehouse"].id),
+            "cash_handed": "-1000",
+            "items": [{"product": str(product.id), "quantity": "500", "condition": "GOOD"}],
+        },
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert resp.data["error"]["code"] == "INVALID"
+
+    from apps.core.exceptions import BusinessError
+    from apps.dayclose.services.close import submit_day_close
+    from django.utils import timezone
+
+    with pytest.raises(BusinessError) as exc:
+        submit_day_close(
+            distributor=van_stocked["distributor"],
+            date=timezone.localdate(),
+            warehouse=van_stocked["warehouse"],
+            return_rows=[],
+            cash_handed=Decimal("-1"),
+        )
+    assert exc.value.code == "INVALID_AMOUNT"

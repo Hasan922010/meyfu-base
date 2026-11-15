@@ -58,3 +58,4 @@ describe('rolePolicy', () => {
     expect(canAccessRoute('/admin/settings/advanced', 'MANAGER')).toBe(false);
   });
 });
+

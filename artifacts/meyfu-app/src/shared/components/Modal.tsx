@@ -27,17 +27,26 @@ export function Modal({
 }: Props): ReactElement | null {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
-    // Fokus dialog ichida qoladi va yopilganda joyiga qaytadi (audit FE-113)
+    // Fokus dialog ichida qoladi va yopilganda joyiga qaytadi (audit FE-113).
+    // Faqat `open` o'zgarganda ishlaydi — aks holda ichki inputda har bir harfda fokus yo'qoladi.
     const previous = document.activeElement as HTMLElement | null;
     const dialog = dialogRef.current;
-    const first = dialog?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? dialog)?.focus();
+    if (dialog && !dialog.contains(document.activeElement)) {
+      const first = dialog.querySelector<HTMLElement>(FOCUSABLE);
+      (first ?? dialog).focus();
+    }
 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab' || !dialog) return;
@@ -58,7 +67,7 @@ export function Modal({
       window.removeEventListener('keydown', onKey);
       previous?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

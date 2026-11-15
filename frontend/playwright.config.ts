@@ -27,12 +27,15 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
+        ...(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {}),
       },
     },
     {
       name: 'mobile',
-      use: { ...devices['Pixel 7'], channel: 'chrome' },
+      use: {
+        ...devices['Pixel 7'],
+        ...(process.env.PW_CHANNEL ? { channel: process.env.PW_CHANNEL } : {}),
+      },
       testMatch: /mobile\.spec\.ts$/,
     },
   ],

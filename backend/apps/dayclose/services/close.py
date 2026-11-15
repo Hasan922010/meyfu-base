@@ -40,6 +40,11 @@ def submit_day_close(
     cash_handed: Decimal,
     note: str = "",
 ) -> DayClose:
+    if cash_handed is not None and cash_handed < _ZERO:
+        raise BusinessError(
+            message="Topshirilgan naqd pul manfiy bo'lishi mumkin emas.",
+            code="INVALID_AMOUNT",
+        )
     if DayClose.objects.filter(distributor=distributor, date=date).exists():
         raise BusinessError(
             message="Bu kun allaqachon yopilgan yoki tasdiq kutmoqda.",

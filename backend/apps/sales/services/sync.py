@@ -86,16 +86,24 @@ def _handle_sale(payload: dict, client_uuid: str | None, user) -> dict[str, Any]
             id__in=[row["product"] for row in payload.get("items", [])]
         )
     }
-    lines = [
-        SaleLine(
-            product=products[str(row["product"])],
-            quantity=_dec(row["quantity"]),
-            price=_dec(row["price"]),
-            discount_percent=_dec(row.get("discount_percent", 0)),
-            is_bonus=bool(row.get("is_bonus", False)),
+    lines = []
+    for row in payload.get("items", []):
+        product = products.get(str(row["product"]))
+        if product is None:
+            raise BusinessError(
+                message="Mahsulot topilmadi.",
+                code="NOT_FOUND",
+                details={"product": str(row["product"])},
+            )
+        lines.append(
+            SaleLine(
+                product=product,
+                quantity=_dec(row["quantity"]),
+                price=_dec(row["price"]),
+                discount_percent=_dec(row.get("discount_percent", 0)),
+                is_bonus=bool(row.get("is_bonus", False)),
+            )
         )
-        for row in payload.get("items", [])
-    ]
     result = create_sale(
         distributor=user,
         client=client,
@@ -164,14 +172,22 @@ def _handle_return(payload: dict, client_uuid: str | None, user) -> dict[str, An
             id__in=[row["product"] for row in payload.get("items", [])]
         )
     }
-    lines = [
-        ReturnLine(
-            product=products[str(row["product"])],
-            quantity=_dec(row["quantity"]),
-            price=_dec(row.get("price", 0)),
+    lines = []
+    for row in payload.get("items", []):
+        product = products.get(str(row["product"]))
+        if product is None:
+            raise BusinessError(
+                message="Mahsulot topilmadi.",
+                code="NOT_FOUND",
+                details={"product": str(row["product"])},
+            )
+        lines.append(
+            ReturnLine(
+                product=product,
+                quantity=_dec(row["quantity"]),
+                price=_dec(row.get("price", 0)),
+            )
         )
-        for row in payload.get("items", [])
-    ]
     res = create_sale_return(
         offline=True,
         distributor=user, client=client, reason=payload["reason"], lines=lines,

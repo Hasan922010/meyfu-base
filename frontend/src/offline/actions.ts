@@ -67,16 +67,14 @@ export async function saveSaleLocal(input: LocalSaleInput): Promise<string> {
     );
 
     // Lokal mashina qoldig'ini kamaytiramiz
-    await db.transaction('rw', db.van_stock, async () => {
-      for (const line of input.lines) {
-        const vs = await db.van_stock.get(line.product);
-        if (vs) {
-          await db.van_stock.update(line.product, {
-            quantity: Math.max(0, vs.quantity - line.quantity),
-          });
-        }
+    for (const line of input.lines) {
+      const vs = await db.van_stock.get(line.product);
+      if (vs) {
+        await db.van_stock.update(line.product, {
+          quantity: Math.max(0, vs.quantity - line.quantity),
+        });
       }
-    });
+    }
     return id;
   });
 
@@ -123,17 +121,29 @@ export async function saveDebtPaymentLocal(input: {
   const clientLabel = input.client_phone
     ? `${input.client_name} (${input.client_phone})`
     : input.client_name;
-  const uuid = await enqueue(
-    'debt_payment',
-    {
-      debt: input.debt,
-      amount: String(input.amount),
-      payment_type: input.payment_type,
-      date: todayISO(),
-      device_time: new Date().toISOString(),
-    },
-    `Qarz to'lovi · ${clientLabel} · ${input.amount.toLocaleString('ru-RU')} so'm`,
-  );
+  const uuid = await db.transaction('rw', db.outbox, db.debts, async () => {
+    const id = await enqueue(
+      'debt_payment',
+      {
+        debt: input.debt,
+        amount: String(input.amount),
+        payment_type: input.payment_type,
+        date: todayISO(),
+        device_time: new Date().toISOString(),
+      },
+      `Qarz to'lovi · ${clientLabel} · ${input.amount.toLocaleString('ru-RU')} so'm`,
+    );
+    const cached = await db.debts.get(input.debt);
+    if (cached) {
+      const nextRemaining = Math.max(0, Number(cached.remaining) - input.amount);
+      await db.debts.update(input.debt, {
+        paid_amount: String(Number(cached.paid_amount) + input.amount),
+        remaining: String(nextRemaining),
+        status: nextRemaining <= 0 ? 'PAID' : 'PARTIAL',
+      });
+    }
+    return id;
+  });
   void pushOutbox();
   return uuid;
 }

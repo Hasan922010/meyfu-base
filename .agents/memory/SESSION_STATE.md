@@ -177,13 +177,32 @@
     - **16 va 17. Tozalash va Lint:** `ClientViewSet.debts` haqiqiy `Debt` yozuvlariga ulandi; o'lik kod va ishlatilmagan 3 ta paket (`@replit/connectors-sdk`, `@hookform/resolvers`, `django-extensions`) olib tashlandi; `ruff` ogohlantirishlari (`--ignore E501`) 0 ga tushirildi.
     - **11. Regressiya Testlari va Yakuniy Verifikatsiya:** 12 ta backend test fayliga barcha yuqoridagi bandlar uchun 22 ta yangi regressiya testi qo'shildi. Backend: **664/664 test (`pytest`)**, `ruff` 0 xato, `makemigrations --check --dry-run` ("No changes detected"); `frontend/`: `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **62/62 test fayli (256/256 test)**, `vite build` muvaffaqiyatli; `artifacts/meyfu-app/`: Vitest **62/62 (256/256)**, `tsc -b --noEmit` 0 xato, `vite build` muvaffaqiyatli, `scripts/sync-frontend.sh --check` OK; `pnpm run typecheck` (`tsc --build`, `manage.py check`, `scripts`, `meyfu-app`) 0 xato.
 
+21. **Mobil Qarz Undirish va Modal Inputda Klaviatura Yopilishi Tuzatildi (`Modal.tsx`, `DebtCollectPage.tsx`):**
+    - **Asosiy Sabab (`frontend/src/shared/components/Modal.tsx`):** `Modal` komponentidagi `useEffect` `[open, onClose]` ga bog'langan edi. Ichki inputga har bir belgi yozilganda (`setAmount` va h.k.) ota komponent qayta render bo'lib yangi `onClose` funksiyasini uzatar, natijada `useEffect` cleanup (`previous?.focus()`) ishga tushib input fokusini tortib olar va mobil klaviaturani yopib qo'yar edi.
+    - **Yechim:** `onCloseRef` (`useRef`) joriy etilib, fokus/Escape `useEffect` faqat `[open]` ga bog'landi; agar fokus allaqachon dialog ichida bo'lsa, qayta fokuslanmasligi ta'minlandi. `DebtCollectPage.tsx` dagi summa maydoniga `aria-label="To'lov summasi"`, `min`/`max` va xato xabari (`mutation.isError`) qo'shildi.
+    - **Test va Sinxronizatsiya:** `Modal.test.tsx` va `DebtCollectPage.test.tsx` ga fokus saqlanishi bo'yicha regressiya testlari qo'shildi; `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **62/62 test fayli (257/257 test)**; `bash scripts/sync-frontend.sh --sync` va `--check` bilan `artifacts/meyfu-app/` 1:1 sinxronlandi.
+
+22. **`/ponytail-audit` Bo'yicha Aniqlangan 1–6 Kamchiliklar To'liq Tuzatildi:**
+    - **1. Hamyon `reverse_reference` qulfi (`backend/apps/wallet/services.py`):** `DistributorWallet.objects.select_for_update().get_or_create(...)` orqali `net` hisoblanishidan oldin hamyon qulflandi (parallel bekor qilish poygasi bartaraf etildi).
+    - **2. Offline Qarz Undirish Keshi (`db.ts` v3, `sync.ts`, `actions.ts`, `DebtCollectPage.tsx`):** `debts` Dexie jadvali qo'shildi, `pullReferenceData` da keshlanadi, offline paytda `DebtCollectPage` keshdan o'qiydi va `saveDebtPaymentLocal` lokal `remaining` ni kamaytiradi.
+    - **3. `bulk-sync` O'chirilgan Tovar (`backend/apps/sales/services/sync.py`):** `_handle_sale` va `_handle_return` da `products.get(...)` bilan `NOT_FOUND` qaytariladi (`KeyError` -> `INTERNAL` o'rniga).
+    - **4. `PinLockGate.tsx` Akkaunt Almashtirish:** `[userId]` o'zgarganda `locked` holati qayta hisoblanadi.
+    - **5. Manfiy `cash_handed` Himoyasi (`backend/apps/dayclose/services/close.py`):** `submit_day_close` servis darajasida manfiy `cash_handed` ni `INVALID_AMOUNT` bilan rad etadi.
+    - **6. Ortiqcha Ichma-ich Dexie Tranzaksiyasi (`actions.ts`):** `saveSaleLocal` dagi ortiqcha ichki `db.transaction` olib tashlandi.
+    - **Verifikatsiya:** Backend `ruff` 0 xato, `test_wallet.py` + `test_dayclose.py` + `test_sales.py` (**48/48 test**); Frontend `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **62/62 (258/258)**; `artifacts/meyfu-app/` 1:1 sinxronlandi.
+
+23. **Mahsulotlar Ro'yxatidagi Qidiruv Maydoni (`ProductFiltersBar.tsx`) Tuzatildi:**
+    - **Asosiy Sabab:** `frontend/src/admin/products/ProductFiltersBar.tsx` da `localSearch`, `localPriceMin`, `localPriceMax` va URL (`filters.*`) o'rtasida ikki tomonlama `useEffect` poygasi (race condition) bor edi — URL yangilanganda davom etayotgan yozuv ustiga eski qiymat yozilib ketar, tozalash (`clearFilters`) dan keyin esa kechikkan `debouncedSearch` qayta URL ga yozilar edi.
+    - **Yechim:** Umumiy `useDebouncedUrlFilter` hooki (`lastCommittedRef` bilan) joriy etilib, tashqi URL o'zgarishlari va foydalanuvchi kiritishi ajratildi; qidiruv maydoniga `aria-label="Mahsulot qidirish"`, tozalash tugmasiga `type="button"` hamda darhol tozalash qo'shildi.
+    - **Verifikatsiya:** `ProductsPage.test.tsx` ga regressiya testi qo'shildi; `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **63/63 test fayli (261/261 test)**; `bash scripts/sync-frontend.sh --sync` va `--check` bilan `artifacts/meyfu-app/` 1:1 sinxronlandi.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)
 
 - **Backend:** Python 3.12 · Django 5.2 · DRF · Channels/Daphne (`backend/`) — lokal port: `8001` (`664/664` pytest)
-- **Frontend (GitHub source):** React 18 · TypeScript · Vite · Dexie PWA (`frontend/`) — lokal port: `5173` (`62` test fayli / `256` test)
-- **Deployable Web Artifact (Replit):** `artifacts/meyfu-app/` — `bash scripts/sync-frontend.sh --check` orqali `frontend/{src,public}` bilan 1:1 paritet (`62` test fayli / `256` test)
+- **Frontend (GitHub source):** React 18 · TypeScript · Vite · Dexie PWA (`frontend/`) — lokal port: `5173` (`63` test fayli / `261` test)
+- **Deployable Web Artifact (Replit):** `artifacts/meyfu-app/` — `bash scripts/sync-frontend.sh --check` orqali `frontend/{src,public}` bilan 1:1 paritet (`63` test fayli / `261` test)
 - **Ishga tushirish:** `./start.sh` (Backend `:8001`, Frontend `:5173`) yoki pnpm workspace skriptlari
 - **Bilimlar grafi:** `graphify-out/` (kod o'zgarganda `graphify update .` bilan yangilanadi)
 

@@ -58,6 +58,8 @@ export function LoginPage(): ReactElement {
     <div className="flex min-h-full items-center justify-center p-4">
       <form
         noValidate
+        toolname="login"
+        tooldescription="Sign in to MeyFu with phone number and password."
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-900"
       >
@@ -72,12 +74,14 @@ export function LoginPage(): ReactElement {
           </label>
           <input
             id="login-phone"
+            name="phone"
             ref={phoneRef}
             className="field"
             type="tel"
             inputMode="tel"
             autoComplete="username"
             placeholder="+998901234567"
+            toolparamdescription="User phone number in +998XXXXXXXXX format"
             autoFocus
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -98,10 +102,12 @@ export function LoginPage(): ReactElement {
           <div className="relative">
             <input
               id="login-password"
+              name="password"
               ref={passwordRef}
               className="field pr-11"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
+              toolparamdescription="Account password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               aria-invalid={errors.password ? true : undefined}

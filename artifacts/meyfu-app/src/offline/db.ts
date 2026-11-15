@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 
+import type { Debt } from '@/shared/types/sales';
+
 // CLAUDE.md 4.1 — lokal baza (Dexie / IndexedDB)
 
 export interface CachedProduct {
@@ -105,6 +107,7 @@ const db = new Dexie('meyfu') as Dexie & {
   clients: EntityTable<CachedClient, 'id'>;
   van_stock: EntityTable<CachedVanStock, 'product'>;
   orders: EntityTable<CachedOrder, 'id'>;
+  debts: EntityTable<Debt, 'id'>;
   outbox: EntityTable<OutboxOp, 'client_uuid'>;
   meta: EntityTable<MetaRow, 'key'>;
 };
@@ -119,6 +122,10 @@ db.version(1).stores({
 
 db.version(2).stores({
   orders: 'id, status',
+});
+
+db.version(3).stores({
+  debts: 'id, client, status',
 });
 
 export { db };

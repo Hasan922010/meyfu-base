@@ -2,6 +2,7 @@ import { api } from '@/shared/api/client';
 import { catalogApi } from '@/shared/api/catalog';
 import { clientsApi } from '@/shared/api/clients';
 import { companyApi } from '@/shared/api/company';
+import { debtsApi } from '@/shared/api/debts';
 import { ordersApi } from '@/shared/api/orders';
 import {
   bulkSyncDataShape,
@@ -102,6 +103,7 @@ export async function pullReferenceData(): Promise<void> {
     await pullVanStock();
     await pullOrdersToDeliver();
   }
+  await pullDebts();
 
   // Kompaniya rekvizitlari + muhr (chek PDF uchun) — best-effort.
   // Dinamik import — `companyCache` faqat chek oqimi bilan yuklanadi (PERF-001).
@@ -147,6 +149,18 @@ async function pullOrdersToDeliver(): Promise<void> {
     );
   } catch {
     // buyurtma oqimi hali yo'q bo'lishi mumkin — jimgina o'tkazamiz
+  }
+}
+
+async function pullDebts(): Promise<void> {
+  try {
+    const list = await debtsApi.myRoute();
+    await db.transaction('rw', db.debts, async () => {
+      await db.debts.clear();
+      await db.debts.bulkPut(list);
+    });
+  } catch {
+    // offline yoki ruxsat yo'q — mavjud kesh saqlanadi
   }
 }
 

@@ -18,3 +18,4 @@ export function PermissionDenied(): ReactElement {
     </div>
   );
 }
+

@@ -51,3 +51,4 @@ export function canAccessRoute(path: string, role: Role | undefined): boolean {
 
   return true;
 }
+

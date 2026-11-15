@@ -89,7 +89,9 @@ def reverse_reference(
     havola bo'yicha barcha yozuvlar (avvalgi CORRECTION'lar ham) yig'indisi olinadi,
     shuning uchun ikki marta chaqirilsa ikkinchisi hech narsa qilmaydi.
     """
-    wallet = get_or_create_wallet(distributor)
+    wallet, _created = DistributorWallet.objects.select_for_update().get_or_create(
+        distributor=distributor, defaults={"balance": _ZERO}
+    )
     net = WalletTransaction.objects.filter(
         wallet=wallet, reference_type=reference_type,
         reference_id=str(reference_id),

@@ -2,13 +2,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CircleCheckBig } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
+import { db } from '@/offline/db';
 import { saveDebtPaymentLocal } from '@/offline/actions';
 import { useSync } from '@/offline/useSync';
 import { debtsApi } from '@/shared/api/debts';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
+import { useWebMcpTool } from '@/shared/lib/webmcp';
 import type { Debt } from '@/shared/types/sales';
+
+const COLLECT_DEBT_SCHEMA = {
+  type: 'object',
+  required: ['debt_id', 'amount'],
+  properties: {
+    debt_id: { type: 'string', description: 'UUID of the debt record' },
+    amount: { type: 'number', description: 'Payment amount in UZS (1..remaining)' },
+    payment_type: { type: 'string', enum: ['NAQD', 'PLASTIK', 'OTKAZMA'] },
+  },
+};
 
 export function DebtCollectPage(): ReactElement {
   const qc = useQueryClient();
@@ -21,7 +33,20 @@ export function DebtCollectPage(): ReactElement {
 
   const query = useQuery({
     queryKey: ['debts', 'my'],
-    queryFn: () => debtsApi.myRoute(),
+    queryFn: async () => {
+      try {
+        const list = await debtsApi.myRoute();
+        await db.transaction('rw', db.debts, async () => {
+          await db.debts.clear();
+          await db.debts.bulkPut(list);
+        });
+        return list;
+      } catch (err) {
+        const cached = (await db.debts.toArray()).filter((d) => Number(d.remaining) > 0);
+        if (cached.length > 0 || !navigator.onLine) return cached;
+        throw err;
+      }
+    },
   });
 
   const mutation = useMutation({
@@ -53,6 +78,31 @@ export function DebtCollectPage(): ReactElement {
     return qDigits.length >= 3 && phone.replace(/\D/g, '').includes(qDigits);
   });
   const totalOwed = visibleRows.reduce((s, d) => s + Number(d.remaining), 0);
+
+  useWebMcpTool({
+    name: 'collect_debt_payment',
+    description: 'Record a full or partial debt payment for a debtor on the current route.',
+    inputSchema: COLLECT_DEBT_SCHEMA,
+    execute: async (input) => {
+      const debtId = typeof input.debt_id === 'string' ? input.debt_id : '';
+      const target = rows.find((d) => d.id === debtId);
+      const payAmount = Number(input.amount);
+      if (!target) throw new Error('Debt not found');
+      if (!Number.isFinite(payAmount) || payAmount <= 0 || payAmount > Number(target.remaining)) {
+        throw new Error('Invalid payment amount');
+      }
+      const payType = (input.payment_type as 'NAQD' | 'PLASTIK' | 'OTKAZMA') || 'NAQD';
+      await saveDebtPaymentLocal({
+        debt: target.id,
+        client_name: target.client_name,
+        client_phone: target.client_phone,
+        amount: payAmount,
+        payment_type: payType,
+      });
+      void qc.invalidateQueries({ queryKey: ['debts', 'my'] });
+      return { ok: true, debt_id: target.id, amount: payAmount };
+    },
+  });
 
   function close(): void {
     setSelected(null);
@@ -145,9 +195,15 @@ export function DebtCollectPage(): ReactElement {
               className="field text-lg"
               type="number"
               inputMode="numeric"
+              aria-label="To'lov summasi"
+              min={1}
+              max={Number(selected?.remaining ?? 0)}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
+            {mutation.isError && (
+              <p className="text-sm text-danger">Xatolik yuz berdi. Qayta urinib ko'ring.</p>
+            )}
             <div className="flex gap-2">
               {(['NAQD', 'PLASTIK', 'OTKAZMA'] as const).map((tp) => (
                 <button

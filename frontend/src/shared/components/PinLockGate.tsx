@@ -23,6 +23,12 @@ export function PinLockGate({ children }: { children: ReactNode }): ReactElement
   const [busy, setBusy] = useState<boolean>(false);
 
   useEffect(() => {
+    setLocked(!!userId && hasPin(userId) && !isUnlocked());
+    setPin('');
+    setError('');
+  }, [userId]);
+
+  useEffect(() => {
     let hiddenAt = 0;
     const onVisibility = (): void => {
       if (document.hidden) {

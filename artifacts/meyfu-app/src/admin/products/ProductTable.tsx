@@ -228,3 +228,4 @@ export function ProductTable({
     </div>
   );
 }
+

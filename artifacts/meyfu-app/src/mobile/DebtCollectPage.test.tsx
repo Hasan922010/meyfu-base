@@ -74,16 +74,45 @@ describe('DebtCollectPage — telefon orqali farqlash va qidirish', () => {
     fireEvent.click(screen.getByRole('button', { name: /Omad Market.*\+998902220002/ }));
     expect(await screen.findByText('Qarz: Omad Market (+998902220002)')).toBeInTheDocument();
 
+    const amountInput = screen.getByLabelText<HTMLInputElement>("To'lov summasi");
+    amountInput.focus();
+    fireEvent.change(amountInput, { target: { value: '50000' } });
+    expect(document.activeElement).toBe(amountInput);
+
     fireEvent.click(screen.getByRole('button', { name: "To'lovni qabul qilish" }));
     await waitFor(() =>
       expect(saveDebtPaymentLocal).toHaveBeenCalledWith({
         debt: 'd2',
         client_name: 'Omad Market',
         client_phone: '+998902220002',
-        amount: 250000,
+        amount: 50000,
         payment_type: 'NAQD',
       }),
     );
+  });
+
+  it("offline bo'lganda keshlangan qarzdorlar ro'yxatini ko'rsatadi", async () => {
+    const { db } = await import('@/offline/db');
+    await db.debts.clear();
+    await db.debts.put({
+      id: 'd-off',
+      client: 'c-off',
+      client_name: 'Offline Mijoz',
+      client_phone: '+998909990000',
+      sale: null,
+      sale_number: null,
+      amount: '50000',
+      paid_amount: '0',
+      remaining: '50000',
+      due_date: null,
+      status: 'ACTIVE',
+      status_display: 'Faol',
+      created_at: '2026-10-01T10:00:00Z',
+    });
+    debtsApi.myRoute.mockRejectedValueOnce(new Error('Network Error'));
+
+    renderPage();
+    expect(await screen.findByText('Offline Mijoz')).toBeInTheDocument();
   });
 });
 

@@ -35,3 +35,4 @@ export function PwaPrompt(): ReactElement | null {
     </div>
   );
 }
+
