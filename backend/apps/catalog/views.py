@@ -51,7 +51,7 @@ from .models import (
     ProductPrice,
     Unit,
 )
-from .pricing import PRICE_FIELDS, branch_price_map, price_for
+from .pricing import PRICE_FIELDS, branch_price_map
 from .serializers import (
     BranchPriceSerializer,
     BrandSerializer,
@@ -339,18 +339,14 @@ class ProductViewSet(BaseModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         if not request.query_params.get("ordering"):
             queryset = queryset.order_by("category__name", "name")
-        branch = user_branch(request.user)
-        bmap = branch_price_map(branch) if branch is not None else {}
 
         headers = [
             "№", "Kategoriya", "Mahsulot nomi", "SKU", "Shtrix-kod", "Brend", "Holat",
-            "Tannarx", "Ulgurji narx", "Chakana narx", "Min narx",
-            "Jami qoldiq", "Band qoldiq", "Mavjud qoldiq", "Zaxira holati",
+            "Tannarx", "Jami qoldiq", "Mavjud qoldiq", "Zaxira holati",
         ]
         stock_labels = {"ok": "Yetarli", "low": "Kam", "out": "Tugagan"}
         rows: list[list[object]] = [headers]
         for idx, product in enumerate(queryset.iterator(chunk_size=500), start=1):
-            prices = price_for(product, branch, bmap)
             rows.append([
                 idx,
                 _safe_cell(product.category.name),
@@ -360,11 +356,7 @@ class ProductViewSet(BaseModelViewSet):
                 _safe_cell(product.brand.name if product.brand_id else ""),
                 "Faol" if product.is_active else "Nofaol",
                 float(product.cost_price),
-                float(prices.wholesale_price),
-                float(prices.retail_price),
-                float(prices.min_price),
                 float(product.total_stock),
-                float(product.reserved_stock),
                 float(product.available_stock),
                 stock_labels.get(product.stock_status, _safe_cell(product.stock_status)),
             ])
@@ -391,16 +383,16 @@ class ProductViewSet(BaseModelViewSet):
                     cell.fill = header_fill
                     cell.font = header_font
                     cell.alignment = Alignment(
-                        horizontal="right" if 8 <= c_idx <= 14 else "left",
+                        horizontal="right" if 8 <= c_idx <= 10 else "left",
                         vertical="center",
                     )
                 else:
                     if r_idx % 2 == 1:
                         cell.fill = zebra_fill
-                    if 8 <= c_idx <= 14:
+                    if 8 <= c_idx <= 10:
                         cell.number_format = "#,##0"
                         cell.alignment = Alignment(horizontal="right", vertical="center")
-                    elif c_idx in (1, 7, 15):
+                    elif c_idx in (1, 7, 11):
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                     else:
                         cell.alignment = Alignment(horizontal="left", vertical="center")

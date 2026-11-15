@@ -222,9 +222,10 @@ def test_product_export_permissions_formula_escape_and_branch_scope(
     ws_bm = wb_bm.active
     bm_rows = list(ws_bm.iter_rows(values_only=True))
     headers = bm_rows[0]
+    for removed in ("Ulgurji narx", "Chakana narx", "Min narx", "Band qoldiq"):
+        assert removed not in headers
     data_dicts = [dict(zip(headers, r, strict=True)) for r in bm_rows[1:]]
     formula_row = next(r for r in data_dicts if r["SKU"] == "'+CMD-1")
-    assert Decimal(str(formula_row["Ulgurji narx"])) == Decimal("17500")
     assert Decimal(str(formula_row["Jami qoldiq"])) == Decimal("12")
     assert Decimal(str(formula_row["Mavjud qoldiq"])) == Decimal("12")
 
