@@ -84,10 +84,23 @@ for p in "$PORT" "$FRONTEND_PORT"; do
   if command -v fuser >/dev/null 2>&1; then
     fuser -k "${p}/tcp" 2>/dev/null || true
   elif command -v lsof >/dev/null 2>&1; then
-    lsof -tiTCP:"$p" -sTCP:LISTEN 2>/dev/null | xargs -r kill 2>/dev/null || true
+    lsof -tiTCP:"$p" -sTCP:LISTEN 2>/dev/null | xargs -r kill -9 2>/dev/null || true
   fi
 done
 sleep 1
+
+port_in_use() {
+  ss -tln 2>/dev/null | grep -qE ":${1}\b"
+}
+
+if port_in_use "$FRONTEND_PORT"; then
+  echo "    Diqqat: $FRONTEND_PORT-port boshqa jarayon tomonidan band qilingan:"
+  ss -tlnp 2>/dev/null | grep -E ":${FRONTEND_PORT}\b" || true
+  while port_in_use "$FRONTEND_PORT" && [ "$FRONTEND_PORT" -lt 5190 ]; do
+    FRONTEND_PORT=$((FRONTEND_PORT + 1))
+  done
+  echo "    Frontend bo'sh portda ochiladi: http://localhost:$FRONTEND_PORT"
+fi
 
 step "Backend: runserver 0.0.0.0:$PORT (fon rejimida)"
 "$PY" manage.py runserver "0.0.0.0:$PORT" &
