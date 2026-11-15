@@ -89,9 +89,19 @@ export function MobileAdminDayClose(): ReactElement {
                   <Row label="Sotildi" value={money(d.sold_amount)} />
                   <Row label="Naqd sotuv" value={money(d.cash_sales_amount)} />
                   <Row
-                    label="Undirilgan qarz"
+                    label="Undirilgan qarz (naqd)"
                     value={money(d.debt_collected_amount)}
                   />
+                  <Row
+                    label="Undirilgan qarz (plastik)"
+                    value={money(d.debt_collected_card_amount ?? '0')}
+                  />
+                  {Number(d.debt_collected_transfer_amount ?? 0) > 0 && (
+                    <Row
+                      label="Undirilgan qarz (o'tkazma)"
+                      value={money(d.debt_collected_transfer_amount ?? '0')}
+                    />
+                  )}
                   <Row label="Kutilgan kassa" value={money(d.cash_expected)} />
                   <Row label="Topshirilgan" value={money(d.cash_handed_amount)} />
                   <Row

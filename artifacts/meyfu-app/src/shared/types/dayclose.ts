@@ -35,6 +35,8 @@ export interface DayClose {
   stock_difference_amount: string;
   cash_sales_amount: string;
   debt_collected_amount: string;
+  debt_collected_card_amount?: string;
+  debt_collected_transfer_amount?: string;
   cash_expected: string;
   cash_handed_amount: string;
   cash_difference: string;
@@ -58,6 +60,8 @@ export interface DayCloseToday {
   sold_amount?: string;
   cash_sales_amount?: string;
   debt_collected_amount?: string;
+  debt_collected_card_amount?: string;
+  debt_collected_transfer_amount?: string;
   debt_given_amount?: string;
   cash_expected?: string;
   sales_count?: number;

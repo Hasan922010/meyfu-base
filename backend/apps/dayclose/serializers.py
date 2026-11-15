@@ -50,6 +50,8 @@ class DayCloseSerializer(serializers.ModelSerializer):
     )
     has_difference = serializers.BooleanField(read_only=True)
     daily_returns = DailyReturnSerializer(many=True, read_only=True)
+    debt_collected_card_amount = serializers.SerializerMethodField()
+    debt_collected_transfer_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = DayClose
@@ -59,6 +61,7 @@ class DayCloseSerializer(serializers.ModelSerializer):
             "loaded_amount", "sold_amount", "returned_amount",
             "stock_difference_qty", "stock_difference_amount",
             "cash_sales_amount", "debt_collected_amount",
+            "debt_collected_card_amount", "debt_collected_transfer_amount",
             "expense_amount", "expense_approved_amount",
             "cash_expected", "wallet_balance_end",
             "cash_handed_amount", "cash_difference",
@@ -67,6 +70,25 @@ class DayCloseSerializer(serializers.ModelSerializer):
             "closed_by", "closed_at", "note", "daily_returns", "created_at",
         )
         read_only_fields = fields
+
+    def _debt_collected_by_type(self, obj: DayClose, payment_type: str) -> str:
+        from django.db.models import Sum
+
+        from apps.sales.models import DebtPayment
+
+        total = (
+            DebtPayment.objects.filter(
+                collected_by=obj.distributor, date=obj.date, payment_type=payment_type
+            ).aggregate(s=Sum("amount"))["s"]
+            or Decimal("0")
+        )
+        return f"{total:.2f}"
+
+    def get_debt_collected_card_amount(self, obj: DayClose) -> str:
+        return self._debt_collected_by_type(obj, "PLASTIK")
+
+    def get_debt_collected_transfer_amount(self, obj: DayClose) -> str:
+        return self._debt_collected_by_type(obj, "OTKAZMA")
 
 
 class DayCloseReturnRowSerializer(serializers.Serializer):
@@ -93,6 +115,8 @@ class DayClosePreviewSerializer(serializers.Serializer):
     sold_amount = serializers.DecimalField(**_MONEY)
     cash_sales_amount = serializers.DecimalField(**_MONEY)
     debt_collected_amount = serializers.DecimalField(**_MONEY)
+    debt_collected_card_amount = serializers.DecimalField(**_MONEY, required=False)
+    debt_collected_transfer_amount = serializers.DecimalField(**_MONEY, required=False)
     debt_given_amount = serializers.DecimalField(**_MONEY)
     cash_expected = serializers.DecimalField(**_MONEY)
     sales_count = serializers.IntegerField()

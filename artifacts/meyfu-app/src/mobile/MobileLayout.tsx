@@ -37,7 +37,7 @@ type Tab = {
 
 /** Zakaz oluvchiga ochiq sahifalar — qolganlari (sotuv, hamyon...) backendda ham yopiq */
 const ORDER_TAKER_PATHS = [
-  '/m', '/m/orders', '/m/order/new', '/m/clients', '/m/payroll',
+  '/m', '/m/orders', '/m/order/new', '/m/clients', '/m/debts', '/m/payroll',
   '/m/sync', '/m/profile', '/m/help',
 ];
 
@@ -60,6 +60,7 @@ export function MobileLayout(): ReactElement {
   const canTakeOrders = hasUserPermission(user, 'can_take_orders');
   const canReceiveStock = hasUserPermission(user, 'can_receive_stock');
   const canSeeWarehouseStock = hasUserPermission(user, 'can_see_warehouse_stock');
+  const canCollectDebts = hasUserPermission(user, 'can_collect_debts');
 
   const tabs = useMemo(() => {
     if (role != null && ADMIN_ROLES.includes(role)) {
@@ -117,11 +118,12 @@ export function MobileLayout(): ReactElement {
   const isSaleBlocked = pathname.startsWith('/m/sale') && !canMakeSales;
   const isOrderBlocked = pathname.startsWith('/m/order') && !canTakeOrders;
   const isReceiveBlocked = pathname.startsWith('/m/receive') && !canReceiveStock;
+  const isDebtBlocked = pathname.startsWith('/m/debts') && !canCollectDebts;
   const isOrderTakerDefaultBlocked =
     role === 'ORDER_TAKER' && !canMakeSales && !ORDER_TAKER_PATHS.includes(pathname);
 
   const blocked =
-    isSaleBlocked || isOrderBlocked || isReceiveBlocked || isOrderTakerDefaultBlocked;
+    isSaleBlocked || isOrderBlocked || isReceiveBlocked || isDebtBlocked || isOrderTakerDefaultBlocked;
 
   // Ochilishda avval navbatni yuboramiz, keyin tortamiz (UX N3)
   useEffect(() => {

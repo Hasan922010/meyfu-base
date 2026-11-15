@@ -118,6 +118,8 @@ class DayCloseViewSet(
             "sold_amount": _m(snap.sold_amount),
             "cash_sales_amount": _m(snap.cash_sales_amount),
             "debt_collected_amount": _m(snap.debt_collected_amount),
+            "debt_collected_card_amount": _m(snap.debt_collected_card_amount),
+            "debt_collected_transfer_amount": _m(snap.debt_collected_transfer_amount),
             "expense_amount": _m(snap.expense_amount),
             "expense_approved_amount": _m(snap.expense_approved_amount),
             "debt_given_amount": _m(snap.debt_given_amount),

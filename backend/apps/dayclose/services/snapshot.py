@@ -55,6 +55,8 @@ class DayCloseSnapshot:
     stock_difference_amount: Decimal = _ZERO
     cash_sales_amount: Decimal = _ZERO
     debt_collected_amount: Decimal = _ZERO
+    debt_collected_card_amount: Decimal = _ZERO
+    debt_collected_transfer_amount: Decimal = _ZERO
     expense_amount: Decimal = _ZERO
     expense_approved_amount: Decimal = _ZERO
     cash_expected: Decimal = _ZERO
@@ -111,11 +113,15 @@ def build_snapshot(distributor, date, *, daily_return_items=None) -> DayCloseSna
             distributor=distributor, date=date, status__in=_ACTIVE_SALE
         ).aggregate(s=Sum("debt_amount"))["s"] or _ZERO
     )
-    snap.debt_collected_amount = (
-        DebtPayment.objects.filter(
-            collected_by=distributor, date=date, payment_type="NAQD"
-        ).aggregate(s=Sum("amount"))["s"] or _ZERO
-    )
+    debt_by_type = {
+        row["payment_type"]: (row["s"] or _ZERO)
+        for row in DebtPayment.objects.filter(collected_by=distributor, date=date)
+        .values("payment_type")
+        .annotate(s=Sum("amount"))
+    }
+    snap.debt_collected_amount = debt_by_type.get("NAQD", _ZERO)
+    snap.debt_collected_card_amount = debt_by_type.get("PLASTIK", _ZERO)
+    snap.debt_collected_transfer_amount = debt_by_type.get("OTKAZMA", _ZERO)
 
     day_expenses = DistributorExpense.objects.filter(
         distributor=distributor, date=date

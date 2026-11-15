@@ -349,7 +349,14 @@ export function DayCloseWizard(): ReactElement {
               Bugungi tushumlar hisobi
             </div>
             <Line label="Naqd sotuv" value={money(data?.cash_sales_amount ?? '0')} />
-            <Line label="Undirilgan qarz" value={money(data?.debt_collected_amount ?? '0')} />
+            <Line label="Undirilgan qarz (naqd)" value={money(data?.debt_collected_amount ?? '0')} />
+            <Line label="Undirilgan qarz (plastik)" value={money(data?.debt_collected_card_amount ?? '0')} />
+            {Number(data?.debt_collected_transfer_amount ?? 0) > 0 && (
+              <Line
+                label="Undirilgan qarz (o'tkazma)"
+                value={money(data?.debt_collected_transfer_amount ?? '0')}
+              />
+            )}
             <div className="my-1 border-t border-gray-200 dark:border-gray-700" />
             <Line label="Kutilgan naqd" value={money(data?.cash_expected ?? '0')} bold />
           </div>

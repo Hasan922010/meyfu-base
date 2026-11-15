@@ -132,7 +132,14 @@ export function DayClosePage(): ReactElement {
               <Row label="Sotilgan" value={money(detail.sold_amount)} />
               <Row label="Qaytarilgan" value={money(detail.returned_amount)} />
               <Row label="Naqd sotuv" value={money(detail.cash_sales_amount)} />
-              <Row label="Undirilgan qarz" value={money(detail.debt_collected_amount)} />
+              <Row label="Undirilgan qarz (naqd)" value={money(detail.debt_collected_amount)} />
+              <Row label="Undirilgan qarz (plastik)" value={money(detail.debt_collected_card_amount ?? '0')} />
+              {Number(detail.debt_collected_transfer_amount ?? 0) > 0 && (
+                <Row
+                  label="Undirilgan qarz (o'tkazma)"
+                  value={money(detail.debt_collected_transfer_amount ?? '0')}
+                />
+              )}
               <Row label="Qarzga berildi" value={money(detail.debt_given_amount)} />
               <Row label="Kutilgan naqd" value={money(detail.cash_expected)} />
               <Row label="Topshirilgan" value={money(detail.cash_handed_amount)} />
