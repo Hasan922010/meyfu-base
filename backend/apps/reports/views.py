@@ -60,7 +60,7 @@ from .services.reorder import reorder_suggestions
 
 User = get_user_model()
 
-_REPORT_ROLES = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
+_REPORT_ROLES = (Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT, Role.BRANCH_MANAGER)
 _NOWHERE = UUID(int=0)  # filialsiz filial rahbari — bo'sh hisobot
 
 

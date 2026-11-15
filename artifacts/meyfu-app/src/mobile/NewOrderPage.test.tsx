@@ -47,7 +47,7 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     });
   });
 
-  it('qadoqli tovar tanlanganda Dona va Qadoq tanlovi chiqadi va qadoq bo‘yicha to‘g‘ri hisoblaydi', async () => {
+  it('buyurtmada dona narxida hisoblaydi va tezkor sonlar bosilganda qo‘shib boradi', async () => {
     render(
       <MemoryRouter>
         <NewOrderPage />
@@ -66,26 +66,25 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     const productBtn = await screen.findByRole('button', { name: /Bio Kukun 3kg/ });
     fireEvent.click(productBtn);
 
-    // 3. Dona va Qadoq tanlov tugmalari paydo bo‘lishi kerak
-    expect(screen.getByRole('button', { name: 'Dona (dona)' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Qadoq \(karopka — 12 dona\)/ })).toBeInTheDocument();
+    // 3. Qadoq/dona almashtirish tugmalari chiqmasligi kerak, qadoqli tovar avtomatik karopkada hisoblanadi
+    expect(screen.queryByRole('button', { name: 'Dona (dona)' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Qadoq \(/ })).not.toBeInTheDocument();
 
-    // 4. Qadoq miqdorini 10 qilib belgilash (masalan: 10 karopka)
-    const quick10Btn = screen.getByRole('button', { name: '10' });
-    fireEvent.click(quick10Btn);
+    // 4. 3 bosilsa 3 karopka, yana 3 bosilsa 6 karopka (6 * 12 = 72 dona * 25 000 = 1 800 000)
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    expect(screen.getByText(/3 karopka × 12 dona = 36 dona/)).toBeInTheDocument();
 
-    // 5. Hisoblash formulasi ekranda to‘g‘ri aks etishi: 10 karopka * 12 dona = 120 dona
-    // 120 dona * 25 000 so'm = 3 000 000 so'm
-    expect(screen.getByText(/10 karopka × 12 dona = 120 dona/)).toBeInTheDocument();
-    expect(screen.getAllByText(/3 000 000/).length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    expect(screen.getByText(/6 karopka × 12 dona = 72 dona/)).toBeInTheDocument();
+    expect(screen.getAllByText(/1 800 000/).length).toBeGreaterThanOrEqual(1);
 
-    // 6. Savatga qo'shish
+    // 5. Savatga qo'shish
     const addBtn = screen.getByRole('button', { name: /Savatga qo'shish/ });
     fireEvent.click(addBtn);
 
-    // 7. Savatda tovar qatori qadoq va dona soni bilan aniq ko‘rinishi kerak
-    expect(screen.getByText(/10 karopka/)).toBeInTheDocument();
-    expect(screen.getByText(/\(120 dona\)/)).toBeInTheDocument();
+    // 6. Savatda qadoq va umumiy dona ko'rinishida chiqadi
+    expect(screen.getByText(/6 karopka/)).toBeInTheDocument();
+    expect(screen.getByText(/\(72 dona\)/)).toBeInTheDocument();
   });
 
   it('aksiyali tovar buyurtma qilinganda avtomatik bepul aksiya bonusi qo‘shiladi va saqlanadi', async () => {
@@ -115,6 +114,9 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
 
     const productBtn = await screen.findByRole('button', { name: /Bio Kukun 3kg/ });
     fireEvent.click(productBtn);
+
+    // 1 karopka = 12 dona (bonus_trigger_qty: 12)
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
 
     const addBtn = screen.getByRole('button', { name: /Savatga qo'shish/ });
     fireEvent.click(addBtn);

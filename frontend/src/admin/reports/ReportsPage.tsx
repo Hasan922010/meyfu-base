@@ -246,6 +246,8 @@ function QueryTab({ range }: { range: Range }): ReactElement {
         <DataState
           isLoading={query.isLoading}
           isError={query.isError}
+          error={query.error}
+          onRetry={() => void query.refetch()}
           isEmpty={!query.isLoading && (query.data?.rows.length ?? 0) === 0}
           emptyText="Ma'lumot yo'q"
         >
@@ -331,6 +333,8 @@ function AbcTab({ range }: { range: Range }): ReactElement {
       <DataState
         isLoading={query.isLoading}
         isError={query.isError}
+        error={query.error}
+        onRetry={() => void query.refetch()}
         isEmpty={!query.isLoading && (query.data?.rows.length ?? 0) === 0}
         emptyText="Ma'lumot yo'q"
       >
@@ -417,7 +421,12 @@ function PnlTab({ range }: { range: Range }): ReactElement {
         />
       </div>
 
-      <DataState isLoading={query.isLoading} isError={query.isError}>
+      <DataState
+        isLoading={query.isLoading}
+        isError={query.isError}
+        error={query.error}
+        onRetry={() => void query.refetch()}
+      >
         {query.data && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3">

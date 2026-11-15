@@ -37,4 +37,23 @@ describe('QuantityStepper component', () => {
     fireEvent.click(screen.getByRole('button', { name: '10' }));
     expect(onChange).toHaveBeenCalledWith(10);
   });
+
+  it('accumulateQuick yoqilganda har bosishda eski qiymatga qo‘shib boradi', () => {
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={3}
+        unitLabel="dona"
+        min={0}
+        accumulateQuick
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    expect(onChange).toHaveBeenCalledWith(6);
+
+    fireEvent.click(screen.getByRole('button', { name: '10' }));
+    expect(onChange).toHaveBeenCalledWith(13);
+  });
 });

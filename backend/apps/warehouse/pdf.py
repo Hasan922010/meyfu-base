@@ -248,35 +248,38 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     elements.append(hdr_table)
     elements.append(Spacer(1, 3 * mm))
 
-    header = ["№", "Rasm", "Nomi", "SKU", "Miqdor", "Narx", "Summa"]
-    if not with_images:
-        header.pop(1)
+    def _qty_str(val: Decimal) -> str:
+        s = format(val.normalize(), "f")
+        return s.rstrip("0").rstrip(".") if "." in s else s
+
+    header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx (dona)", "Narx (qop/quti)", "Summa"]
     data = [[Paragraph(h, st["h"]) for h in header]]
     for idx, item in enumerate(
-        loading.items.select_related("product").all(), start=1
+        loading.items.select_related("product", "product__unit").all(), start=1
     ):
-        row = [
+        unit_short = item.product.unit.short_name
+        pack_qty = item.product.pack_quantity or Decimal("1")
+        pack_label = item.product.package_type or "qadoq"
+        if pack_qty > 1:
+            pack_info = f"{_qty_str(pack_qty)} {unit_short}"
+            packs = item.quantity / pack_qty
+            qty_label = f"{_qty_str(packs)} {pack_label}"
+            pack_price_label = _money(item.price * pack_qty)
+        else:
+            pack_info = f"1 {unit_short}"
+            qty_label = f"{_qty_str(item.quantity)} {unit_short}"
+            pack_price_label = "—"
+        data.append([
             Paragraph(str(idx), st["cell"]),
             Paragraph(item.product.name, st["cell"]),
-            Paragraph(item.product.sku, st["cell"]),
-            Paragraph(f"{item.quantity:g} {item.product.unit.short_name}", st["cellr"]),
+            Paragraph(qty_label, st["cellr"]),
+            Paragraph(pack_info, st["cellr"]),
             Paragraph(_money(item.price), st["cellr"]),
+            Paragraph(pack_price_label, st["cellr"]),
             Paragraph(_money(item.amount), st["cellr"]),
-        ]
-        if with_images:
-            reader = fitted_image_buffer(
-                getattr(item.product, "image", None), box_px=140
-            )
-            row.insert(1, Image(reader, width=_ROW_IMG_MM * mm,
-                                height=_ROW_IMG_MM * mm, kind="proportional")
-                       if reader is not None else "")
-        data.append(row)
+        ])
 
-    col_widths = (
-        [9 * mm, _ROW_IMG_MM * mm + 3 * mm, 58 * mm, 24 * mm, 22 * mm, 25 * mm, 26 * mm]
-        if with_images
-        else [10 * mm, 72 * mm, 28 * mm, 24 * mm, 26 * mm, 28 * mm]
-    )
+    col_widths = [9 * mm, 51 * mm, 26 * mm, 22 * mm, 23 * mm, 25 * mm, 24 * mm]
     table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),

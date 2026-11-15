@@ -232,3 +232,18 @@ def test_warehouse_operator_can_confirm_own_loading(stocked):
     assert resp.status_code == 200, resp.data
     assert resp.data["data"]["status"] == "CONFIRMED"
 
+
+@pytest.mark.django_db
+def test_loading_to_pdf_uses_pack_columns_without_images(stocked, distributor):
+    from apps.warehouse.pdf import loading_to_pdf
+
+    wh, prod = stocked["warehouse"], stocked["product"]
+    prod.pack_quantity = Decimal("12.000")
+    prod.package_type = "karopka"
+    prod.save(update_fields=["pack_quantity", "package_type"])
+    loading = _make_loading(distributor, wh, prod, qty="24.000")
+
+    pdf_bytes = loading_to_pdf(loading)
+    assert pdf_bytes.startswith(b"%PDF")
+
+

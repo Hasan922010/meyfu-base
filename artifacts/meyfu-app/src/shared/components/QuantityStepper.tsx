@@ -7,6 +7,7 @@ interface QuantityStepperProps {
   onChange: (val: number) => void;
   quickOptions?: number[];
   min?: number;
+  accumulateQuick?: boolean;
 }
 
 const DEFAULT_QUICK = [1, 3, 5, 10, 12, 20];
@@ -17,6 +18,7 @@ export function QuantityStepper({
   onChange,
   quickOptions = DEFAULT_QUICK,
   min = 1,
+  accumulateQuick = false,
 }: QuantityStepperProps): ReactElement {
   return (
     <div className="space-y-3">
@@ -53,11 +55,11 @@ export function QuantityStepper({
             key={n}
             type="button"
             className={`min-w-[44px] min-h-[36px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 active:scale-95 ${
-              value === n
+              !accumulateQuick && value === n
                 ? 'bg-brand text-brand-fg shadow-sm'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
             }`}
-            onClick={() => onChange(n)}
+            onClick={() => onChange(accumulateQuick ? value + n : n)}
           >
             {n}
           </button>

@@ -13,7 +13,6 @@ import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { PriceFormulaCard } from '@/shared/components/PriceFormulaCard';
 import { QuantityStepper } from '@/shared/components/QuantityStepper';
-import { UnitToggle } from '@/shared/components/UnitToggle';
 import { money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
@@ -34,6 +33,19 @@ function plusDays(days: number): string {
   return businessDateISO(days);
 }
 
+function orderUnitInfo(p: {
+  unit?: string | undefined;
+  pack_quantity?: string | number | undefined;
+  package_type?: string | undefined;
+}) {
+  const packQty = Number(p.pack_quantity) || 1;
+  const packType = p.package_type?.trim() || '';
+  const isPack = packQty > 1 || Boolean(packType);
+  const baseUnit = p.unit || 'dona';
+  const packLabel = packType || 'qadoq';
+  return { packQty, packType, isPack, baseUnit, packLabel };
+}
+
 export function NewOrderPage(): ReactElement {
   const navigate = useNavigate();
   const { online, pending } = useSync();
@@ -47,8 +59,7 @@ export function NewOrderPage(): ReactElement {
   const [clientSearch, setClientSearch] = useState<string>('');
   const [productSearch, setProductSearch] = useState<string>('');
   const [cart, setCart] = useState<LocalOrderLine[]>([]);
-  const [qty, setQty] = useState<number>(1);
-  const [unitMode, setUnitMode] = useState<'base' | 'package'>('base');
+  const [qty, setQty] = useState<number>(0);
   const [picked, setPicked] = useState<string>('');
   const [pickedPrice, setPickedPrice] = useState<string>('');
   const [intent, setIntent] = useState<Intent>('');
@@ -108,29 +119,25 @@ export function NewOrderPage(): ReactElement {
     const p = productMap.get(picked);
     const price = Number(pickedPrice || suggestedPrice(picked));
     if (!p || qty <= 0 || price <= 0) return;
-    const pPackQty = Number(p.pack_quantity) || 1;
-    const pPackType = p.package_type?.trim() || '';
-    const isPack = unitMode === 'package';
-    const totalQty = isPack ? qty * pPackQty : qty;
+    const { packQty, isPack, baseUnit, packLabel } = orderUnitInfo(p);
 
     setCart((prev) => [
       ...prev.filter((l) => l.product !== picked),
       {
         product: p.id,
         product_name: p.name,
-        quantity: totalQty,
+        quantity: isPack ? qty * packQty : qty,
         price,
         unit_mode: isPack ? 'package' : 'base',
         package_count: isPack ? qty : undefined,
-        package_type: isPack ? (pPackType || 'qadoq') : undefined,
-        pack_quantity: pPackQty,
-        unit_name: p.unit || 'dona',
+        package_type: isPack ? packLabel : undefined,
+        pack_quantity: packQty,
+        unit_name: baseUnit,
       },
     ]);
     setPicked('');
     setPickedPrice('');
-    setQty(1);
-    setUnitMode('base');
+    setQty(0);
     setProductSearch('');
   }
 
@@ -262,10 +269,7 @@ export function NewOrderPage(): ReactElement {
                     className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
                     onClick={() => {
                       setPicked(p.id);
-                      const pPackQty = Number(p.pack_quantity) || 1;
-                      const pPackType = p.package_type?.trim() || '';
-                      setUnitMode(pPackQty > 1 || pPackType ? 'package' : 'base');
-                      setQty(1);
+                      setQty(0);
                       setPickedPrice(suggestedPrice(p.id));
                     }}
                   >
@@ -291,13 +295,7 @@ export function NewOrderPage(): ReactElement {
           {picked && (() => {
             const p = products.find((x) => x.id === picked);
             if (!p) return null;
-            const packQty = Number(p.pack_quantity) || 1;
-            const packType = p.package_type?.trim() || '';
-            const hasPackaging = packQty > 1 || Boolean(packType);
-            const baseUnit = p.unit || 'dona';
-            const packLabel = packType || 'qadoq';
-
-            const isPack = unitMode === 'package';
+            const { packQty, packType, isPack, baseUnit, packLabel } = orderUnitInfo(p);
             const totalBaseQty = isPack ? qty * packQty : qty;
             const unitPrice = Number(pickedPrice || suggestedPrice(picked));
             const lineTotal = totalBaseQty * unitPrice;
@@ -310,9 +308,14 @@ export function NewOrderPage(): ReactElement {
                       {p.name}
                     </div>
                     <div className="text-xs text-gray-500">
-                      Asosiy birlik: <span className="font-medium">{baseUnit}</span>
-                      {hasPackaging && (
-                        <span> · Qadoq: 1 {packLabel} = {packQty} {baseUnit}</span>
+                      {isPack ? (
+                        <>
+                          Birlik: <span className="font-medium">{packLabel}</span> ({packQty} {baseUnit})
+                        </>
+                      ) : (
+                        <>
+                          Birlik: <span className="font-medium">{baseUnit}</span>
+                        </>
                       )}
                     </div>
                   </div>
@@ -322,8 +325,7 @@ export function NewOrderPage(): ReactElement {
                     onClick={() => {
                       setPicked('');
                       setPickedPrice('');
-                      setQty(1);
-                      setUnitMode('base');
+                      setQty(0);
                     }}
                     aria-label="Bekor qilish"
                   >
@@ -331,19 +333,11 @@ export function NewOrderPage(): ReactElement {
                   </button>
                 </div>
 
-                {hasPackaging && (
-                  <UnitToggle
-                    mode={unitMode}
-                    baseUnit={baseUnit}
-                    packageType={packType}
-                    packQuantity={packQty}
-                    onChange={setUnitMode}
-                  />
-                )}
-
                 <QuantityStepper
                   value={qty}
                   unitLabel={isPack ? packLabel : baseUnit}
+                  min={0}
+                  accumulateQuick
                   onChange={setQty}
                 />
 
@@ -370,7 +364,7 @@ export function NewOrderPage(): ReactElement {
                 <button
                   type="button"
                   className="btn-brand w-full shadow-md shadow-brand/20"
-                  disabled={unitPrice <= 0}
+                  disabled={qty <= 0 || unitPrice <= 0}
                   onClick={addToCart}
                 >
                   Savatga qo'shish ({money(lineTotal)})
