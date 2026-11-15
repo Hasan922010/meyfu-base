@@ -121,6 +121,7 @@ class User(AbstractUser):
                 self.can_see_warehouse_stock = True
             elif self.role == Role.ORDER_TAKER:
                 self.can_take_orders = True
+                self.can_collect_debts = True
                 self.can_see_warehouse_stock = True
             elif self.role == Role.WAREHOUSE:
                 self.can_receive_stock = True

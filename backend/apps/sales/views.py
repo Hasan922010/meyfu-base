@@ -47,7 +47,7 @@ _SALE_MANAGE = (*_ADMIN, Role.ACCOUNTANT)
 
 def _is_self_only(user) -> bool:
     return (
-        getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.WAREHOUSE)
+        getattr(user, "role", None) in (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE)
         and not user.is_superuser
     )
 
@@ -69,7 +69,7 @@ class SaleViewSet(BaseModelViewSet):
     action_roles = {
         "cancel": _SALE_MANAGE,
         "resolve": _SALE_MANAGE,
-        "bulk_sync": (Role.DISTRIBUTOR, Role.WAREHOUSE),
+        "bulk_sync": (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE),
         "my_today": _READ,
     }
     filterset_fields = {
@@ -248,8 +248,15 @@ class DebtPaymentViewSet(BaseModelViewSet):
     serializer_class = DebtPaymentSerializer
     branch_lookup = "debt__client__branch"
     http_method_names = ["get", "post", "head", "options"]
-    read_roles = _READ
-    write_roles = (Role.DISTRIBUTOR, Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT)
+    read_roles = (*_READ, Role.ORDER_TAKER)
+    write_roles = (
+        Role.DISTRIBUTOR,
+        Role.ORDER_TAKER,
+        Role.WAREHOUSE,
+        Role.MANAGER,
+        Role.SUPER_ADMIN,
+        Role.ACCOUNTANT,
+    )
     filterset_fields = ("debt", "payment_type")
     search_fields = ("debt__client__name", "debt__client__phone")
     ordering_fields = ("date", "created_at")

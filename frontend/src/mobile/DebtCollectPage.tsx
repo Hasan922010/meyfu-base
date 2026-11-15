@@ -6,6 +6,7 @@ import { db } from '@/offline/db';
 import { saveDebtPaymentLocal } from '@/offline/actions';
 import { useSync } from '@/offline/useSync';
 import { debtsApi } from '@/shared/api/debts';
+import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
@@ -140,7 +141,7 @@ export function DebtCollectPage(): ReactElement {
               <button
                 onClick={() => {
                   setSelected(d);
-                  setAmount(d.remaining);
+                  setAmount(String(Math.round(Number(d.remaining) || 0)));
                 }}
                 className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left shadow-sm active:scale-[0.99] dark:bg-gray-900"
               >
@@ -191,15 +192,11 @@ export function DebtCollectPage(): ReactElement {
             <div className="text-sm text-gray-500">
               Qoldiq: {money(selected?.remaining ?? '0')}
             </div>
-            <input
-              className="field text-lg"
-              type="number"
-              inputMode="numeric"
-              aria-label="To'lov summasi"
-              min={1}
-              max={Number(selected?.remaining ?? 0)}
+            <AmountInput
+              className="text-lg"
+              ariaLabel="To'lov summasi"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={setAmount}
             />
             {mutation.isError && (
               <p className="text-sm text-danger">Xatolik yuz berdi. Qayta urinib ko'ring.</p>

@@ -75,6 +75,7 @@ def test_user_role_default_permissions():
         phone="+998901000002", password="testpass123", full_name="Agent 1", role=Role.ORDER_TAKER
     )
     assert agent.can_take_orders is True
+    assert agent.can_collect_debts is True
     assert agent.can_see_warehouse_stock is True
     assert agent.can_make_sales is False
     assert agent.can_receive_stock is False
@@ -289,6 +290,69 @@ def test_debt_collection_permission_enforcement(permissions_setup):
     )
     assert resp.status_code == 403
     assert resp.data["error"]["code"] == "DEBT_COLLECTION_FORBIDDEN"
+
+
+@pytest.mark.django_db
+def test_order_taker_can_collect_debts(permissions_setup):
+    """Zakaz oluvchi (ORDER_TAKER) qarz undirishda to'lov qabul qila oladi (API va bulk-sync)."""
+    import uuid
+
+    from apps.core.business_day import business_date
+    from apps.sales.constants import PaymentType
+    from apps.sales.models import Debt
+    from apps.sales.services import SaleLine, create_sale
+
+    dist = User.objects.create_user(
+        phone="+998901000017", password="testpass123", full_name="Dist 17", role=Role.DISTRIBUTOR
+    )
+    agent = User.objects.create_user(
+        phone="+998901000018", password="testpass123", full_name="Agent 18", role=Role.ORDER_TAKER
+    )
+    p = permissions_setup["product"]
+    c = permissions_setup["client"]
+    VanStock.objects.create(distributor=dist, product=p, quantity=Decimal("50"))
+
+    sale_res = create_sale(
+        distributor=dist,
+        client=c,
+        payment_type=PaymentType.DEBT,
+        lines=[SaleLine(product=p, quantity=Decimal("3"), price=Decimal("12000"))],
+        due_date="2026-12-01",
+        date=business_date(),
+    )
+    debt = Debt.objects.get(sale=sale_res.sale)
+
+    agent_api = APIClient()
+    agent_api.force_authenticate(user=agent)
+
+    # 1. To'g'ridan-to'g'ri /debt-payments/
+    resp = agent_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "10000", "payment_type": "NAQD"},
+        format="json",
+    )
+    assert resp.status_code == 201
+
+    # 2. Offline outbox /sales/bulk-sync/ orqali
+    sync_resp = agent_api.post(
+        "/api/v1/sales/bulk-sync/",
+        {
+            "operations": [
+                {
+                    "type": "debt_payment",
+                    "client_uuid": str(uuid.uuid4()),
+                    "payload": {
+                        "debt": str(debt.id),
+                        "amount": "5000",
+                        "payment_type": "NAQD",
+                    },
+                }
+            ]
+        },
+        format="json",
+    )
+    assert sync_resp.status_code == 200
+    assert sync_resp.data["data"]["results"][0]["status"] == "SENT"
 
 
 @pytest.mark.django_db

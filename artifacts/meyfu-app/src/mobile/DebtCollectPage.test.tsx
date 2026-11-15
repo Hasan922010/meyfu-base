@@ -77,6 +77,7 @@ describe('DebtCollectPage — telefon orqali farqlash va qidirish', () => {
     const amountInput = screen.getByLabelText<HTMLInputElement>("To'lov summasi");
     amountInput.focus();
     fireEvent.change(amountInput, { target: { value: '50000' } });
+    expect(amountInput.value).toBe('50 000');
     expect(document.activeElement).toBe(amountInput);
 
     fireEvent.click(screen.getByRole('button', { name: "To'lovni qabul qilish" }));

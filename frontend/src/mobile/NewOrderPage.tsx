@@ -355,15 +355,28 @@ export function NewOrderPage(): ReactElement {
                   totalPrice={lineTotal}
                 />
 
-                <input
-                  className="field"
-                  type="number"
-                  inputMode="decimal"
-                  aria-label="Tovar narxi"
-                  placeholder={`Narx (${baseUnit} uchun taxminan ${suggestedPrice(picked)})`}
-                  value={pickedPrice}
-                  onChange={(e) => setPickedPrice(e.target.value)}
-                />
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <label htmlFor="order-unit-price" className="font-medium">
+                      1 {baseUnit} narxi (so&apos;m)
+                    </label>
+                    {isPack && unitPrice > 0 && (
+                      <span>
+                        1 {packLabel} = {money(unitPrice * packQty)}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    id="order-unit-price"
+                    className="field"
+                    type="number"
+                    inputMode="decimal"
+                    aria-label="Tovar narxi"
+                    placeholder={`Narx (${baseUnit} uchun taxminan ${suggestedPrice(picked)})`}
+                    value={pickedPrice}
+                    onChange={(e) => setPickedPrice(e.target.value)}
+                  />
+                </div>
                 <button
                   type="button"
                   className="btn-brand w-full shadow-md shadow-brand/20"

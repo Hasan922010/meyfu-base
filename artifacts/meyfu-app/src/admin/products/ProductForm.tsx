@@ -230,7 +230,7 @@ function ProductFormFields({
         </legend>
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium">Tannarx *</span>
+            <span className="text-sm font-medium">Tannarx (1 dona narxi) *</span>
             <Controller
               name="cost_price"
               control={control}

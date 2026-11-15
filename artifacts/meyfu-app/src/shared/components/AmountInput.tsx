@@ -13,6 +13,7 @@ interface Props {
   showWords?: boolean | undefined;
   suffix?: string | undefined;
   disabled?: boolean | undefined;
+  ariaLabel?: string | undefined;
 }
 
 /**
@@ -29,6 +30,7 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(function AmountIn
     showWords = true,
     suffix = "so'm",
     disabled,
+    ariaLabel,
   },
   ref,
 ): ReactElement {
@@ -42,6 +44,7 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(function AmountIn
         type="text"
         inputMode="numeric"
         autoComplete="off"
+        aria-label={ariaLabel}
         placeholder={placeholder}
         disabled={disabled}
         autoFocus={autoFocus}
