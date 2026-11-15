@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Banknote, CalendarClock, CircleCheckBig, CreditCard } from 'lucide-react';
+import { ArrowLeft, Banknote, CalendarClock, CircleCheckBig, CreditCard, Trash2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -11,7 +11,8 @@ import { usePrefetchedCoords } from '@/mobile/geo';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import { orderToReceipt } from '@/mobile/lib/orderReceipt';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
-import { ordersApi } from '@/shared/api/orders';
+import { ordersApi, type Order } from '@/shared/api/orders';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
 import { dateTimeShort, money } from '@/shared/lib/format';
@@ -127,9 +128,18 @@ function DeliverTab({
 }
 
 function TakenTab(): ReactElement {
+  const qc = useQueryClient();
+  const [cancelling, setCancelling] = useState<Order | null>(null);
   const q = useQuery({
     queryKey: ['orders', 'my-to-take'],
     queryFn: () => ordersApi.myToTake(),
+  });
+  const cancelMut = useMutation({
+    mutationFn: (id: string) => ordersApi.cancel(id, 'Xodim bekor qildi'),
+    onSuccess: () => {
+      setCancelling(null);
+      void qc.invalidateQueries({ queryKey: ['orders', 'my-to-take'] });
+    },
   });
   const rows = q.data ?? [];
 
@@ -137,32 +147,61 @@ function TakenTab(): ReactElement {
     <DataState
       isLoading={q.isLoading}
       isError={q.isError}
+      error={q.error}
+      onRetry={() => void q.refetch()}
       isEmpty={!q.isLoading && rows.length === 0}
       emptyText="Siz olgan buyurtma yo'q"
     >
       <ul className="space-y-2">
-        {rows.map((o) => (
-          <li
-            key={o.id}
-            className="space-y-2 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900"
-          >
-            <div className="flex justify-between">
-              <span className="font-medium">{o.client_name}</span>
-              <span className={`text-sm ${STATUS_CLASS[o.status] ?? ''}`}>
-                {o.status_display}
-              </span>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>{o.number}</span>
-              <span>{money(o.total_amount)}</span>
-            </div>
-            <ReceiptButtons
-              getDoc={() => orderToReceipt(o)}
-              filename={`buyurtma-${o.number}.pdf`}
-            />
-          </li>
-        ))}
+        {rows.map((o) => {
+          const canCancel = o.status === 'DRAFT' || o.status === 'PLACED';
+          return (
+            <li
+              key={o.id}
+              className="space-y-2 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900"
+            >
+              <div className="flex justify-between">
+                <span className="font-medium">{o.client_name}</span>
+                <span className={`text-sm ${STATUS_CLASS[o.status] ?? ''}`}>
+                  {o.status_display}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>{o.number}</span>
+                <span>{money(o.total_amount)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <ReceiptButtons
+                  getDoc={() => orderToReceipt(o)}
+                  filename={`buyurtma-${o.number}.pdf`}
+                />
+                {canCancel && (
+                  <button
+                    type="button"
+                    onClick={() => setCancelling(o)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-danger/30 px-2.5 py-1.5 text-xs font-medium text-danger hover:bg-danger/10"
+                  >
+                    <Trash2 size={14} aria-hidden />
+                    O&apos;chirish
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
+
+      <ConfirmDialog
+        open={cancelling !== null}
+        title="Buyurtmani o'chirish"
+        confirmLabel="Ha, o'chirish"
+        danger
+        isPending={cancelMut.isPending}
+        onCancel={() => setCancelling(null)}
+        onConfirm={() => cancelling && cancelMut.mutate(cancelling.id)}
+      >
+        {cancelling?.number} ({cancelling?.client_name}) buyurtmasi bekor qilinadi.
+      </ConfirmDialog>
     </DataState>
   );
 }

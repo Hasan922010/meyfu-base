@@ -31,7 +31,7 @@ export function PriceFormulaCard({
           {packageCount} {packLabel} × {packQuantity} {baseUnit} = {totalBaseQty} {baseUnit}
         </div>
         <div className="mt-1 text-xs text-gray-500">
-          Jami: {totalBaseQty} {baseUnit} × {money(unitPrice)} ={' '}
+          {money(unitPrice)} × {packQuantity} × {packageCount} ={' '}
           <strong className="text-gray-900 dark:text-gray-100">
             {money(totalPrice)}
           </strong>

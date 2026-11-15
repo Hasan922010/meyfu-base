@@ -112,7 +112,10 @@ export function NewOrderPage(): ReactElement {
 
   function suggestedPrice(productId: string): string {
     const p = productMap.get(productId);
-    return p?.wholesale_price || p?.cost_price || '';
+    if (!p) return '';
+    if (p.wholesale_price && Number(p.wholesale_price) > 0) return p.wholesale_price;
+    if (p.cost_price && Number(p.cost_price) > 0) return p.cost_price;
+    return '';
   }
 
   function addToCart(): void {
