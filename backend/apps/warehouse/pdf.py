@@ -249,7 +249,7 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     elements.append(Spacer(1, 3 * mm))
 
     def _qty_str(val: Decimal) -> str:
-        s = format(val.normalize(), "f")
+        s = format(val.quantize(Decimal("0.01")).normalize(), "f")
         return s.rstrip("0").rstrip(".") if "." in s else s
 
     header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx (dona)", "Narx (qop/quti)", "Summa"]
@@ -262,8 +262,13 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
         pack_label = item.product.package_type or "qadoq"
         if pack_qty > 1:
             pack_info = f"{_qty_str(pack_qty)} {unit_short}"
-            packs = item.quantity / pack_qty
-            qty_label = f"{_qty_str(packs)} {pack_label}"
+            whole_packs, rem = divmod(item.quantity, pack_qty)
+            if rem == 0:
+                qty_label = f"{_qty_str(whole_packs)} {pack_label}"
+            elif whole_packs >= 1:
+                qty_label = f"{_qty_str(whole_packs)} {pack_label} {_qty_str(rem)} {unit_short}"
+            else:
+                qty_label = f"{_qty_str(item.quantity)} {unit_short}"
             pack_price_label = _money(item.price * pack_qty)
         else:
             pack_info = f"1 {unit_short}"

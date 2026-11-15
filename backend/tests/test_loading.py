@@ -246,4 +246,8 @@ def test_loading_to_pdf_uses_pack_columns_without_images(stocked, distributor):
     pdf_bytes = loading_to_pdf(loading)
     assert pdf_bytes.startswith(b"%PDF")
 
+    # Qoldiq qadoqqa bo'linmasa ham (masalan, 40 dona / 24) cheksiz kasr chiqmasin
+    loading_rem = _make_loading(distributor, wh, prod, qty="20.000")
+    assert loading_to_pdf(loading_rem).startswith(b"%PDF")
+
 
