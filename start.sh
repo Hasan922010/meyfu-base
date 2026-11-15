@@ -79,7 +79,14 @@ trap cleanup EXIT INT TERM
 
 step "Eski jarayonlar (agar ochiq qolgan bo'lsa) tozalanmoqda..."
 pkill -f "manage.py runserver" 2>/dev/null || true
-pkill -f "vite --port $FRONTEND_PORT" 2>/dev/null || true
+pkill -f "vite.*$FRONTEND_PORT" 2>/dev/null || true
+for p in "$PORT" "$FRONTEND_PORT"; do
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "${p}/tcp" 2>/dev/null || true
+  elif command -v lsof >/dev/null 2>&1; then
+    lsof -tiTCP:"$p" -sTCP:LISTEN 2>/dev/null | xargs -r kill 2>/dev/null || true
+  fi
+done
 sleep 1
 
 step "Backend: runserver 0.0.0.0:$PORT (fon rejimida)"
