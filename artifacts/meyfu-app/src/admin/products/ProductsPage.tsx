@@ -120,7 +120,7 @@ export function ProductsPage(): ReactElement {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'mahsulotlar.csv';
+      a.download = 'mahsulotlar.xlsx';
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

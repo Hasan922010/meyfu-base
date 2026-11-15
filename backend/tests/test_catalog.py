@@ -180,7 +180,11 @@ def test_product_export_permissions_formula_escape_and_branch_scope(
     # Tarqatuvchi eksport qila olmaydi
     assert auth_api.get("/api/v1/products/export/").status_code == 403
 
-    # Markaziy buxgalter eksport qila oladi va CSV formula belgilari ekranlanadi
+    # Markaziy buxgalter eksport qila oladi va XLSX formula belgilari ekranlanadi
+    import io
+
+    from openpyxl import load_workbook
+
     accountant = User.objects.create_user(
         phone="+998901239988",
         password="pass12345",
@@ -191,14 +195,18 @@ def test_product_export_permissions_formula_escape_and_branch_scope(
     acc_api.force_authenticate(user=accountant)
     acc_resp = acc_api.get("/api/v1/products/export/")
     assert acc_resp.status_code == 200
-    csv_text = acc_resp.content.decode("utf-8")
-    assert "'=SUM(A1)" in csv_text
-    assert "'+CMD-1" in csv_text
+    assert acc_resp["Content-Type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert acc_resp.content[:2] == b"PK"
+    wb_acc = load_workbook(io.BytesIO(acc_resp.content))
+    ws_acc = wb_acc.active
+    acc_rows = list(ws_acc.iter_rows(values_only=True))
+    assert acc_rows[0][1:3] == ("Kategoriya", "Mahsulot nomi")
+    assert any("'=SUM(A1)" in (row[2] or "") for row in acc_rows[1:])
+    assert any("'+CMD-1" in (row[3] or "") for row in acc_rows[1:])
 
     # Filial rahbari faqat o'z filiali narxi va ombor qoldig'ini eksportda va stock endpointida ko'radi
-    import csv
-    import io
-
     bm = User.objects.create_user(
         phone="+998901239977",
         password="pass12345",
@@ -210,12 +218,15 @@ def test_product_export_permissions_formula_escape_and_branch_scope(
     bm_api.force_authenticate(user=bm)
     bm_export = bm_api.get("/api/v1/products/export/")
     assert bm_export.status_code == 200
-    bm_csv = bm_export.content.decode("utf-8").lstrip("\ufeff")
-    rows = list(csv.DictReader(io.StringIO(bm_csv)))
-    formula_row = next(r for r in rows if r["id"] == str(formula_prod.id))
-    assert Decimal(formula_row["wholesale_price"]) == Decimal("17500")
-    assert Decimal(formula_row["total_stock"]) == Decimal("12")
-    assert Decimal(formula_row["available_stock"]) == Decimal("12")
+    wb_bm = load_workbook(io.BytesIO(bm_export.content))
+    ws_bm = wb_bm.active
+    bm_rows = list(ws_bm.iter_rows(values_only=True))
+    headers = bm_rows[0]
+    data_dicts = [dict(zip(headers, r, strict=True)) for r in bm_rows[1:]]
+    formula_row = next(r for r in data_dicts if r["SKU"] == "'+CMD-1")
+    assert Decimal(str(formula_row["Ulgurji narx"])) == Decimal("17500")
+    assert Decimal(str(formula_row["Jami qoldiq"])) == Decimal("12")
+    assert Decimal(str(formula_row["Mavjud qoldiq"])) == Decimal("12")
 
     stock_resp = bm_api.get(f"/api/v1/products/{formula_prod.id}/stock/")
     assert stock_resp.status_code == 200

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import csv
+import io
 from decimal import Decimal
 
 from django.db import transaction
@@ -20,6 +20,9 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.request import Request
@@ -326,44 +329,94 @@ class ProductViewSet(BaseModelViewSet):
         return ok(ProductBulkResultSerializer(result).data)
 
     @extend_schema(
-        summary="Mahsulotlar ro'yxatini CSV eksport qilish",
+        summary="Mahsulotlar ro'yxatini XLSX eksport qilish",
         responses={200: OpenApiResponse(
-            response=OpenApiTypes.BINARY, description="UTF-8 BOM bilan CSV fayl."
+            response=OpenApiTypes.BINARY, description="Excel (.xlsx) fayl."
         )},
     )
     @action(detail=False, methods=["get"], url_path="export")
     def export(self, request: Request) -> HttpResponse:
         queryset = self.filter_queryset(self.get_queryset())
+        if not request.query_params.get("ordering"):
+            queryset = queryset.order_by("category__name", "name")
         branch = user_branch(request.user)
         bmap = branch_price_map(branch) if branch is not None else {}
-        response = HttpResponse(content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = 'attachment; filename="products.csv"'
-        response.write("\ufeff")
-        writer = csv.writer(response)
-        writer.writerow([
-            "id", "name", "sku", "barcode", "category", "brand", "is_active",
-            "cost_price", "wholesale_price", "retail_price", "min_price",
-            "total_stock", "reserved_stock", "available_stock", "stock_status",
-        ])
-        for product in queryset.iterator(chunk_size=500):
+
+        headers = [
+            "№", "Kategoriya", "Mahsulot nomi", "SKU", "Shtrix-kod", "Brend", "Holat",
+            "Tannarx", "Ulgurji narx", "Chakana narx", "Min narx",
+            "Jami qoldiq", "Band qoldiq", "Mavjud qoldiq", "Zaxira holati",
+        ]
+        stock_labels = {"ok": "Yetarli", "low": "Kam", "out": "Tugagan"}
+        rows: list[list[object]] = [headers]
+        for idx, product in enumerate(queryset.iterator(chunk_size=500), start=1):
             prices = price_for(product, branch, bmap)
-            writer.writerow([
-                _safe_cell(str(product.id)),
+            rows.append([
+                idx,
+                _safe_cell(product.category.name),
                 _safe_cell(product.name),
                 _safe_cell(product.sku),
                 _safe_cell(product.barcode),
-                _safe_cell(product.category.name),
                 _safe_cell(product.brand.name if product.brand_id else ""),
-                product.is_active,
-                product.cost_price,
-                prices.wholesale_price,
-                prices.retail_price,
-                prices.min_price,
-                product.total_stock,
-                product.reserved_stock,
-                product.available_stock,
-                _safe_cell(product.stock_status),
+                "Faol" if product.is_active else "Nofaol",
+                float(product.cost_price),
+                float(prices.wholesale_price),
+                float(prices.retail_price),
+                float(prices.min_price),
+                float(product.total_stock),
+                float(product.reserved_stock),
+                float(product.available_stock),
+                stock_labels.get(product.stock_status, _safe_cell(product.stock_status)),
             ])
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Mahsulotlar"
+        ws.freeze_panes = "A2"
+
+        header_fill = PatternFill("solid", fgColor="1E293B")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        zebra_fill = PatternFill("solid", fgColor="F8FAFC")
+        thin_side = Side(style="thin", color="E2E8F0")
+        cell_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+
+        for r_idx, row in enumerate(rows, start=1):
+            is_header = r_idx == 1
+            if is_header:
+                ws.row_dimensions[r_idx].height = 24
+            for c_idx, val in enumerate(row, start=1):
+                cell = ws.cell(row=r_idx, column=c_idx, value=val)
+                cell.border = cell_border
+                if is_header:
+                    cell.fill = header_fill
+                    cell.font = header_font
+                    cell.alignment = Alignment(
+                        horizontal="right" if 8 <= c_idx <= 14 else "left",
+                        vertical="center",
+                    )
+                else:
+                    if r_idx % 2 == 1:
+                        cell.fill = zebra_fill
+                    if 8 <= c_idx <= 14:
+                        cell.number_format = "#,##0"
+                        cell.alignment = Alignment(horizontal="right", vertical="center")
+                    elif c_idx in (1, 7, 15):
+                        cell.alignment = Alignment(horizontal="center", vertical="center")
+                    else:
+                        cell.alignment = Alignment(horizontal="left", vertical="center")
+
+        for c_idx in range(1, len(headers) + 1):
+            width = max((len(str(row[c_idx - 1])) for row in rows), default=8)
+            ws.column_dimensions[get_column_letter(c_idx)].width = min(width + 4, 42)
+        ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(rows)}"
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        response = HttpResponse(
+            buf.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = 'attachment; filename="mahsulotlar.xlsx"'
         return response
 
     @extend_schema(summary="Mahsulot omborlardagi qoldig'i")

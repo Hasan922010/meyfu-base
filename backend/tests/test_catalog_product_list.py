@@ -105,13 +105,55 @@ def test_product_bulk_soft_delete_uses_project_convention(manager_api, catalog):
 
 
 @pytest.mark.django_db
-def test_product_csv_export_reuses_filters(manager_api, stocked):
-    response = manager_api.get(
+def test_product_xlsx_export_reuses_filters_and_sorts_by_category_then_name(manager_api, stocked, catalog):
+    import io
+
+    from openpyxl import load_workbook
+
+    from apps.catalog.models import Category, Product
+
+    cat_a = Category.objects.create(name="AAA Kategoriya")
+    Product.objects.create(
+        name="Zaytun",
+        sku="ZAY-1",
+        barcode="999001",
+        category=cat_a,
+        unit=catalog["unit"],
+        cost_price="10000",
+        wholesale_price="12000",
+        retail_price="15000",
+        min_price="11000",
+    )
+    Product.objects.create(
+        name="Anor",
+        sku="ANR-1",
+        barcode="999002",
+        category=cat_a,
+        unit=catalog["unit"],
+        cost_price="10000",
+        wholesale_price="12000",
+        retail_price="15000",
+        min_price="11000",
+    )
+
+    response = manager_api.get("/api/v1/products/export/")
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    assert response.content[:2] == b"PK"
+
+    wb = load_workbook(io.BytesIO(response.content))
+    ws = wb.active
+    assert ws.freeze_panes == "A2"
+    rows = list(ws.iter_rows(values_only=True))
+    cat_names = [(r[1], r[2]) for r in rows[1:]]
+    assert cat_names.index(("AAA Kategoriya", "Anor")) < cat_names.index(("AAA Kategoriya", "Zaytun"))
+
+    filtered = manager_api.get(
         "/api/v1/products/export/?stock_status=ok&ordering=-retail_price"
     )
-    assert response.status_code == 200
-    assert response["Content-Type"].startswith("text/csv")
-    assert response.content.startswith(b"\xef\xbb\xbf")
-    body = response.content.decode("utf-8-sig")
-    assert "total_stock" in body
-    assert "PWD-3KG" in body
+    assert filtered.status_code == 200
+    wb_f = load_workbook(io.BytesIO(filtered.content))
+    skus = [r[3] for r in list(wb_f.active.iter_rows(values_only=True))[1:]]
+    assert "PWD-3KG" in skus
