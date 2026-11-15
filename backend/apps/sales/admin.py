@@ -58,3 +58,24 @@ class DebtPaymentAdmin(admin.ModelAdmin):
     list_display = ("debt", "amount", "payment_type", "collected_by", "date")
     list_filter = ("payment_type", "date")
     search_fields = ("debt__client__name",)
+
+    def save_model(self, request, obj, form, change):
+        from apps.sales.services.debt import recalc_debt_and_client
+
+        super().save_model(request, obj, form, change)
+        recalc_debt_and_client(obj.debt)
+
+    def delete_model(self, request, obj):
+        from apps.sales.services.debt import recalc_debt_and_client
+
+        debt = obj.debt
+        super().delete_model(request, obj)
+        recalc_debt_and_client(debt)
+
+    def delete_queryset(self, request, queryset):
+        from apps.sales.services.debt import recalc_debt_and_client
+
+        debts = list({p.debt for p in queryset.select_related("debt")})
+        super().delete_queryset(request, queryset)
+        for debt in debts:
+            recalc_debt_and_client(debt)

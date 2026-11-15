@@ -127,6 +127,28 @@ def collect_debt_payment(
 
 
 @transaction.atomic
+def recalc_debt_and_client(debt: Debt) -> None:
+    """Qarz va mijozning joriy qarzini faol DebtPayment/Debt yozuvlaridan qayta hisoblaydi."""
+    from django.db.models import Sum
+
+    paid = (
+        DebtPayment.objects.filter(debt=debt, is_deleted=False).aggregate(s=Sum("amount"))["s"]
+        or _ZERO
+    )
+    debt.paid_amount = paid
+    debt.recalc()
+    debt.save(update_fields=["paid_amount", "remaining", "status", "updated_at"])
+
+    total_remaining = (
+        Debt.objects.filter(client_id=debt.client_id, is_deleted=False).aggregate(
+            s=Sum("remaining")
+        )["s"]
+        or _ZERO
+    )
+    Client.objects.filter(pk=debt.client_id).update(current_debt=total_remaining)
+
+
+@transaction.atomic
 def create_opening_debt(
     *, client: Client, amount: Decimal, note: str = "", user=None
 ) -> Debt:

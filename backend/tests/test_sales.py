@@ -841,3 +841,43 @@ def test_bulk_sync_enforces_granular_permissions(auth_api, van_stocked, expense_
         "SALES_FORBIDDEN",
     ]
 
+
+@pytest.mark.django_db
+def test_recalc_debt_and_client_after_payment_removal(auth_api, van_stocked):
+    """DebtPayment o'chirilganda recalc_debt_and_client qarz va mijoz balansini akt-sverkaga moslaydi."""
+    from apps.sales.models import DebtPayment
+    from apps.sales.services.debt import recalc_debt_and_client
+
+    client, product = van_stocked["client"], van_stocked["product"]
+    sale_resp = auth_api.post(
+        "/api/v1/sales/",
+        _sale_body(client, product, qty="10", payment="QARZ"),
+        format="json",
+    )
+    assert sale_resp.status_code == 201
+    debt = Debt.objects.get(sale_id=sale_resp.data["data"]["id"])
+
+    # Ikki xil summada to'lov kiritildi
+    r1 = auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "50000", "payment_type": "NAQD"},
+        format="json",
+    )
+    r2 = auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "70000", "payment_type": "NAQD"},
+        format="json",
+    )
+    assert r1.status_code == 201 and r2.status_code == 201
+
+    # Ikkinchi to'lov o'chirildi (masalan django-admin orqali) -> avval qarz mos emas, recalc dan keyin mos
+    DebtPayment.all_objects.filter(pk=r2.data["data"]["id"]).delete()
+    debt.refresh_from_db()
+    recalc_debt_and_client(debt)
+
+    debt.refresh_from_db()
+    client.refresh_from_db()
+    assert debt.paid_amount == Decimal("50000")
+    assert debt.remaining == debt.amount - Decimal("50000")
+    assert client.current_debt == debt.remaining
+
