@@ -11,7 +11,7 @@ import { usePrefetchedCoords } from '@/mobile/geo';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import { orderToReceipt } from '@/mobile/lib/orderReceipt';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
-import { ordersApi, type Order } from '@/shared/api/orders';
+import { ordersApi } from '@/shared/api/orders';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -87,12 +87,44 @@ export function MyOrdersPage(): ReactElement {
   );
 }
 
+function useCancelOrder() {
+  const qc = useQueryClient();
+  const [cancelling, setCancelling] = useState<{ id: string; number: string; client_name: string } | null>(null);
+  const mut = useMutation({
+    mutationFn: async (id: string) => {
+      await ordersApi.cancel(id, 'Xodim bekor qildi');
+      await db.orders.delete(id);
+    },
+    onSuccess: () => {
+      setCancelling(null);
+      void qc.invalidateQueries({ queryKey: ['orders', 'my-to-take'] });
+    },
+  });
+
+  const dialog = (
+    <ConfirmDialog
+      open={cancelling !== null}
+      title="Buyurtmani o'chirish"
+      confirmLabel="Ha, o'chirish"
+      danger
+      isPending={mut.isPending}
+      onCancel={() => setCancelling(null)}
+      onConfirm={() => cancelling && mut.mutate(cancelling.id)}
+    >
+      {cancelling?.number} ({cancelling?.client_name}) buyurtmasi bekor qilinadi.
+    </ConfirmDialog>
+  );
+
+  return { setCancelling, dialog };
+}
+
 function DeliverTab({
   onPick,
 }: {
   onPick: (o: CachedOrder) => void;
 }): ReactElement {
   const orders = useLiveQuery(() => db.orders.toArray(), [], []);
+  const { setCancelling, dialog } = useCancelOrder();
   const ready = orders.filter(
     (o) => o.status === 'APPROVED' || o.status === 'LOADED',
   );
@@ -106,40 +138,49 @@ function DeliverTab({
   }
 
   return (
-    <ul className="space-y-2">
-      {ready.map((o) => (
-        <li key={o.id}>
-          <button
-            className="w-full space-y-1 rounded-xl bg-white p-3 text-left shadow-sm dark:bg-gray-900"
-            onClick={() => onPick(o)}
+    <>
+      <ul className="space-y-2">
+        {ready.map((o) => (
+          <li
+            key={o.id}
+            className="space-y-2 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900"
           >
-            <div className="flex justify-between">
-              <span className="font-medium">{o.client_name}</span>
-              <span className="text-sm font-semibold">{money(o.total_amount)}</span>
+            <button
+              type="button"
+              className="w-full space-y-1 text-left"
+              onClick={() => onPick(o)}
+            >
+              <div className="flex justify-between">
+                <span className="font-medium">{o.client_name}</span>
+                <span className="text-sm font-semibold">{money(o.total_amount)}</span>
+              </div>
+              <div className="text-xs text-gray-500">
+                {o.number} · {o.items.length} tovar · zakaz: {o.taken_by_name}
+              </div>
+            </button>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCancelling(o)}
+                className="inline-flex items-center gap-1 rounded-lg border border-danger/30 px-2.5 py-1.5 text-xs font-medium text-danger hover:bg-danger/10"
+              >
+                <Trash2 size={14} aria-hidden />
+                O&apos;chirish
+              </button>
             </div>
-            <div className="text-xs text-gray-500">
-              {o.number} · {o.items.length} tovar · zakaz: {o.taken_by_name}
-            </div>
-          </button>
-        </li>
-      ))}
-    </ul>
+          </li>
+        ))}
+      </ul>
+      {dialog}
+    </>
   );
 }
 
 function TakenTab(): ReactElement {
-  const qc = useQueryClient();
-  const [cancelling, setCancelling] = useState<Order | null>(null);
+  const { setCancelling, dialog } = useCancelOrder();
   const q = useQuery({
     queryKey: ['orders', 'my-to-take'],
     queryFn: () => ordersApi.myToTake(),
-  });
-  const cancelMut = useMutation({
-    mutationFn: (id: string) => ordersApi.cancel(id, 'Xodim bekor qildi'),
-    onSuccess: () => {
-      setCancelling(null);
-      void qc.invalidateQueries({ queryKey: ['orders', 'my-to-take'] });
-    },
   });
   const rows = q.data ?? [];
 
@@ -190,18 +231,7 @@ function TakenTab(): ReactElement {
           );
         })}
       </ul>
-
-      <ConfirmDialog
-        open={cancelling !== null}
-        title="Buyurtmani o'chirish"
-        confirmLabel="Ha, o'chirish"
-        danger
-        isPending={cancelMut.isPending}
-        onCancel={() => setCancelling(null)}
-        onConfirm={() => cancelling && cancelMut.mutate(cancelling.id)}
-      >
-        {cancelling?.number} ({cancelling?.client_name}) buyurtmasi bekor qilinadi.
-      </ConfirmDialog>
+      {dialog}
     </DataState>
   );
 }

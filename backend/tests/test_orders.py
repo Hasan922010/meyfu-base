@@ -675,4 +675,14 @@ def test_warehouse_order_place_and_cancel_ownership(admin_api, van_stocked):
     assert too_late.status_code == 400
     assert too_late.data["error"]["code"] == "ORDER_CANNOT_BE_CANCELLED"
 
+    # Tarqatuvchi esa o'ziga biriktirilgan APPROVED buyurtmani bekor qila oladi
+    order = Order.objects.get(pk=oid)
+    order.assigned_to = van_stocked["distributor"]
+    order.save(update_fields=["assigned_to"])
+    dist_api = APIClient()
+    dist_api.force_authenticate(user=van_stocked["distributor"])
+    dist_cancel = dist_api.post(f"/api/v1/orders/{oid}/cancel/", {"reason": "Bekor"}, format="json")
+    assert dist_cancel.status_code == 200
+    assert dist_cancel.data["data"]["status"] == "CANCELLED"
+
 

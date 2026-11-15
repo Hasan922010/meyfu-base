@@ -70,14 +70,14 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     expect(screen.queryByRole('button', { name: 'Dona (dona)' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Qadoq \(/ })).not.toBeInTheDocument();
 
-    // 4. 3 bosilsa 3 karopka, yana 3 bosilsa 6 karopka (25 000 * 12 * 6 = 1 800 000)
+    // 4. 3 bosilsa 3 karopka, yana 3 bosilsa 6 karopka (tannarx 20 000 * 12 * 6 = 1 440 000)
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     expect(screen.getByText(/3 karopka × 12 dona = 36 dona/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     expect(screen.getByText(/6 karopka × 12 dona = 72 dona/)).toBeInTheDocument();
-    expect(screen.getByText(/25 000 so'm × 12 × 6 =/)).toBeInTheDocument();
-    expect(screen.getAllByText(/1 800 000/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/20 000 so'm × 12 × 6 =/)).toBeInTheDocument();
+    expect(screen.getAllByText(/1 440 000/).length).toBeGreaterThanOrEqual(1);
 
     // 5. Savatga qo'shish
     const addBtn = screen.getByRole('button', { name: /Savatga qo'shish/ });
@@ -141,7 +141,7 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     expect(saved?.lines[0]).toMatchObject({
       product: 'p1',
       quantity: 12,
-      price: 25000,
+      price: 20000,
       is_bonus: false,
     });
     expect(saved?.lines[1]).toMatchObject({

@@ -191,9 +191,14 @@ class OrderViewSet(BaseModelViewSet):
                     code="NOT_YOUR_ORDER",
                     status_code=403,
                 )
-            if order.status not in (OrderStatus.DRAFT, OrderStatus.PLACED):
+            allowed_statuses = (
+                (OrderStatus.DRAFT, OrderStatus.PLACED, OrderStatus.APPROVED, OrderStatus.LOADED)
+                if user.role == Role.DISTRIBUTOR
+                else (OrderStatus.DRAFT, OrderStatus.PLACED)
+            )
+            if order.status not in allowed_statuses:
                 raise BusinessError(
-                    message="Faqat qoralama yoki kutilayotgan buyurtmani bekor qilish mumkin.",
+                    message="Bu holatdagi buyurtmani bekor qilish mumkin emas.",
                     code="ORDER_CANNOT_BE_CANCELLED",
                     status_code=400,
                 )
