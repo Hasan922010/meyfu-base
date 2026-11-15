@@ -41,7 +41,7 @@ class BranchPricedMixin:
 
 
 _NO_COST_ROLES = {Role.DISTRIBUTOR, Role.ORDER_TAKER}
-_COST_FIELDS = ("cost_price", "commission_percent")
+_COST_FIELDS = ("commission_percent",)
 
 
 class BranchPriceSerializer(serializers.ModelSerializer):
@@ -221,8 +221,7 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
         if "cost_price" in attrs:
             for pfield in ("wholesale_price", "retail_price", "min_price"):
                 if pfield not in attrs:
-                    if self.instance is None or getattr(self.instance, pfield) == Decimal("0"):
-                        attrs[pfield] = attrs["cost_price"]
+                    attrs[pfield] = attrs["cost_price"]
 
         # Bonus tekshiruvi
         has_bonus = attrs.get("has_bonus", getattr(self.instance, "has_bonus", False))
@@ -301,8 +300,8 @@ class ProductLiteSerializer(BranchPricedMixin, serializers.ModelSerializer):
         model = Product
         fields = (
             "id", "name", "sku", "barcode", "unit", "image", "image_thumb",
-            "wholesale_price", "retail_price", "min_price",
-            "pack_quantity", "is_active", "is_deleted", "updated_at",
+            "cost_price", "wholesale_price", "retail_price", "min_price",
+            "pack_quantity", "package_type", "is_active", "is_deleted", "updated_at",
         )
         read_only_fields = fields
 

@@ -119,7 +119,7 @@ class ProductViewSet(BaseModelViewSet):
     )
     # Admin jadvalidagi har bir ustun (UI: shared/table)
     ordering_fields = (
-        "name", "sku", "category__name", "retail_price", "wholesale_price", "min_price",
+        "name", "sku", "category__name", "cost_price", "retail_price", "wholesale_price", "min_price",
         "is_active", "created_at", "available_stock", "updated_at",
     )
 

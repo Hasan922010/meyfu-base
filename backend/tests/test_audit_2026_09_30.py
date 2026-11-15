@@ -428,10 +428,11 @@ def test_integrity_detects_client_debt_drift_and_ignores_cancelled(
 # ---------- SEC-110: tannarx tarqatuvchiga ko'rinmaydi ----------
 
 @pytest.mark.django_db
-def test_distributor_does_not_see_cost_price(auth_api, manager_api, catalog):
+def test_distributor_sees_cost_price_not_commission(auth_api, manager_api, catalog):
     pid = catalog["product"].pk
     mine = auth_api.get(f"/api/v1/products/{pid}/").data["data"]
     managers = manager_api.get(f"/api/v1/products/{pid}/").data["data"]
 
-    assert "cost_price" not in mine and "commission_percent" not in mine
+    assert "commission_percent" not in mine
+    assert mine["cost_price"] == "20000.00"
     assert managers["cost_price"] == "20000.00"

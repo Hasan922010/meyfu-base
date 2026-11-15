@@ -78,8 +78,8 @@ export function ProductTable({
             <SortableHeader field="category__name" currentOrdering={ordering} onSort={onSort}>
               Kategoriya / Brend
             </SortableHeader>
-            <SortableHeader field="retail_price" currentOrdering={ordering} onSort={onSort} align="right">
-              Narxlar
+            <SortableHeader field="cost_price" currentOrdering={ordering} onSort={onSort} align="right">
+              Tannarx
             </SortableHeader>
             <SortableHeader field="available_stock" currentOrdering={ordering} onSort={onSort} align="right">
               Zaxira
@@ -158,12 +158,12 @@ export function ProductTable({
               </td>
               <td className="p-3 text-right">
                 <div className="font-semibold text-slate-900 dark:text-white">
-                  {money(p.retail_price)}
+                  Dona: {money(p.cost_price)}
                 </div>
                 <div className="mt-0.5 flex flex-col gap-0.5 text-[11px] text-slate-500">
-                  <span title="Tannarx / Ulgurji / Min">
-                    Tan: {money(p.cost_price)} | Ulg: {money(p.wholesale_price)} | Min:{' '}
-                    {money(p.min_price)}
+                  <span title="Tannarx (qop/quti)">
+                    Qop/quti:{' '}
+                    {money(Number(p.cost_price || 0) * (Number(p.pack_quantity) || 1))}
                   </span>
                   {(Number(p.order_commission_rate || 0) > 0 ||
                     Number(p.delivery_commission_rate || 0) > 0) && (

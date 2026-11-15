@@ -59,11 +59,12 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     expect(screen.getByText(/\+998901234567/)).toBeInTheDocument();
     fireEvent.click(clientBtn);
 
-    // 2. Tovarni qidirish va tanlash
+    // 2. Tovarni qidirish va tanlash (qidiruvda dona va qop/quti narxi ko'rinishi kerak)
     const searchInput = screen.getByPlaceholderText('Tovar qidirish…');
     fireEvent.change(searchInput, { target: { value: 'Bio' } });
 
     const productBtn = await screen.findByRole('button', { name: /Bio Kukun 3kg/ });
+    expect(productBtn).toHaveTextContent(/1 karopka:.*240 000/);
     fireEvent.click(productBtn);
 
     // 3. Qadoq/dona almashtirish tugmalari chiqmasligi kerak, qadoqli tovar avtomatik karopkada hisoblanadi

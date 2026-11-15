@@ -41,10 +41,8 @@ class ProductPriceInline(admin.TabularInline):
     model = ProductPrice
     extra = 0
     can_delete = False
-    readonly_fields = (
-        "cost_price", "wholesale_price", "retail_price", "min_price",
-        "effective_from", "reason",
-    )
+    exclude = ("wholesale_price", "retail_price", "min_price")
+    readonly_fields = ("cost_price", "effective_from", "reason")
 
     def has_add_permission(self, request, obj=None) -> bool:
         return False
@@ -54,8 +52,9 @@ class ProductPriceInline(admin.TabularInline):
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
         "name", "sku", "category", "brand", "unit",
-        "cost_price", "retail_price", "min_price", "is_active",
+        "cost_price", "is_active",
     )
+    exclude = ("wholesale_price", "retail_price", "min_price")
     list_filter = ("is_active", "category", "brand")
     search_fields = ("name", "sku", "barcode")
     inlines = [ProductImageInline, ProductPriceInline]
@@ -64,9 +63,8 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(ProductPrice)
 class ProductPriceAdmin(admin.ModelAdmin):
-    list_display = (
-        "product", "effective_from", "cost_price", "retail_price", "min_price",
-    )
+    list_display = ("product", "effective_from", "cost_price")
+    exclude = ("wholesale_price", "retail_price", "min_price")
     list_filter = ("effective_from",)
     search_fields = ("product__name", "product__sku")
 

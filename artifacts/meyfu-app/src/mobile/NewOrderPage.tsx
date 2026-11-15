@@ -266,32 +266,43 @@ export function NewOrderPage(): ReactElement {
           />
           {productSearch && !picked && (
             <ul className="max-h-48 space-y-1 overflow-y-auto">
-              {filteredProducts.slice(0, 20).map((p) => (
-                <li key={p.id}>
-                  <button
-                    className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
-                    onClick={() => {
-                      setPicked(p.id);
-                      setQty(0);
-                      setPickedPrice(suggestedPrice(p.id));
-                    }}
-                  >
-                    {p.image_thumb ? (
-                      <img
-                        src={p.image_thumb}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded object-cover"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
-                    )}
-                    <span className="flex-1">{p.name}</span>
-                    <span className="text-gray-400">
-                      {money(suggestedPrice(p.id) || 0)}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {filteredProducts.slice(0, 20).map((p) => {
+                const { packQty, isPack, baseUnit, packLabel } = orderUnitInfo(p);
+                const unitPrice = Number(suggestedPrice(p.id) || 0);
+                return (
+                  <li key={p.id}>
+                    <button
+                      className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
+                      onClick={() => {
+                        setPicked(p.id);
+                        setQty(0);
+                        setPickedPrice(suggestedPrice(p.id));
+                      }}
+                    >
+                      {p.image_thumb ? (
+                        <img
+                          src={p.image_thumb}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 shrink-0 rounded bg-gray-100 dark:bg-gray-800" />
+                      )}
+                      <span className="flex-1">{p.name}</span>
+                      <span className="text-right text-xs text-gray-500">
+                        <span className="block font-medium text-gray-700 dark:text-gray-200">
+                          {money(unitPrice)} / {baseUnit}
+                        </span>
+                        {isPack && (
+                          <span className="block text-[11px] text-gray-400">
+                            1 {packLabel}: {money(unitPrice * packQty)}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
 
