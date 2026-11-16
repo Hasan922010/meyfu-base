@@ -25,6 +25,9 @@ export interface OrderItem {
   delivered_quantity: string;
   price: string;
   amount: string;
+  pack_quantity?: string | undefined;
+  package_type?: string | undefined;
+  unit_name?: string | undefined;
 }
 
 export interface Order {

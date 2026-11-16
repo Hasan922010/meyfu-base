@@ -1,4 +1,5 @@
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { InventoryTab } from './InventoryTab';
 import { LoadingsTab } from './LoadingsTab';
@@ -19,7 +20,14 @@ const TABS: Array<{ id: Tab; label: string }> = [
 ];
 
 export function WarehousePage(): ReactElement {
-  const [tab, setTab] = useState<Tab>('stock');
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab') as Tab | null;
+  const isValidTab = requestedTab != null && TABS.some((t) => t.id === requestedTab);
+  const [tab, setTab] = useState<Tab>(isValidTab ? requestedTab : 'stock');
+
+  useEffect(() => {
+    if (isValidTab && requestedTab) setTab(requestedTab);
+  }, [isValidTab, requestedTab]);
 
   return (
     <div className="space-y-4">

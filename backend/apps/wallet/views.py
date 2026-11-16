@@ -115,12 +115,46 @@ class WalletViewSet(BaseReadOnlyViewSet):
     @extend_schema(summary="Mening hamyonim (jonli balans bilan)")
     @action(detail=False, methods=["get"], url_path="my")
     def my(self, request: Request) -> Response:
+        from apps.core.business_day import business_date
+        from apps.sales.models import DebtPayment, Sale
+
         wallet = get_or_create_wallet(request.user)
         pending = _pending_expense_total(request.user)
+        live_balance = wallet.balance - pending
+        today = business_date()
+
+        sales_by_type = {
+            row["payment_type"]: (row["s"] or _ZERO)
+            for row in Sale.objects.filter(
+                distributor=request.user,
+                date=today,
+                status__in=("COMPLETED", "FLAGGED"),
+                payment_type__in=("PLASTIK", "OTKAZMA"),
+            )
+            .values("payment_type")
+            .annotate(s=Sum("paid_amount"))
+        }
+        debts_by_type = {
+            row["payment_type"]: (row["s"] or _ZERO)
+            for row in DebtPayment.objects.filter(
+                collected_by=request.user,
+                date=today,
+                payment_type__in=("PLASTIK", "OTKAZMA"),
+            )
+            .values("payment_type")
+            .annotate(s=Sum("amount"))
+        }
+        card_amount = sales_by_type.get("PLASTIK", _ZERO) + debts_by_type.get("PLASTIK", _ZERO)
+        transfer_amount = sales_by_type.get("OTKAZMA", _ZERO) + debts_by_type.get("OTKAZMA", _ZERO)
+        total_collected = live_balance + card_amount + transfer_amount
+
         cents = Decimal("0.01")
         data = WalletSerializer(wallet).data
         data["pending_expense_amount"] = str(pending.quantize(cents))
-        data["live_balance"] = str((wallet.balance - pending).quantize(cents))
+        data["live_balance"] = str(live_balance.quantize(cents))
+        data["card_amount"] = str(card_amount.quantize(cents))
+        data["transfer_amount"] = str(transfer_amount.quantize(cents))
+        data["total_collected"] = str(total_collected.quantize(cents))
         return ok(data)
 
     @extend_schema(summary="Hamyon tranzaksiyalari")

@@ -63,7 +63,7 @@ describe('MyOrdersPage — Yetkazish (FulfillScreen) Ergonomik Boshqaruvi', () =
     // 2. Yetkazish ekrani ochilishi
     expect(screen.getByRole('heading', { name: 'Yetkazish' })).toBeInTheDocument();
     expect(screen.getByText('Kungaboqar Yog‘i 1L')).toBeInTheDocument();
-    expect(screen.getByText('buyurtma: 5 ta')).toBeInTheDocument();
+    expect(screen.getByText('buyurtma: 5 dona')).toBeInTheDocument();
 
     // 3. Yetkazilgan miqdorni kamaytirish va ko'paytirish tugmalari
     const decBtn = screen.getByRole('button', { name: 'Kungaboqar Yog‘i 1L — kamaytirish' });

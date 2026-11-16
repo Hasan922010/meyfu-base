@@ -125,3 +125,23 @@ export function dateTimeShort(iso: string | Date): string {
   if (Number.isNaN(d.getTime())) return String(iso);
   return `${dateFmt.format(d)} ${timeFmt.format(d)}`;
 }
+
+/** Buyurtma miqdorini butun sonda qop/quti yoki asosiy birlikda ko'rsatadi. */
+export function formatOrderQty(
+  rawQty: string | number,
+  item?: {
+    pack_quantity?: string | number | undefined;
+    package_type?: string | undefined;
+    unit_name?: string | undefined;
+  },
+): string {
+  const q = Math.round(Number(rawQty) || 0);
+  if (q === 0) return '0';
+  const packQty = Math.round(Number(item?.pack_quantity) || 1);
+  const unit = item?.unit_name?.trim() || 'dona';
+  const packLabel = item?.package_type?.trim() || 'qadoq';
+  if (packQty > 1 && q % packQty === 0) {
+    return `${q / packQty} ${packLabel}`;
+  }
+  return `${q} ${unit}`;
+}

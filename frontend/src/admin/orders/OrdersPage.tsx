@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { extractApiError } from '@/shared/api/client';
 import { ordersApi, type Order, type OrderStatus } from '@/shared/api/orders';
@@ -7,7 +8,7 @@ import { authApi } from '@/shared/api/users';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { dateShort, money } from '@/shared/lib/format';
+import { dateShort, formatOrderQty, money } from '@/shared/lib/format';
 import { useCan } from '@/shared/lib/permissions';
 
 type Tab = 'list' | 'build';
@@ -62,12 +63,16 @@ export function OrdersPage(): ReactElement {
         ))}
       </div>
 
-      {tab === 'build' && canBuild ? <BuildLoadingTab /> : <ListTab />}
+      {tab === 'build' && canBuild ? (
+        <BuildLoadingTab />
+      ) : (
+        <ListTab onApproved={canBuild ? () => setTab('build') : undefined} />
+      )}
     </div>
   );
 }
 
-function ListTab(): ReactElement {
+function ListTab({ onApproved }: { onApproved?: (() => void) | undefined }): ReactElement {
   const [status, setStatus] = useState<string>('');
   const [open, setOpen] = useState<string | null>(null);
 
@@ -142,7 +147,16 @@ function ListTab(): ReactElement {
         </DataState>
       </div>
 
-      {open && <OrderModal orderId={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <OrderModal
+          orderId={open}
+          onClose={() => setOpen(null)}
+          onApproved={() => {
+            setOpen(null);
+            onApproved?.();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -150,9 +164,11 @@ function ListTab(): ReactElement {
 function OrderModal({
   orderId,
   onClose,
+  onApproved,
 }: {
   orderId: string;
   onClose: () => void;
+  onApproved?: (() => void) | undefined;
 }): ReactElement {
   const qc = useQueryClient();
   const [reason, setReason] = useState<string>('');
@@ -169,7 +185,10 @@ function OrderModal({
 
   const approve = useMutation({
     mutationFn: () => ordersApi.approve(orderId),
-    onSuccess: refresh,
+    onSuccess: () => {
+      refresh();
+      onApproved?.();
+    },
   });
   const cancel = useMutation({
     mutationFn: () => ordersApi.cancel(orderId, reason),
@@ -214,8 +233,8 @@ function OrderModal({
                     className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                   >
                     <td className="py-1">{it.product_name}</td>
-                    <td className="py-1 text-right">{it.quantity}</td>
-                    <td className="py-1 text-right">{it.delivered_quantity}</td>
+                    <td className="py-1 text-right">{formatOrderQty(it.quantity, it)}</td>
+                    <td className="py-1 text-right">{formatOrderQty(it.delivered_quantity, it)}</td>
                     <td className="py-1 text-right">{money(it.price)}</td>
                     <td className="py-1 text-right">{money(it.amount)}</td>
                   </tr>
@@ -274,6 +293,7 @@ function OrderModal({
 
 function BuildLoadingTab(): ReactElement {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [distributor, setDistributor] = useState<string>('');
   const [warehouse, setWarehouse] = useState<string>('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -302,6 +322,7 @@ function BuildLoadingTab(): ReactElement {
       setPicked(new Set());
       void qc.invalidateQueries({ queryKey: ['orders'] });
       void qc.invalidateQueries({ queryKey: ['loadings'] });
+      void navigate('/admin/warehouse?tab=loadings');
     },
   });
 

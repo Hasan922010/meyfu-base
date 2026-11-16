@@ -144,6 +144,9 @@ async function pullOrdersToDeliver(): Promise<void> {
           quantity: it.quantity,
           delivered_quantity: it.delivered_quantity,
           price: it.price,
+          pack_quantity: it.pack_quantity,
+          package_type: it.package_type,
+          unit_name: it.unit_name,
         })),
       })),
     );

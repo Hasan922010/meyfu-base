@@ -24,6 +24,9 @@ const WALLET = {
   live_balance: '4978000.00',
   balance: '4978000.00',
   pending_expense_amount: '0.00',
+  card_amount: '500000.00',
+  transfer_amount: '0.00',
+  total_collected: '5478000.00',
 };
 
 beforeEach(() => {
@@ -41,12 +44,14 @@ describe('Hamyon xato holati (UX audit)', () => {
     expect(screen.queryByText("0 so'm")).not.toBeInTheDocument();
   });
 
-  it('karta: muvaffaqiyatda summani ko‘rsatadi', async () => {
+  it('karta: muvaffaqiyatda naqd, plastik va umumiy summani ko‘rsatadi', async () => {
     my.mockResolvedValue(WALLET);
 
     renderWithClient(<WalletCard />);
 
     expect(await screen.findByText("4 978 000 so'm")).toBeInTheDocument();
+    expect(screen.getByText("500 000 so'm")).toBeInTheDocument();
+    expect(screen.getByText("5 478 000 so'm")).toBeInTheDocument();
   });
 
   it('sahifa: xato bo‘lsa sabab va "Qayta urinish" tugmasi, nol raqamlar yo‘q', async () => {

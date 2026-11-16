@@ -291,3 +291,31 @@ def test_admin_lock_opening_balance_blocks_further_changes(manager_api, warehous
     )
     assert blocked_resp.status_code == 409
     assert blocked_resp.data["error"]["code"] == "OPENING_LOCKED"
+
+
+@pytest.mark.django_db
+def test_loading_pdf_renders_with_order_client_and_pack_units(admin_api, van_stocked):
+    """Yuklama PDF qadoq/dona ko'rinishida va bog'langan buyurtma mijoz nomi bilan generatsiya bo'ladi."""
+    from apps.orders.models import Order
+    from apps.warehouse.models import Loading
+    from apps.warehouse.pdf import loading_to_pdf
+
+    product = van_stocked["product"]
+    product.pack_quantity = Decimal("12")
+    product.package_type = "qop"
+    product.save(update_fields=["pack_quantity", "package_type"])
+
+    loading = Loading.objects.filter(distributor=van_stocked["distributor"]).first()
+    assert loading is not None
+    Order.objects.create(
+        number="BUY-TEST-1",
+        date=loading.date,
+        client=van_stocked["client"],
+        taken_by=van_stocked["distributor"],
+        assigned_to=van_stocked["distributor"],
+        loading=loading,
+        status="LOADED",
+    )
+
+    pdf_bytes = loading_to_pdf(loading, with_stamp=False)
+    assert pdf_bytes.startswith(b"%PDF-")

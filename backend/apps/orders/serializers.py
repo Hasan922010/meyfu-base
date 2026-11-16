@@ -14,15 +14,23 @@ _PAYMENT_CHOICES = ["NAQD", "PLASTIK", "OTKAZMA", "QARZ", "ARALASH"]
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_sku = serializers.CharField(source="product.sku", read_only=True)
+    pack_quantity = serializers.DecimalField(
+        source="product.pack_quantity", max_digits=14, decimal_places=3, read_only=True
+    )
+    package_type = serializers.CharField(source="product.package_type", read_only=True)
+    unit_name = serializers.CharField(source="product.unit.short_name", read_only=True)
 
     class Meta:
         model = OrderItem
         fields = (
             "id", "product", "product_name", "product_sku", "quantity",
             "delivered_quantity", "price", "amount", "is_bonus",
+            "pack_quantity", "package_type", "unit_name",
         )
-        read_only_fields = ("id", "delivered_quantity", "amount",
-                            "product_name", "product_sku")
+        read_only_fields = (
+            "id", "delivered_quantity", "amount",
+            "product_name", "product_sku", "pack_quantity", "package_type", "unit_name",
+        )
 
 
 class OrderSerializer(serializers.ModelSerializer):

@@ -150,3 +150,53 @@ def test_reverse_reference_idempotent(van_stocked):
     assert len(first) == 1
     assert second == []
     assert DistributorWallet.objects.get(distributor=dist).balance == Decimal("0.00")
+
+
+@pytest.mark.django_db
+def test_wallet_my_includes_card_and_total_collected(auth_api, van_stocked):
+    """/wallet/my/ bugungi plastik sotuv + plastik qarz to'lovini va umumiy summani qaytaradi."""
+    from apps.sales.models import Debt
+
+    client, product = van_stocked["client"], van_stocked["product"]
+    # 1. Naqd sotuv: 10 * 27 000 = 270 000 (hamyonga tushadi)
+    _sale(auth_api, client, product, "10", price="27000")
+
+    # 2. Plastik sotuv: 5 * 27 000 = 135 000
+    card_sale = auth_api.post(
+        "/api/v1/sales/",
+        {
+            "client": str(client.id),
+            "payment_type": "PLASTIK",
+            "items": [{"product": str(product.id), "quantity": "5", "price": "27000"}],
+        },
+        format="json",
+    )
+    assert card_sale.status_code == 201
+
+    # 3. Qarzga sotuv + plastikda qarz to'lovi: 65 000
+    debt_sale = auth_api.post(
+        "/api/v1/sales/",
+        {
+            "client": str(client.id),
+            "payment_type": "QARZ",
+            "due_date": "2026-12-01",
+            "items": [{"product": str(product.id), "quantity": "4", "price": "27000"}],
+        },
+        format="json",
+    )
+    assert debt_sale.status_code == 201
+    debt = Debt.objects.get(sale_id=debt_sale.data["data"]["id"])
+    pay = auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "65000", "payment_type": "PLASTIK"},
+        format="json",
+    )
+    assert pay.status_code == 201
+
+    resp = auth_api.get("/api/v1/wallet/my/")
+    assert resp.status_code == 200
+    d = resp.data["data"]
+    assert d["live_balance"] == "270000.00"
+    assert d["card_amount"] == "200000.00"
+    assert d["transfer_amount"] == "0.00"
+    assert d["total_collected"] == "470000.00"

@@ -37,8 +37,24 @@ export function WalletPage(): ReactElement {
             <div className="mt-1 text-3xl font-bold">{money(wallet.data.live_balance)}</div>
             <div className="mt-2 space-y-0.5 text-xs opacity-90">
               <div className="flex justify-between">
-                <span>Rasmiy balans</span>
+                <span>Rasmiy balans (naqd)</span>
                 <span>{money(wallet.data.balance)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Plastik orqali (bugun)</span>
+                <span>{money(wallet.data.card_amount ?? '0')}</span>
+              </div>
+              {Number(wallet.data.transfer_amount ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span>O&apos;tkazma orqali (bugun)</span>
+                  <span>{money(wallet.data.transfer_amount ?? '0')}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-white/15 pt-1 font-semibold">
+                <span>Umumiy yig&apos;ilgan</span>
+                <span>
+                  {money(wallet.data.total_collected ?? wallet.data.live_balance)}
+                </span>
               </div>
               {Number(wallet.data.pending_expense_amount) > 0 && (
                 <div className="flex justify-between">

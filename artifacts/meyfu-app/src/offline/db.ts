@@ -64,6 +64,9 @@ export interface CachedOrder {
     delivered_quantity: string;
     price: string;
     is_bonus?: boolean | undefined;
+    pack_quantity?: string | undefined;
+    package_type?: string | undefined;
+    unit_name?: string | undefined;
   }>;
 }
 

@@ -83,7 +83,7 @@ class OrderViewSet(BaseModelViewSet):
         qs = Order.objects.select_related(
             "client", "taken_by", "assigned_to", "loading"
         ).prefetch_related(
-            Prefetch("items", queryset=OrderItem.objects.select_related("product"))
+            Prefetch("items", queryset=OrderItem.objects.select_related("product", "product__unit"))
         )
         if _is_distributor(self.request.user):
             return qs.filter(

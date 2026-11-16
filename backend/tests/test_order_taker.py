@@ -134,7 +134,6 @@ def test_order_taker_can_create_clients(taker_api, taker_route):
         ("get", "/api/v1/loadings/my-today/"),
         ("get", "/api/v1/van-stock/my/"),
         ("get", "/api/v1/day-close/"),
-        ("get", "/api/v1/debt-payments/"),
         ("get", "/api/v1/payrolls/"),
         ("get", "/api/v1/users/"),
         ("get", "/api/v1/orders/my-to-deliver/"),

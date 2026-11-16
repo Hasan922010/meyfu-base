@@ -12,6 +12,7 @@ import { DEJAVU_SUBSET_B64 } from './fonts/dejavuSubset';
 export interface ReceiptLine {
   name: string;
   qty: number;
+  qtyLabel?: string | undefined;
   price: number;
 }
 
@@ -131,7 +132,10 @@ function render(doc: jsPDF, r: ReceiptDoc, company: CompanyCache | null): number
       y += 3.3;
     }
     doc.setFontSize(7);
-    doc.text(`${line.qty} × ${money(line.price)}`, M, y);
+    const qtyText = line.qtyLabel
+      ? `${line.qtyLabel} (${line.qty} × ${money(line.price)})`
+      : `${line.qty} × ${money(line.price)}`;
+    doc.text(qtyText, M, y);
     doc.setFontSize(7.5);
     doc.text(money(amount), W - M, y, { align: 'right' });
     y += 4;

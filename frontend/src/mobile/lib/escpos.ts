@@ -123,9 +123,12 @@ export function encodeReceipt(
 
   for (const line of doc.lines) {
     for (const part of wrap(toAscii(line.name), width)) b.text(part);
+    const qtyText = line.qtyLabel
+      ? `  ${line.qtyLabel} (${line.qty} x ${formatSum(line.price)})`
+      : `  ${line.qty} x ${formatSum(line.price)}`;
     b.text(
       twoColumns(
-        `  ${line.qty} x ${formatSum(line.price)}`,
+        qtyText,
         formatSum(line.qty * line.price),
         width,
       ),

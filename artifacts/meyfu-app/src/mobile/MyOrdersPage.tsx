@@ -15,7 +15,7 @@ import { ordersApi } from '@/shared/api/orders';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { useAuthStore } from '@/shared/store/authStore';
-import { dateTimeShort, money } from '@/shared/lib/format';
+import { dateTimeShort, formatOrderQty, money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
 
@@ -178,6 +178,7 @@ function DeliverTab({
 
 function TakenTab(): ReactElement {
   const { setCancelling, dialog } = useCancelOrder();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const q = useQuery({
     queryKey: ['orders', 'my-to-take'],
     queryFn: () => ordersApi.myToTake(),
@@ -196,21 +197,40 @@ function TakenTab(): ReactElement {
       <ul className="space-y-2">
         {rows.map((o) => {
           const canCancel = o.status === 'DRAFT' || o.status === 'PLACED';
+          const isOpen = expandedId === o.id;
           return (
             <li
               key={o.id}
               className="space-y-2 rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900"
             >
-              <div className="flex justify-between">
-                <span className="font-medium">{o.client_name}</span>
-                <span className={`text-sm ${STATUS_CLASS[o.status] ?? ''}`}>
-                  {o.status_display}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>{o.number}</span>
-                <span>{money(o.total_amount)}</span>
-              </div>
+              <button
+                type="button"
+                className="w-full space-y-1 text-left"
+                onClick={() => setExpandedId(isOpen ? null : o.id)}
+              >
+                <div className="flex justify-between">
+                  <span className="font-medium">{o.client_name}</span>
+                  <span className={`text-sm ${STATUS_CLASS[o.status] ?? ''}`}>
+                    {o.status_display}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>{o.number} · {o.items.length} tovar</span>
+                  <span>{money(o.total_amount)}</span>
+                </div>
+              </button>
+              {isOpen && o.items.length > 0 && (
+                <ul className="divide-y divide-gray-100 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs dark:divide-gray-800 dark:bg-gray-800/60">
+                  {o.items.map((it) => (
+                    <li key={it.id} className="flex items-center justify-between py-1">
+                      <span className="truncate pr-2 font-medium">{it.product_name}</span>
+                      <span className="shrink-0 text-gray-600 dark:text-gray-300">
+                        {formatOrderQty(it.quantity, it)} · {money(it.amount)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="flex items-center justify-between gap-2">
                 <ReceiptButtons
                   getDoc={() => orderToReceipt(o)}
@@ -299,10 +319,16 @@ function FulfillScreen({
         paymentLabel: paymentLabel(paymentType),
         lines: lines.map((l) => {
           const it = order.items.find((x) => x.id === l.item);
+          const packQty = Math.round(Number(it?.pack_quantity) || 1);
+          const qtyLabel =
+            it && packQty > 1 && l.delivered_quantity > 0 && l.delivered_quantity % packQty === 0
+              ? formatOrderQty(l.delivered_quantity, it)
+              : undefined;
           return {
             name: it?.product_name ?? '',
             qty: l.delivered_quantity,
             price: l.price,
+            ...(qtyLabel ? { qtyLabel } : {}),
           };
         }),
         total,
@@ -377,7 +403,7 @@ function FulfillScreen({
               <div className="flex justify-between items-start">
                 <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{it.product_name}</span>
                 <span className="text-xs rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-gray-500 font-medium">
-                  buyurtma: {it.quantity} ta
+                  buyurtma: {formatOrderQty(it.quantity, it)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 pt-1">

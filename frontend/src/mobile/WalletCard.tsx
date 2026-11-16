@@ -27,7 +27,29 @@ export function WalletCard(): ReactElement {
       </div>
       {/* Ma'lumot yo'q paytida "0 so'm" pul yo'qolgandek ko'rinardi (UX audit) */}
       {wallet.data ? (
-        <div className="mt-1 text-3xl font-bold">{money(wallet.data.live_balance)}</div>
+        <>
+          <div className="mt-1 text-3xl font-bold">{money(wallet.data.live_balance)}</div>
+          <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1 border-t border-white/15 pt-2 text-xs">
+            <div className="flex items-center justify-between gap-1 opacity-90">
+              <span>Plastik:</span>
+              <span className="font-semibold">{money(wallet.data.card_amount ?? '0')}</span>
+            </div>
+            <div className="flex items-center justify-between gap-1">
+              <span className="opacity-90">Umumiy:</span>
+              <span className="font-bold">
+                {money(wallet.data.total_collected ?? wallet.data.live_balance)}
+              </span>
+            </div>
+            {Number(wallet.data.transfer_amount ?? 0) > 0 && (
+              <div className="col-span-2 flex items-center justify-between gap-1 opacity-90">
+                <span>O&apos;tkazma:</span>
+                <span className="font-semibold">
+                  {money(wallet.data.transfer_amount ?? '0')}
+                </span>
+              </div>
+            )}
+          </div>
+        </>
       ) : wallet.isError ? (
         <div className="mt-2 text-sm font-medium">
           Balansni yuklab bo'lmadi — ochish uchun bosing

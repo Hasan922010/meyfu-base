@@ -337,9 +337,10 @@ def test_negative_cash_handed_rejected(auth_api, van_stocked):
     assert resp.status_code == 400
     assert resp.data["error"]["code"] == "INVALID"
 
+    from django.utils import timezone
+
     from apps.core.exceptions import BusinessError
     from apps.dayclose.services.close import submit_day_close
-    from django.utils import timezone
 
     with pytest.raises(BusinessError) as exc:
         submit_day_close(
@@ -350,3 +351,39 @@ def test_negative_cash_handed_rejected(auth_api, van_stocked):
             cash_handed=Decimal("-1"),
         )
     assert exc.value.code == "INVALID_AMOUNT"
+
+
+@pytest.mark.django_db
+def test_dayclose_my_today_includes_card_debt_collection(auth_api, van_stocked):
+    """Kun yopish preview'da naqd va plastik qarz undiruvi alohida ko'rinadi."""
+    from apps.sales.models import Debt
+
+    client, product = van_stocked["client"], van_stocked["product"]
+    debt_sale = auth_api.post(
+        "/api/v1/sales/",
+        {
+            "client": str(client.id),
+            "payment_type": "QARZ",
+            "due_date": "2026-12-01",
+            "items": [{"product": str(product.id), "quantity": "10", "price": "27000"}],
+        },
+        format="json",
+    )
+    assert debt_sale.status_code == 201
+    debt = Debt.objects.get(sale_id=debt_sale.data["data"]["id"])
+
+    assert auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "100000", "payment_type": "NAQD"},
+        format="json",
+    ).status_code == 201
+    assert auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "50000", "payment_type": "PLASTIK"},
+        format="json",
+    ).status_code == 201
+
+    p = auth_api.get("/api/v1/day-close/my-today/").data["data"]
+    assert p["debt_collected_amount"] == "100000.00"
+    assert p["debt_collected_card_amount"] == "50000.00"
+    assert p["cash_expected"] == "100000.00"
