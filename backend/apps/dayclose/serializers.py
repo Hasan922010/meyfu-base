@@ -12,12 +12,22 @@ _QTY = {"max_digits": 14, "decimal_places": 3}
 
 class DailyReturnItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
+    pack_quantity = serializers.DecimalField(
+        source="product.pack_quantity", max_digits=14, decimal_places=3, read_only=True
+    )
+    package_type = serializers.CharField(source="product.package_type", read_only=True)
+    unit_name = serializers.CharField(source="product.unit.short_name", read_only=True)
 
     class Meta:
         model = DailyReturnItem
-        fields = ("id", "product", "product_name", "quantity", "condition",
-                  "price", "amount")
-        read_only_fields = ("id", "price", "amount", "product_name")
+        fields = (
+            "id", "product", "product_name", "quantity", "condition",
+            "price", "amount", "pack_quantity", "package_type", "unit_name",
+        )
+        read_only_fields = (
+            "id", "price", "amount", "product_name",
+            "pack_quantity", "package_type", "unit_name",
+        )
 
 
 class DailyReturnSerializer(serializers.ModelSerializer):

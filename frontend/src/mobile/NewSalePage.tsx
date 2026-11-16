@@ -229,14 +229,18 @@ export function NewSalePage(): ReactElement {
         clientName: client.name,
         paymentLabel: paymentLabel(paymentType),
         lines: [
-          ...cart.map((l) => ({
-            name:
+          ...cart.map((l) => {
+            const qtyLabel =
               l.unit_mode === 'package' && l.package_count
-                ? `${l.product_name} (${l.package_count} ${l.package_type || 'qadoq'})`
-                : l.product_name,
-            qty: l.quantity,
-            price: l.price,
-          })),
+                ? `${l.package_count} ${l.package_type || 'qadoq'}`
+                : undefined;
+            return {
+              name: l.product_name,
+              qty: l.quantity,
+              price: l.price,
+              ...(qtyLabel ? { qtyLabel } : {}),
+            };
+          }),
           ...bonuses.map((b) => ({
             name: `${b.bonusProductName} (Aksiya bonusi)`,
             qty: b.bonusQty,

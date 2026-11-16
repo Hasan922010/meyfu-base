@@ -319,3 +319,37 @@ def test_loading_pdf_renders_with_order_client_and_pack_units(admin_api, van_sto
 
     pdf_bytes = loading_to_pdf(loading, with_stamp=False)
     assert pdf_bytes.startswith(b"%PDF-")
+
+
+@pytest.mark.django_db
+def test_purchase_to_pdf_formats_pack_qty(van_stocked):
+    """Kirim nakladnoy PDF da qadoqli mahsulot miqdori qop/quti da formatlanadi."""
+    from apps.warehouse.models import Purchase, PurchaseItem, Supplier
+    from apps.warehouse.pdf import _format_pack_qty, purchase_to_pdf
+
+    product = van_stocked["product"]
+    product.pack_quantity = Decimal("12")
+    product.package_type = "qop"
+    product.save(update_fields=["pack_quantity", "package_type"])
+
+    assert _format_pack_qty(Decimal("24"), product) == "2 qop"
+    assert _format_pack_qty(Decimal("26"), product) == f"2 qop 2 {product.unit.short_name}"
+
+    supplier = Supplier.objects.create(name="Test Ta'minotchi", phone="+998901230000")
+    purchase = Purchase.objects.create(
+        number="KIR-TEST-1",
+        date=van_stocked["warehouse"].created_at.date(),
+        supplier=supplier,
+        warehouse=van_stocked["warehouse"],
+        created_by=van_stocked["distributor"],
+    )
+    PurchaseItem.objects.create(
+        purchase=purchase,
+        product=product,
+        quantity=Decimal("24"),
+        cost_price=Decimal("10000"),
+        amount=Decimal("240000"),
+    )
+
+    pdf_bytes = purchase_to_pdf(purchase, with_stamp=False, with_images=False)
+    assert pdf_bytes.startswith(b"%PDF-")

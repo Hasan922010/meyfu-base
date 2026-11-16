@@ -7,7 +7,7 @@ import { dayCloseApi } from '@/shared/api/reports';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, formatOrderQty, money, qty } from '@/shared/lib/format';
 
 /** Har xil hujjat turlari uchun yagona ko'rinish. */
 interface DocView {
@@ -56,7 +56,7 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
         columns: ['Mahsulot', 'Miqdor', 'Narx'],
         rows: p.items.map((i, n) => ({
           key: i.id ?? String(n),
-          cells: [i.product_name ?? i.product, qty(i.quantity), qty(i.cost_price)],
+          cells: [i.product_name ?? i.product, formatOrderQty(i.quantity, i), qty(i.cost_price)],
         })),
         pdf: (stamp) => warehouseApi.purchasePdf(doc.id, stamp),
       };
@@ -73,7 +73,7 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
         columns: ['Mahsulot', 'Miqdor'],
         rows: l.items.map((i, n) => ({
           key: i.id ?? String(n),
-          cells: [i.product_name ?? i.product, qty(i.quantity)],
+          cells: [i.product_name ?? i.product, formatOrderQty(i.quantity, i)],
         })),
         pdf: (stamp) => warehouseApi.loadingPdf(doc.id, stamp),
       };
@@ -115,7 +115,7 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
           key: i.id,
           cells: [
             i.product_name,
-            qty(i.quantity),
+            formatOrderQty(i.quantity, i),
             CONDITION_LABEL[i.condition] ?? i.condition,
             money(i.amount),
           ],

@@ -154,13 +154,21 @@ class StockMovementSerializer(serializers.ModelSerializer):
 
 class PurchaseItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
+    pack_quantity = serializers.DecimalField(
+        source="product.pack_quantity", max_digits=14, decimal_places=3, read_only=True
+    )
+    package_type = serializers.CharField(source="product.package_type", read_only=True)
+    unit_name = serializers.CharField(source="product.unit.short_name", read_only=True)
 
     class Meta:
         model = PurchaseItem
         fields = (
             "id", "product", "product_name", "quantity", "cost_price", "amount",
+            "pack_quantity", "package_type", "unit_name",
         )
-        read_only_fields = ("id", "amount", "product_name")
+        read_only_fields = (
+            "id", "amount", "product_name", "pack_quantity", "package_type", "unit_name",
+        )
 
 
 class PurchaseSerializer(serializers.ModelSerializer):
@@ -284,14 +292,24 @@ class VanStockSerializer(serializers.ModelSerializer):
 
 class LoadingItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
+    pack_quantity = serializers.DecimalField(
+        source="product.pack_quantity", max_digits=14, decimal_places=3, read_only=True
+    )
+    package_type = serializers.CharField(source="product.package_type", read_only=True)
+    unit_name = serializers.CharField(source="product.unit.short_name", read_only=True)
     price = serializers.DecimalField(
         max_digits=14, decimal_places=2, required=False, allow_null=True
     )
 
     class Meta:
         model = LoadingItem
-        fields = ("id", "product", "product_name", "quantity", "price", "amount")
-        read_only_fields = ("id", "amount", "product_name")
+        fields = (
+            "id", "product", "product_name", "quantity", "price", "amount",
+            "pack_quantity", "package_type", "unit_name",
+        )
+        read_only_fields = (
+            "id", "amount", "product_name", "pack_quantity", "package_type", "unit_name",
+        )
 
 
 class LoadingSerializer(serializers.ModelSerializer):

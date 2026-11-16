@@ -81,6 +81,9 @@ export interface PurchaseItem {
   quantity: string;
   cost_price: string;
   amount?: string;
+  pack_quantity?: string | undefined;
+  package_type?: string | undefined;
+  unit_name?: string | undefined;
 }
 
 export interface Purchase {
@@ -123,6 +126,9 @@ export interface LoadingItem {
   quantity: string;
   price?: string | null;
   amount?: string;
+  pack_quantity?: string | undefined;
+  package_type?: string | undefined;
+  unit_name?: string | undefined;
 }
 
 export interface Loading {

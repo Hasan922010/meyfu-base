@@ -8,6 +8,9 @@ export interface DailyReturnItem {
   condition: 'GOOD' | 'DAMAGED' | 'EXPIRED';
   price: string;
   amount: string;
+  pack_quantity?: string | undefined;
+  package_type?: string | undefined;
+  unit_name?: string | undefined;
 }
 
 export interface DailyReturn {

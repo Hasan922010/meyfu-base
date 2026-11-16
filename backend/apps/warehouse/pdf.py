@@ -126,6 +126,23 @@ def _doc(buffer: io.BytesIO, title: str) -> SimpleDocTemplate:
     )
 
 
+def _int_qty(val: Decimal) -> str:
+    return str(int(round(val)))
+
+
+def _format_pack_qty(quantity: Decimal, product) -> str:
+    unit_short = product.unit.short_name
+    pack_qty = product.pack_quantity or Decimal("1")
+    pack_label = product.package_type or "qadoq"
+    if pack_qty > 1:
+        whole_packs, rem = divmod(quantity, pack_qty)
+        if rem == 0:
+            return f"{_int_qty(whole_packs)} {pack_label}"
+        if whole_packs >= 1:
+            return f"{_int_qty(whole_packs)} {pack_label} {_int_qty(rem)} {unit_short}"
+    return f"{_int_qty(quantity)} {unit_short}"
+
+
 def purchase_to_pdf(purchase, *, with_stamp: bool = False,
                     with_images: bool = True) -> bytes:
     st = _styles()
@@ -152,13 +169,13 @@ def purchase_to_pdf(purchase, *, with_stamp: bool = False,
         header.pop(1)
     data = [[Paragraph(h, st["h"]) for h in header]]
 
-    items = list(purchase.items.select_related("product").all())
+    items = list(purchase.items.select_related("product", "product__unit").all())
     for idx, item in enumerate(items, start=1):
         row = [
             Paragraph(str(idx), st["cell"]),
             Paragraph(item.product.name, st["cell"]),
             Paragraph(item.product.sku, st["cell"]),
-            Paragraph(f"{item.quantity:g} {item.product.unit.short_name}", st["cellr"]),
+            Paragraph(_format_pack_qty(item.quantity, item.product), st["cellr"]),
             Paragraph(_money(item.cost_price), st["cellr"]),
             Paragraph(_money(item.amount), st["cellr"]),
         ]
@@ -248,30 +265,18 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     elements.append(hdr_table)
     elements.append(Spacer(1, 3 * mm))
 
-    def _qty_str(val: Decimal) -> str:
-        return str(int(round(val)))
-
     header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx (dona)", "Narx (qop/quti)", "Summa"]
     data = [[Paragraph(h, st["h"]) for h in header]]
     for idx, item in enumerate(
         loading.items.select_related("product", "product__unit").all(), start=1
     ):
-        unit_short = item.product.unit.short_name
         pack_qty = item.product.pack_quantity or Decimal("1")
-        pack_label = item.product.package_type or "qadoq"
+        qty_label = _format_pack_qty(item.quantity, item.product)
         if pack_qty > 1:
-            pack_info = f"{_qty_str(pack_qty)} dona"
-            whole_packs, rem = divmod(item.quantity, pack_qty)
-            if rem == 0:
-                qty_label = f"{_qty_str(whole_packs)} {pack_label}"
-            elif whole_packs >= 1:
-                qty_label = f"{_qty_str(whole_packs)} {pack_label} {_qty_str(rem)} {unit_short}"
-            else:
-                qty_label = f"{_qty_str(item.quantity)} {unit_short}"
+            pack_info = f"{_int_qty(pack_qty)} dona"
             pack_price_label = _money(item.price * pack_qty)
         else:
             pack_info = "1 dona"
-            qty_label = f"{_qty_str(item.quantity)} {unit_short}"
             pack_price_label = "—"
         data.append([
             Paragraph(str(idx), st["cell"]),
