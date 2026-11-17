@@ -17,7 +17,8 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
         model = CompanySettings
         fields = (
             "id", "name", "legal_name", "inn", "address", "phone",
-            "bank_details", "director_name", "logo", "stamp", "updated_at",
+            "bank_details", "director_name", "logo", "stamp",
+            "loading_total_in_words", "updated_at",
         )
         read_only_fields = ("id", "updated_at")
 

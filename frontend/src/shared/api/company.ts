@@ -12,6 +12,7 @@ export interface CompanySettings {
   director_name: string;
   logo: string | null;
   stamp: string | null;
+  loading_total_in_words?: boolean | undefined;
   updated_at: string;
 }
 

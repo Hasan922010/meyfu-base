@@ -21,6 +21,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from apps.core.formatting import number_to_words_uz
 from apps.core.models import CompanySettings
 from apps.core.pdf import fitted_image_buffer, register_fonts
 
@@ -56,9 +57,10 @@ def _styles() -> dict[str, ParagraphStyle]:
 
 
 def _company_header(company: CompanySettings | None, st: dict) -> list:
+    title_st = st.get("company_title", st["title"])
     if company is None:
-        return [Paragraph("Kompaniya", st["title"])]
-    left = [Paragraph(company.name or "Kompaniya", st["title"])]
+        return [Paragraph("Kompaniya", title_st)]
+    left = [Paragraph(company.name or "Kompaniya", title_st)]
     meta = []
     if company.legal_name:
         meta.append(company.legal_name)
@@ -87,7 +89,8 @@ def _company_header(company: CompanySettings | None, st: dict) -> list:
 
 
 def _signature_block(st: dict, company: CompanySettings | None,
-                     with_stamp: bool, left_label: str, right_label: str) -> Table:
+                     with_stamp: bool, left_label: str, right_label: str,
+                     *, compact: bool = False) -> Table:
     stamp_flow = ""
     if with_stamp and company is not None and company.stamp:
         reader = fitted_image_buffer(company.stamp, box_px=360)
@@ -107,8 +110,8 @@ def _signature_block(st: dict, company: CompanySettings | None,
     ]
     tbl = Table(rows, colWidths=[90 * mm, 90 * mm])
     style = [
-        ("TOPPADDING", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("TOPPADDING", (0, 0), (-1, -1), 0 if compact else 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0 if compact else 2),
     ]
     tbl.setStyle(TableStyle(style))
     if stamp_flow:
@@ -118,11 +121,13 @@ def _signature_block(st: dict, company: CompanySettings | None,
     return tbl
 
 
-def _doc(buffer: io.BytesIO, title: str) -> SimpleDocTemplate:
+def _doc(
+    buffer: io.BytesIO, title: str, *, top_margin: float = 14 * mm
+) -> SimpleDocTemplate:
     return SimpleDocTemplate(
         buffer, pagesize=A4,
         leftMargin=14 * mm, rightMargin=14 * mm,
-        topMargin=14 * mm, bottomMargin=16 * mm, title=title,
+        topMargin=top_margin, bottomMargin=16 * mm, title=title,
     )
 
 
@@ -230,14 +235,23 @@ def purchase_to_pdf(purchase, *, with_stamp: bool = False,
 
 def loading_to_pdf(loading, *, with_stamp: bool = False,
                    with_images: bool = True) -> bytes:
-    st = _styles()
+    st = {
+        k: ParagraphStyle(f"{s.name}_m", parent=s, fontSize=9, leading=11)
+        for k, s in _styles().items()
+    }
+    st["company_title"] = ParagraphStyle(
+        "company_title_m", parent=st["title"], fontSize=12, leading=14
+    )
+    st["th"] = ParagraphStyle("th_c", parent=st["h"], alignment=1)
+    st["total_bold"] = ParagraphStyle(
+        "total_b", parent=st["h"], alignment=2, fontSize=11, leading=13
+    )
     company = CompanySettings.objects.order_by("created_at").first()
     buffer = io.BytesIO()
-    doc = _doc(buffer, f"Yuklama {loading.number}")
+    doc = _doc(buffer, f"Yuklama {loading.number}", top_margin=5 * mm)
 
     elements: list = []
     elements += _company_header(company, st)
-    elements.append(Spacer(1, 4 * mm))
 
     # O'ng tomonda Tarqatuvchi ismi va telefon raqami qalin shriftda (qayta buyurtma uchun)
     dist_phone = getattr(loading.distributor, "phone", "") or ""
@@ -263,10 +277,9 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
         ("ALIGN", (1, 0), (1, -1), "RIGHT"),
     ]))
     elements.append(hdr_table)
-    elements.append(Spacer(1, 3 * mm))
 
     header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx (dona)", "Narx (qop/quti)", "Summa"]
-    data = [[Paragraph(h, st["h"]) for h in header]]
+    data = [[Paragraph(h, st["th"]) for h in header]]
     for idx, item in enumerate(
         loading.items.select_related("product", "product__unit").all(), start=1
     ):
@@ -301,13 +314,38 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
     elements.append(table)
-    elements.append(Spacer(1, 3 * mm))
-    elements.append(Table(
-        [[Paragraph("Jami:", st["h"]),
-          Paragraph(_money(loading.total_amount), st["cellr"])]],
-        colWidths=[40 * mm, 35 * mm], hAlign="RIGHT",
-    ))
-    elements.append(Spacer(1, 10 * mm))
+    show_words = True if company is None else getattr(company, "loading_total_in_words", True)
+    total_rows = [
+        [
+            Paragraph("Jami:", st["total_bold"]),
+            Paragraph(f"{_money(loading.total_amount)} so'm", st["total_bold"]),
+        ],
+    ]
+    if show_words:
+        total_words = number_to_words_uz(loading.total_amount).capitalize()
+        total_rows.append([
+            Paragraph(
+                f"({total_words} so'm)",
+                ParagraphStyle("tw_r", parent=st["small"], alignment=2),
+            ),
+            "",
+        ])
+    total_tbl = Table(
+        total_rows,
+        colWidths=[135 * mm, 45 * mm],
+        hAlign="RIGHT",
+    )
+    total_style = [
+        ("TOPPADDING", (0, 0), (-1, -1), 1),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]
+    if show_words:
+        total_style.extend([
+            ("SPAN", (0, 1), (1, 1)),
+            ("ALIGN", (0, 1), (1, 1), "RIGHT"),
+        ])
+    total_tbl.setStyle(TableStyle(total_style))
+    elements.append(total_tbl)
     client_names = list(
         dict.fromkeys(
             loading.orders.select_related("client")
@@ -317,7 +355,8 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     )
     receiver_label = ", ".join(client_names) if client_names else "Oldi (tarqatuvchi)"
     elements.append(_signature_block(
-        st, company, with_stamp, loading.distributor.full_name, receiver_label
+        st, company, with_stamp, loading.distributor.full_name, receiver_label,
+        compact=True,
     ))
 
     doc.build(elements)

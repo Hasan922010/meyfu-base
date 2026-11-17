@@ -221,6 +221,9 @@ class CompanySettings(BaseModel):
     stamp = models.ImageField(
         _("muhr (PNG, shaffof fon)"), upload_to="company/", null=True, blank=True
     )
+    loading_total_in_words = models.BooleanField(
+        _("yuklama hujjatida jami summani so'z bilan yozish"), default=True
+    )
 
     class Meta:
         verbose_name = _("kompaniya rekvizitlari")

@@ -296,9 +296,12 @@ def test_admin_lock_opening_balance_blocks_further_changes(manager_api, warehous
 @pytest.mark.django_db
 def test_loading_pdf_renders_with_order_client_and_pack_units(admin_api, van_stocked):
     """Yuklama PDF qadoq/dona ko'rinishida va bog'langan buyurtma mijoz nomi bilan generatsiya bo'ladi."""
+    from apps.core.formatting import number_to_words_uz
     from apps.orders.models import Order
     from apps.warehouse.models import Loading
     from apps.warehouse.pdf import loading_to_pdf
+
+    assert number_to_words_uz(1250000) == "bir million ikki yuz ellik ming"
 
     product = van_stocked["product"]
     product.pack_quantity = Decimal("12")
@@ -319,6 +322,12 @@ def test_loading_pdf_renders_with_order_client_and_pack_units(admin_api, van_sto
 
     pdf_bytes = loading_to_pdf(loading, with_stamp=False)
     assert pdf_bytes.startswith(b"%PDF-")
+
+    from apps.core.models import CompanySettings
+
+    CompanySettings.objects.create(name="Meyfu", loading_total_in_words=False)
+    pdf_no_words = loading_to_pdf(loading, with_stamp=False)
+    assert pdf_no_words.startswith(b"%PDF-")
 
 
 @pytest.mark.django_db

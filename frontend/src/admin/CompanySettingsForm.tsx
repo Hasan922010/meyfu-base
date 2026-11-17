@@ -23,6 +23,7 @@ type FormState = {
   phone: string;
   bank_details: string;
   director_name: string;
+  loading_total_in_words: boolean;
 };
 
 const EMPTY: FormState = {
@@ -33,6 +34,7 @@ const EMPTY: FormState = {
   phone: '',
   bank_details: '',
   director_name: '',
+  loading_total_in_words: true,
 };
 
 export function CompanySettingsForm(): ReactElement {
@@ -62,6 +64,7 @@ export function CompanySettingsForm(): ReactElement {
         phone: query.data.phone,
         bank_details: query.data.bank_details,
         director_name: query.data.director_name,
+        loading_total_in_words: query.data.loading_total_in_words ?? true,
       });
     }
   }, [query.data]);
@@ -83,7 +86,9 @@ export function CompanySettingsForm(): ReactElement {
     },
   });
 
-  function field(key: keyof FormState, label: string, textarea = false): ReactElement {
+type TextFieldKey = Exclude<keyof FormState, 'loading_total_in_words'>;
+
+  function field(key: TextFieldKey, label: string, textarea = false): ReactElement {
     return (
       <label className="block space-y-1">
         <span className="text-sm font-medium">{label}</span>
@@ -129,6 +134,19 @@ export function CompanySettingsForm(): ReactElement {
           <div className="sm:col-span-2">
             {field('bank_details', 'Bank rekvizitlari', true)}
           </div>
+          <label className="flex items-center gap-2 sm:col-span-2">
+            <input
+              type="checkbox"
+              disabled={!canEdit}
+              checked={form.loading_total_in_words}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, loading_total_in_words: e.target.checked }))
+              }
+            />
+            <span className="text-sm">
+              Yuklama hujjatida jami summani so‘z bilan ko‘rsatish
+            </span>
+          </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
