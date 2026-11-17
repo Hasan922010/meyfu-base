@@ -50,6 +50,8 @@ export function CompanySettingsForm(): ReactElement {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [logo, setLogo] = useState<File | null>(null);
   const [stamp, setStamp] = useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = useState<boolean>(false);
+  const [removeStamp, setRemoveStamp] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
   const logoRef = useRef<HTMLInputElement>(null);
   const stampRef = useRef<HTMLInputElement>(null);
@@ -66,6 +68,8 @@ export function CompanySettingsForm(): ReactElement {
         director_name: query.data.director_name,
         loading_total_in_words: query.data.loading_total_in_words ?? true,
       });
+      setRemoveLogo(false);
+      setRemoveStamp(false);
     }
   }, [query.data]);
 
@@ -74,12 +78,16 @@ export function CompanySettingsForm(): ReactElement {
       // Logo/muhr — kichik fayllar, bir marta; siqmaymiz (muhr shaffofligi saqlansin)
       const body: CompanySettingsInput = { ...form };
       if (logo) body.logo = logo;
+      else if (removeLogo) body.logo = null;
       if (stamp) body.stamp = stamp;
+      else if (removeStamp) body.stamp = null;
       return companyApi.update(body);
     },
     onSuccess: () => {
       setLogo(null);
       setStamp(null);
+      setRemoveLogo(false);
+      setRemoveStamp(false);
       setSaved(true);
       void qc.invalidateQueries({ queryKey: ['company-settings'] });
       window.setTimeout(() => setSaved(false), 2500);
@@ -154,17 +162,27 @@ type TextFieldKey = Exclude<keyof FormState, 'loading_total_in_words'>;
             label="Logotip"
             current={query.data?.logo ?? null}
             picked={logo}
+            removed={removeLogo}
             inputRef={logoRef}
             disabled={!canEdit}
-            onPick={setLogo}
+            onPick={(f) => {
+              setLogo(f);
+              if (f) setRemoveLogo(false);
+            }}
+            onRemove={setRemoveLogo}
           />
           <AssetRow
             label="Muhr (PNG, shaffof fon)"
             current={query.data?.stamp ?? null}
             picked={stamp}
+            removed={removeStamp}
             inputRef={stampRef}
             disabled={!canEdit}
-            onPick={setStamp}
+            onPick={(f) => {
+              setStamp(f);
+              if (f) setRemoveStamp(false);
+            }}
+            onRemove={setRemoveStamp}
           />
         </div>
 
@@ -199,22 +217,26 @@ function AssetRow({
   label,
   current,
   picked,
+  removed,
   inputRef,
   disabled,
   onPick,
+  onRemove,
 }: {
   label: string;
   current: string | null;
   picked: File | null;
+  removed: boolean;
   inputRef: RefObject<HTMLInputElement>;
   disabled: boolean;
   onPick: (f: File | null) => void;
+  onRemove: (r: boolean) => void;
 }): ReactElement {
-  const preview = picked ? URL.createObjectURL(picked) : current;
+  const preview = picked ? URL.createObjectURL(picked) : removed ? null : current;
   return (
     <div className="space-y-1">
       <span className="text-sm font-medium">{label}</span>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
           {preview ? (
             <img src={preview} alt="" className="max-h-full max-w-full object-contain" />
@@ -229,17 +251,37 @@ function AssetRow({
               className="btn px-3 py-1.5 text-sm"
               onClick={() => inputRef.current?.click()}
             >
-              {picked ? 'Boshqa fayl' : 'Yuklash'}
+              {picked ? 'Boshqa fayl' : preview ? 'Almashtirish' : 'Yuklash'}
             </button>
-            {picked && (
+            {picked ? (
               <button
                 type="button"
-                className="text-xs text-danger"
-                onClick={() => onPick(null)}
+                className="text-xs text-danger hover:underline"
+                onClick={() => {
+                  onPick(null);
+                  if (inputRef.current) inputRef.current.value = '';
+                }}
               >
-                bekor
+                Bekor
               </button>
-            )}
+            ) : current && !removed ? (
+              <button
+                type="button"
+                className="text-xs text-danger hover:underline"
+                aria-label={`${label} o‘chirish`}
+                onClick={() => onRemove(true)}
+              >
+                O‘chirish
+              </button>
+            ) : removed ? (
+              <button
+                type="button"
+                className="text-xs text-gray-500 hover:underline"
+                onClick={() => onRemove(false)}
+              >
+                Qaytarish
+              </button>
+            ) : null}
             <input
               ref={inputRef}
               type="file"

@@ -65,6 +65,16 @@ def test_company_public_returns_stamp_data_uri(admin_api, auth_api):
     assert resp.data["data"]["name"] == "MeyFu"
     assert resp.data["data"]["stamp"].startswith("data:image/png;base64,")
 
+    # Bo'sh satr bilan multipart PATCH yuborilganda logo va muhr o'chiriladi
+    cleared = admin_api.patch(
+        "/api/v1/company-settings/",
+        {"stamp": "", "logo": ""},
+        format="multipart",
+    )
+    assert cleared.status_code == 200
+    assert cleared.data["data"]["stamp"] is None
+    assert cleared.data["data"]["logo"] is None
+
 
 @pytest.mark.django_db
 def test_purchase_pdf_plain_and_stamped(manager_api, admin_api, catalog, warehouse):

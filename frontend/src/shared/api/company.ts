@@ -47,6 +47,7 @@ export const companyApi = {
     for (const [key, value] of Object.entries(body)) {
       if (value === undefined) continue;
       if (value instanceof File) form.append(key, value);
+      else if (value === null) form.append(key, '');
       else form.append(key, String(value));
     }
     const { data } = await api.patch<ApiSuccess<CompanySettings>>(

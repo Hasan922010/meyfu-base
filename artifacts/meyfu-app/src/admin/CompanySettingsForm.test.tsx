@@ -67,4 +67,41 @@ describe('CompanySettingsForm — yuklama so‘z bilan sozlamasi', () => {
       );
     });
   });
+
+  it('mavjud logo va muhrni o‘chirish uchun null yuboradi', async () => {
+    companyApi.get.mockResolvedValue({
+      id: 'cs-1',
+      name: 'Meyfu',
+      legal_name: 'Meyfu MCHJ',
+      inn: '123456789',
+      address: 'Toshkent',
+      phone: '+998901234567',
+      bank_details: '',
+      director_name: 'Ali',
+      logo: 'https://example.com/logo.png',
+      stamp: 'https://example.com/stamp.png',
+      loading_total_in_words: true,
+      updated_at: '2026-11-17T08:00:00Z',
+    });
+    companyApi.update.mockResolvedValue({});
+
+    renderForm();
+
+    const removeLogoBtn = await screen.findByRole('button', {
+      name: /Logotip o‘chirish/,
+    });
+    fireEvent.click(removeLogoBtn);
+    expect(screen.getAllByRole('button', { name: 'Almashtirish' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Yuklash' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Saqlash' }));
+
+    await waitFor(() => {
+      expect(companyApi.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logo: null,
+        }),
+      );
+    });
+  });
 });
