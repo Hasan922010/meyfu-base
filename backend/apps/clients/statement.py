@@ -24,7 +24,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from apps.core.models import CompanySettings
 from apps.sales.models import Debt, DebtPayment, Sale
 
-from .models import Client
+from .models import Client, ClientAdvance
 
 _ZERO = Decimal("0")
 _ACTIVE = ("COMPLETED", "FLAGGED")
@@ -53,7 +53,7 @@ def _entries(client: Client) -> list[Entry]:
             sale = debt.sale
             entries.append(Entry(
                 sale.date, sale.number, "Sotuv (qarzga)",
-                sale.total_amount, sale.total_amount - debt.amount,
+                sale.total_amount, sale.paid_amount,
             ))
         else:
             entries.append(Entry(
@@ -64,11 +64,15 @@ def _entries(client: Client) -> list[Entry]:
     )
     for sale in cash_sales:
         entries.append(Entry(sale.date, sale.number, "Sotuv (to'langan)",
-                             sale.total_amount, sale.total_amount))
+                             sale.total_amount, sale.paid_amount))
     payments = DebtPayment.objects.filter(debt__client=client)
     for pay in payments:
         entries.append(Entry(pay.date, "", f"Qarz to'lovi ({pay.get_payment_type_display()})",
                              _ZERO, pay.amount))
+    advances = ClientAdvance.objects.filter(client=client)
+    for adv in advances:
+        entries.append(Entry(adv.date, "", f"Oldindan to'lov / Avans ({adv.get_payment_type_display()})",
+                             _ZERO, adv.amount))
     entries.sort(key=lambda e: (e.date, e.document))
     return entries
 

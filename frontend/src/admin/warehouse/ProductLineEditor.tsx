@@ -21,6 +21,8 @@ interface Props {
   priceHint?: string;
   /** Mahsulot ID → ombordagi bo'sh qoldiq. Berilsa qidiruvda va qatorda ko'rsatiladi. */
   available?: Map<string, number> | undefined;
+  /** Kirimda qadoq (qop/quti) birligida kiritish */
+  usePackUnits?: boolean | undefined;
 }
 
 const MAX_RESULTS = 8;
@@ -33,6 +35,7 @@ export function ProductLineEditor({
   priceLabel,
   priceHint,
   available,
+  usePackUnits = false,
 }: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -88,10 +91,12 @@ export function ProductLineEditor({
     onChange(value.filter((_, i) => i !== idx));
   }
 
-  const total = value.reduce(
-    (s, r) => s + (Number(r.quantity) || 0) * (Number(r.price) || 0),
-    0,
-  );
+  const total = value.reduce((s, r) => {
+    const p = byId.get(r.product);
+    const packQty = usePackUnits && p ? Math.round(Number(p.pack_quantity) || 1) : 1;
+    const mult = packQty > 1 ? packQty : 1;
+    return s + (Number(r.quantity) || 0) * mult * (Number(r.price) || 0);
+  }, 0);
 
   return (
     <div className="space-y-2">
@@ -180,8 +185,13 @@ export function ProductLineEditor({
             <tbody>
               {value.map((r, idx) => {
                 const p = byId.get(r.product);
+                const packQty = usePackUnits && p ? Math.round(Number(p.pack_quantity) || 1) : 1;
+                const packType = p?.package_type?.trim() || '';
+                const isPack = usePackUnits && p != null && (packQty > 1 || Boolean(packType));
+                const displayUnit = isPack ? (packType || 'qadoq') : p?.unit_name;
+                const mult = packQty > 1 ? packQty : 1;
                 const line =
-                  (Number(r.quantity) || 0) * (Number(r.price) || 0);
+                  (Number(r.quantity) || 0) * mult * (Number(r.price) || 0);
                 const free = available?.get(r.product);
                 const over = free !== undefined && Number(r.quantity) > free;
                 return (
@@ -193,7 +203,12 @@ export function ProductLineEditor({
                       {p?.name ?? '—'}
                       {p && (
                         <span className="ml-1 text-xs text-gray-400">
-                          {p.unit_name}
+                          {displayUnit}
+                        </span>
+                      )}
+                      {isPack && packQty > 1 && (
+                        <span className="block text-[11px] text-gray-400">
+                          = {(Number(r.quantity) || 0) * packQty} {p?.unit_name}
                         </span>
                       )}
                       {free !== undefined && (

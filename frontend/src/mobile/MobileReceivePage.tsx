@@ -79,10 +79,10 @@ export function MobileReceivePage(): ReactElement {
       .slice(0, 8);
   }, [products.data, search, chosen]);
 
-  const total = rows.reduce(
-    (s, r) => s + (Number(r.quantity) || 0) * (Number(r.price) || 0),
-    0,
-  );
+  const total = rows.reduce((s, r) => {
+    const packQty = r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1;
+    return s + (Number(r.quantity) || 0) * packQty * (Number(r.price) || 0);
+  }, 0);
 
   const save = useMutation({
     mutationFn: () =>
@@ -93,11 +93,15 @@ export function MobileReceivePage(): ReactElement {
         invoice_number: invoice,
         items: rows
           .filter((r) => Number(r.quantity) > 0)
-          .map((r) => ({
-            product: r.product,
-            quantity: r.quantity,
-            cost_price: r.price || '0',
-          })),
+          .map((r) => {
+            const packQty = r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1;
+            const baseQty = (Number(r.quantity) || 0) * packQty;
+            return {
+              product: r.product,
+              quantity: String(baseQty),
+              cost_price: r.price || '0',
+            };
+          }),
       }),
     onSuccess: (p) => {
       void qc.invalidateQueries({ queryKey: ['purchases'] });
@@ -211,16 +215,23 @@ export function MobileReceivePage(): ReactElement {
                     type="button"
                     className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => {
+                      const packQty = Math.round(Number(p.pack_quantity) || 1);
+                      const packType = p.package_type?.trim() || '';
+                      const isPack = packQty > 1 || Boolean(packType);
+                      const unit = isPack ? (packType || 'qadoq') : p.unit_name;
                       setRows((prev) => [
                         ...prev,
                         {
                           product: p.id,
                           name: p.name,
-                          unit: p.unit_name,
+                          unit,
                           quantity: '1',
                           price: p.cost_price
                             ? String(Math.round(Number(p.cost_price)))
                             : '',
+                          pack_quantity: isPack ? packQty : 1,
+                          package_type: packType,
+                          base_unit: p.unit_name,
                         },
                       ]);
                       setSearch('');
@@ -273,12 +284,12 @@ export function MobileReceivePage(): ReactElement {
               </div>
               <div className="flex gap-2">
                 <label className="flex-1 space-y-0.5">
-                  <span className="text-xs text-gray-500">Soni</span>
+                  <span className="text-xs text-gray-500">Soni ({r.unit})</span>
                   <input
                     className="field h-10"
                     type="number"
                     inputMode="decimal"
-                    step="0.001"
+                    step={r.pack_quantity && r.pack_quantity > 1 ? '1' : '0.001'}
                     value={r.quantity}
                     onChange={(e) =>
                       setRows((prev) =>
@@ -290,7 +301,9 @@ export function MobileReceivePage(): ReactElement {
                   />
                 </label>
                 <div className="flex-1 space-y-0.5">
-                  <span className="text-xs text-gray-500">Kelish narxi</span>
+                  <span className="text-xs text-gray-500">
+                    Kelish narxi ({r.base_unit || r.unit})
+                  </span>
                   <AmountInput
                     className="h-10"
                     showWords={false}
@@ -303,8 +316,19 @@ export function MobileReceivePage(): ReactElement {
                   />
                 </div>
               </div>
-              <div className="text-right text-sm text-gray-500">
-                {money((Number(r.quantity) || 0) * (Number(r.price) || 0))}
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>
+                  {r.pack_quantity && r.pack_quantity > 1
+                    ? `${Number(r.quantity) || 0} ${r.unit} × ${r.pack_quantity} ${r.base_unit || 'dona'} = ${(Number(r.quantity) || 0) * r.pack_quantity} ${r.base_unit || 'dona'}`
+                    : ''}
+                </span>
+                <span className="text-sm font-medium">
+                  {money(
+                    (Number(r.quantity) || 0) *
+                      (r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1) *
+                      (Number(r.price) || 0),
+                  )}
+                </span>
               </div>
             </li>
           ))}

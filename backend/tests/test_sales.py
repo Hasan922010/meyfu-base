@@ -881,3 +881,51 @@ def test_recalc_debt_and_client_after_payment_removal(auth_api, van_stocked):
     assert debt.remaining == debt.amount - Decimal("50000")
     assert client.current_debt == debt.remaining
 
+
+@pytest.mark.django_db
+def test_warehouse_client_advance_and_settlement_on_sale(van_stocked):
+    """Omborchi mijozdan avans (ortiqcha to'lov) oladi va sotuvda undan avtomatik yechiladi."""
+    from rest_framework.test import APIClient
+
+    from apps.clients.statement import client_statement
+    from apps.core.business_day import business_date
+    from apps.users.constants import Role
+    from apps.users.models import User
+
+    wh = User.objects.create_user(
+        phone="+998907771122", password="pass12345", full_name="Omborchi Adv", role=Role.WAREHOUSE
+    )
+    wh_api = APIClient()
+    wh_api.force_authenticate(user=wh)
+
+    client, product = van_stocked["client"], van_stocked["product"]
+    # 1. Omborchi mijozdan 100 000 avans oladi
+    adv = wh_api.post(
+        f"/api/v1/clients/{client.id}/advance/",
+        {"amount": "100000", "payment_type": "NAQD", "note": "Oldindan pul"},
+        format="json",
+    )
+    assert adv.status_code == 201
+    assert adv.data["data"]["advance_balance"] == "100000.00"
+
+    # 2. Mijoz 135 000 ga mahsulot oladi (5 * 27 000) -> 100 000 avansdan, 35 000 naqd
+    dist_api = APIClient()
+    dist_api.force_authenticate(user=van_stocked["distributor"])
+    sale_resp = dist_api.post(
+        "/api/v1/sales/",
+        _sale_body(client, product, qty="5", payment="NAQD"),
+        format="json",
+    )
+    assert sale_resp.status_code == 201
+    sale_data = sale_resp.data["data"]
+    assert sale_data["advance_used"] == "100000.00"
+    assert sale_data["paid_amount"] == "35000.00"
+    assert sale_data["debt_amount"] == "0.00"
+
+    client.refresh_from_db()
+    assert client.advance_balance == Decimal("0.00")
+
+    today = business_date()
+    stmt = client_statement(client, date_from=today, date_to=today)
+    assert Decimal(stmt["closing_balance"]) == Decimal("0.00")
+

@@ -429,6 +429,14 @@ export function NewSalePage(): ReactElement {
             }}
           />
 
+          {Number(client?.advance_balance ?? 0) > 0 && (
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/70 p-3 text-xs text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200">
+              Oldindan to&apos;lov (avans):{' '}
+              <span className="font-bold">{money(client?.advance_balance ?? '0')}</span>{' '}
+              (sotuvdan avtomatik ayiriladi)
+            </div>
+          )}
+
           {bonuses.length > 0 && (
             <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/95 p-3.5 text-emerald-950 shadow-sm dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-100">
               <div className="flex items-center gap-2 font-bold text-sm text-emerald-800 dark:text-emerald-200">
@@ -514,6 +522,14 @@ export function NewSalePage(): ReactElement {
               {totalBonusQty > 0 && ` (+${totalBonusQty} ta bepul aksiya bonusi)`}
             </div>
           </div>
+
+          {Number(client?.advance_balance ?? 0) > 0 && (
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/70 p-3 text-xs text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200">
+              Oldindan to&apos;lov (avans):{' '}
+              <span className="font-bold">{money(client?.advance_balance ?? '0')}</span>{' '}
+              (sotuvdan avtomatik ayiriladi)
+            </div>
+          )}
 
           {bonuses.length > 0 && (
             <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/70 p-3 text-xs dark:border-emerald-500/40 dark:bg-emerald-950/40">

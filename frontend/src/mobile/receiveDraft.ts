@@ -8,6 +8,9 @@ export interface ReceiveDraftRow {
   unit: string;
   quantity: string;
   price: string;
+  pack_quantity?: number | undefined;
+  package_type?: string | undefined;
+  base_unit?: string | undefined;
 }
 
 export interface ReceiveDraft {

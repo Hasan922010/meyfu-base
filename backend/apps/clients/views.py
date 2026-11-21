@@ -195,6 +195,7 @@ class ClientViewSet(BaseModelViewSet):
         "opening_import_template": _MANAGE,
         "opening_balance_import": _MANAGE,
         "statement": _CLIENTS_READ,
+        "advance": (Role.WAREHOUSE, Role.MANAGER, Role.SUPER_ADMIN, Role.ACCOUNTANT),
     }
     branch_lookup = "branch"
 
@@ -380,11 +381,65 @@ class ClientViewSet(BaseModelViewSet):
         return ok(
             {
                 "current_debt": str(client.current_debt),
+                "advance_balance": str(client.advance_balance),
                 "debt_limit": str(client.debt_limit),
                 "debt_available": str(client.debt_available),
                 "items": DebtSerializer(qs, many=True).data,
             }
         )
+
+    @extend_schema(summary="Mijozdan oldindan / ortiqcha to'lov (avans) qabul qilish")
+    @action(detail=True, methods=["post"], url_path="advance")
+    def advance(self, request: Request, pk: str | None = None) -> Response:
+        from django.db import transaction
+        from django.db.models import F
+
+        from apps.core.business_day import business_date
+        from apps.sales.services.sale import ensure_client_in_scope
+        from apps.wallet.constants import TransactionType
+        from apps.wallet.services import wallet_apply
+
+        from .models import ClientAdvance
+        from .serializers import ClientAdvanceCreateSerializer
+
+        client = self.get_object()
+        s = ClientAdvanceCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        data = s.validated_data
+        amount = data["amount"]
+        payment_type = data["payment_type"]
+        pay_date = data.get("date") or business_date()
+        note = data.get("note", "")
+
+        with transaction.atomic():
+            locked = Client.objects.select_for_update().get(pk=client.pk)
+            ensure_client_in_scope(request.user, locked)
+            adv = ClientAdvance.objects.create(
+                client=locked,
+                amount=amount,
+                payment_type=payment_type,
+                date=pay_date,
+                received_by=request.user,
+                note=note,
+                created_by=request.user,
+            )
+            Client.objects.filter(pk=locked.pk).update(
+                advance_balance=F("advance_balance") + amount
+            )
+            if payment_type == "NAQD":
+                wallet_apply(
+                    distributor=request.user,
+                    transaction_type=TransactionType.DEBT_COLLECTED,
+                    amount=amount,
+                    date=pay_date,
+                    reference_type="client_advance",
+                    reference_id=adv.id,
+                    note=f"Avans: {locked.name}",
+                    user=request.user,
+                )
+            locked.refresh_from_db()
+
+        return ok(ClientSerializer(locked, context={"request": request}).data, status_code=201)
 
     @extend_schema(
         summary="Boshlang'ich qarz uchun mijozlar ro'yxati (joriy qarzi bilan)",

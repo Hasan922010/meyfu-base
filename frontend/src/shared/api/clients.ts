@@ -130,6 +130,10 @@ export const clientsApi = {
   /** Mijoz boshlang'ich qarzi — sotuvsiz. */
   openingBalance: (body: { client: string; amount: string; note?: string }) =>
     postAction<Debt>('/clients/opening-balance/', body),
+  recordAdvance: (
+    clientId: string,
+    body: { amount: string; payment_type: 'NAQD' | 'PLASTIK' | 'OTKAZMA'; note?: string },
+  ) => postAction<Client>(`/clients/${clientId}/advance/`, body),
   openingImportTemplate: async (): Promise<Blob> => {
     const resp = await api.get('/clients/opening-import-template/', { responseType: 'blob' });
     return resp.data as Blob;

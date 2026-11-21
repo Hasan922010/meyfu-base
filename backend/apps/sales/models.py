@@ -58,6 +58,7 @@ class Sale(BranchStampedModel):
     total_amount = models.DecimalField(_("umumiy summa"), **_MONEY, default=_ZERO)
     discount_amount = models.DecimalField(_("chegirma"), **_MONEY, default=_ZERO)
     paid_amount = models.DecimalField(_("to'langan"), **_MONEY, default=_ZERO)
+    advance_used = models.DecimalField(_("avansdan yechildi"), **_MONEY, default=_ZERO)
     debt_amount = models.DecimalField(_("qarz"), **_MONEY, default=_ZERO)
     due_date = models.DateField(_("qarz muddati"), null=True, blank=True)
 

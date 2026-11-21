@@ -36,13 +36,21 @@ export function PurchaseForm({ onDone }: { onDone: () => void }): ReactElement {
 
   const mutation = useMutation({
     mutationFn: () => {
+      const productMap = new Map(
+        (products.data?.results ?? []).map((p) => [p.id, p]),
+      );
       const items = rows
         .filter((r) => r.product && Number(r.quantity) > 0)
-        .map((r) => ({
-          product: r.product,
-          quantity: r.quantity,
-          cost_price: r.price || '0',
-        }));
+        .map((r) => {
+          const p = productMap.get(r.product);
+          const packQty = p ? Math.round(Number(p.pack_quantity) || 1) : 1;
+          const mult = packQty > 1 ? packQty : 1;
+          return {
+            product: r.product,
+            quantity: String((Number(r.quantity) || 0) * mult),
+            cost_price: r.price || '0',
+          };
+        });
       return warehouseApi.createPurchase({
         supplier,
         warehouse,
@@ -120,6 +128,7 @@ export function PurchaseForm({ onDone }: { onDone: () => void }): ReactElement {
         onChange={setRows}
         priceSource="cost_price"
         priceLabel="Kelish narxi"
+        usePackUnits
       />
 
       {mutation.isError && (

@@ -332,15 +332,23 @@ def create_sale(
 
     sale.recalc()
 
-    # to'lov / qarz taqsimoti
+    # to'lov / qarz taqsimoti (avval mijozning oldindan bergan avansidan yechildi)
     total = sale.total_amount
+    if not conflict:
+        client = Client.objects.select_for_update().get(pk=client.pk)
+        advance_used = min(max(_ZERO, client.advance_balance), total)
+    else:
+        advance_used = _ZERO
+    remaining_total = max(_ZERO, total - advance_used)
+
     if payment_type == PaymentType.DEBT:
         sale.paid_amount = _ZERO
     elif payment_type == PaymentType.MIXED:
-        sale.paid_amount = min(paid_amount or _ZERO, total)
+        sale.paid_amount = min(paid_amount or _ZERO, remaining_total)
     else:
-        sale.paid_amount = total
-    sale.debt_amount = max(_ZERO, total - sale.paid_amount)
+        sale.paid_amount = remaining_total
+    sale.advance_used = advance_used
+    sale.debt_amount = max(_ZERO, remaining_total - sale.paid_amount)
 
     # 7.3 — qarz limiti
     if sale.debt_amount > _ZERO:
@@ -364,7 +372,7 @@ def create_sale(
     sale.flagged = bool(flags)
     sale.flag_reason = ", ".join(sorted(set(flags)))
     sale.save(update_fields=[
-        "total_amount", "paid_amount", "debt_amount", "status",
+        "total_amount", "paid_amount", "advance_used", "debt_amount", "status",
         "flagged", "flag_reason", "updated_at",
     ])
 
@@ -386,6 +394,11 @@ def _apply_stock_and_debt(sale: Sale, lines: list[SaleLine], distributor, client
     for line in lines:
         van_apply(distributor=distributor, product=line.product,
                   quantity=-line.quantity)
+
+    if sale.advance_used > _ZERO:
+        Client.objects.filter(pk=client.pk).update(
+            advance_balance=F("advance_balance") - sale.advance_used
+        )
 
     if sale.debt_amount > _ZERO:
         debt = Debt.objects.create(
@@ -575,6 +588,10 @@ def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
                 current_debt=F("current_debt") - debt.remaining
             )
             debt.delete()
+        if sale.advance_used > _ZERO:
+            Client.objects.filter(pk=sale.client_id).update(
+                advance_balance=F("advance_balance") + sale.advance_used
+            )
 
         # hamyondagi naqd tushumni teskari yozuv bilan qaytaramiz
         reverse_reference(

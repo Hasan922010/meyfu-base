@@ -90,6 +90,10 @@ class Client(BaseModel):
         _("joriy qarz"), **_MONEY, default=_ZERO,
         help_text=_("Denormalized — DebtPayment/Sale orqali yangilanadi"),
     )
+    advance_balance = models.DecimalField(
+        _("oldindan to'lov (avans)"), **_MONEY, default=_ZERO,
+        validators=[MinValueValidator(_ZERO)],
+    )
     inn = models.CharField(_("INN / STIR"), max_length=20, blank=True)
     photo = models.ImageField(_("rasm"), upload_to="clients/", null=True, blank=True)
     is_blocked = models.BooleanField(_("bloklangan"), default=False, db_index=True)
@@ -155,6 +159,41 @@ class ClientVisit(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.client.name} · {self.get_result_display()}"
+
+
+class ClientAdvance(BaseModel):
+    """Mijozdan olingan oldindan to'lov / ortiqcha to'lov (avans) jurnali."""
+
+    PAYMENT_CHOICES = (
+        ("NAQD", _("Naqd")),
+        ("PLASTIK", _("Plastik")),
+        ("OTKAZMA", _("O'tkazma")),
+    )
+
+    client = models.ForeignKey(
+        Client, on_delete=models.PROTECT, related_name="advances",
+        verbose_name=_("mijoz"),
+    )
+    amount = models.DecimalField(
+        _("summa"), **_MONEY, validators=[MinValueValidator(Decimal("0.01"))]
+    )
+    payment_type = models.CharField(
+        _("to'lov turi"), max_length=10, choices=PAYMENT_CHOICES, default="NAQD"
+    )
+    date = models.DateField(_("sana"))
+    received_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="received_client_advances", verbose_name=_("kim oldi"),
+    )
+    note = models.CharField(_("izoh"), max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = _("mijoz avansi")
+        verbose_name_plural = _("mijoz avanslari")
+        ordering = ("-date", "-created_at")
+
+    def __str__(self) -> str:
+        return f"{self.client.name}: +{self.amount}"
 
 
 def own_clients_q(user, prefix: str = "") -> models.Q | None:

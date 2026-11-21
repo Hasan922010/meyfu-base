@@ -50,6 +50,7 @@ export interface Client {
   client_type_display: string;
   debt_limit: string;
   current_debt: string;
+  advance_balance?: string | undefined;
   debt_available: string;
   inn: string;
   photo: string | null;

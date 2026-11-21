@@ -56,7 +56,7 @@ class SaleSerializer(serializers.ModelSerializer):
             "id", "number", "date", "distributor", "distributor_name",
             "order", "order_number",
             "client", "client_name", "payment_type", "payment_type_display",
-            "total_amount", "discount_amount", "paid_amount", "debt_amount",
+            "total_amount", "discount_amount", "paid_amount", "advance_used", "debt_amount",
             "due_date", "status", "status_display", "flagged", "flag_reason",
             "latitude", "longitude", "client_uuid", "is_synced", "device_time",
             "note", "items", "created_at",

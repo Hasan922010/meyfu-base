@@ -93,6 +93,7 @@ export async function pullReferenceData(): Promise<void> {
         route: c.route,
         debt_limit: c.debt_limit,
         current_debt: c.current_debt,
+        advance_balance: c.advance_balance,
         is_blocked: c.is_blocked,
       })),
     );

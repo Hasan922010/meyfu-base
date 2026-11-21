@@ -34,6 +34,7 @@ export interface CachedClient {
   route: string | null;
   debt_limit: string;
   current_debt: string;
+  advance_balance?: string | undefined;
   is_blocked: boolean;
 }
 

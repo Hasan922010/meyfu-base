@@ -66,11 +66,13 @@ class ClientSerializer(serializers.ModelSerializer):
             "latitude", "longitude", "route", "route_name", "route_order",
             "assigned_to", "assigned_to_name",
             "client_type", "client_type_display",
-            "debt_limit", "current_debt", "debt_available",
+            "debt_limit", "current_debt", "advance_balance", "debt_available",
             "inn", "photo", "is_blocked", "note", "branch", "branch_name",
             "created_at", "updated_at",
         )
-        read_only_fields = ("id", "current_debt", "route_order", "created_at", "updated_at")
+        read_only_fields = (
+            "id", "current_debt", "advance_balance", "route_order", "created_at", "updated_at"
+        )
 
     def validate_phone(self, value: str) -> str:
         return _clean_phone(value)
@@ -111,10 +113,21 @@ class ClientLiteSerializer(serializers.ModelSerializer):
         fields = (
             "id", "name", "owner_name", "phone", "address",
             "latitude", "longitude", "route", "assigned_to", "client_type",
-            "debt_limit", "current_debt", "is_blocked",
+            "debt_limit", "current_debt", "advance_balance", "is_blocked",
             "is_deleted", "updated_at",
         )
         read_only_fields = fields
+
+
+class ClientAdvanceCreateSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(
+        max_digits=14, decimal_places=2, min_value=Decimal("0.01")
+    )
+    payment_type = serializers.ChoiceField(
+        choices=["NAQD", "PLASTIK", "OTKAZMA"], default="NAQD"
+    )
+    date = serializers.DateField(required=False)
+    note = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class ClientVisitSerializer(serializers.ModelSerializer):
