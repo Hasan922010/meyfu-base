@@ -90,9 +90,12 @@ describe('DebtsPage — bir xil nomli mijozlarni telefon orqali farqlash', () =>
   it("bir xil nomli qarzdorlarni alohida telefon raqami bilan ko'rsatadi va telefon bo'yicha qidiradi", async () => {
     renderPage();
 
-    expect(await screen.findAllByText('Omad Market')).toHaveLength(4);
-    expect(screen.getAllByText('+998901110001')).toHaveLength(2);
-    expect(screen.getAllByText('+998902220002')).toHaveLength(2);
+    expect(await screen.findAllByText('Omad Market')).toHaveLength(2);
+    expect(screen.getByText('+998901110001')).toBeInTheDocument();
+    expect(screen.getByText('+998902220002')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Barcha qarzlar' }));
+    expect(await screen.findAllByText('Omad Market')).toHaveLength(2);
 
     const searchInput = screen.getByLabelText('Qarzlarni qidirish');
     fireEvent.change(searchInput, { target: { value: '90 222-00-02' } });
@@ -139,6 +142,7 @@ describe('DebtsPage — bir xil nomli mijozlarni telefon orqali farqlash', () =>
     });
     renderPage();
 
+    fireEvent.click(screen.getByRole('button', { name: "Qarz to'lovlari" }));
     expect(await screen.findByText('Xato summa')).toBeInTheDocument();
     expect(screen.getByText("24 soat o'tgan")).toBeInTheDocument();
 

@@ -34,9 +34,18 @@ function normalizeDebtSearch(raw: string): string {
 
 const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+type Tab = 'overview' | 'debts' | 'payments';
+
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'overview', label: "Umumiy va muddati o'tganlar" },
+  { id: 'debts', label: 'Barcha qarzlar' },
+  { id: 'payments', label: "Qarz to'lovlari" },
+];
+
 export function DebtsPage(): ReactElement {
   const qc = useQueryClient();
   const isSuperAdmin = useAuthStore((s) => s.user?.role === 'SUPER_ADMIN');
+  const [tab, setTab] = useState<Tab>('overview');
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
@@ -47,6 +56,7 @@ export function DebtsPage(): ReactElement {
   const aging = useQuery({
     queryKey: ['debt-aging'],
     queryFn: () => financeApi.debtAging(),
+    enabled: tab === 'overview',
   });
   const list = useQuery({
     queryKey: ['debts', { status, search: searchQuery, page }],
@@ -59,6 +69,7 @@ export function DebtsPage(): ReactElement {
         ordering: 'due_date',
       }),
     placeholderData: keepPreviousData,
+    enabled: tab === 'debts',
   });
   const payments = useQuery({
     queryKey: ['debt-payments', { search: searchQuery, payPage }],
@@ -70,6 +81,7 @@ export function DebtsPage(): ReactElement {
         ordering: '-created_at',
       }),
     placeholderData: keepPreviousData,
+    enabled: tab === 'payments',
   });
   const cancelMut = useMutation({
     mutationFn: (id: string) => debtsApi.cancelPayment(id),
@@ -86,9 +98,27 @@ export function DebtsPage(): ReactElement {
   const paymentRows = payments.data?.results ?? [];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <h1 className="text-2xl font-bold">Qarzdorlik</h1>
 
+      <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`px-4 py-2 text-sm font-medium ${
+              tab === t.id
+                ? 'border-b-2 border-brand text-brand'
+                : 'text-gray-500'
+            }`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
       <DataState isLoading={aging.isLoading} isError={aging.isError}>
         {aging.data && (
           <div className="space-y-3">
@@ -152,7 +182,9 @@ export function DebtsPage(): ReactElement {
           </div>
         )}
       </DataState>
+      )}
 
+      {tab === 'debts' && (
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">Barcha qarzlar</h2>
@@ -253,9 +285,24 @@ export function DebtsPage(): ReactElement {
           </div>
         )}
       </div>
+      )}
 
+      {tab === 'payments' && (
       <div>
-        <h2 className="mb-2 font-semibold">Qarz to&apos;lovlari</h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Qarz to&apos;lovlari</h2>
+          <input
+            className="field max-w-[240px]"
+            aria-label="To'lovlarni qidirish"
+            placeholder="Mijoz nomi yoki telefon…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+              setPayPage(1);
+            }}
+          />
+        </div>
         <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
           <DataState
             isLoading={payments.isLoading}
@@ -348,6 +395,7 @@ export function DebtsPage(): ReactElement {
           </div>
         )}
       </div>
+      )}
 
       <ConfirmDialog
         open={cancelling !== null}
