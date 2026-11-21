@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const clientsApi = vi.hoisted(() => ({
   list: vi.fn(),
   recordAdvance: vi.fn(),
+  openingBalance: vi.fn(),
 }));
 
 vi.mock('@/shared/api/clients', () => ({ clientsApi }));
@@ -49,6 +50,7 @@ beforeEach(() => {
     id: 'cl-1',
     advance_balance: '150000.00',
   });
+  clientsApi.openingBalance.mockResolvedValue({ id: 'debt-1' });
 });
 
 describe('MyClientsPage — omborchi uchun ortiqcha to‘lov (avans)', () => {
@@ -74,5 +76,50 @@ describe('MyClientsPage — omborchi uchun ortiqcha to‘lov (avans)', () => {
         payment_type: 'NAQD',
       });
     });
+  });
+
+  it('mijozga eski qarz (+) kiritadi', async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Eski qarz (+)' }));
+    expect(
+      await screen.findByText('Eski qarz kiritish: Baraka Market'),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Qarz summasi'), {
+      target: { value: '75000' },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText('Izoh (masalan: eski qolib ketgan qarz)'),
+      { target: { value: 'Eski qarz' } },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Qarzni saqlash' }));
+
+    await waitFor(() => {
+      expect(clientsApi.openingBalance).toHaveBeenCalledWith({
+        client: 'cl-1',
+        amount: '75000',
+        note: 'Eski qarz',
+      });
+    });
+  });
+
+  it('eski qarz modalini yopib qayta ochganda avvalgi xato tozalanadi', async () => {
+    clientsApi.openingBalance.mockRejectedValueOnce(new Error('Xato yuz berdi'));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Eski qarz (+)' }));
+    fireEvent.change(screen.getByLabelText('Qarz summasi'), {
+      target: { value: '50000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Qarzni saqlash' }));
+
+    expect(await screen.findByText('Xato yuz berdi')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yopish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Eski qarz (+)' }));
+
+    expect(screen.queryByText('Xato yuz berdi')).not.toBeInTheDocument();
   });
 });

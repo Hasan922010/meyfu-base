@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 from decimal import Decimal
+from xml.sax.saxutils import escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -56,11 +57,15 @@ def _styles() -> dict[str, ParagraphStyle]:
     }
 
 
+def _esc(value: object) -> str:
+    return escape("" if value is None else str(value))
+
+
 def _company_header(company: CompanySettings | None, st: dict) -> list:
     title_st = st.get("company_title", st["title"])
     if company is None:
         return [Paragraph("Kompaniya", title_st)]
-    left = [Paragraph(company.name or "Kompaniya", title_st)]
+    left = [Paragraph(_esc(company.name or "Kompaniya"), title_st)]
     meta = []
     if company.legal_name:
         meta.append(company.legal_name)
@@ -71,7 +76,7 @@ def _company_header(company: CompanySettings | None, st: dict) -> list:
     if company.phone:
         meta.append(f"Tel: {company.phone}")
     if meta:
-        left.append(Paragraph(" · ".join(meta), st["small"]))
+        left.append(Paragraph(_esc(" · ".join(meta)), st["small"]))
 
     logo_reader = fitted_image_buffer(company.logo, box_px=240)
     logo_cell = ""
@@ -103,9 +108,9 @@ def _signature_block(st: dict, company: CompanySettings | None,
         director = company.director_name
 
     rows = [
-        [Paragraph(f"{left_label}: _______________", st["n"]),
-         Paragraph(f"{right_label}: _______________", st["n"])],
-        [Paragraph(f"({director})" if director else "(F.I.SH.)", st["small"]),
+        [Paragraph(f"{_esc(left_label)}: _______________", st["n"]),
+         Paragraph(f"{_esc(right_label)}: _______________", st["n"])],
+        [Paragraph(f"({_esc(director)})" if director else "(F.I.SH.)", st["small"]),
          Paragraph("(F.I.SH.)", st["small"])],
     ]
     tbl = Table(rows, colWidths=[90 * mm, 90 * mm])
@@ -159,12 +164,14 @@ def purchase_to_pdf(purchase, *, with_stamp: bool = False,
     elements += _company_header(company, st)
     elements.append(Spacer(1, 4 * mm))
     elements.append(Paragraph(
-        f"NAKLADNOY № {purchase.invoice_number or purchase.number}", st["title"]
+        _esc(f"NAKLADNOY № {purchase.invoice_number or purchase.number}"), st["title"]
     ))
     elements.append(Paragraph(
-        f"Hujjat: {purchase.number} · Sana: {purchase.date:%d.%m.%Y} · "
-        f"Yetkazib beruvchi: {purchase.supplier.name} · "
-        f"Ombor: {purchase.warehouse.name}",
+        _esc(
+            f"Hujjat: {purchase.number} · Sana: {purchase.date:%d.%m.%Y} · "
+            f"Yetkazib beruvchi: {purchase.supplier.name} · "
+            f"Ombor: {purchase.warehouse.name}"
+        ),
         st["small"],
     ))
     elements.append(Spacer(1, 3 * mm))
@@ -178,11 +185,11 @@ def purchase_to_pdf(purchase, *, with_stamp: bool = False,
     for idx, item in enumerate(items, start=1):
         row = [
             Paragraph(str(idx), st["cell"]),
-            Paragraph(item.product.name, st["cell"]),
-            Paragraph(item.product.sku, st["cell"]),
-            Paragraph(_format_pack_qty(item.quantity, item.product), st["cellr"]),
-            Paragraph(_money(item.cost_price), st["cellr"]),
-            Paragraph(_money(item.amount), st["cellr"]),
+            Paragraph(_esc(item.product.name), st["cell"]),
+            Paragraph(_esc(item.product.sku), st["cell"]),
+            Paragraph(_esc(_format_pack_qty(item.quantity, item.product)), st["cellr"]),
+            Paragraph(_esc(_money(item.cost_price)), st["cellr"]),
+            Paragraph(_esc(_money(item.amount)), st["cellr"]),
         ]
         if with_images:
             reader = fitted_image_buffer(
@@ -256,20 +263,20 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     # O'ng tomonda Tarqatuvchi ismi va telefon raqami qalin shriftda (qayta buyurtma uchun)
     dist_phone = getattr(loading.distributor, "phone", "") or ""
     left_header = [
-        Paragraph(f"YUKLAMA № {loading.number}", st["title"]),
+        Paragraph(_esc(f"YUKLAMA № {loading.number}"), st["title"]),
         Spacer(1, 1.5 * mm),
         Paragraph(
-            f"Sana: {loading.date:%d.%m.%Y} · Ombor: {loading.warehouse.name}",
+            _esc(f"Sana: {loading.date:%d.%m.%Y} · Ombor: {loading.warehouse.name}"),
             st["small"],
         ),
     ]
     right_header = [
         Paragraph("TARQATUVCHI (BUYURTMA UCHUN):", st["small"]),
         Spacer(1, 1 * mm),
-        Paragraph(f"{loading.distributor.full_name}", st["dist_bold"]),
+        Paragraph(_esc(loading.distributor.full_name), st["dist_bold"]),
     ]
     if dist_phone:
-        right_header.append(Paragraph(f"Tel: {dist_phone}", st["dist_phone"]))
+        right_header.append(Paragraph(_esc(f"Tel: {dist_phone}"), st["dist_phone"]))
 
     hdr_table = Table([[left_header, right_header]], colWidths=[105 * mm, 75 * mm])
     hdr_table.setStyle(TableStyle([
@@ -293,12 +300,12 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
             pack_price_label = "—"
         data.append([
             Paragraph(str(idx), st["cell"]),
-            Paragraph(item.product.name, st["cell"]),
-            Paragraph(qty_label, st["cellr"]),
-            Paragraph(pack_info, st["cellr"]),
-            Paragraph(_money(item.price), st["cellr"]),
-            Paragraph(pack_price_label, st["cellr"]),
-            Paragraph(_money(item.amount), st["cellr"]),
+            Paragraph(_esc(item.product.name), st["cell"]),
+            Paragraph(_esc(qty_label), st["cellr"]),
+            Paragraph(_esc(pack_info), st["cellr"]),
+            Paragraph(_esc(_money(item.price)), st["cellr"]),
+            Paragraph(_esc(pack_price_label), st["cellr"]),
+            Paragraph(_esc(_money(item.amount)), st["cellr"]),
         ])
 
     col_widths = [9 * mm, 51 * mm, 26 * mm, 22 * mm, 23 * mm, 25 * mm, 24 * mm]

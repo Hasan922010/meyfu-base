@@ -686,3 +686,182 @@ def test_warehouse_order_place_and_cancel_ownership(admin_api, van_stocked):
     assert dist_cancel.data["data"]["status"] == "CANCELLED"
 
 
+@pytest.mark.django_db
+def test_give_order_on_debt_adds_client_debt(van_stocked):
+    """Buyurtmani berish bosilganda buyurtma summasi mijoz qarziga qo'shiladi."""
+    from rest_framework.test import APIClient
+
+    from apps.users.models import User
+
+    agent = User.objects.create_user(
+        phone="+998907770099", password="pass12345", full_name="Agent 99",
+        role="ORDER_TAKER", can_sell_on_debt=True,
+    )
+    agent_api = APIClient()
+    agent_api.force_authenticate(user=agent)
+
+    client, product = van_stocked["client"], _product(van_stocked["product"])
+    client.assigned_to = agent
+    client.save(update_fields=["assigned_to"])
+    created = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "3", "price": "27000"}],
+            "payment_intent": "QARZ",
+            "place": True,
+        },
+        format="json",
+    )
+    assert created.status_code == 201
+    oid = created.data["data"]["id"]
+
+    given = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert given.status_code == 200
+    assert given.data["data"]["status"] == "DELIVERED"
+
+    client.refresh_from_db()
+    assert client.current_debt == Decimal("81000.00")
+
+
+@pytest.mark.django_db
+def test_give_order_on_debt_enforces_guards_and_uses_advance(van_stocked):
+    """give_order_on_debt bloklangan mijoz, qarz limiti, ruxsat va avansni tekshiradi."""
+    from rest_framework.test import APIClient
+
+    from apps.users.models import User
+
+    agent = User.objects.create_user(
+        phone="+998907770098", password="pass12345", full_name="Agent 98",
+        role="ORDER_TAKER", can_sell_on_debt=True,
+    )
+    agent_api = APIClient()
+    agent_api.force_authenticate(user=agent)
+
+    client, product = van_stocked["client"], _product(van_stocked["product"])
+    client.assigned_to = agent
+    client.debt_limit = Decimal("50000")
+    client.save(update_fields=["assigned_to", "debt_limit"])
+
+    created = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "3", "price": "27000"}],
+            "payment_intent": "QARZ",
+            "place": True,
+        },
+        format="json",
+    )
+    assert created.status_code == 201
+    oid = created.data["data"]["id"]
+
+    # 1. Qarz limiti oshib ketishi -> 409 DEBT_LIMIT_EXCEEDED
+    r_limit = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_limit.status_code == 409
+    assert r_limit.data["error"]["code"] == "DEBT_LIMIT_EXCEEDED"
+
+    # 2. Bloklangan mijoz -> 409 CLIENT_BLOCKED
+    client.debt_limit = Decimal("500000")
+    client.is_blocked = True
+    client.save(update_fields=["debt_limit", "is_blocked"])
+    r_blocked = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_blocked.status_code == 409
+    assert r_blocked.data["error"]["code"] == "CLIENT_BLOCKED"
+
+    # 3. can_sell_on_debt=False -> 403 DEBT_SALE_FORBIDDEN
+    client.is_blocked = False
+    client.advance_balance = Decimal("30000")
+    client.save(update_fields=["is_blocked", "advance_balance"])
+    agent.can_sell_on_debt = False
+    agent.save(update_fields=["can_sell_on_debt"])
+    r_perm = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_perm.status_code == 403
+    assert r_perm.data["error"]["code"] == "DEBT_SALE_FORBIDDEN"
+
+    # 4. Ruxsat tiklanganda avval avans (30 000) yechilib, qolgani (51 000) qarzga yoziladi
+    agent.can_sell_on_debt = True
+    agent.save(update_fields=["can_sell_on_debt"])
+    r_ok = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_ok.status_code == 200
+    client.refresh_from_db()
+    assert client.advance_balance == Decimal("0.00")
+    assert client.current_debt == Decimal("51000.00")
+
+
+@pytest.mark.django_db
+def test_give_order_on_debt_allows_unset_zero_debt_limit(van_stocked):
+    """debt_limit=0 (limit belgilanmagan mijoz) uchun give_order_on_debt ruxsat beradi."""
+    from rest_framework.test import APIClient
+
+    from apps.users.models import User
+
+    agent = User.objects.create_user(
+        phone="+998907770097", password="pass12345", full_name="Agent 97",
+        role="ORDER_TAKER", can_sell_on_debt=True,
+    )
+    agent_api = APIClient()
+    agent_api.force_authenticate(user=agent)
+
+    client, product = van_stocked["client"], _product(van_stocked["product"])
+    client.assigned_to = agent
+    client.debt_limit = Decimal("0")
+    client.save(update_fields=["assigned_to", "debt_limit"])
+
+    created = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "2", "price": "25000"}],
+            "payment_intent": "QARZ",
+            "place": True,
+        },
+        format="json",
+    )
+    assert created.status_code == 201
+    oid = created.data["data"]["id"]
+
+    r_ok = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_ok.status_code == 200
+    client.refresh_from_db()
+    assert client.current_debt == Decimal("50000.00")
+
+
+@pytest.mark.django_db
+def test_give_order_on_debt_rejects_loaded_order(van_stocked):
+    """Yuklamaga olingan (LOADED) buyurtmani give-on-debt bilan yakunlab bo'lmaydi."""
+    from rest_framework.test import APIClient
+
+    from apps.orders.constants import OrderStatus
+    from apps.orders.models import Order
+    from apps.users.models import User
+
+    agent = User.objects.create_user(
+        phone="+998907770096", password="pass12345", full_name="Agent 96",
+        role="ORDER_TAKER", can_sell_on_debt=True,
+    )
+    agent_api = APIClient()
+    agent_api.force_authenticate(user=agent)
+
+    client, product = van_stocked["client"], _product(van_stocked["product"])
+    client.assigned_to = agent
+    client.save(update_fields=["assigned_to"])
+
+    created = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "1", "price": "25000"}],
+            "payment_intent": "QARZ",
+            "place": True,
+        },
+        format="json",
+    )
+    assert created.status_code == 201
+    oid = created.data["data"]["id"]
+    Order.objects.filter(pk=oid).update(status=OrderStatus.LOADED)
+
+    r_loaded = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_loaded.status_code == 409
+
+

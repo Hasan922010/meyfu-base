@@ -62,14 +62,31 @@ function wrap(doc: jsPDF, text: string, width: number): string[] {
   return Array.isArray(out) ? (out as string[]) : [String(out)];
 }
 
+function setupFont(doc: jsPDF): string {
+  try {
+    doc.addFileToVFS('DejaVu.ttf', DEJAVU_SUBSET_B64);
+    doc.addFont('DejaVu.ttf', FONT, 'normal');
+    doc.setFont(FONT, 'normal');
+    return FONT;
+  } catch {
+    doc.setFont('helvetica', 'normal');
+    return 'helvetica';
+  }
+}
+
 /** Chizadi va oxirgi y (mm) ni qaytaradi. */
-function render(doc: jsPDF, r: ReceiptDoc, company: CompanyCache | null): number {
-  doc.setFont(FONT, 'normal');
+function render(
+  doc: jsPDF,
+  r: ReceiptDoc,
+  company: CompanyCache | null,
+  fontName: string,
+): number {
+  doc.setFont(fontName, 'normal');
   let y = 6;
 
   const center = (text: string, size: number, gap = 4): void => {
     doc.setFontSize(size);
-    for (const ln of wrap(doc, text, INNER)) {
+    for (const ln of wrap(doc, String(text ?? ''), INNER)) {
       doc.text(ln, W / 2, y, { align: 'center' });
       y += gap;
     }
@@ -82,8 +99,8 @@ function render(doc: jsPDF, r: ReceiptDoc, company: CompanyCache | null): number
   };
   const row = (l: string, rr: string, size = 8): void => {
     doc.setFontSize(size);
-    doc.text(l, M, y);
-    doc.text(rr, W - M, y, { align: 'right' });
+    doc.text(String(l ?? ''), M, y);
+    doc.text(String(rr ?? ''), W - M, y, { align: 'right' });
     y += size * 0.5;
   };
 
@@ -110,11 +127,11 @@ function render(doc: jsPDF, r: ReceiptDoc, company: CompanyCache | null): number
   y += 1;
 
   doc.setFontSize(7.5);
-  doc.text(`Sana: ${r.date}`, M, y);
+  doc.text(`Sana: ${r.date || ''}`, M, y);
   y += 3.6;
-  doc.text(`Sotuvchi: ${r.distributorName}`, M, y);
+  doc.text(`Sotuvchi: ${r.distributorName || ''}`, M, y);
   y += 3.6;
-  for (const ln of wrap(doc, `Mijoz: ${r.clientName}`, INNER)) {
+  for (const ln of wrap(doc, `Mijoz: ${r.clientName || ''}`, INNER)) {
     doc.text(ln, M, y);
     y += 3.6;
   }
@@ -180,14 +197,12 @@ export function buildReceiptPdf(
 ): Blob {
   // 1-o'tish: balandlikni o'lchash
   const probe = new jsPDF({ unit: 'mm', format: [W, 400], compress: true });
-  probe.addFileToVFS('DejaVu.ttf', DEJAVU_SUBSET_B64);
-  probe.addFont('DejaVu.ttf', FONT, 'normal');
-  const height = Math.max(60, render(probe, r, company) + 4);
+  const font1 = setupFont(probe);
+  const height = Math.max(60, render(probe, r, company, font1) + 4);
 
   // 2-o'tish: aniq o'lchamli hujjat
   const doc = new jsPDF({ unit: 'mm', format: [W, height], compress: true });
-  doc.addFileToVFS('DejaVu.ttf', DEJAVU_SUBSET_B64);
-  doc.addFont('DejaVu.ttf', FONT, 'normal');
-  render(doc, r, company);
+  const font2 = setupFont(doc);
+  render(doc, r, company, font2);
   return doc.output('blob');
 }

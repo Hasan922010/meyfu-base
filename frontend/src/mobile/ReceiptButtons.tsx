@@ -7,13 +7,14 @@ interface Props {
   /** Chek ma'lumotini bosilganda quradi (lokal holatdan). */
   getDoc: () => ReceiptDoc;
   filename: string;
+  hideShare?: boolean | undefined;
 }
 
 /**
  * «PDF saqlash» va «Ulashish» tugmalari. jspdf + shrift faqat shu yerda
  * dinamik import qilinadi — asosiy mobil bundle'ga tushmaydi.
  */
-export function ReceiptButtons({ getDoc, filename }: Props): ReactElement {
+export function ReceiptButtons({ getDoc, filename, hideShare = false }: Props): ReactElement {
   const [busy, setBusy] = useState<'save' | 'share' | 'print' | null>(null);
   const [canPrint] = useState<boolean>(
     () => typeof navigator !== 'undefined' && 'bluetooth' in navigator,
@@ -35,7 +36,8 @@ export function ReceiptButtons({ getDoc, filename }: Props): ReactElement {
       const blob = pdf.buildReceiptPdf(getDoc(), company);
       if (mode === 'share') await share.sharePdf(blob, filename);
       else share.downloadPdf(blob, filename);
-    } catch {
+    } catch (e) {
+      console.error('[ReceiptButtons]', e);
       setErr('PDF yaratib bo‘lmadi.');
     } finally {
       setBusy(null);
@@ -75,14 +77,16 @@ export function ReceiptButtons({ getDoc, filename }: Props): ReactElement {
           <Download size={16} aria-hidden />
           {busy === 'save' ? '…' : 'PDF saqlash'}
         </button>
-        <button
-          className="btn-brand flex flex-1 items-center justify-center gap-1.5"
-          disabled={busy !== null}
-          onClick={() => void run('share')}
-        >
-          <Share2 size={16} aria-hidden />
-          {busy === 'share' ? '…' : 'Ulashish'}
-        </button>
+        {!hideShare && (
+          <button
+            className="btn-brand flex flex-1 items-center justify-center gap-1.5"
+            disabled={busy !== null}
+            onClick={() => void run('share')}
+          >
+            <Share2 size={16} aria-hidden />
+            {busy === 'share' ? '…' : 'Ulashish'}
+          </button>
+        )}
       </div>
       {canPrint && (
         <button

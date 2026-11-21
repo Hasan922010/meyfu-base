@@ -362,3 +362,36 @@ def test_purchase_to_pdf_formats_pack_qty(van_stocked):
 
     pdf_bytes = purchase_to_pdf(purchase, with_stamp=False, with_images=False)
     assert pdf_bytes.startswith(b"%PDF-")
+
+
+@pytest.mark.django_db
+def test_warehouse_pdf_escapes_xml_special_chars(van_stocked):
+    """Mijoz, xodim yoki mahsulot nomidagi XML belgilari PDF yaratishni buzmaydi."""
+    from apps.warehouse.models import Loading, LoadingItem
+    from apps.warehouse.pdf import loading_to_pdf
+
+    product = van_stocked["product"]
+    product.name = "Coca <Cola> & \"Zero\" '1L'"
+    product.save(update_fields=["name"])
+
+    dist = van_stocked["distributor"]
+    dist.full_name = "Ali <Vali> & Co"
+    dist.save(update_fields=["full_name"])
+
+    loading = Loading.objects.create(
+        number="YUK-ESC-1",
+        date=van_stocked["warehouse"].created_at.date(),
+        warehouse=van_stocked["warehouse"],
+        distributor=dist,
+        created_by=dist,
+    )
+    LoadingItem.objects.create(
+        loading=loading,
+        product=product,
+        quantity=Decimal("2"),
+        price=Decimal("10000"),
+        amount=Decimal("20000"),
+    )
+
+    pdf_bytes = loading_to_pdf(loading, with_stamp=False)
+    assert pdf_bytes.startswith(b"%PDF-")

@@ -389,3 +389,19 @@ def test_client_debts_endpoint_returns_serialized_items(auth_api, manager_api, v
     assert data["items"][0]["remaining"] == "50000.00"
     assert data["items"][0]["client_phone"] == client.phone
 
+
+@pytest.mark.django_db
+def test_opening_balance_denies_off_route_field_staff(distributor, routed_clients):
+    """Maydon xodimi o'z marshruti/mijozi bo'lmagan mijozga eski qarz yoza olmaydi."""
+    from rest_framework.test import APIClient
+
+    api = APIClient()
+    api.force_authenticate(user=distributor)
+    resp = api.post(
+        "/api/v1/clients/opening-balance/",
+        {"client": str(routed_clients["other_client"].id), "amount": "50000"},
+        format="json",
+    )
+    assert resp.status_code == 403
+    assert resp.data["error"]["code"] == "CLIENT_NOT_ON_ROUTE"
+

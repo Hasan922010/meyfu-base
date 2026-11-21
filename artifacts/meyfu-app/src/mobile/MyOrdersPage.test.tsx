@@ -15,6 +15,13 @@ vi.mock('@/offline/actions', () => ({
   fulfillOrderLocal: (id: unknown) => mockFulfillOrderLocal(id),
 }));
 
+const ordersApi = vi.hoisted(() => ({
+  myToTake: vi.fn(),
+  giveOnDebt: vi.fn(),
+  cancel: vi.fn(),
+}));
+vi.mock('@/shared/api/orders', () => ({ ordersApi }));
+
 function renderWithClient(ui: React.ReactElement): void {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -102,5 +109,79 @@ describe('MyOrdersPage — Yetkazish (FulfillScreen) Ergonomik Boshqaruvi', () =
 
     // 6. Muvaffaqiyatli saqlangach ekranda tasdiq ko'rinishi
     expect(await screen.findByRole('heading', { name: 'Yetkazildi' })).toBeInTheDocument();
+  });
+
+  it('Olganlarimda Ulashish o‘rniga Buyurtmani berish tugmasi chiqadi va qarzga beradi', async () => {
+    ordersApi.myToTake.mockResolvedValue([
+      {
+        id: 'ord-taken-1',
+        number: 'BUY-201',
+        date: '2026-11-21',
+        created_at: '2026-11-21T08:00:00Z',
+        client: 'cl-1',
+        client_name: 'Baraka Market',
+        taken_by_name: 'Aziz',
+        status: 'PLACED',
+        status_display: 'Berilgan',
+        payment_intent: 'QARZ',
+        total_amount: '120000',
+        items: [],
+      },
+    ]);
+    ordersApi.giveOnDebt.mockResolvedValue({ id: 'ord-taken-1', status: 'DELIVERED' });
+
+    renderWithClient(<MyOrdersPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Olganlarim' }));
+    expect(await screen.findByText('Baraka Market')).toBeInTheDocument();
+
+    expect(screen.queryByRole('button', { name: 'Ulashish' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'PDF saqlash' })).toBeInTheDocument();
+
+    const giveBtns = screen.getAllByRole('button', { name: 'Buyurtmani berish' });
+    fireEvent.click(giveBtns[0]!);
+
+    expect(
+      await screen.findByText(/120 000 so'm mijoz qarziga qo'shilsinmi\?/),
+    ).toBeInTheDocument();
+
+    const confirmBtns = screen.getAllByRole('button', { name: 'Buyurtmani berish' });
+    fireEvent.click(confirmBtns[confirmBtns.length - 1]!);
+
+    await waitFor(() => {
+      expect(ordersApi.giveOnDebt).toHaveBeenCalledWith('ord-taken-1');
+    });
+  });
+
+  it('Buyurtmani berish xatosini tasdiqlash oynasida ko‘rsatadi', async () => {
+    ordersApi.myToTake.mockResolvedValue([
+      {
+        id: 'ord-taken-2',
+        number: 'BUY-202',
+        date: '2026-11-21',
+        created_at: '2026-11-21T08:00:00Z',
+        client: 'cl-1',
+        client_name: 'Baraka Market',
+        taken_by_name: 'Aziz',
+        status: 'PLACED',
+        status_display: 'Berilgan',
+        payment_intent: 'QARZ',
+        total_amount: '120000',
+        items: [],
+      },
+    ]);
+    ordersApi.giveOnDebt.mockRejectedValueOnce(new Error('Mijoz bloklangan'));
+
+    renderWithClient(<MyOrdersPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Olganlarim' }));
+    expect(await screen.findByText('Baraka Market')).toBeInTheDocument();
+
+    const giveBtns = screen.getAllByRole('button', { name: 'Buyurtmani berish' });
+    fireEvent.click(giveBtns[0]!);
+    const confirmBtns = screen.getAllByRole('button', { name: 'Buyurtmani berish' });
+    fireEvent.click(confirmBtns[confirmBtns.length - 1]!);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Mijoz bloklangan');
   });
 });

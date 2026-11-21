@@ -303,8 +303,8 @@ function BuildLoadingTab(): ReactElement {
     queryFn: () => ordersApi.forLoading(),
   });
   const distributors = useQuery({
-    queryKey: ['distributors'],
-    queryFn: () => authApi.distributors(),
+    queryKey: ['staff', 'active'],
+    queryFn: () => authApi.staff(),
   });
   const warehouses = useQuery({
     queryKey: ['warehouses'],
@@ -345,10 +345,10 @@ function BuildLoadingTab(): ReactElement {
           value={distributor}
           onChange={(e) => setDistributor(e.target.value)}
         >
-          <option value="">— tarqatuvchi —</option>
+          <option value="">— xodim —</option>
           {distributors.data?.map((d) => (
             <option key={d.id} value={d.id}>
-              {d.full_name}
+              {d.full_name} ({d.role})
             </option>
           ))}
         </select>

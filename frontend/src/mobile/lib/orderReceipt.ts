@@ -9,11 +9,11 @@ export function orderToReceipt(o: Order): ReceiptDoc {
     kind: 'order',
     numberOrRef: o.number,
     synced: true,
-    date: dateShort(o.created_at),
-    distributorName: o.taken_by_name,
-    clientName: o.client_name,
+    date: dateShort(o.created_at || o.date || ''),
+    distributorName: o.taken_by_name || '',
+    clientName: o.client_name || '',
     paymentLabel: o.payment_intent ? paymentLabel(o.payment_intent) : undefined,
-    lines: o.items.map((it) => {
+    lines: (o.items ?? []).map((it) => {
       const qty = Math.round(Number(it.quantity) || 0);
       const packQty = Math.round(Number(it.pack_quantity) || 1);
       const qtyLabel =
@@ -21,12 +21,12 @@ export function orderToReceipt(o: Order): ReceiptDoc {
           ? formatOrderQty(qty, it)
           : undefined;
       return {
-        name: it.product_name,
+        name: it.product_name || '',
         qty,
-        price: Number(it.price),
+        price: Number(it.price) || 0,
         ...(qtyLabel ? { qtyLabel } : {}),
       };
     }),
-    total: Number(o.total_amount),
+    total: Number(o.total_amount) || 0,
   };
 }

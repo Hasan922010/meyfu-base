@@ -105,6 +105,8 @@ export const ordersApi = {
   approve: (id: string) => postAction<Order>(`/orders/${id}/approve/`),
   cancel: (id: string, reason?: string) =>
     postAction<Order>(`/orders/${id}/cancel/`, { reason: reason ?? '' }),
+  giveOnDebt: (id: string) =>
+    postAction<Order>(`/orders/${id}/give-on-debt/`, {}),
   fulfill: (id: string, body: OrderFulfillInput) =>
     postAction<{ sale: unknown; order: Order }>(`/orders/${id}/fulfill/`, body),
   myToTake: () => retrieve<Order[]>('/orders/my-to-take/'),

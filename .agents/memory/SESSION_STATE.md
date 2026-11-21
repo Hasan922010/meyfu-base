@@ -196,6 +196,12 @@
     - **Yechim:** Umumiy `useDebouncedUrlFilter` hooki (`lastCommittedRef` bilan) joriy etilib, tashqi URL o'zgarishlari va foydalanuvchi kiritishi ajratildi; qidiruv maydoniga `aria-label="Mahsulot qidirish"`, tozalash tugmasiga `type="button"` hamda darhol tozalash qo'shildi.
     - **Verifikatsiya:** `ProductsPage.test.tsx` ga regressiya testi qo'shildi; `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **63/63 test fayli (261/261 test)**; `bash scripts/sync-frontend.sh --sync` va `--check` bilan `artifacts/meyfu-app/` 1:1 sinxronlandi.
 
+24. **Xavfsizlik Auditi (`/agency-ai-generated-code-security-auditor`) Bo'yicha Aniqlangan Barcha Kamchiliklar Tuzatildi:**
+    - **`give_order_on_debt` (`backend/apps/orders/services/order.py`):** `can_sell_on_debt` ruxsati, `ensure_client_in_scope`, `client.is_blocked`, `client.debt_limit` tekshiruvlari hamda avval `client.advance_balance` dan yechish qo'shildi (`Client.objects.select_for_update()` bilan).
+    - **PDF XML-Escape (`backend/apps/warehouse/pdf.py`):** ReportLab `Paragraph(...)` chaqiruvlariga uzatiladigan barcha dinamik maydonlar `xml.sax.saxutils.escape` (`_esc`) orqali tozalandi (CWE-94/CWE-79).
+    - **`opening_balance` Marshrut Egaligi (`backend/apps/clients/views.py`):** Maydon xodimlari uchun `is_client_off_route` tekshiruvi qo'shildi (`CLIENT_NOT_ON_ROUTE`, 403).
+    - **Regressiya Testlari:** `test_orders.py`, `test_warehouse.py`, `test_clients.py` ga yangi xavfsizlik testlari qo'shildi.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)

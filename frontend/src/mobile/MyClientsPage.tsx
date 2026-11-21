@@ -25,6 +25,9 @@ export function MyClientsPage(): ReactElement {
   const [advAmount, setAdvAmount] = useState<string>('');
   const [advType, setAdvType] = useState<'NAQD' | 'PLASTIK' | 'OTKAZMA'>('NAQD');
   const [advNote, setAdvNote] = useState<string>('');
+  const [debtClient, setDebtClient] = useState<Client | null>(null);
+  const [debtAmount, setDebtAmount] = useState<string>('');
+  const [debtNote, setDebtNote] = useState<string>('');
   const [showNewModal, setShowNewModal] = useState<boolean>(false);
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.user?.role);
@@ -50,6 +53,24 @@ export function MyClientsPage(): ReactElement {
       setAdvanceClient(null);
       setAdvAmount('');
       setAdvNote('');
+    },
+  });
+
+  const debtMut = useMutation({
+    mutationFn: () => {
+      if (!debtClient) throw new Error('Client required');
+      return clientsApi.openingBalance({
+        client: debtClient.id,
+        amount: debtAmount,
+        ...(debtNote.trim() ? { note: debtNote.trim() } : {}),
+      });
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+      void qc.invalidateQueries({ queryKey: ['debts'] });
+      setDebtClient(null);
+      setDebtAmount('');
+      setDebtNote('');
     },
   });
 
@@ -121,8 +142,19 @@ export function MyClientsPage(): ReactElement {
                   )}
                 </div>
               </button>
-              {canRecordAdvance && (
-                <div className="flex justify-end border-t border-gray-100 pt-2 dark:border-gray-800">
+              <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-2 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDebtClient(c);
+                    setDebtAmount('');
+                    setDebtNote('');
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-300"
+                >
+                  Eski qarz (+)
+                </button>
+                {canRecordAdvance && (
                   <button
                     type="button"
                     onClick={() => {
@@ -136,8 +168,8 @@ export function MyClientsPage(): ReactElement {
                     <Banknote size={14} aria-hidden />
                     Ortiqcha to&apos;lov (avans)
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -147,7 +179,10 @@ export function MyClientsPage(): ReactElement {
       <Modal
         open={advanceClient !== null}
         title={advanceClient ? `Ortiqcha to'lov (avans): ${advanceClient.name}` : ''}
-        onClose={() => setAdvanceClient(null)}
+        onClose={() => {
+          advanceMut.reset();
+          setAdvanceClient(null);
+        }}
       >
         {advanceClient && (
           <div className="space-y-3">
@@ -192,6 +227,47 @@ export function MyClientsPage(): ReactElement {
               onClick={() => advanceMut.mutate()}
             >
               {advanceMut.isPending ? 'Saqlanmoqda…' : 'Avansni saqlash'}
+            </button>
+          </div>
+        )}
+      </Modal>
+      <Modal
+        open={debtClient !== null}
+        title={debtClient ? `Eski qarz kiritish: ${debtClient.name}` : ''}
+        onClose={() => {
+          debtMut.reset();
+          setDebtClient(null);
+        }}
+      >
+        {debtClient && (
+          <div className="space-y-3">
+            {Number(debtClient.current_debt) > 0 && (
+              <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                Joriy qarz: {money(debtClient.current_debt)}
+              </div>
+            )}
+            <AmountInput
+              className="text-lg"
+              ariaLabel="Qarz summasi"
+              value={debtAmount}
+              onChange={setDebtAmount}
+            />
+            <input
+              className="field"
+              placeholder="Izoh (masalan: eski qolib ketgan qarz)"
+              value={debtNote}
+              onChange={(e) => setDebtNote(e.target.value)}
+            />
+            {debtMut.isError && (
+              <p className="text-sm text-danger">{extractApiError(debtMut.error)}</p>
+            )}
+            <button
+              type="button"
+              className="btn-brand w-full"
+              disabled={Number(debtAmount) <= 0 || debtMut.isPending}
+              onClick={() => debtMut.mutate()}
+            >
+              {debtMut.isPending ? 'Saqlanmoqda…' : 'Qarzni saqlash'}
             </button>
           </div>
         )}

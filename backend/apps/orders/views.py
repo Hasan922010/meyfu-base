@@ -72,6 +72,7 @@ class OrderViewSet(BaseModelViewSet):
         "for_loading": _WAREHOUSE,
         # Yetkazish (Sale yaratadi) — tarqatuvchi, omborchi va admin
         "fulfill": (Role.DISTRIBUTOR, Role.WAREHOUSE, *_ADMIN),
+        "give_on_debt": (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE, *_ADMIN, Role.ACCOUNTANT),
         "my_to_take": (Role.DISTRIBUTOR, Role.ORDER_TAKER, Role.WAREHOUSE, *_ADMIN),
         "my_to_deliver": (Role.DISTRIBUTOR, Role.WAREHOUSE, *_ADMIN),
     }
@@ -208,6 +209,15 @@ class OrderViewSet(BaseModelViewSet):
             order, user=request.user,
             reason=s.validated_data.get("reason", ""),
         )
+        return ok(OrderSerializer(order).data)
+
+    @extend_schema(summary="Buyurtmani mijozga qarzga berish (qarziga qo'shish)")
+    @action(detail=True, methods=["post"], url_path="give-on-debt")
+    def give_on_debt(self, request: Request, pk: str | None = None) -> Response:
+        from .services.order import give_order_on_debt
+
+        order = self.get_object()
+        order = give_order_on_debt(order, user=request.user)
         return ok(OrderSerializer(order).data)
 
     @extend_schema(summary="Buyurtmani yetkazish → Sale yaratish",

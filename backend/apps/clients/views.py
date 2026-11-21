@@ -189,7 +189,13 @@ class ClientViewSet(BaseModelViewSet):
     )
     action_roles = {
         "create": _CLIENTS_CREATE,
-        "opening_balance": (*_MANAGE, Role.ACCOUNTANT),
+        "opening_balance": (
+            Role.WAREHOUSE,
+            Role.DISTRIBUTOR,
+            Role.ORDER_TAKER,
+            *_MANAGE,
+            Role.ACCOUNTANT,
+        ),
         "opening_sheet": (*_MANAGE, Role.ACCOUNTANT),
         "opening_balance_bulk": (*_MANAGE, Role.ACCOUNTANT),
         "opening_import_template": _MANAGE,
@@ -477,12 +483,21 @@ class ClientViewSet(BaseModelViewSet):
     def opening_balance(self, request: Request) -> Response:
         from apps.sales.serializers import DebtSerializer
         from apps.sales.services.debt import create_opening_debt
+        from apps.sales.services.sale import ensure_client_in_scope
 
         s = ClientOpeningDebtSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
-        if acting_branch(request.user) is not None:
-            ensure_same_branch(request.user, data["client"].branch_id, "client")
+        ensure_client_in_scope(request.user, data["client"])
+        role = getattr(request.user, "role", None)
+        if is_client_off_route(
+            request.user, data["client"], require_owner_if_unassigned=(role != Role.WAREHOUSE)
+        ):
+            raise BusinessError(
+                message="Bu mijoz sizning mijozingiz yoki marshrutingizda emas.",
+                code="CLIENT_NOT_ON_ROUTE",
+                status_code=403,
+            )
         debt = create_opening_debt(
             client=data["client"], amount=data["amount"],
             note=data.get("note", ""), user=request.user,

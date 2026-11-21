@@ -449,3 +449,91 @@ def fulfill_order(
             data={"order_id": str(order.id), "sale_id": str(result.sale.id)},
         )
     return result
+
+
+@transaction.atomic
+def give_order_on_debt(order: Order, *, user=None) -> Order:
+    """Buyurtmani mijozga qarzga berish: avval avansdan, qolganini mijoz qarziga qo'shadi."""
+    from django.db.models import F
+
+    from apps.clients.models import Client
+    from apps.sales.constants import DebtStatus
+    from apps.sales.models import Debt
+    from apps.sales.services.sale import ensure_client_in_scope
+
+    if user is not None and hasattr(user, "has_app_permission") and not user.has_app_permission("can_sell_on_debt"):
+        raise BusinessError(
+            message="Sizda qarzga (nasiyaga) tovar berish huquqi yo'q.",
+            code="DEBT_SALE_FORBIDDEN",
+            status_code=403,
+        )
+
+    order = Order.objects.select_for_update().get(pk=order.pk)
+    _guard(order, (OrderStatus.DRAFT, OrderStatus.PLACED, OrderStatus.APPROVED), "berish")
+    if order.total_amount <= _ZERO:
+        raise BusinessError(
+            message="Buyurtma summasi musbat bo'lishi kerak.",
+            code="INVALID_AMOUNT",
+        )
+
+    client = Client.objects.select_for_update().get(pk=order.client_id)
+    if user is not None:
+        ensure_client_in_scope(user, client)
+    if client.is_blocked:
+        raise BusinessError(
+            message=f"«{client.name}» bloklangan — qarzga berib bo'lmaydi.",
+            code="CLIENT_BLOCKED",
+        )
+
+    advance_used = min(max(_ZERO, client.advance_balance), order.total_amount)
+    debt_amount = max(_ZERO, order.total_amount - advance_used)
+    if debt_amount > _ZERO and client.debt_limit > _ZERO:
+        projected = client.current_debt + debt_amount
+        if projected > client.debt_limit:
+            raise BusinessError(
+                message=(
+                    f"«{client.name}» qarz limiti oshib ketadi "
+                    f"({projected} > {client.debt_limit})."
+                ),
+                code="DEBT_LIMIT_EXCEEDED",
+                details={
+                    "current": str(client.current_debt),
+                    "limit": str(client.debt_limit),
+                    "requested": str(debt_amount),
+                },
+            )
+
+    if advance_used > _ZERO:
+        Client.objects.filter(pk=client.pk).update(
+            advance_balance=F("advance_balance") - advance_used
+        )
+    if debt_amount > _ZERO:
+        Debt.objects.create(
+            client=client,
+            sale=None,
+            amount=debt_amount,
+            remaining=debt_amount,
+            due_date=order.desired_date,
+            status=DebtStatus.ACTIVE,
+            created_by=user,
+        )
+        Client.objects.filter(pk=client.pk).update(
+            current_debt=F("current_debt") + debt_amount
+        )
+    order.items.update(delivered_quantity=F("quantity"))
+    order.status = OrderStatus.DELIVERED
+    order.save(update_fields=["status", "updated_at"])
+    AuditLog.objects.create(
+        user=user,
+        action="order.given_on_debt",
+        model_name="Order",
+        object_id=str(order.id),
+        changes={
+            "number": order.number,
+            "amount": str(order.total_amount),
+            "advance_used": str(advance_used),
+            "debt_amount": str(debt_amount),
+            "client": str(order.client_id),
+        },
+    )
+    return order

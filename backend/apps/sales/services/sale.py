@@ -353,7 +353,7 @@ def create_sale(
     # 7.3 — qarz limiti
     if sale.debt_amount > _ZERO:
         projected = client.current_debt + sale.debt_amount
-        if projected > client.debt_limit and client.debt_limit >= _ZERO:
+        if projected > client.debt_limit and client.debt_limit > _ZERO:
             if strict and not debt_override:
                 raise BusinessError(
                     message=(

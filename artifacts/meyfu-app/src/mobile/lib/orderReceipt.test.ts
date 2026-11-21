@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Order } from '@/shared/api/orders';
 
 import { orderToReceipt } from './orderReceipt';
+import { buildReceiptPdf } from './receiptPdf';
 
 describe('orderToReceipt', () => {
   it('"O‘tkazma" to‘lov niyatini chekda ko‘rsatadi (avval bo‘sh chiqardi)', () => {
@@ -51,5 +52,9 @@ describe('orderToReceipt', () => {
       qtyLabel: '2 qop',
       price: 12600,
     });
+
+    const blob = buildReceiptPdf(receipt, null);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.size).toBeGreaterThan(0);
   });
 });

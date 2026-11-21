@@ -929,3 +929,30 @@ def test_warehouse_client_advance_and_settlement_on_sale(van_stocked):
     stmt = client_statement(client, date_from=today, date_to=today)
     assert Decimal(stmt["closing_balance"]) == Decimal("0.00")
 
+
+@pytest.mark.django_db
+def test_mobile_staff_can_record_opening_debt(van_stocked):
+    """Mobil xodimlar (omborchi/tarqatuvchi/zakaz oluvchi) mijozga eski qarz kirita oladi."""
+    from rest_framework.test import APIClient
+
+    from apps.users.constants import Role
+    from apps.users.models import User
+
+    agent = User.objects.create_user(
+        phone="+998907773344", password="pass12345", full_name="Agent Debt", role=Role.ORDER_TAKER
+    )
+    api = APIClient()
+    api.force_authenticate(user=agent)
+
+    client = van_stocked["client"]
+    client.assigned_to = agent
+    client.save(update_fields=["assigned_to"])
+    resp = api.post(
+        "/api/v1/clients/opening-balance/",
+        {"client": str(client.id), "amount": "75000", "note": "Eski qarz"},
+        format="json",
+    )
+    assert resp.status_code == 201
+    client.refresh_from_db()
+    assert client.current_debt == Decimal("75000.00")
+

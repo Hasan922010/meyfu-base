@@ -11,6 +11,7 @@ import { usePrefetchedCoords } from '@/mobile/geo';
 import { ReceiptButtons } from '@/mobile/ReceiptButtons';
 import { orderToReceipt } from '@/mobile/lib/orderReceipt';
 import type { ReceiptDoc } from '@/mobile/lib/receiptPdf';
+import { extractApiError } from '@/shared/api/client';
 import { ordersApi } from '@/shared/api/orders';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
@@ -177,8 +178,24 @@ function DeliverTab({
 }
 
 function TakenTab(): ReactElement {
+  const qc = useQueryClient();
   const { setCancelling, dialog } = useCancelOrder();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [givingOrder, setGivingOrder] = useState<{
+    id: string;
+    number: string;
+    client_name: string;
+    total_amount: string;
+  } | null>(null);
+  const giveMut = useMutation({
+    mutationFn: (id: string) => ordersApi.giveOnDebt(id),
+    onSuccess: () => {
+      setGivingOrder(null);
+      void qc.invalidateQueries({ queryKey: ['orders', 'my-to-take'] });
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+      void qc.invalidateQueries({ queryKey: ['debts'] });
+    },
+  });
   const q = useQuery({
     queryKey: ['orders', 'my-to-take'],
     queryFn: () => ordersApi.myToTake(),
@@ -231,11 +248,23 @@ function TakenTab(): ReactElement {
                   ))}
                 </ul>
               )}
-              <div className="flex items-center justify-between gap-2">
-                <ReceiptButtons
-                  getDoc={() => orderToReceipt(o)}
-                  filename={`buyurtma-${o.number}.pdf`}
-                />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-1 items-center gap-2">
+                  <ReceiptButtons
+                    getDoc={() => orderToReceipt(o)}
+                    filename={`buyurtma-${o.number}.pdf`}
+                    hideShare
+                  />
+                  {o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && (
+                    <button
+                      type="button"
+                      onClick={() => setGivingOrder(o)}
+                      className="btn-brand flex-1 px-3 py-2 text-xs font-semibold"
+                    >
+                      Buyurtmani berish
+                    </button>
+                  )}
+                </div>
                 {canCancel && (
                   <button
                     type="button"
@@ -252,6 +281,28 @@ function TakenTab(): ReactElement {
         })}
       </ul>
       {dialog}
+      <ConfirmDialog
+        open={givingOrder !== null}
+        title="Buyurtmani berish"
+        confirmLabel="Buyurtmani berish"
+        isPending={giveMut.isPending}
+        onConfirm={() => {
+          if (givingOrder) giveMut.mutate(givingOrder.id);
+        }}
+        onCancel={() => {
+          giveMut.reset();
+          setGivingOrder(null);
+        }}
+      >
+        {givingOrder
+          ? `${givingOrder.client_name} (#${givingOrder.number}) — ${money(givingOrder.total_amount)} mijoz qarziga qo'shilsinmi?`
+          : ''}
+        {giveMut.isError && (
+          <p className="mt-2 text-xs font-medium text-danger" role="alert">
+            {extractApiError(giveMut.error)}
+          </p>
+        )}
+      </ConfirmDialog>
     </DataState>
   );
 }
