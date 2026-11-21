@@ -152,4 +152,28 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
       is_bonus: true,
     });
   });
+
+  it('buyurtma olishda qadoq narxi kiritilsa birlik narxi avtomatik bo‘linib hisoblanadi', async () => {
+    render(
+      <MemoryRouter>
+        <NewOrderPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /Oqtepa Do‘koni/ }));
+    fireEvent.change(screen.getByPlaceholderText('Tovar qidirish…'), {
+      target: { value: 'Bio' },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /Bio Kukun 3kg/ }));
+
+    const packInput = screen.getByLabelText('Qadoq narxi');
+    const unitInput = screen.getByLabelText('Tovar narxi');
+    expect(packInput).toHaveValue(240000);
+
+    fireEvent.change(packInput, { target: { value: '300000' } });
+    expect(unitInput).toHaveValue(25000);
+
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    expect(screen.getByRole('button', { name: /Savatga qo'shish \(300 000/ })).toBeInTheDocument();
+  });
 });

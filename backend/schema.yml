@@ -1663,6 +1663,45 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/clients/{id}/advance/:
+    post:
+      operationId: clients_advance_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mijozdan oldindan / ortiqcha to'lov (avans) qabul qilish
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this mijoz.
+        required: true
+      tags:
+      - clients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClientRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClientRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+          description: ''
   /api/v1/clients/{id}/debts/:
     get:
       operationId: clients_debts_retrieve
@@ -2703,6 +2742,45 @@ paths:
         required: true
       tags:
       - debt-payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebtPayment'
+          description: ''
+  /api/v1/debt-payments/{id}/cancel/:
+    post:
+      operationId: debt_payments_cancel_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Qarz to'lovini bekor qilish (faqat SuperAdmin, 24 soat ichida)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this qarz to'lovi.
+        required: true
+      tags:
+      - debt-payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DebtPaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DebtPaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DebtPaymentRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -4565,6 +4643,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Order'
           description: ''
+  /api/v1/orders/{id}/give-on-debt/:
+    post:
+      operationId: orders_give_on_debt_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Buyurtmani mijozga qarzga berish (qarziga qo'shish)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this buyurtma.
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
   /api/v1/orders/{id}/place/:
     post:
       operationId: orders_place_create
@@ -5553,7 +5658,7 @@ paths:
         `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
 
         View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
-      summary: Mahsulotlar ro'yxatini CSV eksport qilish
+      summary: Mahsulotlar ro'yxatini XLSX eksport qilish
       tags:
       - products
       security:
@@ -5565,7 +5670,7 @@ paths:
               schema:
                 type: string
                 format: binary
-          description: UTF-8 BOM bilan CSV fayl.
+          description: Excel (.xlsx) fayl.
   /api/v1/products/import/:
     post:
       operationId: products_import_create
@@ -10749,6 +10854,12 @@ components:
           readOnly: true
           title: Joriy qarz
           description: Denormalized — DebtPayment/Sale orqali yangilanadi
+        advance_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Oldindan to'lov (avans)
         debt_available:
           type: string
           format: decimal
@@ -10789,6 +10900,7 @@ components:
           readOnly: true
           title: Yangilangan vaqti
       required:
+      - advance_balance
       - assigned_to_name
       - branch_name
       - client_type_display
@@ -10868,6 +10980,12 @@ components:
           readOnly: true
           title: Joriy qarz
           description: Denormalized — DebtPayment/Sale orqali yangilanadi
+        advance_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Oldindan to'lov (avans)
         is_blocked:
           type: boolean
           readOnly: true
@@ -10883,6 +11001,7 @@ components:
           title: Yangilangan vaqti
       required:
       - address
+      - advance_balance
       - assigned_to
       - client_type
       - current_debt
@@ -11163,9 +11282,8 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -11215,9 +11333,8 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -11405,6 +11522,9 @@ components:
           format: uri
           nullable: true
           title: Muhr (PNG, shaffof fon)
+        loading_total_in_words:
+          type: boolean
+          title: Yuklama hujjatida jami summani so'z bilan yozish
         updated_at:
           type: string
           format: date-time
@@ -11519,13 +11639,27 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
           title: Summa
+        pack_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        package_type:
+          type: string
+          readOnly: true
+        unit_name:
+          type: string
+          readOnly: true
       required:
       - amount
       - id
+      - pack_quantity
+      - package_type
       - price
       - product
       - product_name
       - quantity
+      - unit_name
     DailyReturnItemConditionEnum:
       enum:
       - GOOD
@@ -11606,6 +11740,12 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
           title: Undirilgan qarz
+        debt_collected_card_amount:
+          type: string
+          readOnly: true
+        debt_collected_transfer_amount:
+          type: string
+          readOnly: true
         expense_amount:
           type: string
           format: decimal
@@ -11701,6 +11841,8 @@ components:
       - daily_returns
       - date
       - debt_collected_amount
+      - debt_collected_card_amount
+      - debt_collected_transfer_amount
       - debt_given_amount
       - distributor
       - distributor_name
@@ -11892,6 +12034,10 @@ components:
           format: uuid
           readOnly: true
           title: Kim yig'di
+        collected_by_name:
+          type: string
+          readOnly: true
+          default: ''
         date:
           type: string
           format: date
@@ -11918,6 +12064,7 @@ components:
       - client_name
       - client_phone
       - collected_by
+      - collected_by_name
       - created_at
       - date
       - debt
@@ -11962,6 +12109,42 @@ components:
           default: ''
       required:
       - amount
+      - debt
+    DebtPaymentRequest:
+      type: object
+      properties:
+        debt:
+          type: string
+          format: uuid
+          title: Qarz
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Summa
+        payment_type:
+          allOf:
+          - $ref: '#/components/schemas/PaymentTypeEnum'
+          title: To'lov turi
+        date:
+          type: string
+          format: date
+          title: Sana
+        client_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        device_time:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          title: Izoh
+          maxLength: 255
+      required:
+      - amount
+      - date
       - debt
     DebtStatusEnum:
       enum:
@@ -12384,9 +12567,8 @@ components:
           title: Litr narxi
         odometer:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
           nullable: true
           title: Odometr
         station_name:
@@ -12411,9 +12593,8 @@ components:
           title: Litr narxi
         odometer:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
           nullable: true
           title: Odometr
         station_name:
@@ -13120,12 +13301,26 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
           title: Summa
+        pack_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        package_type:
+          type: string
+          readOnly: true
+        unit_name:
+          type: string
+          readOnly: true
       required:
       - amount
       - id
+      - pack_quantity
+      - package_type
       - product
       - product_name
       - quantity
+      - unit_name
     LoadingItemRequest:
       type: object
       properties:
@@ -13641,14 +13836,52 @@ components:
         is_bonus:
           type: boolean
           title: Bonus tovar (bepul)
+        pack_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        package_type:
+          type: string
+          readOnly: true
+        unit_name:
+          type: string
+          readOnly: true
       required:
       - amount
       - delivered_quantity
       - id
+      - pack_quantity
+      - package_type
       - price
       - product
       - product_name
       - product_sku
+      - quantity
+      - unit_name
+    OrderItemRequest:
+      type: object
+      properties:
+        product:
+          type: string
+          format: uuid
+          title: Mahsulot
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          title: Miqdor
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          title: Narx
+        is_bonus:
+          type: boolean
+          title: Bonus tovar (bepul)
+      required:
+      - price
+      - product
       - quantity
     OrderLineInputRequest:
       type: object
@@ -14851,9 +15084,8 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -14903,6 +15135,9 @@ components:
           format: binary
           nullable: true
           title: Muhr (PNG, shaffof fon)
+        loading_total_in_words:
+          type: boolean
+          title: Yuklama hujjatida jami summani so'z bilan yozish
     PatchedExpenseCategoryRequest:
       type: object
       properties:
@@ -16194,6 +16429,12 @@ components:
           type: string
           nullable: true
           readOnly: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Tannarx
         wholesale_price:
           type: string
           format: decimal
@@ -16218,6 +16459,11 @@ components:
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           readOnly: true
           title: Qadoqdagi soni
+        package_type:
+          type: string
+          readOnly: true
+          title: Qadoq turi
+          description: 'Masalan: qop, xalta, pachka, karopka, blok'
         is_active:
           type: boolean
           readOnly: true
@@ -16233,6 +16479,7 @@ components:
           title: Yangilangan vaqti
       required:
       - barcode
+      - cost_price
       - id
       - image
       - image_thumb
@@ -16241,6 +16488,7 @@ components:
       - min_price
       - name
       - pack_quantity
+      - package_type
       - retail_price
       - sku
       - unit
@@ -16565,13 +16813,27 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
           title: Summa
+        pack_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        package_type:
+          type: string
+          readOnly: true
+        unit_name:
+          type: string
+          readOnly: true
       required:
       - amount
       - cost_price
       - id
+      - pack_quantity
+      - package_type
       - product
       - product_name
       - quantity
+      - unit_name
     PurchaseItemRequest:
       type: object
       properties:
@@ -16846,6 +17108,12 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
           title: To'langan
+        advance_used:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Avansdan yechildi
         debt_amount:
           type: string
           format: decimal
@@ -16919,6 +17187,7 @@ components:
           readOnly: true
           title: Yaratilgan vaqti
       required:
+      - advance_used
       - client
       - client_name
       - client_uuid
@@ -18429,6 +18698,21 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+        card_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        transfer_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        total_collected:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
         updated_at:
           type: string
           format: date-time
@@ -18436,11 +18720,14 @@ components:
           title: Yangilangan vaqti
       required:
       - balance
+      - card_amount
       - distributor
       - distributor_name
       - id
       - live_balance
       - pending_expense_amount
+      - total_collected
+      - transfer_amount
       - updated_at
     WalletOpeningBalanceRequest:
       type: object

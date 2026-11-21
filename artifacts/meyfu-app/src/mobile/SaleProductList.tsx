@@ -128,19 +128,23 @@ export function SaleProductList({
   function commit(v: CachedVanStock, field: 'qty' | 'price', raw: string): void {
     setEditing(null);
     const value = Number(raw);
-    if (field === 'price') {
-      const min = minPriceOf?.(v.product) ?? 0;
-      const notice =
-        min > 0 && value < min
-          ? `Minimal narx ${money(min)} — bu sotuv admin ko‘rigiga belgilanadi`
-          : '';
-      onChange(setLinePrice(cart, v.product, value), notice);
-      return;
-    }
-
     const inCart = cart.find((l) => l.product === v.product);
     const packInfo = packInfoOf?.(v.product);
     const packQty = Number(packInfo?.pack_quantity) || 1;
+    if (field === 'price') {
+      const unitVal =
+        inCart?.unit_mode === 'package' && packQty > 1
+          ? Math.round((value / packQty) * 100) / 100
+          : Math.round(value * 100) / 100;
+      const min = minPriceOf?.(v.product) ?? 0;
+      const notice =
+        min > 0 && unitVal < min
+          ? `Minimal narx ${money(min)} — bu sotuv admin ko‘rigiga belgilanadi`
+          : '';
+      onChange(setLinePrice(cart, v.product, unitVal), notice);
+      return;
+    }
+
     if (inCart?.unit_mode === 'package' && packQty > 1) {
       const packCount = Math.floor(value);
       if (!Number.isFinite(packCount) || packCount <= 0) {
@@ -319,17 +323,26 @@ function ProductRow({
       </button>
 
       {editing === 'price' ? (
-        <InlineNumber label={`${name} narxi`} initial={price} onCommit={(raw) => onCommit('price', raw)} />
+        <InlineNumber
+          label={`${name} narxi`}
+          initial={isPackageMode ? Math.round(price * packQty * 100) / 100 : price}
+          onCommit={(raw) => onCommit('price', raw)}
+        />
       ) : (
         <button
-          className={`min-h-[48px] shrink-0 rounded-xl px-2 text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center justify-center ${
+          className={`min-h-[48px] shrink-0 rounded-xl px-2 text-xs font-medium text-gray-600 dark:text-gray-300 flex flex-col items-end justify-center ${
             selected ? 'underline decoration-dotted font-semibold text-brand' : ''
           }`}
           onClick={() => onEdit('price')}
           disabled={!selected}
           aria-label={`${name} narxini o‘zgartirish`}
         >
-          {money(price)}
+          <span>{money(isPackageMode ? price * packQty : price)}</span>
+          {isPackageMode && (
+            <span className="text-[10px] font-normal text-gray-400 leading-none">
+              {money(price)} / {stock.unit}
+            </span>
+          )}
         </button>
       )}
 

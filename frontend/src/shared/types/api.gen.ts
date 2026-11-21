@@ -663,6 +663,28 @@ export interface paths {
         patch: operations["clients_partial_update"];
         trace?: never;
     };
+    "/api/v1/clients/{id}/advance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mijozdan oldindan / ortiqcha to'lov (avans) qabul qilish
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["clients_advance_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clients/{id}/debts/": {
         parameters: {
             query?: never;
@@ -1147,6 +1169,28 @@ export interface paths {
         get: operations["debt_payments_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/debt-payments/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Qarz to'lovini bekor qilish (faqat SuperAdmin, 24 soat ichida)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["debt_payments_cancel_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2076,6 +2120,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{id}/give-on-debt/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Buyurtmani mijozga qarzga berish (qarziga qo'shish)
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["orders_give_on_debt_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/{id}/place/": {
         parameters: {
             query?: never;
@@ -2517,7 +2583,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Mahsulotlar ro'yxatini CSV eksport qilish
+         * Mahsulotlar ro'yxatini XLSX eksport qilish
          * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
          *
          *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
@@ -5175,6 +5241,11 @@ export interface components {
              * @description Denormalized — DebtPayment/Sale orqali yangilanadi
              */
             readonly current_debt: string;
+            /**
+             * Oldindan to'lov (avans)
+             * Format: decimal
+             */
+            readonly advance_balance: string;
             /** Format: decimal */
             readonly debt_available: string;
             /** INN / STIR */
@@ -5250,6 +5321,11 @@ export interface components {
              * @description Denormalized — DebtPayment/Sale orqali yangilanadi
              */
             readonly current_debt: string;
+            /**
+             * Oldindan to'lov (avans)
+             * Format: decimal
+             */
+            readonly advance_balance: string;
             /** Bloklangan */
             readonly is_blocked: boolean;
             /** O'chirilgan */
@@ -5452,7 +5528,6 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
-             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -5492,7 +5567,6 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
-             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -5611,6 +5685,8 @@ export interface components {
              * Format: uri
              */
             stamp?: string | null;
+            /** Yuklama hujjatida jami summani so'z bilan yozish */
+            loading_total_in_words?: boolean;
             /**
              * Yangilangan vaqti
              * Format: date-time
@@ -5684,6 +5760,10 @@ export interface components {
              * Format: decimal
              */
             readonly amount: string;
+            /** Format: decimal */
+            readonly pack_quantity: string;
+            readonly package_type: string;
+            readonly unit_name: string;
         };
         /**
          * @description * `GOOD` - Yaroqli
@@ -5744,6 +5824,8 @@ export interface components {
              * Format: decimal
              */
             readonly debt_collected_amount: string;
+            readonly debt_collected_card_amount: string;
+            readonly debt_collected_transfer_amount: string;
             /**
              * Xarajat (jami)
              * Format: decimal
@@ -5908,6 +5990,8 @@ export interface components {
              * Format: uuid
              */
             readonly collected_by: string;
+            /** @default  */
+            readonly collected_by_name: string;
             /**
              * Sana
              * Format: date
@@ -5947,6 +6031,31 @@ export interface components {
             device_time?: string | null;
             /** @default  */
             note: string;
+        };
+        DebtPaymentRequest: {
+            /**
+             * Qarz
+             * Format: uuid
+             */
+            debt: string;
+            /**
+             * Summa
+             * Format: decimal
+             */
+            amount: string;
+            /** To'lov turi */
+            payment_type?: components["schemas"]["PaymentTypeEnum"];
+            /**
+             * Sana
+             * Format: date
+             */
+            date: string;
+            /** Format: uuid */
+            client_uuid?: string | null;
+            /** Format: date-time */
+            device_time?: string | null;
+            /** Izoh */
+            note?: string;
         };
         /**
          * @description * `ACTIVE` - Faol
@@ -6230,10 +6339,7 @@ export interface components {
              * Format: decimal
              */
             price_per_liter: string;
-            /**
-             * Odometr
-             * Format: int64
-             */
+            /** Odometr */
             odometer?: number | null;
             /** Shoxobcha */
             station_name?: string;
@@ -6249,10 +6355,7 @@ export interface components {
              * Format: decimal
              */
             price_per_liter: string;
-            /**
-             * Odometr
-             * Format: int64
-             */
+            /** Odometr */
             odometer?: number | null;
             /** Shoxobcha */
             station_name?: string;
@@ -6631,6 +6734,10 @@ export interface components {
              * Format: decimal
              */
             readonly amount: string;
+            /** Format: decimal */
+            readonly pack_quantity: string;
+            readonly package_type: string;
+            readonly unit_name: string;
         };
         LoadingItemRequest: {
             /**
@@ -6918,6 +7025,29 @@ export interface components {
              * Format: decimal
              */
             readonly amount: string;
+            /** Bonus tovar (bepul) */
+            is_bonus?: boolean;
+            /** Format: decimal */
+            readonly pack_quantity: string;
+            readonly package_type: string;
+            readonly unit_name: string;
+        };
+        OrderItemRequest: {
+            /**
+             * Mahsulot
+             * Format: uuid
+             */
+            product: string;
+            /**
+             * Miqdor
+             * Format: decimal
+             */
+            quantity: string;
+            /**
+             * Narx
+             * Format: decimal
+             */
+            price: string;
             /** Bonus tovar (bepul) */
             is_bonus?: boolean;
         };
@@ -7712,7 +7842,6 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
-             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -7746,6 +7875,8 @@ export interface components {
              * Format: binary
              */
             stamp?: string | null;
+            /** Yuklama hujjatida jami summani so'z bilan yozish */
+            loading_total_in_words?: boolean;
         };
         PatchedExpenseCategoryRequest: {
             /** Nomi */
@@ -8605,6 +8736,11 @@ export interface components {
             readonly image: string | null;
             readonly image_thumb: string | null;
             /**
+             * Tannarx
+             * Format: decimal
+             */
+            readonly cost_price: string;
+            /**
              * Optom narx
              * Format: decimal
              */
@@ -8624,6 +8760,11 @@ export interface components {
              * Format: decimal
              */
             readonly pack_quantity: string;
+            /**
+             * Qadoq turi
+             * @description Masalan: qop, xalta, pachka, karopka, blok
+             */
+            readonly package_type: string;
             /** Faol */
             readonly is_active: boolean;
             /** O'chirilgan */
@@ -8867,6 +9008,10 @@ export interface components {
              * Format: decimal
              */
             readonly amount: string;
+            /** Format: decimal */
+            readonly pack_quantity: string;
+            readonly package_type: string;
+            readonly unit_name: string;
         };
         PurchaseItemRequest: {
             /**
@@ -9050,6 +9195,11 @@ export interface components {
              * Format: decimal
              */
             readonly paid_amount: string;
+            /**
+             * Avansdan yechildi
+             * Format: decimal
+             */
+            readonly advance_used: string;
             /**
              * Qarz
              * Format: decimal
@@ -9932,6 +10082,12 @@ export interface components {
             readonly live_balance: string;
             /** Format: decimal */
             readonly pending_expense_amount: string;
+            /** Format: decimal */
+            readonly card_amount: string;
+            /** Format: decimal */
+            readonly transfer_amount: string;
+            /** Format: decimal */
+            readonly total_collected: string;
             /**
              * Yangilangan vaqti
              * Format: date-time
@@ -11343,6 +11499,34 @@ export interface operations {
             };
         };
     };
+    clients_advance_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this mijoz. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ClientRequest"];
+                "multipart/form-data": components["schemas"]["ClientRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client"];
+                };
+            };
+        };
+    };
     clients_debts_retrieve: {
         parameters: {
             query?: never;
@@ -12118,6 +12302,34 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtPayment"];
+                };
+            };
+        };
+    };
+    debt_payments_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this qarz to'lovi. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtPaymentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DebtPaymentRequest"];
+                "multipart/form-data": components["schemas"]["DebtPaymentRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -13565,6 +13777,28 @@ export interface operations {
             };
         };
     };
+    orders_give_on_debt_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this buyurtma. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+        };
+    };
     orders_place_create: {
         parameters: {
             query?: never;
@@ -14233,7 +14467,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description UTF-8 BOM bilan CSV fayl. */
+            /** @description Excel (.xlsx) fayl. */
             200: {
                 headers: {
                     [name: string]: unknown;

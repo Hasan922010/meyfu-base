@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const debtsApi = vi.hoisted(() => ({
   list: vi.fn(),
   myRoute: vi.fn(),
+  listPayments: vi.fn(),
+  cancelPayment: vi.fn(),
 }));
 const financeApi = vi.hoisted(() => ({
   debtAging: vi.fn(),
@@ -12,6 +14,10 @@ const financeApi = vi.hoisted(() => ({
 
 vi.mock('@/shared/api/debts', () => ({ debtsApi }));
 vi.mock('@/shared/api/finance2', () => ({ financeApi }));
+vi.mock('@/shared/store/authStore', () => ({
+  useAuthStore: (sel: (s: { user: { role: string; is_superuser: boolean } }) => unknown) =>
+    sel({ user: { role: 'SUPER_ADMIN', is_superuser: true } }),
+}));
 
 import { DebtsPage } from './DebtsPage';
 
@@ -72,6 +78,12 @@ beforeEach(() => {
       },
     ],
   });
+  debtsApi.listPayments.mockResolvedValue({
+    count: 0,
+    pages: 1,
+    results: [],
+  });
+  debtsApi.cancelPayment.mockResolvedValue({ id: 'pay-new' });
 });
 
 describe('DebtsPage — bir xil nomli mijozlarni telefon orqali farqlash', () => {
@@ -90,6 +102,56 @@ describe('DebtsPage — bir xil nomli mijozlarni telefon orqali farqlash', () =>
         expect.objectContaining({ search: '902220002', page: 1 }),
       ),
     );
+  });
+
+  it("SuperAdmin 24 soat ichidagi qarz to'lovini bekor qila oladi, eskisi bloklanadi", async () => {
+    debtsApi.listPayments.mockResolvedValueOnce({
+      count: 2,
+      pages: 1,
+      results: [
+        {
+          id: 'pay-new',
+          debt: 'd1',
+          client_name: 'Omad Market',
+          client_phone: '+998901110001',
+          amount: '50000',
+          payment_type: 'NAQD',
+          collected_by: 'u1',
+          collected_by_name: 'Ali',
+          date: '2026-11-21',
+          note: 'Xato summa',
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 'pay-old',
+          debt: 'd2',
+          client_name: 'Omad Market',
+          client_phone: '+998902220002',
+          amount: '30000',
+          payment_type: 'NAQD',
+          collected_by: 'u1',
+          collected_by_name: 'Ali',
+          date: '2026-11-19',
+          note: '',
+          created_at: new Date(Date.now() - 25 * 3600 * 1000).toISOString(),
+        },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findByText('Xato summa')).toBeInTheDocument();
+    expect(screen.getByText("24 soat o'tgan")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bekor qilish' }));
+    expect(
+      await screen.findByText(/50 000 so'm to'lovini bekor qilsangiz/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ha, bekor qilish' }));
+
+    await waitFor(() => {
+      expect(debtsApi.cancelPayment).toHaveBeenCalledWith('pay-new');
+    });
   });
 });
 

@@ -2,18 +2,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import F
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.clients.models import Client
 from apps.core.business_day import business_date
 from apps.core.exceptions import BusinessError
+from apps.core.models import AuditLog
 from apps.core.services.opening import audit_bulk, bulk_result, plan_deltas, sheet_row
 from apps.wallet.constants import TransactionType
-from apps.wallet.services import wallet_apply
+from apps.wallet.services import reverse_reference, wallet_apply
 
 from ..constants import DEBT_PAYMENT_TYPES, PaymentType
 from ..models import Debt, DebtPayment
@@ -146,6 +149,72 @@ def recalc_debt_and_client(debt: Debt) -> None:
         or _ZERO
     )
     Client.objects.filter(pk=debt.client_id).update(current_debt=total_remaining)
+
+
+@transaction.atomic
+def cancel_debt_payment(payment: DebtPayment, *, user, reason: str = "") -> DebtPayment:
+    """SuperAdmin uchun 24 soat ichida qarz to'lovini bekor qilish va qarzni tiklash."""
+    from apps.users.constants import Role
+
+    if not (
+        getattr(user, "is_superuser", False)
+        or getattr(user, "role", None) == Role.SUPER_ADMIN
+    ):
+        raise BusinessError(
+            message="Qarz to'lovini faqat SuperAdmin bekor qila oladi.",
+            code="CANCEL_FORBIDDEN",
+            status_code=403,
+        )
+
+    payment = (
+        DebtPayment.all_objects.select_for_update()
+        .select_related("debt", "debt__client", "collected_by")
+        .get(pk=payment.pk)
+    )
+    if payment.is_deleted:
+        raise BusinessError(
+            message="Bu to'lov allaqachon bekor qilingan.",
+            code="ALREADY_CANCELLED",
+        )
+    if timezone.now() - payment.created_at > timedelta(hours=24):
+        raise BusinessError(
+            message="To'lovni faqat 24 soat ichida bekor qilish mumkin.",
+            code="CANCEL_WINDOW_EXPIRED",
+        )
+
+    debt = Debt.objects.select_for_update().get(pk=payment.debt_id)
+    Client.objects.select_for_update().get(pk=debt.client_id)
+
+    if payment.payment_type == PaymentType.CASH:
+        reverse_reference(
+            distributor=payment.collected_by,
+            reference_type="debt_payment",
+            reference_id=str(payment.id),
+            user=user,
+            note=(
+                f"Qarz to'lovi bekor qilindi ({debt.client.name}): {reason}"
+                if reason
+                else f"Qarz to'lovi bekor qilindi ({debt.client.name})"
+            ),
+        )
+
+    payment.is_deleted = True
+    payment.save(update_fields=["is_deleted", "updated_at"])
+    recalc_debt_and_client(debt)
+
+    AuditLog.objects.create(
+        user=user,
+        action="debt_payment.cancelled",
+        model_name="DebtPayment",
+        object_id=str(payment.id),
+        changes={
+            "amount": str(payment.amount),
+            "client": str(debt.client_id),
+            "debt": str(debt.id),
+            "reason": reason,
+        },
+    )
+    return payment
 
 
 @transaction.atomic

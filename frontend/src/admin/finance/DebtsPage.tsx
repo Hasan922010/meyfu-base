@@ -1,10 +1,14 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
-import { debtsApi } from '@/shared/api/debts';
+import { extractApiError } from '@/shared/api/client';
+import { debtsApi, type DebtPaymentItem } from '@/shared/api/debts';
 import { financeApi } from '@/shared/api/finance2';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money } from '@/shared/lib/format';
+import { dateShort, dateTimeShort, money } from '@/shared/lib/format';
+import { paymentLabel } from '@/shared/lib/labels';
+import { useAuthStore } from '@/shared/store/authStore';
 
 const BUCKET_LABELS: Array<{ key: keyof AgingBuckets; label: string }> = [
   { key: 'current', label: 'Muddati kelmagan' },
@@ -28,10 +32,16 @@ function normalizeDebtSearch(raw: string): string {
   return /^[+\d\s()-]+$/.test(trimmed) ? trimmed.replace(/[\s()-]/g, '') : trimmed;
 }
 
+const CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export function DebtsPage(): ReactElement {
+  const qc = useQueryClient();
+  const isSuperAdmin = useAuthStore((s) => s.user?.role === 'SUPER_ADMIN');
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
+  const [payPage, setPayPage] = useState<number>(1);
+  const [cancelling, setCancelling] = useState<DebtPaymentItem | null>(null);
   const searchQuery = normalizeDebtSearch(search);
 
   const aging = useQuery({
@@ -50,8 +60,30 @@ export function DebtsPage(): ReactElement {
       }),
     placeholderData: keepPreviousData,
   });
+  const payments = useQuery({
+    queryKey: ['debt-payments', { search: searchQuery, payPage }],
+    queryFn: () =>
+      debtsApi.listPayments({
+        search: searchQuery || undefined,
+        page: payPage,
+        page_size: 25,
+        ordering: '-created_at',
+      }),
+    placeholderData: keepPreviousData,
+  });
+  const cancelMut = useMutation({
+    mutationFn: (id: string) => debtsApi.cancelPayment(id),
+    onSuccess: () => {
+      setCancelling(null);
+      void qc.invalidateQueries({ queryKey: ['debt-payments'] });
+      void qc.invalidateQueries({ queryKey: ['debts'] });
+      void qc.invalidateQueries({ queryKey: ['debt-aging'] });
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
 
   const rows = list.data?.results ?? [];
+  const paymentRows = payments.data?.results ?? [];
 
   return (
     <div className="space-y-5">
@@ -133,6 +165,7 @@ export function DebtsPage(): ReactElement {
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
+                setPayPage(1);
               }}
             />
             <select
@@ -220,6 +253,125 @@ export function DebtsPage(): ReactElement {
           </div>
         )}
       </div>
+
+      <div>
+        <h2 className="mb-2 font-semibold">Qarz to&apos;lovlari</h2>
+        <div className="overflow-x-auto rounded-xl bg-white shadow-sm dark:bg-gray-900">
+          <DataState
+            isLoading={payments.isLoading}
+            isError={payments.isError}
+            isEmpty={!payments.isLoading && paymentRows.length === 0}
+            emptyText="Qarz to'lovi yo'q"
+          >
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
+                <tr>
+                  <th className="p-3">Vaqt</th>
+                  <th className="p-3">Mijoz</th>
+                  <th className="p-3">Telefon</th>
+                  <th className="p-3">Undiruvchi</th>
+                  <th className="p-3">Turi</th>
+                  <th className="p-3 text-right">Summa</th>
+                  <th className="p-3">Izoh</th>
+                  {isSuperAdmin && <th className="p-3 text-right">Amal</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {paymentRows.map((p) => {
+                  const canCancel =
+                    isSuperAdmin &&
+                    Date.now() - new Date(p.created_at).getTime() <= CANCEL_WINDOW_MS;
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-gray-100 last:border-0 dark:border-gray-800"
+                    >
+                      <td className="p-3 text-gray-600 dark:text-gray-300">
+                        {dateTimeShort(p.created_at)}
+                      </td>
+                      <td className="p-3 font-medium">{p.client_name}</td>
+                      <td className="p-3 text-gray-600 dark:text-gray-300">
+                        {p.client_phone || '—'}
+                      </td>
+                      <td className="p-3 text-gray-600 dark:text-gray-300">
+                        {p.collected_by_name || '—'}
+                      </td>
+                      <td className="p-3">{paymentLabel(p.payment_type ?? '')}</td>
+                      <td className="p-3 text-right font-medium text-emerald-700 dark:text-emerald-400">
+                        {money(p.amount)}
+                      </td>
+                      <td className="p-3 text-gray-500">{p.note || '—'}</td>
+                      {isSuperAdmin && (
+                        <td className="p-3 text-right">
+                          {canCancel ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                cancelMut.reset();
+                                setCancelling(p);
+                              }}
+                              className="rounded-lg border border-danger/30 px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger/10"
+                            >
+                              Bekor qilish
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">24 soat o&apos;tgan</span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </DataState>
+        </div>
+        {payments.data && payments.data.pages > 1 && (
+          <div className="mt-2 flex items-center gap-2 text-sm">
+            <button
+              className="btn px-3"
+              disabled={payPage <= 1}
+              onClick={() => setPayPage((p) => p - 1)}
+            >
+              ‹
+            </button>
+            <span>
+              {payPage} / {payments.data.pages}
+            </span>
+            <button
+              className="btn px-3"
+              disabled={payPage >= payments.data.pages}
+              onClick={() => setPayPage((p) => p + 1)}
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={cancelling !== null}
+        title="Qarz to'lovini bekor qilish"
+        confirmLabel="Ha, bekor qilish"
+        danger
+        isPending={cancelMut.isPending}
+        onConfirm={() => {
+          if (cancelling) cancelMut.mutate(cancelling.id);
+        }}
+        onCancel={() => {
+          cancelMut.reset();
+          setCancelling(null);
+        }}
+      >
+        {cancelling
+          ? `${cancelling.client_name} — ${money(cancelling.amount)} to'lovini bekor qilsangiz, mijoz qarzi avvalgi holiga qaytadi.`
+          : ''}
+        {cancelMut.isError && (
+          <p className="mt-2 text-xs font-medium text-danger" role="alert">
+            {extractApiError(cancelMut.error)}
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

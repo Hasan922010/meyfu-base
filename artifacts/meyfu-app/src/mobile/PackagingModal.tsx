@@ -36,12 +36,24 @@ export function PackagingModal({
   const [mode, setMode] = useState<'base' | 'package'>('package');
   const [count, setCount] = useState<number>(1);
   const [price, setPrice] = useState<number>(defaultPrice);
+  const [unitPriceInput, setUnitPriceInput] = useState<string>(defaultPrice > 0 ? String(defaultPrice) : '');
+  const [packPriceInput, setPackPriceInput] = useState<string>(
+    packQuantity > 1 && defaultPrice > 0
+      ? String(Math.round(defaultPrice * packQuantity * 100) / 100)
+      : '',
+  );
 
   // Sync state whenever stock or currentLine changes
   useEffect(() => {
     if (!open || !stock) return;
     const initialPrice = currentLine?.price ?? defaultPrice;
     setPrice(initialPrice);
+    setUnitPriceInput(initialPrice > 0 ? String(initialPrice) : '');
+    setPackPriceInput(
+      packQuantity > 1 && initialPrice > 0
+        ? String(Math.round(initialPrice * packQuantity * 100) / 100)
+        : '',
+    );
 
     if (currentLine) {
       if (currentLine.unit_mode === 'package' && currentLine.package_count) {
@@ -83,7 +95,7 @@ export function PackagingModal({
   }
 
   function handleConfirm(): void {
-    if (!stock || totalBaseQty <= 0 || totalBaseQty > stock.quantity) return;
+    if (!stock || totalBaseQty <= 0 || totalBaseQty > stock.quantity || price <= 0) return;
     onConfirm({
       product: stock.product,
       product_name: stock.product_name,
@@ -185,18 +197,91 @@ export function PackagingModal({
         />
 
         {/* Narx sozlamasi */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>1 {baseUnit} narxi:</span>
-            {minPrice > 0 && <span>Minimal narx: {money(minPrice)}</span>}
-          </div>
-          <input
-            type="number"
-            className="field font-bold"
-            value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
-            aria-label="Tovar narxi"
-          />
+        <div className="space-y-1.5">
+          {packQuantity > 1 ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">
+                  1 {packageType} narxi:
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="field font-bold"
+                  value={packPriceInput}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setPackPriceInput(raw);
+                    const val = Number(raw);
+                    if (!raw || !Number.isFinite(val) || val <= 0) {
+                      setPrice(0);
+                      setUnitPriceInput('');
+                    } else {
+                      const u = Math.round((val / packQuantity) * 100) / 100;
+                      setPrice(u);
+                      setUnitPriceInput(String(u));
+                    }
+                  }}
+                  aria-label="Qadoq narxi"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500">
+                  1 {baseUnit} narxi:
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  className="field font-bold"
+                  value={unitPriceInput}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setUnitPriceInput(raw);
+                    const val = Number(raw);
+                    if (!raw || !Number.isFinite(val) || val <= 0) {
+                      setPrice(0);
+                      setPackPriceInput('');
+                    } else {
+                      setPrice(val);
+                      setPackPriceInput(
+                        String(Math.round(val * packQuantity * 100) / 100),
+                      );
+                    }
+                  }}
+                  aria-label="Tovar narxi"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>1 {baseUnit} narxi:</span>
+                {minPrice > 0 && <span>Minimal narx: {money(minPrice)}</span>}
+              </div>
+              <input
+                type="number"
+                inputMode="decimal"
+                className="field font-bold"
+                value={unitPriceInput}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setUnitPriceInput(raw);
+                  const val = Number(raw);
+                  setPrice(raw && Number.isFinite(val) && val > 0 ? val : 0);
+                }}
+                aria-label="Tovar narxi"
+              />
+            </>
+          )}
+          {packQuantity > 1 && price > 0 && (
+            <div className="flex items-center justify-between text-[11px] text-gray-500">
+              <span>
+                1 {baseUnit} = {money(Number(packPriceInput || price * packQuantity))} / {packQuantity} ={' '}
+                <strong className="text-gray-700 dark:text-gray-200">{money(price)}</strong>
+              </span>
+              {minPrice > 0 && <span>Min: {money(minPrice)}</span>}
+            </div>
+          )}
           {isBelowMin && (
             <p className="text-[11px] font-medium text-warning-600">
               Minimal narxdan past — sotuv tekshiruvga tushadi
@@ -216,7 +301,7 @@ export function PackagingModal({
           <button
             type="button"
             className="btn-brand min-h-[48px] flex-[2] text-base font-bold shadow-md shadow-brand/20 active:scale-[0.98] transition disabled:opacity-50"
-            disabled={isOutOfStock || totalBaseQty <= 0}
+            disabled={isOutOfStock || totalBaseQty <= 0 || price <= 0}
             onClick={handleConfirm}
           >
             {isOutOfStock ? "Mashinada yetarli emas" : `Savatga qo'shish · ${money(totalPrice)}`}

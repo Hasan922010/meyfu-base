@@ -62,6 +62,7 @@ export function NewOrderPage(): ReactElement {
   const [qty, setQty] = useState<number>(0);
   const [picked, setPicked] = useState<string>('');
   const [pickedPrice, setPickedPrice] = useState<string>('');
+  const [pickedPackPrice, setPickedPackPrice] = useState<string>('');
   const [intent, setIntent] = useState<Intent>('');
   const [desired, setDesired] = useState<string>(plusDays(1));
   const [note, setNote] = useState<string>('');
@@ -120,7 +121,7 @@ export function NewOrderPage(): ReactElement {
 
   function addToCart(): void {
     const p = productMap.get(picked);
-    const price = Number(pickedPrice || suggestedPrice(picked));
+    const price = Math.round(Number(pickedPrice || suggestedPrice(picked)) * 100) / 100;
     if (!p || qty <= 0 || price <= 0) return;
     const { packQty, isPack, baseUnit, packLabel } = orderUnitInfo(p);
 
@@ -140,6 +141,7 @@ export function NewOrderPage(): ReactElement {
     ]);
     setPicked('');
     setPickedPrice('');
+    setPickedPackPrice('');
     setQty(0);
     setProductSearch('');
   }
@@ -274,9 +276,15 @@ export function NewOrderPage(): ReactElement {
                     <button
                       className="flex w-full items-center gap-2 rounded-lg bg-white p-2 text-left text-sm shadow-sm dark:bg-gray-900"
                       onClick={() => {
+                        const sug = suggestedPrice(p.id);
                         setPicked(p.id);
                         setQty(0);
-                        setPickedPrice(suggestedPrice(p.id));
+                        setPickedPrice(sug);
+                        setPickedPackPrice(
+                          isPack && sug
+                            ? String(Math.round(Number(sug) * packQty * 100) / 100)
+                            : '',
+                        );
                       }}
                     >
                       {p.image_thumb ? (
@@ -339,6 +347,7 @@ export function NewOrderPage(): ReactElement {
                     onClick={() => {
                       setPicked('');
                       setPickedPrice('');
+                      setPickedPackPrice('');
                       setQty(0);
                     }}
                     aria-label="Bekor qilish"
@@ -366,28 +375,84 @@ export function NewOrderPage(): ReactElement {
                   totalPrice={lineTotal}
                 />
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <label htmlFor="order-unit-price" className="font-medium">
-                      1 {baseUnit} narxi (so&apos;m)
-                    </label>
-                    {isPack && unitPrice > 0 && (
-                      <span>
-                        1 {packLabel} = {money(unitPrice * packQty)}
-                      </span>
+                {isPack ? (
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label htmlFor="order-pack-price" className="mb-1 block text-xs font-medium text-gray-500">
+                          1 {packLabel} narxi (so&apos;m)
+                        </label>
+                        <input
+                          id="order-pack-price"
+                          className="field font-semibold"
+                          type="number"
+                          inputMode="decimal"
+                          aria-label="Qadoq narxi"
+                          placeholder={`${packLabel} narxi`}
+                          value={pickedPackPrice}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setPickedPackPrice(raw);
+                            const v = Number(raw);
+                            setPickedPrice(
+                              raw && Number.isFinite(v) && v > 0
+                                ? String(Math.round((v / packQty) * 100) / 100)
+                                : '',
+                            );
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="order-unit-price" className="mb-1 block text-xs font-medium text-gray-500">
+                          1 {baseUnit} narxi (so&apos;m)
+                        </label>
+                        <input
+                          id="order-unit-price"
+                          className="field"
+                          type="number"
+                          inputMode="decimal"
+                          aria-label="Tovar narxi"
+                          placeholder={`${baseUnit} narxi`}
+                          value={pickedPrice}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setPickedPrice(raw);
+                            const v = Number(raw);
+                            setPickedPackPrice(
+                              raw && Number.isFinite(v) && v > 0
+                                ? String(Math.round(v * packQty * 100) / 100)
+                                : '',
+                            );
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {unitPrice > 0 && (
+                      <div className="text-right text-[11px] text-gray-500">
+                        1 {baseUnit} = {money(Number(pickedPackPrice || unitPrice * packQty))} / {packQty} ={' '}
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">
+                          {money(unitPrice)} so&apos;m
+                        </span>
+                      </div>
                     )}
                   </div>
-                  <input
-                    id="order-unit-price"
-                    className="field"
-                    type="number"
-                    inputMode="decimal"
-                    aria-label="Tovar narxi"
-                    placeholder={`Narx (${baseUnit} uchun taxminan ${suggestedPrice(picked)})`}
-                    value={pickedPrice}
-                    onChange={(e) => setPickedPrice(e.target.value)}
-                  />
-                </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label htmlFor="order-unit-price" className="block text-xs font-medium text-gray-500">
+                      1 {baseUnit} narxi (so&apos;m)
+                    </label>
+                    <input
+                      id="order-unit-price"
+                      className="field"
+                      type="number"
+                      inputMode="decimal"
+                      aria-label="Tovar narxi"
+                      placeholder={`Narx (${baseUnit} uchun taxminan ${suggestedPrice(picked)})`}
+                      value={pickedPrice}
+                      onChange={(e) => setPickedPrice(e.target.value)}
+                    />
+                  </div>
+                )}
                 <button
                   type="button"
                   className="btn-brand w-full shadow-md shadow-brand/20"

@@ -96,5 +96,42 @@ describe('SaleProductList (UX M4)', () => {
     expect(screen.getByText('Yuvish geli 1L')).toBeInTheDocument();
     expect(screen.queryByText('Bio kukun 3kg')).not.toBeInTheDocument();
   });
+
+  it('qadoq rejimida qadoq narxini tahrirlab birlik narxiga bo‘ladi', () => {
+    const onChange = vi.fn();
+    const packLine: CartLine = {
+      product: 'gel',
+      product_name: 'Yuvish geli 1L',
+      quantity: 12,
+      price: 20000,
+      unit_mode: 'package',
+      package_count: 1,
+      package_type: 'karopka',
+      pack_quantity: 12,
+      unit_name: 'dona',
+      max: 40,
+    };
+    render(
+      <SaleProductList
+        van={VAN}
+        cart={[packLine]}
+        priceOf={(id) => PRICES[id] ?? 0}
+        thumbOf={() => null}
+        packInfoOf={() => ({ package_type: 'karopka', pack_quantity: 12 })}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yuvish geli 1L narxini o‘zgartirish' }));
+    const input = screen.getByRole('spinbutton', { name: 'Yuvish geli 1L narxi' });
+    expect(input).toHaveValue(240000);
+    fireEvent.change(input, { target: { value: '300000' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith(
+      [expect.objectContaining({ product: 'gel', price: 25000 })],
+      '',
+    );
+  });
 });
 

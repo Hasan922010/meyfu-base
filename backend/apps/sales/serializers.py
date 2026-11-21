@@ -127,15 +127,21 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
     client_phone = serializers.CharField(
         source="debt.client.phone", read_only=True, default=""
     )
+    collected_by_name = serializers.CharField(
+        source="collected_by.full_name", read_only=True, default=""
+    )
 
     class Meta:
         model = DebtPayment
         fields = (
             "id", "debt", "client_name", "client_phone", "amount", "payment_type",
-            "collected_by", "date", "client_uuid", "device_time", "note",
+            "collected_by", "collected_by_name", "date", "client_uuid", "device_time",
+            "note", "created_at",
+        )
+        read_only_fields = (
+            "id", "collected_by", "collected_by_name", "client_name", "client_phone",
             "created_at",
         )
-        read_only_fields = ("id", "collected_by", "client_name", "client_phone", "created_at")
 
 
 class DebtPaymentCreateSerializer(serializers.Serializer):

@@ -956,3 +956,80 @@ def test_mobile_staff_can_record_opening_debt(van_stocked):
     client.refresh_from_db()
     assert client.current_debt == Decimal("75000.00")
 
+
+@pytest.mark.django_db
+def test_super_admin_cancels_debt_payment_within_24h_and_restores_debt(auth_api, manager_api, van_stocked):
+    """SuperAdmin 24 soat ichidagi qarz to'lovini bekor qilib mijoz qarzini tiklaydi; 24 soatdan keyin bloklanadi."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+    from rest_framework.test import APIClient
+
+    from apps.sales.models import Debt, DebtPayment
+    from apps.users.constants import Role
+    from apps.users.models import User
+    from apps.wallet.models import DistributorWallet
+
+    client, product = van_stocked["client"], van_stocked["product"]
+    sale_resp = auth_api.post(
+        "/api/v1/sales/",
+        _sale_body(client, product, qty="2", price="50000", payment="QARZ"),
+        format="json",
+    )
+    assert sale_resp.status_code == 201
+    debt = Debt.objects.get(client=client)
+    assert debt.remaining == Decimal("100000.00")
+
+    pay_resp = auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "60000", "payment_type": "NAQD", "note": "Xato"},
+        format="json",
+    )
+    assert pay_resp.status_code == 201
+    pid = pay_resp.data["data"]["id"]
+
+    client.refresh_from_db()
+    debt.refresh_from_db()
+    wallet = DistributorWallet.objects.get(distributor=van_stocked["distributor"])
+    assert client.current_debt == Decimal("40000.00")
+    assert debt.remaining == Decimal("40000.00")
+    assert debt.status == "PARTIAL"
+    assert wallet.balance == Decimal("60000.00")
+
+    # Manager / Distributor bekor qila olmaydi -> 403
+    assert manager_api.post(f"/api/v1/debt-payments/{pid}/cancel/").status_code == 403
+    assert auth_api.post(f"/api/v1/debt-payments/{pid}/cancel/").status_code == 403
+
+    # SuperAdmin 24 soat ichida bekor qiladi -> qarz va hamyon avvalgi holiga qaytadi
+    sa = User.objects.create_user(
+        phone="+998900000099", password="pass12345", full_name="SA", role=Role.SUPER_ADMIN
+    )
+    sa_api = APIClient()
+    sa_api.force_authenticate(user=sa)
+
+    cancel_resp = sa_api.post(f"/api/v1/debt-payments/{pid}/cancel/", {"reason": "Xato kiritilgan"}, format="json")
+    assert cancel_resp.status_code == 200
+
+    client.refresh_from_db()
+    debt.refresh_from_db()
+    wallet.refresh_from_db()
+    assert client.current_debt == Decimal("100000.00")
+    assert debt.remaining == Decimal("100000.00")
+    assert debt.paid_amount == Decimal("0.00")
+    assert debt.status == "ACTIVE"
+    assert wallet.balance == Decimal("0.00")
+
+    # 24 soatdan o'tgan to'lov bekor qilinmaydi -> 409 CANCEL_WINDOW_EXPIRED
+    pay2 = auth_api.post(
+        "/api/v1/debt-payments/",
+        {"debt": str(debt.id), "amount": "20000", "payment_type": "PLASTIK"},
+        format="json",
+    )
+    assert pay2.status_code == 201
+    p2_id = pay2.data["data"]["id"]
+    DebtPayment.objects.filter(pk=p2_id).update(created_at=timezone.now() - timedelta(hours=25))
+
+    expired = sa_api.post(f"/api/v1/debt-payments/{p2_id}/cancel/")
+    assert expired.status_code == 409
+    assert expired.data["error"]["code"] == "CANCEL_WINDOW_EXPIRED"
+

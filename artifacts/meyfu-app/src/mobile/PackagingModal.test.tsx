@@ -94,5 +94,52 @@ describe('PackagingModal', () => {
       }),
     );
   });
+
+  it('qadoq narxi kiritilganda birlik narxini (qadoq / soni) avtomatik hisoblaydi', () => {
+    const onConfirm = vi.fn();
+
+    render(
+      <PackagingModal
+        open={true}
+        stock={STOCK}
+        packInfo={PACK_INFO}
+        defaultPrice={20000}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const packInput = screen.getByLabelText('Qadoq narxi');
+    const unitInput = screen.getByLabelText('Tovar narxi');
+    expect(packInput).toHaveValue(240000);
+
+    fireEvent.change(packInput, { target: { value: '300000' } });
+    expect(unitInput).toHaveValue(25000);
+
+    fireEvent.click(screen.getByRole('button', { name: /Savatga qo'shish · 300 000/ }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        product: 'p1',
+        quantity: 12,
+        price: 25000,
+      }),
+    );
+  });
+
+  it('narx 0 bo‘lsa Savatga qo‘shish tugmasi bloklanadi', () => {
+    render(
+      <PackagingModal
+        open={true}
+        stock={STOCK}
+        packInfo={PACK_INFO}
+        defaultPrice={20000}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Qadoq narxi'), { target: { value: '' } });
+    expect(screen.getByRole('button', { name: /Savatga qo'shish/ })).toBeDisabled();
+  });
 });
 

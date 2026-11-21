@@ -260,6 +260,9 @@ class DebtPaymentViewSet(BaseModelViewSet):
     filterset_fields = ("debt", "payment_type")
     search_fields = ("debt__client__name", "debt__client__phone")
     ordering_fields = ("date", "created_at")
+    action_roles = {
+        "cancel": (Role.SUPER_ADMIN,),
+    }
 
     def get_queryset(self) -> QuerySet[DebtPayment]:
         qs = DebtPayment.objects.select_related("debt__client", "collected_by")
@@ -287,6 +290,20 @@ class DebtPaymentViewSet(BaseModelViewSet):
         )
         code = 200 if res.duplicate else 201
         return ok(DebtPaymentSerializer(res.payment).data, status_code=code)
+
+    @extend_schema(summary="Qarz to'lovini bekor qilish (faqat SuperAdmin, 24 soat ichida)",
+                   responses=DebtPaymentSerializer)
+    @action(detail=True, methods=["post"])
+    def cancel(self, request: Request, pk: str | None = None) -> Response:
+        from .services.debt import cancel_debt_payment
+
+        payment = self.get_object()
+        cancelled = cancel_debt_payment(
+            payment,
+            user=request.user,
+            reason=str(request.data.get("reason") or ""),
+        )
+        return ok(DebtPaymentSerializer(cancelled).data)
 
 
 class SaleReturnViewSet(BaseModelViewSet):

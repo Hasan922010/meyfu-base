@@ -196,11 +196,11 @@
     - **Yechim:** Umumiy `useDebouncedUrlFilter` hooki (`lastCommittedRef` bilan) joriy etilib, tashqi URL o'zgarishlari va foydalanuvchi kiritishi ajratildi; qidiruv maydoniga `aria-label="Mahsulot qidirish"`, tozalash tugmasiga `type="button"` hamda darhol tozalash qo'shildi.
     - **Verifikatsiya:** `ProductsPage.test.tsx` ga regressiya testi qo'shildi; `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest **63/63 test fayli (261/261 test)**; `bash scripts/sync-frontend.sh --sync` va `--check` bilan `artifacts/meyfu-app/` 1:1 sinxronlandi.
 
-24. **Xavfsizlik Auditi (`/agency-ai-generated-code-security-auditor`) Bo'yicha Aniqlangan Barcha Kamchiliklar Tuzatildi:**
-    - **`give_order_on_debt` (`backend/apps/orders/services/order.py`):** `can_sell_on_debt` ruxsati, `ensure_client_in_scope`, `client.is_blocked`, `client.debt_limit` tekshiruvlari hamda avval `client.advance_balance` dan yechish qo'shildi (`Client.objects.select_for_update()` bilan).
-    - **PDF XML-Escape (`backend/apps/warehouse/pdf.py`):** ReportLab `Paragraph(...)` chaqiruvlariga uzatiladigan barcha dinamik maydonlar `xml.sax.saxutils.escape` (`_esc`) orqali tozalandi (CWE-94/CWE-79).
-    - **`opening_balance` Marshrut Egaligi (`backend/apps/clients/views.py`):** Maydon xodimlari uchun `is_client_off_route` tekshiruvi qo'shildi (`CLIENT_NOT_ON_ROUTE`, 403).
-    - **Regressiya Testlari:** `test_orders.py`, `test_warehouse.py`, `test_clients.py` ga yangi xavfsizlik testlari qo'shildi.
+24. **Xavfsizlik Auditi, Qadoq Narxida Sotish/Buyurtma va SuperAdmin 24 Soatlik Qarz To'lovini Bekor Qilish:**
+    - **Xavfsizlik va `/ponytail-audit` Tuzatishlari:** `give_order_on_debt` (`order.py`) `can_sell_on_debt`, `ensure_client_in_scope`, `is_blocked`, `debt_limit > 0`, `advance_balance` va `LOADED` holatini rad etish bilan himoyalandi; `create_sale` (`sale.py`) `debt_limit > 0` ga moslandi; `warehouse/pdf.py` da ReportLab `Paragraph` XML-escape (`_esc`) qo'shildi; `opening_balance` (`clients/views.py`) maydon xodimlari uchun `is_client_off_route` ni tekshiradi; `MyOrdersPage.tsx` va `MyClientsPage.tsx` da modal xatoliklari (`extractApiError`, `reset()`) tuzatildi; takroriy `activeStaff` olib tashlandi.
+    - **Qadoq Narxi (`NewOrderPage.tsx`, `PackagingModal.tsx`, `SaleProductList.tsx`):** Barcha mobil profillarda buyurtma olish va sotishda qadoq narxi kiritilganda birlik narxi (`qadoqNarxi / packQty`, 2 kasr xonagacha) avtomatik hisoblanadi; `PackagingModal` da `price <= 0` bloklandi.
+    - **SuperAdmin 24 Soatlik Qarz To'lovini Bekor Qilish (`debt.py`, `views.py`, `DebtsPage.tsx`):** `POST /api/v1/debt-payments/{id}/cancel/` faqat `SUPER_ADMIN` uchun 24 soat ichida to'lovni bekor qilib (`is_deleted=True`), `NAQD` bo'lsa hamyonga `CORRECTION` yozadi va `recalc_debt_and_client` bilan mijoz qarzini avvalgi holiga qaytaradi. `schema.yml` va `api.gen.ts` yangilandi.
+    - **Verifikatsiya:** Backend **681/681** pytest, `ruff` 0 xato; Frontend `tsc -b --noEmit` 0 xato, `eslint --max-warnings 0` 0 ogohlantirish, Vitest **67/67 fayl (279/279 test)**, `artifacts/meyfu-app/` 1:1 sinxron.
 
 ---
 
