@@ -27,7 +27,7 @@ from apps.users.constants import Role
 
 from ..constants import SaleStatus
 from ..models import Debt
-from .debt import collect_debt_payment
+from .debt import collect_client_debt_payment, collect_debt_payment
 from .sale import SaleLine, create_sale, ensure_client_in_scope
 from .sale_return import ReturnLine, create_sale_return
 
@@ -136,9 +136,7 @@ def _handle_sale(payload: dict, client_uuid: str | None, user) -> dict[str, Any]
 
 
 def _handle_debt_payment(payload: dict, client_uuid: str | None, user) -> dict[str, Any]:
-    debt = Debt.objects.get(pk=payload["debt"])
-    res = collect_debt_payment(
-        debt=debt,
+    common = dict(
         amount=_dec(payload["amount"]),
         collected_by=user,
         payment_type=payload.get("payment_type", "NAQD"),
@@ -151,6 +149,12 @@ def _handle_debt_payment(payload: dict, client_uuid: str | None, user) -> dict[s
         ),
         note=payload.get("note", ""),
     )
+    if payload.get("debt"):
+        res = collect_debt_payment(debt=Debt.objects.get(pk=payload["debt"]), **common)
+    else:
+        res = collect_client_debt_payment(
+            client=Client.objects.get(pk=payload["client"]), **common
+        )
     return {
         "client_uuid": client_uuid,
         "status": "DUPLICATE" if res.duplicate else "SENT",

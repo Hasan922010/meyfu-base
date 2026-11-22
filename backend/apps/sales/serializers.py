@@ -145,7 +145,8 @@ class DebtPaymentSerializer(serializers.ModelSerializer):
 
 
 class DebtPaymentCreateSerializer(serializers.Serializer):
-    debt = serializers.UUIDField()
+    debt = serializers.UUIDField(required=False, allow_null=True)
+    client = serializers.UUIDField(required=False, allow_null=True)
     amount = serializers.DecimalField(**_MONEY, min_value=Decimal("0.01"))
     payment_type = serializers.ChoiceField(
         choices=["NAQD", "PLASTIK", "OTKAZMA"], default="NAQD"
@@ -154,6 +155,11 @@ class DebtPaymentCreateSerializer(serializers.Serializer):
     client_uuid = serializers.UUIDField(required=False, allow_null=True)
     device_time = serializers.DateTimeField(required=False, allow_null=True)
     note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if not attrs.get("debt") and not attrs.get("client"):
+            raise serializers.ValidationError("debt yoki client majburiy.")
+        return attrs
 
 
 class SaleReturnItemSerializer(serializers.ModelSerializer):

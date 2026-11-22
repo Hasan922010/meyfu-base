@@ -20,4 +20,18 @@ export type Debt = Omit<Schemas['Debt'], 'sale_number'> & {
   readonly sale_number: string | null;
 };
 
+export interface ClientDebtSummary {
+  client: string;
+  client_name: string;
+  client_phone: string;
+  debt_count: number;
+  amount: string;
+  paid_amount: string;
+  remaining: string;
+  due_date: string | null;
+  status: string;
+  status_display: string;
+  primary_debt_id: string | null;
+}
+
 export type SaleReturn = Schemas['SaleReturn'] & { distributor_name?: string };

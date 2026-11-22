@@ -11,13 +11,50 @@ import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
 import { dateShort, money } from '@/shared/lib/format';
 import { useWebMcpTool } from '@/shared/lib/webmcp';
-import type { Debt } from '@/shared/types/sales';
+import type { ClientDebtSummary, Debt } from '@/shared/types/sales';
+
+function aggregateOfflineDebts(cached: Debt[]): ClientDebtSummary[] {
+  const byClient = new Map<string, ClientDebtSummary>();
+  for (const d of cached) {
+    const rem = Number(d.remaining);
+    if (rem <= 0) continue;
+    const prev = byClient.get(d.client);
+    if (!prev) {
+      byClient.set(d.client, {
+        client: d.client,
+        client_name: d.client_name,
+        client_phone: d.client_phone,
+        debt_count: 1,
+        amount: d.amount,
+        paid_amount: d.paid_amount,
+        remaining: d.remaining,
+        due_date: d.due_date,
+        status: d.status,
+        status_display: d.status_display,
+        primary_debt_id: d.id,
+      });
+    } else {
+      prev.debt_count += 1;
+      prev.amount = String(Number(prev.amount) + Number(d.amount));
+      prev.paid_amount = String(Number(prev.paid_amount) + Number(d.paid_amount));
+      prev.remaining = String(Number(prev.remaining) + rem);
+      if (d.status === 'OVERDUE') {
+        prev.status = 'OVERDUE';
+        prev.status_display = d.status_display;
+      }
+      if (d.due_date && (!prev.due_date || d.due_date < prev.due_date)) {
+        prev.due_date = d.due_date;
+      }
+    }
+  }
+  return [...byClient.values()];
+}
 
 const COLLECT_DEBT_SCHEMA = {
   type: 'object',
-  required: ['debt_id', 'amount'],
+  required: ['client_id', 'amount'],
   properties: {
-    debt_id: { type: 'string', description: 'UUID of the debt record' },
+    client_id: { type: 'string', description: 'UUID of the client' },
     amount: { type: 'number', description: 'Payment amount in UZS (1..remaining)' },
     payment_type: { type: 'string', enum: ['NAQD', 'PLASTIK', 'OTKAZMA'] },
   },
@@ -26,25 +63,21 @@ const COLLECT_DEBT_SCHEMA = {
 export function DebtCollectPage(): ReactElement {
   const qc = useQueryClient();
   const { online } = useSync();
-  const [selected, setSelected] = useState<Debt | null>(null);
+  const [selected, setSelected] = useState<ClientDebtSummary | null>(null);
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'NAQD' | 'PLASTIK' | 'OTKAZMA'>('NAQD');
   const [search, setSearch] = useState<string>('');
   const [saved, setSaved] = useState<boolean>(false);
 
   const query = useQuery({
-    queryKey: ['debts', 'my'],
+    queryKey: ['debts', 'my', 'by-client'],
     queryFn: async () => {
       try {
-        const list = await debtsApi.myRoute();
-        await db.transaction('rw', db.debts, async () => {
-          await db.debts.clear();
-          await db.debts.bulkPut(list);
-        });
-        return list;
+        const page = await debtsApi.byClient({ only_open: 1, page_size: 200 });
+        return page.results;
       } catch (err) {
         const cached = (await db.debts.toArray()).filter((d) => Number(d.remaining) > 0);
-        if (cached.length > 0 || !navigator.onLine) return cached;
+        if (cached.length > 0 || !navigator.onLine) return aggregateOfflineDebts(cached);
         throw err;
       }
     },
@@ -54,7 +87,7 @@ export function DebtCollectPage(): ReactElement {
     mutationFn: async () => {
       if (!selected) return;
       await saveDebtPaymentLocal({
-        debt: selected.id,
+        client: selected.client,
         client_name: selected.client_name,
         client_phone: selected.client_phone,
         amount: Number(amount),
@@ -62,7 +95,7 @@ export function DebtCollectPage(): ReactElement {
       });
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['debts', 'my'] });
+      void qc.invalidateQueries({ queryKey: ['debts', 'my', 'by-client'] });
       setSaved(true);
     },
   });
@@ -73,7 +106,6 @@ export function DebtCollectPage(): ReactElement {
   const visibleRows = rows.filter((d) => {
     if (!q) return true;
     if (d.client_name.toLowerCase().includes(q)) return true;
-    if ((d.sale_number ?? '').toLowerCase().includes(q)) return true;
     const phone = (d.client_phone || '').toLowerCase();
     if (phone.includes(q)) return true;
     return qDigits.length >= 3 && phone.replace(/\D/g, '').includes(qDigits);
@@ -85,8 +117,8 @@ export function DebtCollectPage(): ReactElement {
     description: 'Record a full or partial debt payment for a debtor on the current route.',
     inputSchema: COLLECT_DEBT_SCHEMA,
     execute: async (input) => {
-      const debtId = typeof input.debt_id === 'string' ? input.debt_id : '';
-      const target = rows.find((d) => d.id === debtId);
+      const clientId = typeof input.client_id === 'string' ? input.client_id : '';
+      const target = rows.find((d) => d.client === clientId);
       const payAmount = Number(input.amount);
       if (!target) throw new Error('Debt not found');
       if (!Number.isFinite(payAmount) || payAmount <= 0 || payAmount > Number(target.remaining)) {
@@ -94,14 +126,14 @@ export function DebtCollectPage(): ReactElement {
       }
       const payType = (input.payment_type as 'NAQD' | 'PLASTIK' | 'OTKAZMA') || 'NAQD';
       await saveDebtPaymentLocal({
-        debt: target.id,
+        client: target.client,
         client_name: target.client_name,
         client_phone: target.client_phone,
         amount: payAmount,
         payment_type: payType,
       });
-      void qc.invalidateQueries({ queryKey: ['debts', 'my'] });
-      return { ok: true, debt_id: target.id, amount: payAmount };
+      void qc.invalidateQueries({ queryKey: ['debts', 'my', 'by-client'] });
+      return { ok: true, client_id: target.client, amount: payAmount };
     },
   });
 
@@ -137,7 +169,7 @@ export function DebtCollectPage(): ReactElement {
       >
         <ul className="space-y-2">
           {visibleRows.map((d) => (
-            <li key={d.id}>
+            <li key={d.client}>
               <button
                 onClick={() => {
                   setSelected(d);
@@ -151,7 +183,7 @@ export function DebtCollectPage(): ReactElement {
                     <div className="text-xs text-gray-500">{d.client_phone}</div>
                   )}
                   <div className="text-xs text-gray-500">
-                    {d.sale_number ?? "Boshlang'ich qarz"}
+                    {d.debt_count > 1 ? `${d.debt_count} ta yozuv` : 'Jami qarz'}
                     {d.due_date && ` · muddat ${dateShort(d.due_date)}`}
                     {d.status === 'OVERDUE' && (
                       <span className="ml-1 text-danger">muddati o'tgan</span>

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const debtsApi = vi.hoisted(() => ({
   list: vi.fn(),
+  byClient: vi.fn(),
   myRoute: vi.fn(),
   listPayments: vi.fn(),
   cancelPayment: vi.fn(),
@@ -42,39 +43,35 @@ beforeEach(() => {
       { client_id: 'c2', client: 'Omad Market', phone: '+998902220002', amount: '200000', max_days: 10 },
     ],
   });
-  debtsApi.list.mockResolvedValue({
+  debtsApi.byClient.mockResolvedValue({
     count: 2,
     pages: 1,
     results: [
       {
-        id: 'd1',
         client: 'c1',
         client_name: 'Omad Market',
         client_phone: '+998901110001',
-        sale: null,
-        sale_number: null,
+        debt_count: 2,
         amount: '100000',
         paid_amount: '0',
         remaining: '100000',
         due_date: '2026-11-01',
         status: 'OVERDUE',
         status_display: "Muddati o'tgan",
-        created_at: '2026-10-01T10:00:00Z',
+        primary_debt_id: 'd1',
       },
       {
-        id: 'd2',
         client: 'c2',
         client_name: 'Omad Market',
         client_phone: '+998902220002',
-        sale: null,
-        sale_number: null,
+        debt_count: 1,
         amount: '200000',
         paid_amount: '0',
         remaining: '200000',
         due_date: '2026-11-02',
         status: 'OVERDUE',
         status_display: "Muddati o'tgan",
-        created_at: '2026-10-02T10:00:00Z',
+        primary_debt_id: 'd2',
       },
     ],
   });
@@ -101,7 +98,7 @@ describe('DebtsPage — bir xil nomli mijozlarni telefon orqali farqlash', () =>
     fireEvent.change(searchInput, { target: { value: '90 222-00-02' } });
 
     await waitFor(() =>
-      expect(debtsApi.list).toHaveBeenLastCalledWith(
+      expect(debtsApi.byClient).toHaveBeenLastCalledWith(
         expect.objectContaining({ search: '902220002', page: 1 }),
       ),
     );

@@ -112,7 +112,8 @@ export async function saveExpenseLocal(input: {
 }
 
 export async function saveDebtPaymentLocal(input: {
-  debt: string;
+  debt?: string;
+  client?: string;
   client_name: string;
   client_phone?: string;
   amount: number;
@@ -125,7 +126,7 @@ export async function saveDebtPaymentLocal(input: {
     const id = await enqueue(
       'debt_payment',
       {
-        debt: input.debt,
+        ...(input.debt ? { debt: input.debt } : { client: input.client }),
         amount: String(input.amount),
         payment_type: input.payment_type,
         date: todayISO(),
@@ -133,14 +134,33 @@ export async function saveDebtPaymentLocal(input: {
       },
       `Qarz to'lovi · ${clientLabel} · ${input.amount.toLocaleString('ru-RU')} so'm`,
     );
-    const cached = await db.debts.get(input.debt);
-    if (cached) {
-      const nextRemaining = Math.max(0, Number(cached.remaining) - input.amount);
-      await db.debts.update(input.debt, {
-        paid_amount: String(Number(cached.paid_amount) + input.amount),
-        remaining: String(nextRemaining),
-        status: nextRemaining <= 0 ? 'PAID' : 'PARTIAL',
-      });
+    if (input.debt) {
+      const cached = await db.debts.get(input.debt);
+      if (cached) {
+        const nextRemaining = Math.max(0, Number(cached.remaining) - input.amount);
+        await db.debts.update(input.debt, {
+          paid_amount: String(Number(cached.paid_amount) + input.amount),
+          remaining: String(nextRemaining),
+          status: nextRemaining <= 0 ? 'PAID' : 'PARTIAL',
+        });
+      }
+    } else if (input.client) {
+      const clientDebts = (await db.debts.where('client').equals(input.client).toArray())
+        .filter((d) => Number(d.remaining) > 0)
+        .sort((a, b) => (a.due_date ?? '9999-12-31').localeCompare(b.due_date ?? '9999-12-31'));
+      let left = input.amount;
+      for (const cached of clientDebts) {
+        if (left <= 0) break;
+        const rem = Number(cached.remaining);
+        const part = Math.min(left, rem);
+        const nextRemaining = Math.max(0, rem - part);
+        await db.debts.update(cached.id, {
+          paid_amount: String(Number(cached.paid_amount) + part),
+          remaining: String(nextRemaining),
+          status: nextRemaining <= 0 ? 'PAID' : 'PARTIAL',
+        });
+        left -= part;
+      }
     }
     return id;
   });

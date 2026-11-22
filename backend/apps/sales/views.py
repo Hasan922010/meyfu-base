@@ -33,6 +33,7 @@ from .services import (
     ReturnLine,
     SaleLine,
     cancel_sale,
+    collect_client_debt_payment,
     collect_debt_payment,
     create_sale,
     create_sale_return,
@@ -243,6 +244,105 @@ class DebtViewSet(BaseReadOnlyViewSet):
             qs = qs.filter(own)
         return ok(DebtSerializer(qs, many=True).data)
 
+    @extend_schema(summary="Mijozlar bo'yicha umumlashtirilgan qarzlar")
+    @action(detail=False, methods=["get"], url_path="by-client")
+    def by_client(self, request: Request) -> Response:
+        from decimal import Decimal
+
+        from django.db.models import Q
+
+        qs = self.get_queryset()
+        client_id = (request.query_params.get("client") or "").strip()
+        if client_id:
+            qs = qs.filter(client_id=client_id)
+        search = (request.query_params.get("search") or "").strip()
+        if search:
+            qs = qs.filter(
+                Q(client__name__icontains=search)
+                | Q(client__phone__icontains=search)
+                | Q(sale__number__icontains=search)
+            )
+        only_open = request.query_params.get("only_open") in ("1", "true", "True")
+        status_filter = (request.query_params.get("status") or "").strip()
+
+        grouped: dict[str, dict] = {}
+        for d in qs.order_by("client__name", "due_date", "created_at"):
+            cid = str(d.client_id)
+            g = grouped.get(cid)
+            if g is None:
+                g = {
+                    "client": cid,
+                    "client_name": d.client.name,
+                    "client_phone": d.client.phone or "",
+                    "debt_count": 0,
+                    "amount": Decimal("0"),
+                    "paid_amount": Decimal("0"),
+                    "remaining": Decimal("0"),
+                    "due_date": None,
+                    "has_overdue": False,
+                    "has_partial": False,
+                    "primary_debt_id": None,
+                }
+                grouped[cid] = g
+            g["debt_count"] += 1
+            g["amount"] += d.amount
+            g["paid_amount"] += d.paid_amount
+            g["remaining"] += d.remaining
+            if d.remaining > 0:
+                if g["primary_debt_id"] is None:
+                    g["primary_debt_id"] = str(d.id)
+                if d.due_date is not None and (
+                    g["due_date"] is None or d.due_date < g["due_date"]
+                ):
+                    g["due_date"] = d.due_date
+                if d.status == "OVERDUE":
+                    g["has_overdue"] = True
+                elif d.status == "PARTIAL":
+                    g["has_partial"] = True
+            elif g["due_date"] is None and d.due_date is not None:
+                g["due_date"] = d.due_date
+
+        status_labels = {
+            "OVERDUE": "Muddati o'tgan",
+            "PARTIAL": "Qisman",
+            "ACTIVE": "Faol",
+            "PAID": "To'langan",
+        }
+        rows = []
+        for g in grouped.values():
+            rem = g["remaining"]
+            if only_open and rem <= 0:
+                continue
+            if rem <= 0:
+                st = "PAID"
+            elif g["has_overdue"]:
+                st = "OVERDUE"
+            elif g["has_partial"] or g["paid_amount"] > 0:
+                st = "PARTIAL"
+            else:
+                st = "ACTIVE"
+            if status_filter and st != status_filter:
+                continue
+            rows.append({
+                "client": g["client"],
+                "client_name": g["client_name"],
+                "client_phone": g["client_phone"],
+                "debt_count": g["debt_count"],
+                "amount": f"{g['amount']:.2f}",
+                "paid_amount": f"{g['paid_amount']:.2f}",
+                "remaining": f"{rem:.2f}",
+                "due_date": g["due_date"].isoformat() if g["due_date"] else None,
+                "status": st,
+                "status_display": status_labels[st],
+                "primary_debt_id": g["primary_debt_id"],
+            })
+
+        rows.sort(key=lambda r: (r["due_date"] or "9999-12-31", r["client_name"].lower()))
+        page = self.paginate_queryset(rows)
+        if page is not None:
+            return self.get_paginated_response(page)
+        return ok(rows)
+
 
 class DebtPaymentViewSet(BaseModelViewSet):
     serializer_class = DebtPaymentSerializer
@@ -275,9 +375,7 @@ class DebtPaymentViewSet(BaseModelViewSet):
         s = DebtPaymentCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         data = s.validated_data
-        debt = Debt.objects.get(pk=data["debt"])
-        res = collect_debt_payment(
-            debt=debt,
+        common = dict(
             amount=data["amount"],
             collected_by=request.user,
             payment_type=data["payment_type"],
@@ -288,6 +386,14 @@ class DebtPaymentViewSet(BaseModelViewSet):
             device_time=data.get("device_time"),
             note=data.get("note", ""),
         )
+        if data.get("debt"):
+            res = collect_debt_payment(debt=Debt.objects.get(pk=data["debt"]), **common)
+        else:
+            from apps.clients.models import Client
+
+            res = collect_client_debt_payment(
+                client=Client.objects.get(pk=data["client"]), **common
+            )
         code = 200 if res.duplicate else 201
         return ok(DebtPaymentSerializer(res.payment).data, status_code=code)
 

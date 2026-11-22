@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
-import { salesApi } from '@/shared/api/reports';
+import { debtsApi } from '@/shared/api/debts';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money } from '@/shared/lib/format';
 
@@ -25,14 +25,13 @@ export function MobileAdminDebts(): ReactElement {
   const searchQuery = normalizeDebtSearch(search);
 
   const query = useQuery({
-    queryKey: ['admin-debts-m', { status, search: searchQuery, page }],
+    queryKey: ['admin-debts-m', 'by-client', { status, search: searchQuery, page }],
     queryFn: () =>
-      salesApi.debts({
+      debtsApi.byClient({
         status: status || undefined,
         search: searchQuery || undefined,
         page,
         page_size: 25,
-        ordering: 'due_date',
       }),
     placeholderData: keepPreviousData,
   });
@@ -47,7 +46,7 @@ export function MobileAdminDebts(): ReactElement {
       <input
         className="field"
         aria-label="Qarzdor qidirish"
-        placeholder="Mijoz nomi, telefon yoki sotuv…"
+        placeholder="Mijoz nomi yoki telefon…"
         value={search}
         onChange={(e) => {
           setSearch(e.target.value);
@@ -95,7 +94,7 @@ export function MobileAdminDebts(): ReactElement {
         <ul className="space-y-2">
           {rows.map((d) => (
             <li
-              key={d.id}
+              key={d.client}
               className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900"
             >
               <div>
@@ -104,7 +103,7 @@ export function MobileAdminDebts(): ReactElement {
                   <div className="text-xs text-gray-500">{d.client_phone}</div>
                 )}
                 <div className="text-xs text-gray-500">
-                  {d.sale_number ?? '—'}
+                  {d.debt_count > 1 ? `${d.debt_count} ta yozuv` : 'Jami qarz'}
                   {d.due_date && ` · muddat ${dateShort(d.due_date)}`}
                 </div>
               </div>

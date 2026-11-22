@@ -130,6 +130,80 @@ def collect_debt_payment(
 
 
 @transaction.atomic
+def collect_client_debt_payment(
+    *,
+    client: Client,
+    amount: Decimal,
+    collected_by,
+    payment_type: str = PaymentType.CASH,
+    date=None,
+    client_uuid: str | None = None,
+    device_time=None,
+    note: str = "",
+    strict: bool = True,
+) -> DebtPaymentResult:
+    """Mijozning barcha ochiq qarzlariga FIFO tartibida to'lov taqsimlaydi."""
+    if client_uuid:
+        existing = DebtPayment.objects.filter(client_uuid=client_uuid).first()
+        if existing:
+            return DebtPaymentResult(payment=existing, created=False, duplicate=True)
+
+    open_debts = list(
+        Debt.objects.select_for_update()
+        .filter(client=client, remaining__gt=_ZERO)
+        .order_by(F("due_date").asc(nulls_last=True), "created_at", "pk")
+    )
+    total_remaining = sum((d.remaining for d in open_debts), _ZERO)
+    if total_remaining <= _ZERO:
+        raise BusinessError(
+            message="Ushbu mijozda ochiq qarz topilmadi.",
+            code="DEBT_ALREADY_PAID",
+        )
+    if amount <= _ZERO:
+        raise BusinessError(
+            message="To'lov summasi musbat bo'lishi kerak.",
+            code="INVALID_AMOUNT",
+        )
+    if amount > total_remaining:
+        if strict:
+            raise BusinessError(
+                message=(
+                    f"To'lov ({amount}) mijozning jami qarz qoldig'idan "
+                    f"({total_remaining}) katta."
+                ),
+                code="OVERPAYMENT",
+                details={"remaining": str(total_remaining)},
+            )
+        note = (
+            f"{note} · offline: qoldiqqa moslashtirildi ({amount}→{total_remaining})"
+        ).strip(" ·")
+        amount = total_remaining
+
+    left = amount
+    first_result: DebtPaymentResult | None = None
+    for idx, debt in enumerate(open_debts):
+        if left <= _ZERO:
+            break
+        part = min(left, debt.remaining)
+        res = collect_debt_payment(
+            debt=debt,
+            amount=part,
+            collected_by=collected_by,
+            payment_type=payment_type,
+            date=date,
+            client_uuid=client_uuid if idx == 0 else None,
+            device_time=device_time,
+            note=note,
+            strict=strict,
+        )
+        if first_result is None:
+            first_result = res
+        left -= part
+    assert first_result is not None
+    return first_result
+
+
+@transaction.atomic
 def recalc_debt_and_client(debt: Debt) -> None:
     """Qarz va mijozning joriy qarzini faol DebtPayment/Debt yozuvlaridan qayta hisoblaydi."""
     from django.db.models import Sum

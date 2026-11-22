@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Banknote, CircleCheckBig, HandCoins, Plus } from 'lucide-react';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { saveDebtPaymentLocal } from '@/offline/actions';
@@ -12,11 +12,10 @@ import { debtsApi } from '@/shared/api/debts';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { dateShort, money } from '@/shared/lib/format';
+import { money } from '@/shared/lib/format';
 import { hasUserPermission } from '@/shared/lib/permissions';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Client } from '@/shared/types/clients';
-import type { Debt } from '@/shared/types/sales';
 
 import { CheckInSheet } from './CheckInSheet';
 import { NewClientModal } from './NewClientModal';
@@ -35,7 +34,6 @@ export function MyClientsPage(): ReactElement {
   const [debtAmount, setDebtAmount] = useState<string>('');
   const [debtNote, setDebtNote] = useState<string>('');
   const [collectClient, setCollectClient] = useState<Client | null>(null);
-  const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
   const [payAmount, setPayAmount] = useState<string>('');
   const [payType, setPayType] = useState<'NAQD' | 'PLASTIK' | 'OTKAZMA'>('NAQD');
   const [paySaved, setPaySaved] = useState<boolean>(false);
@@ -89,13 +87,13 @@ export function MyClientsPage(): ReactElement {
   });
 
   const clientDebtsQuery = useQuery({
-    queryKey: ['debts', 'client', collectClient?.id],
+    queryKey: ['debts', 'client', 'by-client', collectClient?.id],
     enabled: collectClient !== null,
-    queryFn: async (): Promise<Debt[]> => {
+    queryFn: async (): Promise<Array<{ remaining: string }>> => {
       if (!collectClient) return [];
       try {
-        const page = await debtsApi.list({ client: collectClient.id, page_size: 50 });
-        return page.results.filter((d) => Number(d.remaining) > 0);
+        const page = await debtsApi.byClient({ client: collectClient.id, only_open: 1 });
+        return page.results;
       } catch (err) {
         const cached = (await db.debts.toArray()).filter(
           (d) => d.client === collectClient.id && Number(d.remaining) > 0,
@@ -106,19 +104,22 @@ export function MyClientsPage(): ReactElement {
     },
   });
 
+  const totalClientDebt = useMemo(
+    () => (clientDebtsQuery.data ?? []).reduce((s, d) => s + Number(d.remaining), 0),
+    [clientDebtsQuery.data],
+  );
+
   useEffect(() => {
-    const first = clientDebtsQuery.data?.[0];
-    if (collectClient && first && !selectedDebt) {
-      setSelectedDebt(first);
-      setPayAmount(String(Math.round(Number(first.remaining) || 0)));
+    if (collectClient && totalClientDebt > 0 && !payAmount) {
+      setPayAmount(String(Math.round(totalClientDebt)));
     }
-  }, [collectClient, clientDebtsQuery.data, selectedDebt]);
+  }, [collectClient, totalClientDebt, payAmount]);
 
   const collectMut = useMutation({
     mutationFn: async () => {
-      if (!collectClient || !selectedDebt) throw new Error('Debt required');
+      if (!collectClient || totalClientDebt <= 0) throw new Error('Debt required');
       await saveDebtPaymentLocal({
-        debt: selectedDebt.id,
+        client: collectClient.id,
         client_name: collectClient.name,
         client_phone: collectClient.phone,
         amount: Number(payAmount),
@@ -135,7 +136,6 @@ export function MyClientsPage(): ReactElement {
   function closeCollectModal(): void {
     collectMut.reset();
     setCollectClient(null);
-    setSelectedDebt(null);
     setPayAmount('');
     setPaySaved(false);
   }
@@ -215,7 +215,6 @@ export function MyClientsPage(): ReactElement {
                     onClick={() => {
                       collectMut.reset();
                       setCollectClient(c);
-                      setSelectedDebt(null);
                       setPayAmount('');
                       setPayType('NAQD');
                       setPaySaved(false);
@@ -389,78 +388,46 @@ export function MyClientsPage(): ReactElement {
               emptyText="Ushbu mijozda ochiq qarz topilmadi"
             >
               <div className="space-y-3">
-                {(clientDebtsQuery.data?.length ?? 0) > 1 && (
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-medium text-gray-500">Qaysi qarz uchun:</div>
-                    <div className="max-h-36 space-y-1 overflow-y-auto">
-                      {clientDebtsQuery.data?.map((d) => (
-                        <button
-                          key={d.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedDebt(d);
-                            setPayAmount(String(Math.round(Number(d.remaining) || 0)));
-                          }}
-                          className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs ${
-                            selectedDebt?.id === d.id
-                              ? 'border-brand bg-brand/5 font-semibold text-brand'
-                              : 'border-gray-200 dark:border-gray-800'
-                          }`}
-                        >
-                          <span>
-                            {d.sale_number ?? "Boshlang'ich qarz"}
-                            {d.due_date ? ` · ${dateShort(d.due_date)}` : ''}
-                          </span>
-                          <span className="text-danger">{money(d.remaining)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {selectedDebt && (
-                  <>
-                    <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                      Qoldiq: <strong className="text-danger">{money(selectedDebt.remaining)}</strong>
-                    </div>
-                    <AmountInput
-                      className="text-lg"
-                      ariaLabel="To'lov summasi"
-                      value={payAmount}
-                      onChange={setPayAmount}
-                    />
-                    <div className="flex gap-2">
-                      {(['NAQD', 'PLASTIK', 'OTKAZMA'] as const).map((tp) => (
-                        <button
-                          key={tp}
-                          type="button"
-                          onClick={() => setPayType(tp)}
-                          className={`flex-1 rounded-lg py-2 text-xs font-medium ${
-                            payType === tp ? 'bg-brand text-brand-fg' : 'bg-gray-100 dark:bg-gray-800'
-                          }`}
-                        >
-                          {tp}
-                        </button>
-                      ))}
-                    </div>
-                    {collectMut.isError && (
-                      <p className="text-sm text-danger" role="alert">
-                        {extractApiError(collectMut.error)}
-                      </p>
-                    )}
+                <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                  Jami qoldiq: <strong className="text-danger">{money(totalClientDebt)}</strong>
+                </div>
+                <AmountInput
+                  className="text-lg"
+                  ariaLabel="To'lov summasi"
+                  value={payAmount}
+                  onChange={setPayAmount}
+                />
+                <div className="flex gap-2">
+                  {(['NAQD', 'PLASTIK', 'OTKAZMA'] as const).map((tp) => (
                     <button
+                      key={tp}
                       type="button"
-                      className="btn-brand w-full"
-                      disabled={
-                        Number(payAmount) <= 0 ||
-                        Number(payAmount) > Number(selectedDebt.remaining) ||
-                        collectMut.isPending
-                      }
-                      onClick={() => collectMut.mutate()}
+                      onClick={() => setPayType(tp)}
+                      className={`flex-1 rounded-lg py-2 text-xs font-medium ${
+                        payType === tp ? 'bg-brand text-brand-fg' : 'bg-gray-100 dark:bg-gray-800'
+                      }`}
                     >
-                      {collectMut.isPending ? 'Saqlanmoqda…' : "To'lovni qabul qilish"}
+                      {tp}
                     </button>
-                  </>
+                  ))}
+                </div>
+                {collectMut.isError && (
+                  <p className="text-sm text-danger" role="alert">
+                    {extractApiError(collectMut.error)}
+                  </p>
                 )}
+                <button
+                  type="button"
+                  className="btn-brand w-full"
+                  disabled={
+                    Number(payAmount) <= 0 ||
+                    Number(payAmount) > totalClientDebt ||
+                    collectMut.isPending
+                  }
+                  onClick={() => collectMut.mutate()}
+                >
+                  {collectMut.isPending ? 'Saqlanmoqda…' : "To'lovni qabul qilish"}
+                </button>
               </div>
             </DataState>
           )

@@ -59,14 +59,13 @@ export function DebtsPage(): ReactElement {
     enabled: tab === 'overview',
   });
   const list = useQuery({
-    queryKey: ['debts', { status, search: searchQuery, page }],
+    queryKey: ['debts', 'by-client', { status, search: searchQuery, page }],
     queryFn: () =>
-      debtsApi.list({
+      debtsApi.byClient({
         status: status || undefined,
         search: searchQuery || undefined,
         page,
         page_size: 25,
-        ordering: 'due_date',
       }),
     placeholderData: keepPreviousData,
     enabled: tab === 'debts',
@@ -192,7 +191,7 @@ export function DebtsPage(): ReactElement {
             <input
               className="field max-w-[240px]"
               aria-label="Qarzlarni qidirish"
-              placeholder="Mijoz nomi, telefon yoki sotuv…"
+              placeholder="Mijoz nomi yoki telefon…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -230,7 +229,7 @@ export function DebtsPage(): ReactElement {
                 <tr>
                   <th className="p-3">Mijoz</th>
                   <th className="p-3">Telefon</th>
-                  <th className="p-3">Sotuv</th>
+                  <th className="p-3">Yozuvlar</th>
                   <th className="p-3 text-right">Summa</th>
                   <th className="p-3 text-right">Qoldiq</th>
                   <th className="p-3">Muddat</th>
@@ -240,12 +239,12 @@ export function DebtsPage(): ReactElement {
               <tbody>
                 {rows.map((d) => (
                   <tr
-                    key={d.id}
+                    key={d.client}
                     className="border-b border-gray-100 last:border-0 dark:border-gray-800"
                   >
                     <td className="p-3 font-medium">{d.client_name}</td>
                     <td className="p-3 text-gray-600 dark:text-gray-300">{d.client_phone || '—'}</td>
-                    <td className="p-3 font-mono text-xs">{d.sale_number ?? '—'}</td>
+                    <td className="p-3 text-xs text-gray-500">{d.debt_count} ta</td>
                     <td className="p-3 text-right">{money(d.amount)}</td>
                     <td className="p-3 text-right font-medium">{money(d.remaining)}</td>
                     <td className="p-3">{d.due_date ? dateShort(d.due_date) : '—'}</td>

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const debtsApi = vi.hoisted(() => ({
+  byClient: vi.fn(),
   myRoute: vi.fn(),
 }));
 const saveDebtPaymentLocal = vi.hoisted(() => vi.fn(() => Promise.resolve('op-uuid')));
@@ -24,38 +25,38 @@ function renderPage(): void {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  debtsApi.myRoute.mockResolvedValue([
-    {
-      id: 'd1',
-      client: 'c1',
-      client_name: 'Omad Market',
-      client_phone: '+998901110001',
-      sale: null,
-      sale_number: null,
-      amount: '100000',
-      paid_amount: '0',
-      remaining: '100000',
-      due_date: null,
-      status: 'ACTIVE',
-      status_display: 'Faol',
-      created_at: '2026-10-01T10:00:00Z',
-    },
-    {
-      id: 'd2',
-      client: 'c2',
-      client_name: 'Omad Market',
-      client_phone: '+998902220002',
-      sale: 's2',
-      sale_number: 'SOT-0002',
-      amount: '250000',
-      paid_amount: '0',
-      remaining: '250000',
-      due_date: '2026-11-20',
-      status: 'ACTIVE',
-      status_display: 'Faol',
-      created_at: '2026-10-02T10:00:00Z',
-    },
-  ]);
+  debtsApi.byClient.mockResolvedValue({
+    count: 2,
+    pages: 1,
+    results: [
+      {
+        client: 'c1',
+        client_name: 'Omad Market',
+        client_phone: '+998901110001',
+        debt_count: 1,
+        amount: '100000',
+        paid_amount: '0',
+        remaining: '100000',
+        due_date: null,
+        status: 'ACTIVE',
+        status_display: 'Faol',
+        primary_debt_id: 'd1',
+      },
+      {
+        client: 'c2',
+        client_name: 'Omad Market',
+        client_phone: '+998902220002',
+        debt_count: 2,
+        amount: '250000',
+        paid_amount: '0',
+        remaining: '250000',
+        due_date: '2026-11-20',
+        status: 'ACTIVE',
+        status_display: 'Faol',
+        primary_debt_id: 'd2',
+      },
+    ],
+  });
 });
 
 describe('DebtCollectPage — telefon orqali farqlash va qidirish', () => {
@@ -83,7 +84,7 @@ describe('DebtCollectPage — telefon orqali farqlash va qidirish', () => {
     fireEvent.click(screen.getByRole('button', { name: "To'lovni qabul qilish" }));
     await waitFor(() =>
       expect(saveDebtPaymentLocal).toHaveBeenCalledWith({
-        debt: 'd2',
+        client: 'c2',
         client_name: 'Omad Market',
         client_phone: '+998902220002',
         amount: 50000,
@@ -110,7 +111,7 @@ describe('DebtCollectPage — telefon orqali farqlash va qidirish', () => {
       status_display: 'Faol',
       created_at: '2026-10-01T10:00:00Z',
     });
-    debtsApi.myRoute.mockRejectedValueOnce(new Error('Network Error'));
+    debtsApi.byClient.mockRejectedValueOnce(new Error('Network Error'));
 
     renderPage();
     expect(await screen.findByText('Offline Mijoz')).toBeInTheDocument();

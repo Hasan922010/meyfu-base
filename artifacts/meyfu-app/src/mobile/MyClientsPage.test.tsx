@@ -9,7 +9,7 @@ const clientsApi = vi.hoisted(() => ({
   openingBalance: vi.fn(),
 }));
 const debtsApi = vi.hoisted(() => ({
-  list: vi.fn(),
+  byClient: vi.fn(),
 }));
 const saveDebtPaymentLocal = vi.hoisted(() => vi.fn());
 
@@ -60,24 +60,22 @@ beforeEach(() => {
     advance_balance: '150000.00',
   });
   clientsApi.openingBalance.mockResolvedValue({ id: 'debt-1' });
-  debtsApi.list.mockResolvedValue({
+  debtsApi.byClient.mockResolvedValue({
     count: 1,
     pages: 1,
     results: [
       {
-        id: 'd1',
         client: 'cl-1',
         client_name: 'Baraka Market',
         client_phone: '+998901112233',
-        sale: null,
-        sale_number: 'SOT-101',
+        debt_count: 2,
         amount: '120000.00',
         paid_amount: '0.00',
         remaining: '120000.00',
         due_date: '2026-11-30',
         status: 'ACTIVE',
         status_display: 'Faol',
-        created_at: '2026-11-20T10:00:00Z',
+        primary_debt_id: 'd1',
       },
     ],
   });
@@ -170,7 +168,7 @@ describe('MyClientsPage — omborchi uchun ortiqcha to‘lov (avans)', () => {
 
     await waitFor(() => {
       expect(saveDebtPaymentLocal).toHaveBeenCalledWith({
-        debt: 'd1',
+        client: 'cl-1',
         client_name: 'Baraka Market',
         client_phone: '+998901112233',
         amount: 50000,

@@ -1033,3 +1033,69 @@ def test_super_admin_cancels_debt_payment_within_24h_and_restores_debt(auth_api,
     assert expired.status_code == 409
     assert expired.data["error"]["code"] == "CANCEL_WINDOW_EXPIRED"
 
+
+@pytest.mark.django_db
+def test_debts_by_client_aggregates_and_fifo_payment(auth_api, manager_api, van_stocked):
+    import uuid
+    from decimal import Decimal
+
+    from apps.sales.models import Debt
+    from apps.sales.services.debt import create_opening_debt
+
+    client, product = van_stocked["client"], van_stocked["product"]
+    user = van_stocked["distributor"]
+
+    create_opening_debt(
+        client=client, amount=Decimal("100000"), note="Eski qarz", user=user
+    )
+    sale_resp = auth_api.post(
+        "/api/v1/sales/",
+        {
+            "client": str(client.id),
+            "payment_type": "QARZ",
+            "due_date": "2026-12-01",
+            "items": [{"product": str(product.id), "quantity": "2", "price": "25000"}],
+        },
+        format="json",
+    )
+    assert sale_resp.status_code == 201
+
+    agg_resp = manager_api.get("/api/v1/debts/by-client/", {"search": client.name})
+    assert agg_resp.status_code == 200
+    rows = agg_resp.data["data"]["results"]
+    assert len(rows) == 1
+    assert rows[0]["client"] == str(client.id)
+    assert rows[0]["debt_count"] == 2
+    assert Decimal(rows[0]["remaining"]) == Decimal("150000.00")
+
+    pay_uuid = str(uuid.uuid4())
+    pay_resp = auth_api.post(
+        "/api/v1/debt-payments/",
+        {
+            "client": str(client.id),
+            "amount": "120000",
+            "payment_type": "NAQD",
+            "client_uuid": pay_uuid,
+        },
+        format="json",
+    )
+    assert pay_resp.status_code == 201
+
+    # Idempotency check
+    dup_resp = auth_api.post(
+        "/api/v1/debt-payments/",
+        {
+            "client": str(client.id),
+            "amount": "120000",
+            "payment_type": "NAQD",
+            "client_uuid": pay_uuid,
+        },
+        format="json",
+    )
+    assert dup_resp.status_code == 200
+
+    client.refresh_from_db()
+    assert client.current_debt == Decimal("30000.00")
+    assert Debt.objects.filter(client=client, remaining__gt=0).count() == 1
+
+
