@@ -1237,6 +1237,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/debts/by-client/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mijozlar bo'yicha umumlashtirilgan qarzlar
+         * @description `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+         *     filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+         */
+        get: operations["debts_by_client_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/debts/my/": {
         parameters: {
             query?: never;
@@ -6023,7 +6044,9 @@ export interface components {
         };
         DebtPaymentCreateRequest: {
             /** Format: uuid */
-            debt: string;
+            debt?: string | null;
+            /** Format: uuid */
+            client?: string | null;
             /** Format: decimal */
             amount: string;
             /** @default NAQD */
@@ -12401,6 +12424,25 @@ export interface operations {
                 /** @description A UUID string identifying this qarz. */
                 id: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Debt"];
+                };
+            };
+        };
+    };
+    debts_by_client_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

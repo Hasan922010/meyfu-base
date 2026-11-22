@@ -9,7 +9,6 @@ export DEBUG=True
 export STATIC_ROOT="${TMPDIR:-/tmp}/meyfu-staticfiles-dev"
 
 python manage.py migrate --noinput
-python manage.py convert_stock_to_packages
 rm -rf "$STATIC_ROOT"
 python manage.py collectstatic --noinput
 python manage.py seed_base

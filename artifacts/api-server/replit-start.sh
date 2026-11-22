@@ -9,6 +9,5 @@ export DEBUG=False
 
 python manage.py migrate --noinput
 python manage.py ensure_superuser
-(python manage.py convert_stock_to_packages || true) &
 
 exec daphne -b 0.0.0.0 -p "${PORT:?PORT is required}" config.asgi:application

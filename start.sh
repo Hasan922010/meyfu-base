@@ -37,7 +37,6 @@ export PYTHONUTF8=1
 
 step "Backend: migratsiyalar qo'llanmoqda..."
 "$PY" manage.py migrate --noinput
-"$PY" manage.py convert_stock_to_packages
 
 USER_COUNT="$("$PY" manage.py shell -c 'from django.contrib.auth import get_user_model; print(get_user_model().objects.count())' | tail -n1 | tr -d '[:space:]')"
 if [ -n "${FRESH:-}" ]; then

@@ -2877,6 +2877,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/Debt'
           description: ''
+  /api/v1/debts/by-client/:
+    get:
+      operationId: debts_by_client_retrieve
+      description: |-
+        `branch_lookup` berilsa, ro'yxat va bitta obyekt (get_object) foydalanuvchi
+        filialiga cheklanadi. Masalan: `branch_lookup = "distributor__warehouse"`.
+      summary: Mijozlar bo'yicha umumlashtirilgan qarzlar
+      tags:
+      - debts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Debt'
+          description: ''
   /api/v1/debts/my/:
     get:
       operationId: debts_my_retrieve
@@ -12100,6 +12118,11 @@ components:
         debt:
           type: string
           format: uuid
+          nullable: true
+        client:
+          type: string
+          format: uuid
+          nullable: true
         amount:
           type: string
           format: decimal
@@ -12124,7 +12147,6 @@ components:
           default: ''
       required:
       - amount
-      - debt
     DebtPaymentRequest:
       type: object
       properties:
