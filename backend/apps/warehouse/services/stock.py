@@ -204,7 +204,7 @@ def convert_warehouse_history_to_packages() -> dict[str, int]:
         AuditLog.objects.filter(action="stock.converted_to_packages")
         .values_list("object_id", flat=True)
     )
-    products = Product.objects.filter(pack_quantity__gt=Decimal("1"))
+    products = Product.objects.select_for_update().filter(pack_quantity__gt=Decimal("1"))
     converted = 0
     movements_updated = 0
 
@@ -227,7 +227,7 @@ def convert_warehouse_history_to_packages() -> dict[str, int]:
         # 2. Hujjat qatorlari (kirim, buyurtma, sotuv, yuklama, ko'chirish, inventarizatsiya)
         for it in PurchaseItem.objects.filter(product=product):
             PurchaseItem.objects.filter(pk=it.pk).update(
-                quantity=(it.quantity / pack_qty).quantize(q3),
+                quantity=max((it.quantity / pack_qty).quantize(q3), q3),
                 cost_price=(it.cost_price * pack_qty).quantize(m2),
             )
         for it in OrderItem.objects.filter(product=product):
@@ -268,12 +268,12 @@ def convert_warehouse_history_to_packages() -> dict[str, int]:
                 .aggregate(s=Sum("quantity"))["s"]
                 or _ZERO
             )
-            st.quantity = total_q
-            st.reserved_quantity = (st.reserved_quantity / pack_qty).quantize(q3)
+            st.quantity = max(total_q, _ZERO)
+            st.reserved_quantity = max((st.reserved_quantity / pack_qty).quantize(q3), _ZERO)
             st.save(update_fields=["quantity", "reserved_quantity", "updated_at"])
 
         for vs in VanStock.objects.select_for_update().filter(product=product):
-            vs.quantity = (vs.quantity / pack_qty).quantize(q3)
+            vs.quantity = max((vs.quantity / pack_qty).quantize(q3), _ZERO)
             vs.save(update_fields=["quantity", "updated_at"])
 
         AuditLog.objects.create(
