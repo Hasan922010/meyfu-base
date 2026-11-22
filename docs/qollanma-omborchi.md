@@ -23,18 +23,18 @@ Omborchi korxonaning barcha moddiy boyliklari harakatiga bevosita javobgardir:
 Omborchi mobil ilovasida endi to'laqonli savdo va logistika imkoniyatlari mavjud:
 
 ### 1. Buyurtma Olish (`+ Yangi Buyurtma`):
-* Omborchi mobil telefondan mijozlar ro'yxatini ko'rib, yangi buyurtma olishi mumkin.
-* Tovar qadoqlari (dona / karopka) bo'yicha hisob-kitob avtomatik ishlaydi.
-* Aksiya doirasidagi bepul bonuslar savatga 0 so'm bo'lib tushadi.
-* Olingan buyurtmalar **«Buyurtmalarim»** bo'limida ko'rinadi.
+* Omborchi mobil telefondan mijozlar ro'yxatini ko'rib, yangi buyurtma olishi mumkin (ombordagi erkin qoldiq avtomatik band qilinadi).
+* Tovar qadoqlari (dona / karopka) va **1 qadoq narxi** (`birlik narxi = Qadoq narxi / soni`) bo'yicha hisob-kitob avtomatik ishlaydi.
+* **«Buyurtmalarim → Olganlarim»** bo'limida **«Buyurtmani berish»** tugmasi bosilsa, tovar ombordan (`StockMovement`) chiqim qilinadi va mijoz qarziga (avval avansi bo'lsa avansidan yechilib) yoziladi.
 
 ### 2. Tarqatish / Sotuv (`+ Yangi Tarqatish / Sotuv`):
-* Omborchi tovarlarni bevosita xaridor yoki do'konga yetkazib sotishi mumkin.
+* Omborchi tovarlarni bevosita xaridor yoki do'konga yetkazib sotishi mumkin (qadoq narxida sotish bilan).
 * To'lov shakllari: Naqd, Plastik, Qarzga (muddat bilan) yoki Aralash to'lov.
 * Saqlangach chek rasmiylashtiriladi va tovar qoldiqdan to'g'ri chiqariladi.
 
-### 3. Tarqatish Yuklamalari (`Yuklamalar`):
-* Mashinaga ortilgan yoki tarqatishga ajratilgan tovarlar ro'yxatini tasdiqlash va qoldiqni kuzatish.
+### 3. Mijozlar, Avans va To'lov Qabul Qilish (`/m/clients`):
+* Mijoz kartochkasidan **«To'lov qabul qilish»** (qarz undirish), **«Eski qarz (+)»** va **«Ortiqcha to'lov (avans)»** amallari bajariladi.
+* Avans kiritilgan mijoz mahsulot olganda avans summasi avtomatik hisob-kitob qilinadi.
 
 ---
 

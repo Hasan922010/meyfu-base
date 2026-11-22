@@ -75,7 +75,8 @@ Tarqatuvchi va Zakaz oluvchi ilovasi **internetsiz (podvalda, tog'da, bozorda) h
 Dasturda tovarlarni nafaqat dona, balki ulgurji qadoq birliklarida sotish va buyurtma olish imkoniyati mavjud:
 1. Mahsulot kartochkasida qadoq turi (masalan, *karopka, qop, xalta, pachka*) va bitta qadoqdagi dona miqdori (masalan, *1 karopka = 12 dona*) ko'rsatiladi.
 2. Sotish yoki buyurtma olish paytida ekranda **«Dona»** yoki **«Qadoq (karopka)»** tanlash tugmasi chiqadi.
-3. Qadoq tanlanib soni kiritilganda, tizim jonli formula asosida avtomatik hisoblaydi:
+3. **Qadoq narxi bo‘yicha sotish / buyurtma olish:** «1 qadoq narxi» kiritilganda, birlik narxi avtomatik ravishda $\text{Qadoq narxi} \div \text{Qadoq ichidagi soni}$ formulasi bilan hisoblanadi.
+4. Qadoq tanlanib soni kiritilganda, tizim jonli formula asosida avtomatik hisoblaydi:
    $$\text{2 karopka} \times \text{12 dona} = \text{24 dona}$$
    $$\text{24 dona} \times \text{20 000 so'm} = \text{480 000 so'm}$$
 4. Ombor va mashina qoldig'i, yuklama va buxgalteriya hisoboti doimo asosiy o'lchov birligida aniq kamayadi.

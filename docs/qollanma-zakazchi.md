@@ -55,7 +55,8 @@ Do'konga tashrif buyurganingizda buyurtma rasmiylashtirish 4 qadamda bajariladi:
 1. Tovarni qidiruv yoki toifalar bo'yicha toping.
 2. Mahsulot ustiga bosganda **Qadoq tanlash oynasi** ochiladi:
    * **Dona** — donalab buyurtma qilish (masalan, 6 dona).
-   * **Qadoq (karopka / qop / xalta / pachka)** — butun karopkalab buyurtma qilish (masalan, 3 karopka).
+   * **Qadoq (karopka / qop / xalta / pachka)** — butun karopkalab buyurtma qilish va **1 qadoq narxini** kiritish (1 dona narxi $\text{Qadoq narxi} \div \text{soni}$ bo'lib avtomatik hisoblanadi).
+3. Buyurtma saqlanganda ombordagi erkin qoldiq avtomatik band qilinadi; **«Buyurtmalarim → Olganlarim»** bo'limidan ruxsatingiz bo'lsa **«Buyurtmani berish»** tugmasi orqali buyurtmani mijoz qarziga yozib ombordan chiqarishingiz mumkin (Qarz to'lovini qabul qilish esa **Mijozlar** bo'limidagi **«To'lov qabul qilish»** tugmasi orqali bajariladi).
 3. Tizim jonli hisob-kitob qilib donaga o'giradi:
    $$\text{3 karopka} \times \text{24 dona} = \text{72 dona} \implies \text{72 dona} \times \text{15 000 so'm} = \text{1 080 000 so'm}$$
 4. **«Savatga qo'shish»** tugmasini bosing.

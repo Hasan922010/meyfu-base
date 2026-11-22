@@ -592,10 +592,10 @@ def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
             )
             .select_related("warehouse")
             .first()
-            if sale.order_id
+            if sale.order_id and sale.order.loading_id is None
             else None
         )
-        for item in sale.items.select_related("product"):
+        for item in sale.items.select_related("product").order_by("product_id"):
             if order_mv is not None:
                 apply_movement(
                     warehouse=order_mv.warehouse,

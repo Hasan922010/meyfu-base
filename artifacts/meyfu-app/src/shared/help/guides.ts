@@ -82,6 +82,7 @@ const common: RoleGuide = {
           k: 'list',
           items: [
             'Qadoq tanlash oynasida "Dona" yoki "Qadoq" tugmasini tanlang.',
+            'Buyurtma olish va sotishda "1 qadoq narxi" maydonini kiritsangiz, 1 birlik narxi (Qadoq narxi / qadoq soni) avtomatik hisoblanadi.',
             'Masalan: 2 karopka kiritilganda (agar 1 karopkada 12 dona bo\'lsa), tizim 24 dona deb hisoblaydi va summani to\'g\'ri chiqaradi.',
             'Ombor va mashina qoldig\'i doimo asosiy birlikda (donada) aniq kamayadi.',
           ],
@@ -155,7 +156,7 @@ const distributor: RoleGuide = {
           k: 'steps',
           items: [
             'Mijoz — marshrutdagi do\'konni tanlang.',
-            'Tovar va Qadoq — mahsulotni tanlang, "Dona" yoki "Qadoq" (karopka) miqdorini kiriting. Formula avtomatik hisoblaydi.',
+            'Tovar va Qadoq — mahsulotni tanlang, "Dona" yoki "Qadoq" (karopka) miqdorini hamda xohlasangiz 1 qadoq narxini kiriting (birlik narxi avtomatik bo\'linadi).',
             'Aksiya Bonusi — agar mahsulot aksiyada bo\'lsa, bepul bonus tovar avtomatik 0 so\'m bo\'lib savatga qo\'shiladi.',
             'To\'lov — Naqd, Plastik yoki Qarzga (muddat bilan). Aralash to\'lov ham mumkin.',
             'Saqlash — "✅ Saqlandi" chiqadi, chekni PDF qilib mijozga Telegram orqali yuborishingiz mumkin.',
@@ -183,7 +184,7 @@ const distributor: RoleGuide = {
           k: 'steps',
           items: [
             'Xarajat: yoqilg\'i, tushlik, ta\'mirlash summasini kiriting. "Chek rasmidan summani olish" tugmasi AI bilan summani o\'zi to\'ldiradi.',
-            'Qarz undirish: mijozlar qarzidan to\'lov qabul qiling, naqd pul darhol hamyoningizga qo\'shiladi.',
+            'Qarz undirish: "Mijozlar" (/m/clients) bo\'limidan kerakli mijozni tanlab "To\'lov qabul qilish" tugmasini bosing — naqd pul darhol hamyoningizga qo\'shiladi.',
           ],
         },
         { k: 'img', src: IMG('dist-05-wallet.png'), caption: 'Hamyon va pul harakatlari' },
@@ -240,9 +241,9 @@ const orderTaker: RoleGuide = {
           k: 'steps',
           items: [
             'Bosh ekrandagi "+ Yangi Buyurtma" tugmasini bosing va marshrutdagi do\'konni tanlang (GPS check-in avtomatik).',
-            'Tovar qidirib tanlang. "Dona" yoki "Qadoq" (karopka, pachka) tanlang — tizim qadoqni donaga ko\'paytirib summani hisoblaydi.',
+            'Tovar qidirib tanlang. Qadoq miqdori va "1 qadoq narxi" ni kiritsangiz, 1 birlik narxi (Qadoq / soni) avtomatik hisoblanadi.',
             'Aksiya bonuslari — agar aksiya bo\'lsa, bepul bonus tovar avtomatik 0 so\'m narxda savatga tushadi.',
-            'To\'lov sharti va kutilgan yetkazish sanasini belgilab, "Buyurtmani saqlash" tugmasini bosing.',
+            'To\'lov sharti va kutilgan yetkazish sanasini belgilab, "Buyurtmani saqlash" tugmasini bosing (ombordagi erkin qoldiq avtomatik band qilinadi).',
           ],
         },
         {
@@ -291,9 +292,9 @@ const warehouse: RoleGuide = {
         {
           k: 'list',
           items: [
-            '+ Yangi Tarqatish / Sotuv — do\'konga tovar yetkazib sotish, qadoq tanlash (dona/karopka) va avtomatik aksiya bonuslari (0 so\'m).',
-            '+ Buyurtma Olish — mijozlardan buyurtma qabul qilish va "Buyurtmalarim" bo\'limida holatini kuzatish.',
-            'Tarqatish Yuklamalari — mashinaga yuklangan tovarlar va tarqatish varaqasi.',
+            '+ Yangi Tarqatish / Sotuv — do\'konga tovar yetkazib sotish, qadoq miqdori va qadoq narxi bo\'yicha hisob-kitob hamda bepul aksiya bonuslari (0 so\'m).',
+            '+ Buyurtma Olish — mijozlardan buyurtma qabul qilish (ombor zaxirasi band qilinadi). "Buyurtmalarim → Olganlarim" da "Buyurtmani berish" bosilsa tovar ombordan chiqadi va mijoz qarziga yoziladi.',
+            'Mijozlar (/m/clients) — mijoz kartochkasidan "To\'lov qabul qilish", "Eski qarz (+)" va "Ortiqcha to\'lov (avans)" amallari bajariladi.',
           ],
         },
       ],
@@ -381,7 +382,7 @@ const admin: RoleGuide = {
             '1. Tezkor & Monitoring — Jonli Boshqaruv Paneli, Xarita (GPS) va Jonli Lenta.',
             '2. Savdo & Mijozlar — Yangi Sotuv, Sotuvlar tarixi, Buyurtmalar va Mijozlar.',
             '3. Ombor & Logistika — Ombor Qoldig\'i, Kirim (nakladnoy), Yuklamalar, AI Naklit Skani va Inventarizatsiya.',
-            '4. Moliya & Hisobotlar — Kassa Balansi, Kunlik Hisob-Kitob, Mijozlar Qarzdorligi, Xarajatlar va barcha Kengaytirilgan Hisobotlar.',
+            'Moliya & Hisobotlar — Kassa Balansi, Kunlik Hisob-Kitob, Qarzdorlik (3 ta tab: Umumiy, Barcha qarzlar, Qarz to\'lovlari; SuperAdmin 24 soat ichida xato to\'lovni bekor qila oladi), Xarajatlar va Kengaytirilgan Hisobotlar.',
             '5. Jamoa & Sozlamalar — Mahsulotlar Katalogi, Xodimlar & Filiallar, Maosh (Payroll), Tizim Salomatligi va Sinxronizatsiya Audit Jurnali.',
           ],
         },
@@ -477,7 +478,7 @@ const accountant: RoleGuide = {
       blocks: [
         {
           k: 'p',
-          text: 'Debitorlik qarzdorligi yoshi bo\'yicha (Aging: 0–7, 8–14, 15–30, 30+ kun) monitoring qilinadi. Har bir mijoz bo\'yicha to\'liq solishtirma dalolatnoma (Akt-sverka) bir marta bosishda PDF formatida chop etiladi (xaridlar, to\'lovlar va yakuniy qarz qoldig\'i bilan).',
+          text: 'Debitorlik qarzdorligi 3 ta bo\'limda (Umumiy va muddati o\'tganlar, Barcha qarzlar, Qarz to\'lovlari) yuritiladi. SuperAdmin xato kiritilgan qarz to\'lovini 24 soat ichida bekor qilib, mijoz qarzini avvalgi holiga qaytara oladi. Har bir mijoz uchun Akt-sverka (PDF) chop etiladi.',
         },
         { k: 'img', src: IMG('admin-08-debts.jpg'), caption: 'Qarzdorlik — aging tahlili' },
       ],

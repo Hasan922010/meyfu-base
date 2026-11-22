@@ -40,6 +40,11 @@ Ushbu bo'limda korxonaning barcha naqd va naqdsiz pullari yuritiladi:
 
 Debitorlik qarzdorligini samarali boshqarish va pulni o'z vaqtida undirish vositalari:
 
+### Qarzdorlik Bo'limlari (3 ta Tab — `/admin/debts`):
+1. **Umumiy va muddati o'tganlar:** umumiy debitorlik, muddati o'tgan qarzlar va aging guruhlari.
+2. **Barcha qarzlar:** mijoz nomi/telefon raqami bo'yicha qidirish va holat filtri.
+3. **Qarz to'lovlari:** barcha undirilgan to'lovlar tarixi (**SuperAdmin** xato kiritilgan to'lovni **24 soat ichida** bekor qilib, mijoz qarzini avvalgi holiga qaytara oladi).
+
 ### Qarzdorlik Tahlili (Aging):
 Barcha qarzlar vujudga kelgan muddatiga qarab guruhlanadi:
 * 🟢 **0–7 kun:** Yangi qarzlar (xavfsiz davr).

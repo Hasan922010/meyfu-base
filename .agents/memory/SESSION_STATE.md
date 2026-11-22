@@ -202,6 +202,11 @@
     - **SuperAdmin 24 Soatlik Qarz To'lovini Bekor Qilish (`debt.py`, `views.py`, `DebtsPage.tsx`):** `POST /api/v1/debt-payments/{id}/cancel/` faqat `SUPER_ADMIN` uchun 24 soat ichida to'lovni bekor qilib (`is_deleted=True`), `NAQD` bo'lsa hamyonga `CORRECTION` yozadi va `recalc_debt_and_client` bilan mijoz qarzini avvalgi holiga qaytaradi. `schema.yml` va `api.gen.ts` yangilandi.
     - **Verifikatsiya:** Backend **681/681** pytest, `ruff` 0 xato; Frontend `tsc -b --noEmit` 0 xato, `eslint --max-warnings 0` 0 ogohlantirish, Vitest **67/67 fayl (279/279 test)**, `artifacts/meyfu-app/` 1:1 sinxron.
 
+25. **Qarzdorlik Tablari, Mobil Mijozlardan Qarz Undirish va Buyurtma Ombor Zaxirasi (`DebtsPage`, `MyClientsPage`, `order.py`, `sale.py`):**
+    - **Admin `DebtsPage.tsx`:** `WarehousePage` uslubida 3 ta alohida tabga ajratildi (`Umumiy va muddati o'tganlar`, `Barcha qarzlar`, `Qarz to'lovlari`).
+    - **Mobil Qarz Undirish Birlashtirildi:** Barcha mobil bosh sahifalar (`MobileHomePage`, `OrderTakerHomePage`, `WarehouseHomePage`, `MobileLayout`) dan `/m/debts` havolalari olib tashlanib (`router.tsx` -> `/m/clients`), to'lov qabul qilish `MyClientsPage.tsx` dagi mijoz kartochkasiga (`To'lov qabul qilish`) biriktirildi.
+    - **Buyurtma Zaxirasi va Ombor Chiqimi (`orders/models.py`, `0003_orderitem_reserved_quantity.py`, `order.py`, `sale.py`):** `create_order` omborda mavjud erkin qoldiqni `OrderItem.reserved_quantity` orqali band qiladi (`cancel_order` / `build_loading_from_orders` / `fulfill_order` bo'shatadi); `give_order_on_debt` ombordan `OUT_SALE` chiqim qiladi, `Sale`/`SaleItem` va `due_date` (`+14 kun` zaxira bilan) yaratadi; `cancel_sale` `loading_id is None` bo'lgan buyurtma sotuvlarini omborga (`IN_RETURN`) qaytaradi.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)

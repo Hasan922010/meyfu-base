@@ -35,8 +35,8 @@ Ekranning eng pastki qismida har doim ko'rinib turadigan 5 ta asosiy menyu joyla
 | 🏠 | **Bosh** (`/m/home`) | Qo'lingizdagi naqd pul, bugungi savdo ko'rsatkichlari va tezkor tugmalar |
 | 🛒 | **Sotuv** (`/m/sales`) | Yangi sotuv (van-sale), chek chiqarish, sotuvlar tarixi |
 | 📋 | **Buyurtma** (`/m/orders`) | Sizga biriktirilgan yetkazish buyurtmalari ro'yxati va holatlari |
-| 👛 | **Hamyon** (`/m/wallet`) | Naqd pul oqimi, yo'l xarajatlari, qarz undirish va kassaga topshirish |
-| 👥 | **Mijozlar** (`/m/clients`) | Marshrutdagi mijozlar, GPS check-in, telefon qilish va qarzlar |
+| 👛 | **Hamyon** (`/m/wallet`) | Naqd pul oqimi, yo'l xarajatlari va kassaga topshirish |
+| 👥 | **Mijozlar** (`/m/clients`) | Marshrutdagi mijozlar, **To'lov qabul qilish** (qarz undirish), eski qarz kiritish va GPS check-in |
 
 ---
 
@@ -66,7 +66,7 @@ Sotuv jarayoni 30 soniyada amalga oshiriladi:
 * Sotiladigan mahsulotni qidiring va ustiga bosing.
 * Ochilgan oynada o'lchov turini tanlang:
   * **Dona** — dona miqdorini kiritish (masalan: 5 dona).
-  * **Qadoq (karopka / qop / xalta)** — qadoq sonini kiritish (masalan: 2 karopka).
+  * **Qadoq (karopka / qop / xalta)** — qadoq sonini va xohlasangiz **1 qadoq narxini** kiritish (birlik narxi $\text{Qadoq narxi} \div \text{soni}$ bo'lib avtomatik hisoblanadi).
 * Tizim avtomatik formulani ko'rsatadi:
   $$\text{2 karopka} \times \text{12 dona} = \text{24 dona} \implies \text{24 dona} \times \text{20 000 so'm} = \text{480 000 so'm}$$
 * **«Qo'shish»** tugmasini bosing.
@@ -94,10 +94,10 @@ Sotuv jarayoni 30 soniyada amalga oshiriladi:
 Hamyon sizning qo'lingizda turgan naqd pulni jonli ko'rsatadi:
 $$\text{Hamyon} = \text{Naqd sotuvlar} + \text{Undirilgan qarzlar} - \text{Tasdiqlangan xarajatlar} - \text{Kassaga topshirilgan pul}$$
 
-### Qarz Undirish:
-1. **Hamyon** yoki **Mijozlar** bo'limida do'konning qarzini ko'ring.
-2. **«Qarz to'lovi»** tugmasini bosing.
-3. Mijoz bergan summani va to'lov turini (Naqd / Karta) kiriting.
+### Qarz Undirish (`Mijozlar` bo'limidan):
+1. Pastki menyudan **Mijozlar** (`/m/clients`) bo'limini oching va kerakli mijozni tanlang.
+2. Mijoz kartochkasidagi **«To'lov qabul qilish»** tugmasini bosing (eski qolib ketgan qarz uchun **«Eski qarz (+)»** tugmasidan foydalaniladi).
+3. Mijoz bergan summani va to'lov turini (Naqd / Plastik / O'tkazma) kiriting.
 4. Saqlang — naqd pul hamyoningizga qo'shiladi, mijoz qarzi avtomatik kamayadi.
 
 ### Yo'l Xarajatlarini Yozish:

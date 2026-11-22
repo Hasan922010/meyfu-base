@@ -81,7 +81,7 @@ Yangi talablarga binoan, mahsulot profilida ma'lumotlar soddalashtirilgan va biz
 
 * **Qoldiq:** Barcha omborlardagi tovarlar soni, tannarx qiymati va kam qolgan tovarlar bo'yicha qizil indikatorlar.
 * **Kirim (Tovar qabuli):** Ta'minotchidan yangi tovar kelganda qabul qilish. Nakladnoy qog'ozini OCR bo'limida rasmga olib, avtomatik kirim qilish mumkin.
-* **Yuklamalar (Loadings):** Ertalab tarqatuvchining mashinasiga tovar ortish. Buyurtmalar asosida avtomatik yuklama shakllantirish mumkin. Yuklama qog'ozi (PDF) o'ng tomonida tarqatuvchi ismi va telefoni qalin shriftda chiqadi.
+* **Yuklamalar (Loadings):** Ertalab tarqatuvchi yoki istalgan faol xodim uchun yuklama shakllantirish (buyurtmalardan avtomatik yig'ishda barcha faol xodimlarni tanlash mumkin). Yuklama PDF hujjatida kompaniya nomi, markazlashtirilgan jadval sarlavhalari, o'ng tomonda xodim ismi-telefoni hamda ostida jami summa (raqam va so'z bilan — Sozlamalardan yoqib/o'chirish mumkin) chiqadi. Sozlamalarda kompaniya **Logo va Muhri** ni yuklash, almashtirish yoki olib tashlash mumkin.
 * **Ko'chirishlar (Transfers):** Markaziy ombordan filial omborlariga tovar yuborish va qabul qilish.
 
 ---
@@ -97,7 +97,10 @@ Yangi talablarga binoan, mahsulot profilida ma'lumotlar soddalashtirilgan va biz
 ## 4. Moliya, Qarzlar va Oylik Maosh (`/admin/finance`, `/admin/payroll`)
 
 * **Moliya & Kassa:** Filial va markaziy kassalar qoldig'i, naqd pul harakati jurnali. Filialdan markazga pul o'tkazish (inkassatsiya) hujjati.
-* **Mijozlar qarzdorligi:** Muddatiga qarab (0–7 kun, 8–14 kun, 15–30 kun, 30+ kun) saralangan qarzlar ro'yxati. Har bir do'kon uchun bitta bosishda **Akt-sverka (PDF)** yuklab olish.
+* **Mijozlar qarzdorligi (`/admin/debts` — 3 ta alohida bo'lim):**
+  1. *Umumiy va muddati o'tganlar:* umumiy qarz, aging (0–30, 31–60, 61–90, 90+ kun) va muddati o'tgan mijozlar.
+  2. *Barcha qarzlar:* qidiruv, holat filtri va **Akt-sverka (PDF)**.
+  3. *Qarz to'lovlari:* undirilgan to'lovlar ro'yxati — **SuperAdmin** xato kiritilgan to'lovni **24 soat ichida** **«Bekor qilish»** tugmasi bilan bekor qilib, mijoz qarzini avvalgi holiga qaytara oladi.
 * **Oylik Maosh (Payroll — 2 bosqichli):**
   1. *Hisoblash bosqichi:* Oklad + tovarlar bo'yicha foizlar + bonuslar − kamomadlar avtomatik yig'iladi.
   2. *Tasdiqlash va to'lash bosqichi:* Super admin tasdiqlagach, kassadan xodimga naqd yoki plastik orqali to'lanadi.
