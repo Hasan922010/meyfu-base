@@ -46,7 +46,11 @@ export function PackagingModal({
   // Sync state whenever stock or currentLine changes
   useEffect(() => {
     if (!open || !stock) return;
-    const initialPrice = currentLine?.price ?? defaultPrice;
+    const rawPrice = currentLine?.price ?? defaultPrice;
+    const initialPrice =
+      currentLine && packQuantity > 1
+        ? Math.round((rawPrice / packQuantity) * 100) / 100
+        : rawPrice;
     setPrice(initialPrice);
     setUnitPriceInput(initialPrice > 0 ? String(initialPrice) : '');
     setPackPriceInput(
@@ -61,7 +65,11 @@ export function PackagingModal({
         setCount(currentLine.package_count);
       } else {
         setMode('base');
-        setCount(currentLine.quantity);
+        setCount(
+          packQuantity > 1
+            ? Math.round(currentLine.quantity * packQuantity)
+            : currentLine.quantity,
+        );
       }
     } else {
       setMode(packQuantity > 1 ? 'package' : 'base');
@@ -71,11 +79,12 @@ export function PackagingModal({
 
   if (!open || !stock) return null;
 
-  const maxPackages = Math.floor(stock.quantity / packQuantity);
-  const maxPieces = stock.quantity;
+  const maxPackages = Math.floor(stock.quantity);
+  const maxPieces = Math.floor(stock.quantity * packQuantity);
   const isPack = mode === 'package';
   const totalBaseQty = isPack ? count * packQuantity : count;
   const totalPrice = totalBaseQty * price;
+  const requestedStockQty = isPack ? count : Math.round((count / packQuantity) * 1000) / 1000;
 
   function handleModeChange(nextMode: 'base' | 'package'): void {
     setMode(nextMode);
@@ -95,12 +104,14 @@ export function PackagingModal({
   }
 
   function handleConfirm(): void {
-    if (!stock || totalBaseQty <= 0 || totalBaseQty > stock.quantity || price <= 0) return;
+    if (!stock || totalBaseQty <= 0 || requestedStockQty > stock.quantity || price <= 0) return;
+    const storedPrice =
+      packQuantity > 1 ? Math.round(price * packQuantity * 100) / 100 : price;
     onConfirm({
       product: stock.product,
       product_name: stock.product_name,
-      quantity: totalBaseQty,
-      price,
+      quantity: packQuantity > 1 ? requestedStockQty : count,
+      price: storedPrice,
       unit_mode: isPack ? 'package' : 'base',
       package_count: isPack ? count : undefined,
       package_type: isPack ? packageType : undefined,
@@ -112,7 +123,7 @@ export function PackagingModal({
   }
 
   const isBelowMin = minPrice > 0 && price < minPrice;
-  const isOutOfStock = totalBaseQty > stock.quantity;
+  const isOutOfStock = requestedStockQty > stock.quantity;
 
   return (
     <Modal

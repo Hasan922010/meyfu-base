@@ -207,6 +207,11 @@
     - **Mobil Qarz Undirish Birlashtirildi:** Barcha mobil bosh sahifalar (`MobileHomePage`, `OrderTakerHomePage`, `WarehouseHomePage`, `MobileLayout`) dan `/m/debts` havolalari olib tashlanib (`router.tsx` -> `/m/clients`), to'lov qabul qilish `MyClientsPage.tsx` dagi mijoz kartochkasiga (`To'lov qabul qilish`) biriktirildi.
     - **Buyurtma Zaxirasi va Ombor Chiqimi (`orders/models.py`, `0003_orderitem_reserved_quantity.py`, `order.py`, `sale.py`):** `create_order` omborda mavjud erkin qoldiqni `OrderItem.reserved_quantity` orqali band qiladi (`cancel_order` / `build_loading_from_orders` / `fulfill_order` bo'shatadi); `give_order_on_debt` ombordan `OUT_SALE` chiqim qiladi, `Sale`/`SaleItem` va `due_date` (`+14 kun` zaxira bilan) yaratadi; `cancel_sale` `loading_id is None` bo'lgan buyurtma sotuvlarini omborga (`IN_RETURN`) qaytaradi.
 
+26. **Barcha Hujjatlarni Qadoq (`qadoq`) Birligiga O'tkazish va Tarixiy Harakatlarni Qayta Hisoblash:**
+    - **Backend (`StockSerializer`, `stock.py`, `convert_stock_to_packages.py`):** `StockSerializer` ga `package_type` va `pack_quantity` qo'shildi; `convert_warehouse_history_to_packages()` (`AuditLog(action="stock.converted_to_packages")` orqali idempotent) va `python manage.py convert_stock_to_packages` buyrug'i yaratildi (`test_convert_warehouse_history_to_packages_is_idempotent` qo'shildi).
+    - **Frontend (`StockTab.tsx`, `MobileStockPage.tsx`, `MobileReceivePage.tsx`, `PurchaseForm.tsx`, `NewOrderPage.tsx`, `PackagingModal.tsx`, `SaleProductList.tsx`, `bonusCalculator.ts`):** Ombor qoldig'ida qadoq birligi ko'rsatiladigan bo'ldi; Kirim, Buyurtma va Sotuv hujjatlari qadoq soni va qadoq narxi bilan ishlaydigan qilindi; `computePromotionalBonuses` qadoq rejimida `effectiveQty = line.quantity * line.pack_quantity` orqali aksiya bonusini to'g'ri hisoblaydi.
+    - **Verifikatsiya:** Backend `test_warehouse.py` + `test_orders.py` (**46/46** pytest, `ruff` All checks passed); Frontend `tsc -b --noEmit` 0 xato, `eslint . --max-warnings 0` 0 ogohlantirish, Vitest 5 ta yangilangan test fayli (**5/5 fayl, 19/19 test**); `artifacts/meyfu-app/` 1:1 sinxronlandi. Live/Replit serverda bir marta `python manage.py convert_stock_to_packages` ni ishga tushirish kerak.
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)

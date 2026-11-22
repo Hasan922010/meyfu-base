@@ -9532,6 +9532,9 @@ export interface components {
             readonly product_name: string;
             readonly product_sku: string;
             readonly product_unit: string;
+            readonly package_type: string;
+            /** Format: decimal */
+            readonly pack_quantity: string;
             /** Format: decimal */
             readonly min_stock_alert: string;
             /**

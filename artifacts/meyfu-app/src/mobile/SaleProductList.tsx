@@ -77,11 +77,10 @@ export function SaleProductList({
 
     if (line?.unit_mode === 'package' && line.package_count && packQty > 1) {
       const nextPackCount = line.package_count + 1;
-      const requestedQty = nextPackCount * packQty;
-      if (requestedQty <= v.quantity) {
+      if (nextPackCount <= v.quantity) {
         const updated: CartLine = {
           ...line,
-          quantity: requestedQty,
+          quantity: nextPackCount,
           package_count: nextPackCount,
           max: v.quantity,
         };
@@ -90,7 +89,7 @@ export function SaleProductList({
           '',
         );
       } else {
-        onChange(cart, `Mashinada faqat ${v.quantity} ${v.unit} bor`);
+        onChange(cart, `Mashinada faqat ${v.quantity} ${line.package_type || v.unit} bor`);
       }
       return;
     }
@@ -110,7 +109,7 @@ export function SaleProductList({
       } else {
         const updated: CartLine = {
           ...line,
-          quantity: nextPackCount * packQty,
+          quantity: nextPackCount,
           package_count: nextPackCount,
           max: v.quantity,
         };
@@ -132,16 +131,15 @@ export function SaleProductList({
     const packInfo = packInfoOf?.(v.product);
     const packQty = Number(packInfo?.pack_quantity) || 1;
     if (field === 'price') {
-      const unitVal =
-        inCart?.unit_mode === 'package' && packQty > 1
-          ? Math.round((value / packQty) * 100) / 100
-          : Math.round(value * 100) / 100;
-      const min = minPriceOf?.(v.product) ?? 0;
+      const storedVal = Math.round(value * 100) / 100;
+      const minUnit = minPriceOf?.(v.product) ?? 0;
+      const minAllowed =
+        inCart?.unit_mode === 'package' && packQty > 1 ? minUnit * packQty : minUnit;
       const notice =
-        min > 0 && unitVal < min
-          ? `Minimal narx ${money(min)} — bu sotuv admin ko‘rigiga belgilanadi`
+        minAllowed > 0 && storedVal < minAllowed
+          ? `Minimal narx ${money(minAllowed)} — bu sotuv admin ko‘rigiga belgilanadi`
           : '';
-      onChange(setLinePrice(cart, v.product, unitVal), notice);
+      onChange(setLinePrice(cart, v.product, storedVal), notice);
       return;
     }
 
@@ -151,18 +149,16 @@ export function SaleProductList({
         onChange(cart.filter((l) => l.product !== v.product), '');
         return;
       }
-      const requestedQty = packCount * packQty;
-      const totalQty = Math.min(v.quantity, requestedQty);
-      const actualPackCount = Math.floor(totalQty / packQty);
+      const totalQty = Math.min(v.quantity, packCount);
       const updated: CartLine = {
         ...inCart,
         quantity: totalQty,
-        package_count: actualPackCount,
+        package_count: totalQty,
         max: v.quantity,
       };
       onChange(
         cart.map((l) => (l.product === v.product ? updated : l)),
-        requestedQty > v.quantity ? `Mashinada faqat ${v.quantity} ${v.unit} bor` : '',
+        packCount > v.quantity ? `Mashinada faqat ${v.quantity} ${inCart.package_type || v.unit} bor` : '',
       );
       return;
     }
@@ -325,7 +321,7 @@ function ProductRow({
       {editing === 'price' ? (
         <InlineNumber
           label={`${name} narxi`}
-          initial={isPackageMode ? Math.round(price * packQty * 100) / 100 : price}
+          initial={price}
           onCommit={(raw) => onCommit('price', raw)}
         />
       ) : (
@@ -337,10 +333,10 @@ function ProductRow({
           disabled={!selected}
           aria-label={`${name} narxini o‘zgartirish`}
         >
-          <span>{money(isPackageMode ? price * packQty : price)}</span>
-          {isPackageMode && (
+          <span>{money(price)}</span>
+          {isPackageMode && packQty > 1 && (
             <span className="text-[10px] font-normal text-gray-400 leading-none">
-              {money(price)} / {stock.unit}
+              {money(Math.round((price / packQty) * 100) / 100)} / {stock.unit}
             </span>
           )}
         </button>

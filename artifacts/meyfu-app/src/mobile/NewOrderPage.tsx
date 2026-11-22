@@ -121,17 +121,20 @@ export function NewOrderPage(): ReactElement {
 
   function addToCart(): void {
     const p = productMap.get(picked);
-    const price = Math.round(Number(pickedPrice || suggestedPrice(picked)) * 100) / 100;
-    if (!p || qty <= 0 || price <= 0) return;
+    const unitPrice = Math.round(Number(pickedPrice || suggestedPrice(picked)) * 100) / 100;
+    if (!p || qty <= 0 || unitPrice <= 0) return;
     const { packQty, isPack, baseUnit, packLabel } = orderUnitInfo(p);
+    const linePrice = isPack
+      ? Math.round((Number(pickedPackPrice) || unitPrice * packQty) * 100) / 100
+      : unitPrice;
 
     setCart((prev) => [
       ...prev.filter((l) => l.product !== picked),
       {
         product: p.id,
         product_name: p.name,
-        quantity: isPack ? qty * packQty : qty,
-        price,
+        quantity: qty,
+        price: linePrice,
         unit_mode: isPack ? 'package' : 'base',
         package_count: isPack ? qty : undefined,
         package_type: isPack ? packLabel : undefined,
@@ -477,7 +480,7 @@ export function NewOrderPage(): ReactElement {
                           <span className="font-semibold text-brand">
                             {l.package_count} {l.package_type || 'qadoq'}
                           </span>{' '}
-                          ({l.quantity} {l.unit_name || 'dona'}) × {money(l.price)} ={' '}
+                          ({l.package_count * (l.pack_quantity || 1)} {l.unit_name || 'dona'}) × {money(l.price)} ={' '}
                           <span className="font-medium text-gray-900 dark:text-gray-100">
                             {money(l.quantity * l.price)}
                           </span>

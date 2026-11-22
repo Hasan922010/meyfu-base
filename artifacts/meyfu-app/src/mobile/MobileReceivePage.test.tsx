@@ -82,8 +82,8 @@ describe('MobileReceivePage — qadoq/quti birligida kirim', () => {
           items: [
             {
               product: 'p-pack',
-              quantity: '20',
-              cost_price: '12600',
+              quantity: '2',
+              cost_price: '126000',
             },
           ],
         }),

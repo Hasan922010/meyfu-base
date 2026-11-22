@@ -40,6 +40,8 @@ export function MobileStockPage(): ReactElement {
           {rows.map((s) => {
             const low = Number(s.min_stock_alert) > 0 && Number(s.quantity) <= Number(s.min_stock_alert);
             const reserved = Number(s.reserved_quantity);
+            const unitLabel =
+              Number(s.pack_quantity) > 1 && s.package_type ? s.package_type : s.product_unit;
             return (
               <li
                 key={s.id}
@@ -56,7 +58,7 @@ export function MobileStockPage(): ReactElement {
                 </span>
                 <span className="text-right">
                   <span className={`block font-semibold ${low ? 'text-danger' : ''}`}>
-                    {qty(s.quantity)} {s.product_unit}
+                    {qty(s.quantity)} {unitLabel}
                   </span>
                   {reserved > 0 && (
                     <span className="block text-xs text-gray-400">band: {qty(reserved)}</span>

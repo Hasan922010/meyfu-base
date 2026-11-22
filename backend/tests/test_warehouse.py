@@ -395,3 +395,41 @@ def test_warehouse_pdf_escapes_xml_special_chars(van_stocked):
 
     pdf_bytes = loading_to_pdf(loading, with_stamp=False)
     assert pdf_bytes.startswith(b"%PDF-")
+
+
+@pytest.mark.django_db
+def test_convert_warehouse_history_to_packages_is_idempotent(van_stocked):
+    """Eski dona harakatlari qadoqqa o'girilib, qoldiq qayta hisoblanadi va ikki marta ishlasa ham buzilmaydi."""
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.models import Stock, StockMovement, VanStock
+    from apps.warehouse.services.stock import (
+        apply_movement,
+        convert_warehouse_history_to_packages,
+    )
+
+    product = van_stocked["product"]
+    product.pack_quantity = Decimal("10")
+    product.package_type = "qop"
+    product.save(update_fields=["pack_quantity", "package_type"])
+
+    wh = van_stocked["warehouse"]
+    apply_movement(
+        warehouse=wh, product=product, quantity=Decimal("200"),
+        movement_type=MovementType.IN_PURCHASE, user=van_stocked["distributor"],
+    )
+
+    res1 = convert_warehouse_history_to_packages()
+    assert res1["products"] >= 1
+
+    st = Stock.objects.get(warehouse=wh, product=product)
+    assert st.quantity == Decimal("20.000")
+    vs = VanStock.objects.get(distributor=van_stocked["distributor"], product=product)
+    assert vs.quantity == Decimal("50.000")
+    last_mv = StockMovement.objects.filter(warehouse=wh, product=product).order_by("created_at", "pk").last()
+    assert last_mv is not None and last_mv.balance_after == st.quantity
+
+    # Ikkinchi marta chaqirilsa idempotent -> qayta bo'lmaydi
+    res2 = convert_warehouse_history_to_packages()
+    assert res2["products"] == 0
+    st.refresh_from_db()
+    assert st.quantity == Decimal("20.000")

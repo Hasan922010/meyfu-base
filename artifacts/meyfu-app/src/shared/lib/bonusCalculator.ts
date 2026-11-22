@@ -12,7 +12,13 @@ export interface BonusCalculationResult {
  * Masalan: 10 ta xarid qilinsa, 1 ta sovg'a.
  */
 export function computePromotionalBonuses<
-  T extends { product: string; quantity: number; is_bonus?: boolean | undefined },
+  T extends {
+    product: string;
+    quantity: number;
+    is_bonus?: boolean | undefined;
+    unit_mode?: 'base' | 'package' | undefined;
+    pack_quantity?: number | undefined;
+  },
 >(
   lines: T[],
   productMap: Map<string, CachedProduct>,
@@ -22,7 +28,11 @@ export function computePromotionalBonuses<
   for (const line of lines) {
     if (line.is_bonus) continue;
     const current = qtyByProduct.get(line.product) ?? 0;
-    qtyByProduct.set(line.product, current + line.quantity);
+    const effectiveQty =
+      line.unit_mode === 'package' && line.pack_quantity && line.pack_quantity > 1
+        ? line.quantity * line.pack_quantity
+        : line.quantity;
+    qtyByProduct.set(line.product, current + effectiveQty);
   }
 
   const results: BonusCalculationResult[] = [];

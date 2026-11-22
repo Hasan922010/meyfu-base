@@ -52,12 +52,12 @@ describe('PackagingModal', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         product: 'p1',
-        quantity: 24,
+        quantity: 2,
         unit_mode: 'package',
         package_count: 2,
         package_type: 'karopka',
         pack_quantity: 12,
-        price: 20000,
+        price: 240000,
       }),
     );
   });
@@ -87,10 +87,10 @@ describe('PackagingModal', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         product: 'p1',
-        quantity: 5,
+        quantity: 0.417,
         unit_mode: 'base',
         package_count: undefined,
-        price: 20000,
+        price: 240000,
       }),
     );
   });
@@ -120,8 +120,8 @@ describe('PackagingModal', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         product: 'p1',
-        quantity: 12,
-        price: 25000,
+        quantity: 1,
+        price: 300000,
       }),
     );
   });

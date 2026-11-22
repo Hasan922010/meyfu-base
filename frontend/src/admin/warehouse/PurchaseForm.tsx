@@ -45,10 +45,11 @@ export function PurchaseForm({ onDone }: { onDone: () => void }): ReactElement {
           const p = productMap.get(r.product);
           const packQty = p ? Math.round(Number(p.pack_quantity) || 1) : 1;
           const mult = packQty > 1 ? packQty : 1;
+          const packCost = Math.round((Number(r.price) || 0) * mult * 100) / 100;
           return {
             product: r.product,
-            quantity: String((Number(r.quantity) || 0) * mult),
-            cost_price: r.price || '0',
+            quantity: String(Number(r.quantity) || 0),
+            cost_price: String(packCost),
           };
         });
       return warehouseApi.createPurchase({

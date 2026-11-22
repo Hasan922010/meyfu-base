@@ -95,11 +95,11 @@ export function MobileReceivePage(): ReactElement {
           .filter((r) => Number(r.quantity) > 0)
           .map((r) => {
             const packQty = r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1;
-            const baseQty = (Number(r.quantity) || 0) * packQty;
+            const packCost = Math.round((Number(r.price) || 0) * packQty * 100) / 100;
             return {
               product: r.product,
-              quantity: String(baseQty),
-              cost_price: r.price || '0',
+              quantity: String(Number(r.quantity) || 0),
+              cost_price: String(packCost),
             };
           }),
       }),

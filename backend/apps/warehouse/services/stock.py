@@ -181,3 +181,107 @@ def stock_matches_journal(warehouse: Warehouse, product: Product) -> bool:
         warehouse=warehouse, product=product
     ).values_list("quantity", flat=True).first() or _ZERO
     return journal == current
+
+
+@transaction.atomic
+def convert_warehouse_history_to_packages() -> dict[str, int]:
+    """pack_quantity > 1 bo'lgan mahsulotlar uchun eski dona harakatlarini qadoqqa o'girib, qoldiqni qayta hisoblaydi."""
+    from django.db.models import Sum
+
+    from apps.core.models import AuditLog
+    from apps.orders.models import OrderItem
+    from apps.sales.models import SaleItem
+
+    from ..models import (
+        InventoryCountItem,
+        LoadingItem,
+        PurchaseItem,
+        TransferItem,
+        VanStock,
+    )
+
+    done_ids = set(
+        AuditLog.objects.filter(action="stock.converted_to_packages")
+        .values_list("object_id", flat=True)
+    )
+    products = Product.objects.filter(pack_quantity__gt=Decimal("1"))
+    converted = 0
+    movements_updated = 0
+
+    for product in products:
+        if str(product.id) in done_ids:
+            continue
+        pack_qty = product.pack_quantity
+        q3 = Decimal("0.001")
+        m2 = Decimal("0.01")
+
+        # 1. StockMovement va balance_after ni ombor bo'yicha ketma-ket qayta hisoblash
+        by_wh: dict = {}
+        for mv in StockMovement.objects.filter(product=product).order_by("warehouse_id", "created_at", "pk"):
+            new_q = (mv.quantity / pack_qty).quantize(q3)
+            bal = by_wh.get(mv.warehouse_id, _ZERO) + new_q
+            by_wh[mv.warehouse_id] = bal
+            StockMovement.objects.filter(pk=mv.pk).update(quantity=new_q, balance_after=bal)
+            movements_updated += 1
+
+        # 2. Hujjat qatorlari (kirim, buyurtma, sotuv, yuklama, ko'chirish, inventarizatsiya)
+        for it in PurchaseItem.objects.filter(product=product):
+            PurchaseItem.objects.filter(pk=it.pk).update(
+                quantity=(it.quantity / pack_qty).quantize(q3),
+                cost_price=(it.cost_price * pack_qty).quantize(m2),
+            )
+        for it in OrderItem.objects.filter(product=product):
+            OrderItem.objects.filter(pk=it.pk).update(
+                quantity=(it.quantity / pack_qty).quantize(q3),
+                delivered_quantity=(it.delivered_quantity / pack_qty).quantize(q3),
+                reserved_quantity=(it.reserved_quantity / pack_qty).quantize(q3),
+                price=(it.price * pack_qty).quantize(m2),
+            )
+        for it in SaleItem.objects.filter(product=product):
+            SaleItem.objects.filter(pk=it.pk).update(
+                quantity=(it.quantity / pack_qty).quantize(q3),
+                price=(it.price * pack_qty).quantize(m2),
+                cost_price=(it.cost_price * pack_qty).quantize(m2),
+            )
+        for it in LoadingItem.objects.filter(product=product):
+            LoadingItem.objects.filter(pk=it.pk).update(
+                quantity=(it.quantity / pack_qty).quantize(q3),
+                price=(it.price * pack_qty).quantize(m2),
+            )
+        for it in TransferItem.objects.filter(product=product):
+            upd = {"quantity": (it.quantity / pack_qty).quantize(q3)}
+            if it.received_quantity is not None:
+                upd["received_quantity"] = (it.received_quantity / pack_qty).quantize(q3)
+            TransferItem.objects.filter(pk=it.pk).update(**upd)
+        for it in InventoryCountItem.objects.filter(product=product):
+            upd = {"system_quantity": (it.system_quantity / pack_qty).quantize(q3)}
+            if it.actual_quantity is not None:
+                upd["actual_quantity"] = (it.actual_quantity / pack_qty).quantize(q3)
+            if it.difference is not None:
+                upd["difference"] = (it.difference / pack_qty).quantize(q3)
+            InventoryCountItem.objects.filter(pk=it.pk).update(**upd)
+
+        # 3. Stock va VanStock qoldiqlarini qayta hisoblash
+        for st in Stock.objects.select_for_update().filter(product=product):
+            total_q = (
+                StockMovement.objects.filter(warehouse_id=st.warehouse_id, product=product)
+                .aggregate(s=Sum("quantity"))["s"]
+                or _ZERO
+            )
+            st.quantity = total_q
+            st.reserved_quantity = (st.reserved_quantity / pack_qty).quantize(q3)
+            st.save(update_fields=["quantity", "reserved_quantity", "updated_at"])
+
+        for vs in VanStock.objects.select_for_update().filter(product=product):
+            vs.quantity = (vs.quantity / pack_qty).quantize(q3)
+            vs.save(update_fields=["quantity", "updated_at"])
+
+        AuditLog.objects.create(
+            action="stock.converted_to_packages",
+            model_name="Product",
+            object_id=str(product.id),
+            changes={"pack_quantity": str(pack_qty)},
+        )
+        converted += 1
+
+    return {"products": converted, "movements": movements_updated}

@@ -64,6 +64,8 @@ export interface Stock {
   product_name: string;
   product_sku: string;
   product_unit: string;
+  package_type?: string;
+  pack_quantity?: string;
   /** Mahsulotning "kam qoldiq" chegarasi (0 — belgilanmagan) */
   min_stock_alert: string;
   quantity: string;
@@ -178,6 +180,8 @@ export interface InventoryCountItem {
   product_name: string;
   product_sku: string;
   product_unit: string;
+  package_type?: string;
+  pack_quantity?: string;
   /** To'ldirilgan paytdagi hisob qoldig'i */
   expected_qty: string;
   /** `null` — hali sanalmagan */
@@ -220,6 +224,8 @@ export interface TransferItem {
   product_name: string;
   product_sku: string;
   product_unit: string;
+  package_type?: string;
+  pack_quantity?: string;
   quantity: string;
   /** `null` — hali qabul qilinmagan */
   received_quantity: string | null;

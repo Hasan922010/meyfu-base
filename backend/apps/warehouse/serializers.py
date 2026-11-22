@@ -120,6 +120,10 @@ class StockSerializer(serializers.ModelSerializer):
     )
     # Audit m9: telefondagi ro'yxat birlik va "kam qoldi" belgisini ko'rsatadi
     product_unit = serializers.CharField(source="product.unit.short_name", read_only=True)
+    package_type = serializers.CharField(source="product.package_type", read_only=True)
+    pack_quantity = serializers.DecimalField(
+        source="product.pack_quantity", max_digits=14, decimal_places=3, read_only=True
+    )
     min_stock_alert = serializers.DecimalField(
         source="product.min_stock_alert", max_digits=14, decimal_places=3, read_only=True
     )
@@ -128,8 +132,8 @@ class StockSerializer(serializers.ModelSerializer):
         model = Stock
         fields = (
             "id", "warehouse", "warehouse_name", "product", "product_name",
-            "product_sku", "product_unit", "min_stock_alert",
-            "quantity", "reserved_quantity", "available_quantity",
+            "product_sku", "product_unit", "package_type", "pack_quantity",
+            "min_stock_alert", "quantity", "reserved_quantity", "available_quantity",
             "updated_at",
         )
         read_only_fields = fields

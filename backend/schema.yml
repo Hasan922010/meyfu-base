@@ -17675,6 +17675,14 @@ components:
         product_unit:
           type: string
           readOnly: true
+        package_type:
+          type: string
+          readOnly: true
+        pack_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
         min_stock_alert:
           type: string
           format: decimal
@@ -17706,6 +17714,8 @@ components:
       - available_quantity
       - id
       - min_stock_alert
+      - pack_quantity
+      - package_type
       - product
       - product_name
       - product_sku

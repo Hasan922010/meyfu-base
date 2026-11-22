@@ -102,8 +102,8 @@ describe('SaleProductList (UX M4)', () => {
     const packLine: CartLine = {
       product: 'gel',
       product_name: 'Yuvish geli 1L',
-      quantity: 12,
-      price: 20000,
+      quantity: 1,
+      price: 240000,
       unit_mode: 'package',
       package_count: 1,
       package_type: 'karopka',
@@ -129,7 +129,7 @@ describe('SaleProductList (UX M4)', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
 
     expect(onChange).toHaveBeenCalledWith(
-      [expect.objectContaining({ product: 'gel', price: 25000 })],
+      [expect.objectContaining({ product: 'gel', price: 300000 })],
       '',
     );
   });

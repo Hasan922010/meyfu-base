@@ -141,8 +141,8 @@ describe('NewOrderPage — Qadoq va Dona hisob-kitobi', () => {
     expect(saved?.lines).toHaveLength(2);
     expect(saved?.lines[0]).toMatchObject({
       product: 'p1',
-      quantity: 12,
-      price: 20000,
+      quantity: 1,
+      price: 240000,
       is_bonus: false,
     });
     expect(saved?.lines[1]).toMatchObject({

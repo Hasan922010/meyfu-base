@@ -53,7 +53,10 @@ export function StockTab(): ReactElement {
               </tr>
             </thead>
             <tbody>
-              {rows.map((s) => (
+              {rows.map((s) => {
+                const unitLabel =
+                  Number(s.pack_quantity) > 1 && s.package_type ? s.package_type : s.product_unit;
+                return (
                 <tr
                   key={s.id}
                   className="border-b border-gray-100 last:border-0 dark:border-gray-800"
@@ -61,15 +64,18 @@ export function StockTab(): ReactElement {
                   <td className="p-3 font-medium">{s.product_name}</td>
                   <td className="p-3 font-mono text-xs">{s.product_sku}</td>
                   <td className="p-3">{s.warehouse_name}</td>
-                  <td className="p-3 text-right">{qty(s.quantity)}</td>
+                  <td className="p-3 text-right">
+                    {qty(s.quantity)} {unitLabel}
+                  </td>
                   <td className="p-3 text-right text-gray-500">
-                    {qty(s.reserved_quantity)}
+                    {qty(s.reserved_quantity)} {unitLabel}
                   </td>
                   <td className="p-3 text-right font-semibold">
-                    {qty(s.available_quantity)}
+                    {qty(s.available_quantity)} {unitLabel}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </DataState>
