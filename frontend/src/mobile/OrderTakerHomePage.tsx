@@ -3,7 +3,6 @@ import {
   BookOpen,
   ClipboardList,
   Coins,
-  HandCoins,
   MapPin,
   Package,
   Plus,
@@ -165,20 +164,13 @@ export function OrderTakerHomePage(): ReactElement {
         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
           Xizmatlar
         </span>
-        <div className="grid grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-3 gap-2.5">
           <Link
             to="/m/visits"
             className="flex flex-col items-center gap-1.5 rounded-2xl bg-white p-3 text-center text-xs font-bold shadow-xs border border-gray-100 dark:border-gray-800 dark:bg-gray-900 active:scale-95 transition"
           >
             <MapPin size={22} className="text-indigo-500" aria-hidden />
             <span className="truncate">Tashrif</span>
-          </Link>
-          <Link
-            to="/m/debts"
-            className="flex flex-col items-center gap-1.5 rounded-2xl bg-white p-3 text-center text-xs font-bold shadow-xs border border-gray-100 dark:border-gray-800 dark:bg-gray-900 active:scale-95 transition"
-          >
-            <HandCoins size={22} className="text-amber-500" aria-hidden />
-            <span className="truncate">Qarzdorlar</span>
           </Link>
           <Link
             to="/m/sync"

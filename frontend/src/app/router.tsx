@@ -53,7 +53,6 @@ const AuditLogPage = lz(() => import('@/admin/system/AuditLogPage'), 'AuditLogPa
 const SyncLogPage = lz(() => import('@/admin/system/SyncLogPage'), 'SyncLogPage');
 const GuidePage = lz(() => import('@/shared/help/GuidePage'), 'GuidePage');
 import { DayCloseWizard } from '@/mobile/DayCloseWizard';
-import { DebtCollectPage } from '@/mobile/DebtCollectPage';
 import { MobileAdminDayClose } from '@/mobile/admin/MobileAdminDayClose';
 import { MobileAdminDebts } from '@/mobile/admin/MobileAdminDebts';
 import { MobileAdminExpenses } from '@/mobile/admin/MobileAdminExpenses';
@@ -222,7 +221,7 @@ const router = createBrowserRouter([
       { path: 'return/new', element: <NewReturnPage /> },
       { path: 'payroll', element: <MyPayrollPage /> },
       { path: 'report', element: <MyReportPage /> },
-      { path: 'debts', element: <DebtCollectPage /> },
+      { path: 'debts', element: <Navigate to="/m/clients" replace /> },
       { path: 'clients', element: <MyClientsPage /> },
       { path: 'van', element: <MyVanStockPage /> },
       { path: 'visits', element: <MyVisitsPage /> },

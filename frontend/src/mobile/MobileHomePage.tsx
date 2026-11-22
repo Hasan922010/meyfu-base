@@ -5,7 +5,6 @@ import {
   ChartColumn,
   ClipboardList,
   Coins,
-  HandCoins,
   MapPin,
   PackageOpen,
   Receipt,
@@ -171,24 +170,6 @@ export function MobileHomePage(): ReactElement {
               </span>
               <span className="block text-xs font-medium text-emerald-700/80 dark:text-emerald-300/80">
                 Hozir bor tovarlar
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            to="/m/debts"
-            className="flex flex-col justify-between rounded-2xl bg-amber-50/70 p-4 border border-amber-100 hover:border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 active:scale-[0.98] transition"
-          >
-            <div className="flex items-center justify-between">
-              <HandCoins size={24} className="text-amber-600 dark:text-amber-400" />
-              <span className="text-sm text-amber-500 font-bold">→</span>
-            </div>
-            <div className="mt-3">
-              <span className="block font-black text-base text-amber-950 dark:text-amber-100">
-                Qarz Undirish
-              </span>
-              <span className="block text-xs font-medium text-amber-700/80 dark:text-amber-300/80">
-                Nasiya pullarni yig‘ish
               </span>
             </div>
           </Link>

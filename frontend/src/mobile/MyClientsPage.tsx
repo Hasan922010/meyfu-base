@@ -1,16 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Banknote, Plus } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { Banknote, CircleCheckBig, HandCoins, Plus } from 'lucide-react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { saveDebtPaymentLocal } from '@/offline/actions';
+import { db } from '@/offline/db';
+import { useSync } from '@/offline/useSync';
 import { clientsApi } from '@/shared/api/clients';
 import { extractApiError } from '@/shared/api/client';
+import { debtsApi } from '@/shared/api/debts';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { money } from '@/shared/lib/format';
+import { dateShort, money } from '@/shared/lib/format';
+import { hasUserPermission } from '@/shared/lib/permissions';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Client } from '@/shared/types/clients';
+import type { Debt } from '@/shared/types/sales';
 
 import { CheckInSheet } from './CheckInSheet';
 import { NewClientModal } from './NewClientModal';
@@ -28,12 +34,20 @@ export function MyClientsPage(): ReactElement {
   const [debtClient, setDebtClient] = useState<Client | null>(null);
   const [debtAmount, setDebtAmount] = useState<string>('');
   const [debtNote, setDebtNote] = useState<string>('');
+  const [collectClient, setCollectClient] = useState<Client | null>(null);
+  const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
+  const [payAmount, setPayAmount] = useState<string>('');
+  const [payType, setPayType] = useState<'NAQD' | 'PLASTIK' | 'OTKAZMA'>('NAQD');
+  const [paySaved, setPaySaved] = useState<boolean>(false);
   const [showNewModal, setShowNewModal] = useState<boolean>(false);
   const navigate = useNavigate();
-  const role = useAuthStore((s) => s.user?.role);
+  const { online } = useSync();
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role;
   // Zakaz oluvchida tashrif (check-in) yo'q — mijozni bossa buyurtma ochiladi
   const isOrderTaker = role === 'ORDER_TAKER';
   const canRecordAdvance = role != null && ADVANCE_ROLES.has(role);
+  const canCollectDebts = hasUserPermission(user, 'can_collect_debts');
   const pick = (c: Client): void => {
     if (isOrderTaker) void navigate(`/m/order/new?client=${c.id}`);
     else setSelected(c);
@@ -73,6 +87,58 @@ export function MyClientsPage(): ReactElement {
       setDebtNote('');
     },
   });
+
+  const clientDebtsQuery = useQuery({
+    queryKey: ['debts', 'client', collectClient?.id],
+    enabled: collectClient !== null,
+    queryFn: async (): Promise<Debt[]> => {
+      if (!collectClient) return [];
+      try {
+        const page = await debtsApi.list({ client: collectClient.id, page_size: 50 });
+        return page.results.filter((d) => Number(d.remaining) > 0);
+      } catch (err) {
+        const cached = (await db.debts.toArray()).filter(
+          (d) => d.client === collectClient.id && Number(d.remaining) > 0,
+        );
+        if (cached.length > 0 || !navigator.onLine) return cached;
+        throw err;
+      }
+    },
+  });
+
+  useEffect(() => {
+    const first = clientDebtsQuery.data?.[0];
+    if (collectClient && first && !selectedDebt) {
+      setSelectedDebt(first);
+      setPayAmount(String(Math.round(Number(first.remaining) || 0)));
+    }
+  }, [collectClient, clientDebtsQuery.data, selectedDebt]);
+
+  const collectMut = useMutation({
+    mutationFn: async () => {
+      if (!collectClient || !selectedDebt) throw new Error('Debt required');
+      await saveDebtPaymentLocal({
+        debt: selectedDebt.id,
+        client_name: collectClient.name,
+        client_phone: collectClient.phone,
+        amount: Number(payAmount),
+        payment_type: payType,
+      });
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+      void qc.invalidateQueries({ queryKey: ['debts'] });
+      setPaySaved(true);
+    },
+  });
+
+  function closeCollectModal(): void {
+    collectMut.reset();
+    setCollectClient(null);
+    setSelectedDebt(null);
+    setPayAmount('');
+    setPaySaved(false);
+  }
 
   const query = useQuery({
     queryKey: ['clients', 'mine', search],
@@ -143,6 +209,23 @@ export function MyClientsPage(): ReactElement {
                 </div>
               </button>
               <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-2 dark:border-gray-800">
+                {canCollectDebts && Number(c.current_debt) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      collectMut.reset();
+                      setCollectClient(c);
+                      setSelectedDebt(null);
+                      setPayAmount('');
+                      setPayType('NAQD');
+                      setPaySaved(false);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand hover:bg-brand/20"
+                  >
+                    <HandCoins size={14} aria-hidden />
+                    To&apos;lov qabul qilish
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -279,6 +362,110 @@ export function MyClientsPage(): ReactElement {
           pick(created);
         }}
       />
+      <Modal
+        open={collectClient !== null}
+        title={collectClient ? `To'lov qabul qilish: ${collectClient.name}` : ''}
+        onClose={closeCollectModal}
+      >
+        {collectClient && (
+          paySaved ? (
+            <div className="space-y-3 py-6 text-center">
+              <CircleCheckBig size={48} className="mx-auto text-success" aria-hidden />
+              <p className="font-semibold">To&apos;lov saqlandi</p>
+              <p className="text-sm text-gray-500">
+                {online
+                  ? 'Serverga yuborilmoqda…'
+                  : "Internet yo'q — ulanish paydo bo'lganda yuboriladi."}
+              </p>
+              <button type="button" className="btn-brand px-6" onClick={closeCollectModal}>
+                Yopish
+              </button>
+            </div>
+          ) : (
+            <DataState
+              isLoading={clientDebtsQuery.isLoading}
+              isError={clientDebtsQuery.isError}
+              isEmpty={!clientDebtsQuery.isLoading && (clientDebtsQuery.data?.length ?? 0) === 0}
+              emptyText="Ushbu mijozda ochiq qarz topilmadi"
+            >
+              <div className="space-y-3">
+                {(clientDebtsQuery.data?.length ?? 0) > 1 && (
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-medium text-gray-500">Qaysi qarz uchun:</div>
+                    <div className="max-h-36 space-y-1 overflow-y-auto">
+                      {clientDebtsQuery.data?.map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDebt(d);
+                            setPayAmount(String(Math.round(Number(d.remaining) || 0)));
+                          }}
+                          className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs ${
+                            selectedDebt?.id === d.id
+                              ? 'border-brand bg-brand/5 font-semibold text-brand'
+                              : 'border-gray-200 dark:border-gray-800'
+                          }`}
+                        >
+                          <span>
+                            {d.sale_number ?? "Boshlang'ich qarz"}
+                            {d.due_date ? ` · ${dateShort(d.due_date)}` : ''}
+                          </span>
+                          <span className="text-danger">{money(d.remaining)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedDebt && (
+                  <>
+                    <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                      Qoldiq: <strong className="text-danger">{money(selectedDebt.remaining)}</strong>
+                    </div>
+                    <AmountInput
+                      className="text-lg"
+                      ariaLabel="To'lov summasi"
+                      value={payAmount}
+                      onChange={setPayAmount}
+                    />
+                    <div className="flex gap-2">
+                      {(['NAQD', 'PLASTIK', 'OTKAZMA'] as const).map((tp) => (
+                        <button
+                          key={tp}
+                          type="button"
+                          onClick={() => setPayType(tp)}
+                          className={`flex-1 rounded-lg py-2 text-xs font-medium ${
+                            payType === tp ? 'bg-brand text-brand-fg' : 'bg-gray-100 dark:bg-gray-800'
+                          }`}
+                        >
+                          {tp}
+                        </button>
+                      ))}
+                    </div>
+                    {collectMut.isError && (
+                      <p className="text-sm text-danger" role="alert">
+                        {extractApiError(collectMut.error)}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-brand w-full"
+                      disabled={
+                        Number(payAmount) <= 0 ||
+                        Number(payAmount) > Number(selectedDebt.remaining) ||
+                        collectMut.isPending
+                      }
+                      onClick={() => collectMut.mutate()}
+                    >
+                      {collectMut.isPending ? 'Saqlanmoqda…' : "To'lovni qabul qilish"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </DataState>
+          )
+        )}
+      </Modal>
     </div>
   );
 }

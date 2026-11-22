@@ -5,7 +5,6 @@ import {
   Boxes,
   ClipboardList,
   ClipboardPen,
-  HandCoins,
   PackagePlus,
   Plus,
   ScanLine,
@@ -17,7 +16,6 @@ import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
 import { warehouseApi } from '@/shared/api/warehouse';
-import { hasUserPermission } from '@/shared/lib/permissions';
 import { useAuthStore } from '@/shared/store/authStore';
 
 /**
@@ -28,7 +26,6 @@ import { useAuthStore } from '@/shared/store/authStore';
  */
 export function WarehouseHomePage(): ReactElement {
   const user = useAuthStore((s) => s.user);
-  const canCollectDebts = hasUserPermission(user, 'can_collect_debts');
   const low = useQuery({
     queryKey: ['stock', 'low'],
     queryFn: () => warehouseApi.lowStock(),
@@ -180,27 +177,6 @@ export function WarehouseHomePage(): ReactElement {
             </span>
           </div>
         </Link>
-
-        {/* Qarz undirish */}
-        {canCollectDebts && (
-          <Link
-            to="/m/debts"
-            className="col-span-2 flex items-center justify-between rounded-2xl bg-amber-50/70 p-4 border border-amber-100 hover:border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 active:scale-[0.99] transition"
-          >
-            <div className="flex items-center gap-3">
-              <HandCoins size={24} className="text-amber-600 dark:text-amber-400" />
-              <div>
-                <span className="block font-black text-base text-amber-950 dark:text-amber-100">
-                  Qarz undirish
-                </span>
-                <span className="block text-xs font-medium text-amber-700/80 dark:text-amber-300/80">
-                  Qarzdorlar & to‘lov qabul qilish
-                </span>
-              </div>
-            </div>
-            <span className="text-sm text-amber-500 font-bold">→</span>
-          </Link>
-        )}
 
         {/* Boshlang'ich Qoldiq */}
         <Link
