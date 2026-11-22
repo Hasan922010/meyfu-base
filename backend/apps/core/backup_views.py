@@ -13,8 +13,9 @@ from __future__ import annotations
 import logging
 
 from django.http import FileResponse, Http404
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -47,7 +48,7 @@ class BackupListView(APIView):
     read_roles = _ADMIN_ROLES
     write_roles = (Role.SUPER_ADMIN,)
 
-    @extend_schema(summary="Zaxiralar ro'yxati", responses={200: list})
+    @extend_schema(summary="Zaxiralar ro'yxati", responses={200: OpenApiTypes.OBJECT})
     def get(self, request: Request) -> Response:
         backups = list_backups()
         return ok(backups)
@@ -127,7 +128,11 @@ class BackupUploadView(APIView):
     write_roles = (Role.SUPER_ADMIN,)
     parser_classes = [MultiPartParser, FormParser]
 
-    @extend_schema(summary="Zaxira faylini yuklash", responses={201: dict})
+    @extend_schema(
+        summary="Zaxira faylini yuklash",
+        request=inline_serializer("BackupUploadRequest", fields={"file": serializers.FileField()}),
+        responses={201: OpenApiTypes.OBJECT},
+    )
     def post(self, request: Request) -> Response:
         uploaded_file = request.FILES.get("file")
         if not uploaded_file:

@@ -8436,7 +8436,6 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
-                description: Unspecified response body
           description: ''
     post:
       operationId: system_backups_create
@@ -8567,7 +8566,6 @@ paths:
               schema:
                 type: object
                 additionalProperties: {}
-                description: Unspecified response body
           description: ''
     post:
       operationId: system_backups_create_create
@@ -8606,6 +8604,15 @@ paths:
       summary: Zaxira faylini yuklash
       tags:
       - system
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BackupUploadRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BackupUploadRequestRequest'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -10313,6 +10320,14 @@ components:
       - user
       - user_agent
       - user_name
+    BackupUploadRequestRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+      - file
     BlankEnum:
       enum:
       - ''
@@ -11246,6 +11261,14 @@ components:
       required:
       - client
       - result
+    CommissionRoleEnum:
+      enum:
+      - ORDER
+      - DELIVERY
+      type: string
+      description: |-
+        * `ORDER` - Zakaz olgani
+        * `DELIVERY` - Yetkazib bergani
     CommissionRule:
       type: object
       properties:
@@ -11282,8 +11305,9 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -11333,8 +11357,9 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -12069,16 +12094,6 @@ components:
       - date
       - debt
       - id
-    DebtPaymentCreatePaymentTypeEnum:
-      enum:
-      - NAQD
-      - PLASTIK
-      - OTKAZMA
-      type: string
-      description: |-
-        * `NAQD` - NAQD
-        * `PLASTIK` - PLASTIK
-        * `OTKAZMA` - OTKAZMA
     DebtPaymentCreateRequest:
       type: object
       properties:
@@ -12091,7 +12106,7 @@ components:
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         payment_type:
           allOf:
-          - $ref: '#/components/schemas/DebtPaymentCreatePaymentTypeEnum'
+          - $ref: '#/components/schemas/DebtPaymentTypeEnum'
           default: NAQD
         date:
           type: string
@@ -12146,6 +12161,16 @@ components:
       - amount
       - date
       - debt
+    DebtPaymentTypeEnum:
+      enum:
+      - NAQD
+      - PLASTIK
+      - OTKAZMA
+      type: string
+      description: |-
+        * `NAQD` - NAQD
+        * `PLASTIK` - PLASTIK
+        * `OTKAZMA` - OTKAZMA
     DebtStatusEnum:
       enum:
       - ACTIVE
@@ -12567,8 +12592,9 @@ components:
           title: Litr narxi
         odometer:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           nullable: true
           title: Odometr
         station_name:
@@ -12593,8 +12619,9 @@ components:
           title: Litr narxi
         odometer:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           nullable: true
           title: Odometr
         station_name:
@@ -12647,7 +12674,7 @@ components:
           title: Sana
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusF18Enum'
+          - $ref: '#/components/schemas/InventoryStatusEnum'
           readOnly: true
           title: Holat
         status_display:
@@ -12782,7 +12809,7 @@ components:
           title: Sana
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusF18Enum'
+          - $ref: '#/components/schemas/InventoryStatusEnum'
           readOnly: true
           title: Holat
         status_display:
@@ -12861,6 +12888,16 @@ components:
       required:
       - actual_qty
       - id
+    InventoryStatusEnum:
+      enum:
+      - DRAFT
+      - CONFIRMED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Qoralama
+        * `CONFIRMED` - Tasdiqlangan
+        * `CANCELLED` - Bekor qilingan
     InvoiceScan:
       type: object
       properties:
@@ -15084,8 +15121,9 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 2147483647
-          minimum: -2147483648
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -15535,7 +15573,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role164Enum'
+          - $ref: '#/components/schemas/RoleEnum'
           title: Rol
         passport_series:
           type: string
@@ -15868,7 +15906,7 @@ components:
           readOnly: true
         role:
           allOf:
-          - $ref: '#/components/schemas/PayrollDetailRoleEnum'
+          - $ref: '#/components/schemas/CommissionRoleEnum'
           title: Ish turi
         role_display:
           type: string
@@ -15904,14 +15942,6 @@ components:
       - role_display
       - sale_date
       - sale_number
-    PayrollDetailRoleEnum:
-      enum:
-      - ORDER
-      - DELIVERY
-      type: string
-      description: |-
-        * `ORDER` - Zakaz olgani
-        * `DELIVERY` - Yetkazib bergani
     PayrollManualRequest:
       type: object
       properties:
@@ -16931,7 +16961,7 @@ components:
         * `SOTUV` - Sotuv bo'ldi
         * `SOTUVSIZ` - Sotuvsiz
         * `YOPIQ` - Yopiq edi
-    Role164Enum:
+    RoleEnum:
       enum:
       - SUPER_ADMIN
       - MANAGER
@@ -17616,16 +17646,6 @@ components:
       description: |-
         * `MANUAL` - Qo'lda
         * `SCAN` - Naklit skani
-    StatusF18Enum:
-      enum:
-      - DRAFT
-      - CONFIRMED
-      - CANCELLED
-      type: string
-      description: |-
-        * `DRAFT` - Qoralama
-        * `CONFIRMED` - Tasdiqlangan
-        * `CANCELLED` - Bekor qilingan
     Stock:
       type: object
       properties:
@@ -18356,7 +18376,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role164Enum'
+          - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
           title: Rol
         avatar:
@@ -18467,7 +18487,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role164Enum'
+          - $ref: '#/components/schemas/RoleEnum'
           title: Rol
         passport_series:
           type: string
@@ -18548,7 +18568,7 @@ components:
           maxLength: 255
         role:
           allOf:
-          - $ref: '#/components/schemas/Role164Enum'
+          - $ref: '#/components/schemas/RoleEnum'
           title: Rol
         passport_series:
           type: string

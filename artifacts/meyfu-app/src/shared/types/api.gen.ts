@@ -4916,6 +4916,10 @@ export interface components {
             /** Qurilma / brauzer */
             readonly user_agent: string;
         };
+        BackupUploadRequestRequest: {
+            /** Format: binary */
+            file: string;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
         /** @description Filialdan markazga topshirish. `branch` — faqat markaz xodimi uchun. */
@@ -5499,6 +5503,12 @@ export interface components {
              */
             device_time?: string | null;
         };
+        /**
+         * @description * `ORDER` - Zakaz olgani
+         *     * `DELIVERY` - Yetkazib bergani
+         * @enum {string}
+         */
+        CommissionRoleEnum: "ORDER" | "DELIVERY";
         CommissionRule: {
             /** Format: uuid */
             readonly id: string;
@@ -5528,6 +5538,7 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
+             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -5567,6 +5578,7 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
+             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -6009,20 +6021,13 @@ export interface components {
              */
             readonly created_at: string;
         };
-        /**
-         * @description * `NAQD` - NAQD
-         *     * `PLASTIK` - PLASTIK
-         *     * `OTKAZMA` - OTKAZMA
-         * @enum {string}
-         */
-        DebtPaymentCreatePaymentTypeEnum: "NAQD" | "PLASTIK" | "OTKAZMA";
         DebtPaymentCreateRequest: {
             /** Format: uuid */
             debt: string;
             /** Format: decimal */
             amount: string;
             /** @default NAQD */
-            payment_type: components["schemas"]["DebtPaymentCreatePaymentTypeEnum"];
+            payment_type: components["schemas"]["DebtPaymentTypeEnum"];
             /** Format: date */
             date?: string;
             /** Format: uuid */
@@ -6057,6 +6062,13 @@ export interface components {
             /** Izoh */
             note?: string;
         };
+        /**
+         * @description * `NAQD` - NAQD
+         *     * `PLASTIK` - PLASTIK
+         *     * `OTKAZMA` - OTKAZMA
+         * @enum {string}
+         */
+        DebtPaymentTypeEnum: "NAQD" | "PLASTIK" | "OTKAZMA";
         /**
          * @description * `ACTIVE` - Faol
          *     * `PARTIAL` - Qisman to'langan
@@ -6339,7 +6351,10 @@ export interface components {
              * Format: decimal
              */
             price_per_liter: string;
-            /** Odometr */
+            /**
+             * Odometr
+             * Format: int64
+             */
             odometer?: number | null;
             /** Shoxobcha */
             station_name?: string;
@@ -6355,7 +6370,10 @@ export interface components {
              * Format: decimal
              */
             price_per_liter: string;
-            /** Odometr */
+            /**
+             * Odometr
+             * Format: int64
+             */
             odometer?: number | null;
             /** Shoxobcha */
             station_name?: string;
@@ -6386,7 +6404,7 @@ export interface components {
              */
             date: string;
             /** Holat */
-            readonly status: components["schemas"]["StatusF18Enum"];
+            readonly status: components["schemas"]["InventoryStatusEnum"];
             readonly status_display: string;
             /** Izoh */
             note?: string;
@@ -6454,7 +6472,7 @@ export interface components {
              */
             date: string;
             /** Holat */
-            readonly status: components["schemas"]["StatusF18Enum"];
+            readonly status: components["schemas"]["InventoryStatusEnum"];
             readonly status_display: string;
             /** Izoh */
             note?: string;
@@ -6494,6 +6512,13 @@ export interface components {
             actual_qty: string | null;
             note?: string;
         };
+        /**
+         * @description * `DRAFT` - Qoralama
+         *     * `CONFIRMED` - Tasdiqlangan
+         *     * `CANCELLED` - Bekor qilingan
+         * @enum {string}
+         */
+        InventoryStatusEnum: "DRAFT" | "CONFIRMED" | "CANCELLED";
         InvoiceScan: {
             /** Format: uuid */
             readonly id: string;
@@ -7842,6 +7867,7 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
+             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -8177,7 +8203,7 @@ export interface components {
             /** F.I.SH. */
             full_name?: string;
             /** Rol */
-            role?: components["schemas"]["Role164Enum"];
+            role?: components["schemas"]["RoleEnum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -8389,7 +8415,7 @@ export interface components {
             readonly sale_date: string;
             readonly product_name: string;
             /** Ish turi */
-            role?: components["schemas"]["PayrollDetailRoleEnum"];
+            role?: components["schemas"]["CommissionRoleEnum"];
             readonly role_display: string;
             /**
              * Kimga
@@ -8414,12 +8440,6 @@ export interface components {
              */
             commission_amount?: string;
         };
-        /**
-         * @description * `ORDER` - Zakaz olgani
-         *     * `DELIVERY` - Yetkazib bergani
-         * @enum {string}
-         */
-        PayrollDetailRoleEnum: "ORDER" | "DELIVERY";
         PayrollManualRequest: {
             /** Format: decimal */
             bonus?: string;
@@ -9090,7 +9110,7 @@ export interface components {
          *     * `ORDER_TAKER` - Zakaz oluvchi
          * @enum {string}
          */
-        Role164Enum: "SUPER_ADMIN" | "MANAGER" | "BRANCH_MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
+        RoleEnum: "SUPER_ADMIN" | "MANAGER" | "BRANCH_MANAGER" | "WAREHOUSE" | "DISTRIBUTOR" | "ACCOUNTANT" | "ORDER_TAKER";
         Route: {
             /** Format: uuid */
             readonly id: string;
@@ -9495,13 +9515,6 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "MANUAL" | "SCAN";
-        /**
-         * @description * `DRAFT` - Qoralama
-         *     * `CONFIRMED` - Tasdiqlangan
-         *     * `CANCELLED` - Bekor qilingan
-         * @enum {string}
-         */
-        StatusF18Enum: "DRAFT" | "CONFIRMED" | "CANCELLED";
         Stock: {
             /** Format: uuid */
             readonly id: string;
@@ -9871,7 +9884,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            readonly role: components["schemas"]["Role164Enum"];
+            readonly role: components["schemas"]["RoleEnum"];
             /**
              * Rasm
              * Format: uri
@@ -9940,7 +9953,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role164Enum"];
+            role?: components["schemas"]["RoleEnum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -9993,7 +10006,7 @@ export interface components {
             /** F.I.SH. */
             full_name: string;
             /** Rol */
-            role?: components["schemas"]["Role164Enum"];
+            role?: components["schemas"]["RoleEnum"];
             /** Passport seriyasi */
             passport_series?: string;
             /** Manzil */
@@ -16725,7 +16738,12 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["BackupUploadRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["BackupUploadRequestRequest"];
+            };
+        };
         responses: {
             201: {
                 headers: {
