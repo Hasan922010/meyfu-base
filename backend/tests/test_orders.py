@@ -759,6 +759,13 @@ def test_give_order_on_debt_adds_client_debt(van_stocked):
     assert st.quantity == Decimal("10.000")
     assert VanStock.objects.get(distributor=van_stocked["distributor"], product=product).quantity == van_before
 
+    # Qayta berilib ikkinchi marta bekor qilinsa ham omborga faqat 1x (3 dona) qaytadi
+    assert agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/").status_code == 200
+    sale2 = Sale.objects.filter(order_id=oid, status="COMPLETED").get()
+    cancel_sale(sale2, user=agent, reason="Test bekor 2")
+    st.refresh_from_db()
+    assert st.quantity == Decimal("10.000")
+
 
 @pytest.mark.django_db
 def test_give_order_on_debt_enforces_guards_and_uses_advance(van_stocked):

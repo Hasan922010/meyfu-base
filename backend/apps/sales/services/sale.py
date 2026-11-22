@@ -584,32 +584,31 @@ def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
         from apps.warehouse.models import StockMovement
         from apps.warehouse.services.stock import apply_movement
 
-        order_wh_movements = (
-            list(
-                StockMovement.objects.filter(
-                    reference_type="order",
-                    reference_id=str(sale.order_id),
-                    movement_type=MovementType.OUT_SALE,
-                ).select_related("warehouse", "product")
+        order_mv = (
+            StockMovement.objects.filter(
+                reference_type="order",
+                reference_id=str(sale.order_id),
+                movement_type=MovementType.OUT_SALE,
             )
+            .select_related("warehouse")
+            .first()
             if sale.order_id
-            else []
+            else None
         )
-        if order_wh_movements:
-            for mv in order_wh_movements:
+        for item in sale.items.select_related("product"):
+            if order_mv is not None:
                 apply_movement(
-                    warehouse=mv.warehouse,
-                    product=mv.product,
-                    quantity=-mv.quantity,
+                    warehouse=order_mv.warehouse,
+                    product=item.product,
+                    quantity=item.quantity,
                     movement_type=MovementType.IN_RETURN,
                     user=user,
                     reference_type="sale_cancel",
                     reference_id=str(sale.id),
-                    to_location=mv.warehouse.name,
+                    to_location=order_mv.warehouse.name,
                     note=f"Sotuv {sale.number} bekor qilindi",
                 )
-        else:
-            for item in sale.items.select_related("product"):
+            else:
                 van_apply(distributor=sale.distributor, product=item.product,
                           quantity=item.quantity)
         if debt is not None:
