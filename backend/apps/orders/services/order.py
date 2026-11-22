@@ -49,6 +49,56 @@ def _next_number(date) -> str:
     return DocumentSequence.next_number(ORDER_PREFIX, year=date.year)
 
 
+def _order_warehouse(client, taken_by=None, user=None):
+    """Buyurtmaga tegishli ombor: mijoz filiali -> xodim ombori -> asosiy ombor."""
+    from apps.warehouse.models import Warehouse
+
+    if getattr(client, "branch", None) is not None:
+        return client.branch
+    for actor in (taken_by, user):
+        wh = getattr(actor, "warehouse", None)
+        if wh is not None:
+            return wh
+    return (
+        Warehouse.objects.filter(is_branch=False, is_active=True).order_by("created_at").first()
+        or Warehouse.objects.filter(is_active=True).order_by("created_at").first()
+    )
+
+
+def _reserve_order_stock(order: Order, wh) -> None:
+    if wh is None:
+        return
+    from apps.warehouse.models import Stock
+    from apps.warehouse.services.stock import reserve_stock
+
+    for it in order.items.select_related("product").order_by("product_id"):
+        stock = (
+            Stock.objects.select_for_update()
+            .filter(warehouse=wh, product=it.product)
+            .first()
+        )
+        if stock is not None and stock.available_quantity > _ZERO:
+            to_reserve = min(it.quantity, stock.available_quantity)
+            reserve_stock(warehouse=wh, product=it.product, quantity=to_reserve)
+            it.reserved_quantity = to_reserve
+            it.save(update_fields=["reserved_quantity", "updated_at"])
+
+
+def _release_order_reservation(order: Order, wh) -> None:
+    if wh is None:
+        return
+    from apps.warehouse.services.stock import release_reservation
+
+    for it in (
+        order.items.select_related("product")
+        .filter(reserved_quantity__gt=_ZERO)
+        .order_by("product_id")
+    ):
+        release_reservation(warehouse=wh, product=it.product, quantity=it.reserved_quantity)
+        it.reserved_quantity = _ZERO
+        it.save(update_fields=["reserved_quantity", "updated_at"])
+
+
 @transaction.atomic
 def create_order(
     *,
@@ -119,6 +169,7 @@ def create_order(
     ])
     order.recalc()
     order.save(update_fields=["total_amount", "updated_at"])
+    _reserve_order_stock(order, _order_warehouse(client, taken_by, user))
 
     AuditLog.objects.create(
         user=user or taken_by, action="order.created", model_name="Order",
@@ -191,6 +242,7 @@ def cancel_order(order: Order, *, user=None, reason: str = "") -> Order:
             message="Buyurtma bo'yicha sotuv bor — avval sotuvni bekor qiling.",
             code="ORDER_HAS_SALES",
         )
+    _release_order_reservation(order, _order_warehouse(order.client, order.taken_by, user))
     order.status = OrderStatus.CANCELLED
     order.cancelled_at = timezone.now()
     order.cancel_reason = reason
@@ -288,6 +340,7 @@ def build_loading_from_orders(
     loading.save(update_fields=["number", "total_amount", "updated_at"])
 
     for order in orders:
+        _release_order_reservation(order, _order_warehouse(order.client, order.taken_by, user))
         attach_to_loading(order, loading, user=user)
 
     AuditLog.objects.create(
@@ -418,7 +471,17 @@ def fulfill_order(
 
     for item, qty in pending:
         item.delivered_quantity = (item.delivered_quantity or _ZERO) + qty
-        item.save(update_fields=["delivered_quantity", "updated_at"])
+        fields = ["delivered_quantity", "updated_at"]
+        if order.loading_id is None and item.reserved_quantity > _ZERO:
+            from apps.warehouse.services.stock import release_reservation
+
+            rel = min(qty, item.reserved_quantity)
+            wh = _order_warehouse(order.client, order.taken_by, user)
+            if wh is not None and rel > _ZERO:
+                release_reservation(warehouse=wh, product=item.product, quantity=rel)
+                item.reserved_quantity -= rel
+                fields.append("reserved_quantity")
+        item.save(update_fields=fields)
 
     fully = all(
         (it.delivered_quantity or _ZERO) >= it.quantity for it in order.items.all()
@@ -453,13 +516,18 @@ def fulfill_order(
 
 @transaction.atomic
 def give_order_on_debt(order: Order, *, user=None) -> Order:
-    """Buyurtmani mijozga qarzga berish: avval avansdan, qolganini mijoz qarziga qo'shadi."""
+    """Buyurtmani mijozga qarzga berish: ombordan chiqim, Sale/SaleItem va avans/qarz yozadi."""
+    from datetime import timedelta
+
     from django.db.models import F
 
     from apps.clients.models import Client
-    from apps.sales.constants import DebtStatus
-    from apps.sales.models import Debt
+    from apps.sales.constants import DebtStatus, PaymentType, SaleStatus
+    from apps.sales.models import Debt, Sale, SaleItem
+    from apps.sales.services.sale import _next_number as _next_sale_number
     from apps.sales.services.sale import ensure_client_in_scope
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.services.stock import apply_movement
 
     if user is not None and hasattr(user, "has_app_permission") and not user.has_app_permission("can_sell_on_debt"):
         raise BusinessError(
@@ -485,6 +553,28 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
             code="CLIENT_BLOCKED",
         )
 
+    wh = _order_warehouse(client, order.taken_by, user)
+    if wh is None:
+        raise BusinessError(
+            message="Buyurtmani berish uchun ombor topilmadi.",
+            code="WAREHOUSE_REQUIRED",
+        )
+    _release_order_reservation(order, wh)
+    order_items = list(order.items.select_related("product").order_by("product_id"))
+    for it in order_items:
+        apply_movement(
+            warehouse=wh,
+            product=it.product,
+            quantity=-it.quantity,
+            movement_type=MovementType.OUT_SALE,
+            user=user,
+            reference_type="order",
+            reference_id=str(order.id),
+            from_location=wh.name,
+            to_location=client.name,
+            note=f"Buyurtma {order.number}",
+        )
+
     advance_used = min(max(_ZERO, client.advance_balance), order.total_amount)
     debt_amount = max(_ZERO, order.total_amount - advance_used)
     if debt_amount > _ZERO and client.debt_limit > _ZERO:
@@ -503,6 +593,46 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
                 },
             )
 
+    today = business_date()
+    due_date = order.desired_date or (today + timedelta(days=14))
+    seller = user or order.taken_by
+    sale = Sale(
+        number=_next_sale_number(today),
+        date=today,
+        distributor=seller,
+        client=client,
+        order=order,
+        branch=wh if wh.is_branch else None,
+        payment_type=PaymentType.DEBT,
+        total_amount=order.total_amount,
+        paid_amount=_ZERO,
+        advance_used=advance_used,
+        debt_amount=debt_amount,
+        due_date=due_date,
+        status=SaleStatus.COMPLETED,
+        is_synced=True,
+        note=f"Buyurtma {order.number}",
+        created_by=seller,
+    )
+    sale.save()
+
+    sale_items: list[SaleItem] = []
+    for it in order_items:
+        si = SaleItem(
+            sale=sale,
+            product=it.product,
+            quantity=it.quantity,
+            price=it.price,
+            cost_price=it.product.cost_price,
+            is_bonus=it.is_bonus,
+            created_by=seller,
+        )
+        si.compute()
+        sale_items.append(si)
+    SaleItem.objects.bulk_create(sale_items)
+    sale.recalc()
+    sale.save(update_fields=["total_amount", "updated_at"])
+
     if advance_used > _ZERO:
         Client.objects.filter(pk=client.pk).update(
             advance_balance=F("advance_balance") - advance_used
@@ -510,10 +640,10 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
     if debt_amount > _ZERO:
         Debt.objects.create(
             client=client,
-            sale=None,
+            sale=sale,
             amount=debt_amount,
             remaining=debt_amount,
-            due_date=order.desired_date,
+            due_date=due_date,
             status=DebtStatus.ACTIVE,
             created_by=user,
         )
@@ -530,6 +660,7 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
         object_id=str(order.id),
         changes={
             "number": order.number,
+            "sale": sale.number,
             "amount": str(order.total_amount),
             "advance_used": str(advance_used),
             "debt_amount": str(debt_amount),

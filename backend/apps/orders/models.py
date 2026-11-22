@@ -97,6 +97,9 @@ class OrderItem(BaseModel):
     delivered_quantity = models.DecimalField(
         _("yetkazilgan miqdor"), **_QTY, default=_ZERO
     )
+    reserved_quantity = models.DecimalField(
+        _("band qilingan miqdor"), **_QTY, default=_ZERO
+    )
     price = models.DecimalField(
         _("narx"), **_MONEY, validators=[MinValueValidator(_ZERO)]
     )

@@ -692,6 +692,9 @@ def test_give_order_on_debt_adds_client_debt(van_stocked):
     from rest_framework.test import APIClient
 
     from apps.users.models import User
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.models import Stock
+    from apps.warehouse.services.stock import apply_movement
 
     agent = User.objects.create_user(
         phone="+998907770099", password="pass12345", full_name="Agent 99",
@@ -701,6 +704,10 @@ def test_give_order_on_debt_adds_client_debt(van_stocked):
     agent_api.force_authenticate(user=agent)
 
     client, product = van_stocked["client"], _product(van_stocked["product"])
+    apply_movement(
+        warehouse=van_stocked["warehouse"], product=product,
+        quantity=Decimal("10"), movement_type=MovementType.IN_PURCHASE, user=agent,
+    )
     client.assigned_to = agent
     client.save(update_fields=["assigned_to"])
     created = agent_api.post(
@@ -722,6 +729,17 @@ def test_give_order_on_debt_adds_client_debt(van_stocked):
 
     client.refresh_from_db()
     assert client.current_debt == Decimal("81000.00")
+    st = Stock.objects.get(warehouse=van_stocked["warehouse"], product=product)
+    assert st.quantity == Decimal("7.000")
+    assert st.reserved_quantity == Decimal("0.000")
+
+    from apps.sales.models import Debt, Sale
+
+    sale = Sale.objects.get(order_id=oid)
+    assert sale.total_amount == Decimal("81000.00")
+    assert sale.debt_amount == Decimal("81000.00")
+    debt = Debt.objects.get(sale=sale)
+    assert debt.due_date is not None
 
 
 @pytest.mark.django_db
@@ -730,6 +748,8 @@ def test_give_order_on_debt_enforces_guards_and_uses_advance(van_stocked):
     from rest_framework.test import APIClient
 
     from apps.users.models import User
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.services.stock import apply_movement
 
     agent = User.objects.create_user(
         phone="+998907770098", password="pass12345", full_name="Agent 98",
@@ -739,6 +759,10 @@ def test_give_order_on_debt_enforces_guards_and_uses_advance(van_stocked):
     agent_api.force_authenticate(user=agent)
 
     client, product = van_stocked["client"], _product(van_stocked["product"])
+    apply_movement(
+        warehouse=van_stocked["warehouse"], product=product,
+        quantity=Decimal("10"), movement_type=MovementType.IN_PURCHASE, user=agent,
+    )
     client.assigned_to = agent
     client.debt_limit = Decimal("50000")
     client.save(update_fields=["assigned_to", "debt_limit"])
@@ -795,6 +819,8 @@ def test_give_order_on_debt_allows_unset_zero_debt_limit(van_stocked):
     from rest_framework.test import APIClient
 
     from apps.users.models import User
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.services.stock import apply_movement
 
     agent = User.objects.create_user(
         phone="+998907770097", password="pass12345", full_name="Agent 97",
@@ -804,6 +830,10 @@ def test_give_order_on_debt_allows_unset_zero_debt_limit(van_stocked):
     agent_api.force_authenticate(user=agent)
 
     client, product = van_stocked["client"], _product(van_stocked["product"])
+    apply_movement(
+        warehouse=van_stocked["warehouse"], product=product,
+        quantity=Decimal("10"), movement_type=MovementType.IN_PURCHASE, user=agent,
+    )
     client.assigned_to = agent
     client.debt_limit = Decimal("0")
     client.save(update_fields=["assigned_to", "debt_limit"])
@@ -863,5 +893,87 @@ def test_give_order_on_debt_rejects_loaded_order(van_stocked):
 
     r_loaded = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
     assert r_loaded.status_code == 409
+
+
+@pytest.mark.django_db
+def test_order_reserves_stock_and_give_on_debt_deducts_warehouse(van_stocked):
+    """Buyurtma yaratilganda ombor zaxirasini band qiladi, bekor qilinsa bo'shatadi, berilsa ombordan ayiradi."""
+    from rest_framework.test import APIClient
+
+    from apps.users.models import User
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.models import Stock
+    from apps.warehouse.services.stock import apply_movement
+
+    agent = User.objects.create_user(
+        phone="+998907770095", password="pass12345", full_name="Agent 95",
+        role="ORDER_TAKER", can_sell_on_debt=True,
+    )
+    agent_api = APIClient()
+    agent_api.force_authenticate(user=agent)
+
+    wh = van_stocked["warehouse"]
+    client, product = van_stocked["client"], _product(van_stocked["product"])
+    client.assigned_to = agent
+    client.save(update_fields=["assigned_to"])
+
+    apply_movement(
+        warehouse=wh, product=product, quantity=Decimal("10"),
+        movement_type=MovementType.IN_PURCHASE, user=agent,
+    )
+
+    # 1. Buyurtma (4 dona) -> omborda 4 dona band qilinadi
+    r1 = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "4", "price": "25000"}],
+            "place": True,
+        },
+        format="json",
+    )
+    assert r1.status_code == 201
+    oid1 = r1.data["data"]["id"]
+    st = Stock.objects.get(warehouse=wh, product=product)
+    assert st.quantity == Decimal("10.000")
+    assert st.reserved_quantity == Decimal("4.000")
+
+    # 2. Bekor qilinsa band bo'shatiladi
+    assert agent_api.post(f"/api/v1/orders/{oid1}/cancel/", {"reason": "Test"}, format="json").status_code == 200
+    st.refresh_from_db()
+    assert st.reserved_quantity == Decimal("0.000")
+
+    # 3. Yangi buyurtma (4 dona) -> give-on-debt -> ombordan 4 dona chiqim bo'ladi (6 qoladi)
+    r2 = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "4", "price": "25000"}],
+            "place": True,
+        },
+        format="json",
+    )
+    assert r2.status_code == 201
+    oid2 = r2.data["data"]["id"]
+    assert agent_api.post(f"/api/v1/orders/{oid2}/give-on-debt/").status_code == 200
+    st.refresh_from_db()
+    assert st.quantity == Decimal("6.000")
+    assert st.reserved_quantity == Decimal("0.000")
+
+    # 4. Omborda yetarli bo'lmasa (10 > 6) -> 409 INSUFFICIENT_STOCK
+    r3 = agent_api.post(
+        "/api/v1/orders/",
+        {
+            "client": str(client.id),
+            "items": [{"product": str(product.id), "quantity": "10", "price": "25000"}],
+            "place": True,
+        },
+        format="json",
+    )
+    assert r3.status_code == 201
+    oid3 = r3.data["data"]["id"]
+    r_fail = agent_api.post(f"/api/v1/orders/{oid3}/give-on-debt/")
+    assert r_fail.status_code == 409
+    assert r_fail.data["error"]["code"] == "INSUFFICIENT_STOCK"
 
 
