@@ -580,9 +580,38 @@ def cancel_sale(sale: Sale, user=None, reason: str = "") -> Sale:
                 message="Qarzga to'lov qilingan — avval to'lovni bekor qiling.",
                 code="DEBT_HAS_PAYMENTS",
             )
-        for item in sale.items.select_related("product"):
-            van_apply(distributor=sale.distributor, product=item.product,
-                      quantity=item.quantity)
+        from apps.warehouse.constants import MovementType
+        from apps.warehouse.models import StockMovement
+        from apps.warehouse.services.stock import apply_movement
+
+        order_wh_movements = (
+            list(
+                StockMovement.objects.filter(
+                    reference_type="order",
+                    reference_id=str(sale.order_id),
+                    movement_type=MovementType.OUT_SALE,
+                ).select_related("warehouse", "product")
+            )
+            if sale.order_id
+            else []
+        )
+        if order_wh_movements:
+            for mv in order_wh_movements:
+                apply_movement(
+                    warehouse=mv.warehouse,
+                    product=mv.product,
+                    quantity=-mv.quantity,
+                    movement_type=MovementType.IN_RETURN,
+                    user=user,
+                    reference_type="sale_cancel",
+                    reference_id=str(sale.id),
+                    to_location=mv.warehouse.name,
+                    note=f"Sotuv {sale.number} bekor qilindi",
+                )
+        else:
+            for item in sale.items.select_related("product"):
+                van_apply(distributor=sale.distributor, product=item.product,
+                          quantity=item.quantity)
         if debt is not None:
             Client.objects.filter(pk=sale.client_id).update(
                 current_debt=F("current_debt") - debt.remaining

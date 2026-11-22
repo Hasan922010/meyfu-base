@@ -733,13 +733,31 @@ def test_give_order_on_debt_adds_client_debt(van_stocked):
     assert st.quantity == Decimal("7.000")
     assert st.reserved_quantity == Decimal("0.000")
 
+    from apps.reports.services.product_movement import product_movement_report
     from apps.sales.models import Debt, Sale
+    from apps.sales.services.sale import cancel_sale
+    from apps.warehouse.models import StockMovement, VanStock
 
     sale = Sale.objects.get(order_id=oid)
     assert sale.total_amount == Decimal("81000.00")
     assert sale.debt_amount == Decimal("81000.00")
     debt = Debt.objects.get(sale=sale)
     assert debt.due_date is not None
+
+    # Ombor harakati jurnali va Tovar harakati hisobotida ko'rinadi
+    assert StockMovement.objects.filter(
+        reference_type="order", reference_id=str(oid), movement_type=MovementType.OUT_SALE
+    ).exists()
+    pm = product_movement_report(date_from=sale.date, date_to=sale.date, product_id=str(product.id))
+    assert len(pm["rows"]) == 1
+    assert Decimal(pm["rows"][0]["sold_qty"]) == Decimal("3.000")
+
+    # Sotuv bekor qilinsa tovar VanStock ga emas, omborga qaytadi
+    van_before = VanStock.objects.get(distributor=van_stocked["distributor"], product=product).quantity
+    cancel_sale(sale, user=agent, reason="Test bekor")
+    st.refresh_from_db()
+    assert st.quantity == Decimal("10.000")
+    assert VanStock.objects.get(distributor=van_stocked["distributor"], product=product).quantity == van_before
 
 
 @pytest.mark.django_db
