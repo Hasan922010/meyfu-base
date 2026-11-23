@@ -14,7 +14,14 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useEffect, useMemo, type ReactElement } from 'react';
-import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Outlet,
+  useLocation,
+  type NavLinkRenderProps,
+} from 'react-router-dom';
 
 import { SyncBadge } from '@/offline/SyncBadge';
 import { useSync } from '@/offline/useSync';
@@ -160,7 +167,7 @@ export function MobileLayout(): ReactElement {
               key={tab.to}
               to={tab.to}
               end={tab.end}
-              className={({ isActive }) =>
+              className={({ isActive }: NavLinkRenderProps) =>
                 `flex min-h-[58px] min-w-[62px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-bold transition-all duration-150 active:scale-95 ${
                   tab.highlight
                     ? isActive
