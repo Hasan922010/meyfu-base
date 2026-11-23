@@ -9,7 +9,7 @@ import {
   type ReportDimension,
 } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
-import { money, qty } from '@/shared/lib/format';
+import { intQty, money } from '@/shared/lib/format';
 import { paymentLabel } from '@/shared/lib/labels';
 import { businessDateISO } from '@/shared/lib/businessDay';
 
@@ -272,7 +272,7 @@ function QueryTab({ range }: { range: Range }): ReactElement {
                   <td className="p-3 text-right">{money(r.amount)}</td>
                   <td className="p-3 text-right text-success">{money(r.profit)}</td>
                   <td className="p-3 text-right">{r.margin_percent}%</td>
-                  <td className="p-3 text-right">{qty(r.qty)}</td>
+                  <td className="p-3 text-right">{intQty(r.qty)}</td>
                   <td className="p-3 text-right">{r.count}</td>
                 </tr>
               ))}

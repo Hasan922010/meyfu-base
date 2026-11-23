@@ -140,17 +140,16 @@ def _int_qty(val: Decimal) -> str:
     return str(int(round(val)))
 
 
-def _format_pack_qty(quantity: Decimal, product) -> str:
-    unit_short = product.unit.short_name
+def _product_unit_label(product) -> str:
     pack_qty = product.pack_quantity or Decimal("1")
-    pack_label = product.package_type or "qadoq"
-    if pack_qty > 1:
-        whole_packs, rem = divmod(quantity, pack_qty)
-        if rem == 0:
-            return f"{_int_qty(whole_packs)} {pack_label}"
-        if whole_packs >= 1:
-            return f"{_int_qty(whole_packs)} {pack_label} {_int_qty(rem)} {unit_short}"
-    return f"{_int_qty(quantity)} {unit_short}"
+    pack_type = (product.package_type or "").strip()
+    if pack_qty > 1 and pack_type:
+        return pack_type
+    return product.unit.short_name
+
+
+def _format_pack_qty(quantity: Decimal, product) -> str:
+    return f"{_int_qty(quantity)} {_product_unit_label(product)}"
 
 
 def purchase_to_pdf(purchase, *, with_stamp: bool = False,
@@ -176,7 +175,7 @@ def purchase_to_pdf(purchase, *, with_stamp: bool = False,
     ))
     elements.append(Spacer(1, 3 * mm))
 
-    header = ["№", "Rasm", "Nomi", "SKU", "Miqdor", "Dona narxi", "Summa"]
+    header = ["№", "Rasm", "Nomi", "SKU", "Miqdor", "Narx", "Summa"]
     if not with_images:
         header.pop(1)
     data = [[Paragraph(h, st["h"]) for h in header]]
@@ -285,30 +284,25 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     ]))
     elements.append(hdr_table)
 
-    header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx (dona)", "Narx (qop/quti)", "Summa"]
+    header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx", "Summa"]
     data = [[Paragraph(h, st["th"]) for h in header]]
     for idx, item in enumerate(
         loading.items.select_related("product", "product__unit").all(), start=1
     ):
         pack_qty = item.product.pack_quantity or Decimal("1")
-        qty_label = _format_pack_qty(item.quantity, item.product)
-        if pack_qty > 1:
-            pack_info = f"{_int_qty(pack_qty)} dona"
-            pack_price_label = _money(item.price * pack_qty)
-        else:
-            pack_info = "1 dona"
-            pack_price_label = "—"
+        unit_label = _product_unit_label(item.product)
+        qty_label = f"{_int_qty(item.quantity)} {unit_label}"
+        pack_info = _int_qty(pack_qty) if pack_qty > 1 else "1"
         data.append([
             Paragraph(str(idx), st["cell"]),
             Paragraph(_esc(item.product.name), st["cell"]),
             Paragraph(_esc(qty_label), st["cellr"]),
             Paragraph(_esc(pack_info), st["cellr"]),
             Paragraph(_esc(_money(item.price)), st["cellr"]),
-            Paragraph(_esc(pack_price_label), st["cellr"]),
             Paragraph(_esc(_money(item.amount)), st["cellr"]),
         ])
 
-    col_widths = [9 * mm, 51 * mm, 26 * mm, 22 * mm, 23 * mm, 25 * mm, 24 * mm]
+    col_widths = [9 * mm, 66 * mm, 28 * mm, 24 * mm, 26 * mm, 27 * mm]
     table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
@@ -353,6 +347,7 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
         ])
     total_tbl.setStyle(TableStyle(total_style))
     elements.append(total_tbl)
+    elements.append(Spacer(1, 5 * mm))
     client_names = list(
         dict.fromkeys(
             loading.orders.select_related("client")

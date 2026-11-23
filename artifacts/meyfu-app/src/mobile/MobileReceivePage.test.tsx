@@ -46,7 +46,7 @@ beforeEach(() => {
         sku: 'P-900',
         barcode: '',
         unit_name: 'dona',
-        cost_price: '12600.00',
+        cost_price: '126000.00',
         pack_quantity: '10.000',
         package_type: 'qop',
         is_active: true,
@@ -56,8 +56,8 @@ beforeEach(() => {
   warehouseApi.createPurchase.mockResolvedValue({ id: 'pur-1', number: 'KIR-001' });
 });
 
-describe('MobileReceivePage — qadoq/quti birligida kirim', () => {
-  it('qadoqli tovarni qopda kiritib, bazaviy donaga ko‘paytirib yuboradi', async () => {
+describe('MobileReceivePage — karopka/xalta/qop birligida kirim', () => {
+  it('qopdagi tovarni qopda kiritib, to‘g‘ridan-to‘g‘ri qop narxida yuboradi', async () => {
     renderPage();
 
     const searchInput = await screen.findByPlaceholderText(/Mahsulot qidirish/);
@@ -69,7 +69,7 @@ describe('MobileReceivePage — qadoq/quti birligida kirim', () => {
     const qtyInput = screen.getByRole('spinbutton');
     fireEvent.change(qtyInput, { target: { value: '2' } });
 
-    expect(screen.getByText('2 qop × 10 dona = 20 dona')).toBeInTheDocument();
+    expect(screen.getByText('1 qop = 10 dona')).toBeInTheDocument();
     expect(screen.getAllByText("252 000 so'm").length).toBeGreaterThanOrEqual(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Qabulni saqlash' }));

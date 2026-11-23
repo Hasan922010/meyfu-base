@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState, type ReactElement } from 'react';
 
 import { db } from '@/offline/db';
-import { qty } from '@/shared/lib/format';
+import { intQty } from '@/shared/lib/format';
 
 export function MyVanStockPage(): ReactElement {
   const [search, setSearch] = useState<string>('');
@@ -54,7 +54,7 @@ export function MyVanStockPage(): ReactElement {
               <div className="font-mono text-xs text-gray-500">{v.product_sku}</div>
             </div>
             <div className="text-right">
-              <div className="text-lg font-semibold">{qty(v.quantity)}</div>
+              <div className="text-lg font-semibold">{intQty(v.quantity)}</div>
               <div className="text-xs text-gray-500">{v.unit}</div>
             </div>
           </li>

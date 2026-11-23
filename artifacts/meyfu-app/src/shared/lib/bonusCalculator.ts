@@ -28,11 +28,7 @@ export function computePromotionalBonuses<
   for (const line of lines) {
     if (line.is_bonus) continue;
     const current = qtyByProduct.get(line.product) ?? 0;
-    const effectiveQty =
-      line.unit_mode === 'package' && line.pack_quantity && line.pack_quantity > 1
-        ? line.quantity * line.pack_quantity
-        : line.quantity;
-    qtyByProduct.set(line.product, current + effectiveQty);
+    qtyByProduct.set(line.product, current + line.quantity);
   }
 
   const results: BonusCalculationResult[] = [];

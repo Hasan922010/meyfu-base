@@ -27,7 +27,14 @@ function setup(cart: CartLine[] = []) {
 }
 
 const gelLine = (quantity: number, price = 22000): CartLine => ({
-  product: 'gel', product_name: 'Yuvish geli 1L', quantity, price, max: 40,
+  product: 'gel',
+  product_name: 'Yuvish geli 1L',
+  quantity,
+  price,
+  package_type: undefined,
+  pack_quantity: 1,
+  unit_name: 'dona',
+  max: 40,
 });
 
 describe('SaleProductList (UX M4)', () => {

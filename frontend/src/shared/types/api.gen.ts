@@ -3697,6 +3697,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stock/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Har bir ombor bo'yicha jami qoldiq va tovar summasi
+         * @description Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+         */
+        get: operations["stock_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stock/unlock-opening/": {
         parameters: {
             query?: never;
@@ -9560,6 +9580,9 @@ export interface components {
             readonly pack_quantity: string;
             /** Format: decimal */
             readonly min_stock_alert: string;
+            /** Format: decimal */
+            readonly cost_price: string;
+            readonly stock_value: string;
             /**
              * Qoldiq
              * Format: decimal
@@ -10090,6 +10113,9 @@ export interface components {
             readonly product_name: string;
             readonly product_sku: string;
             readonly unit: string;
+            readonly package_type: string;
+            /** Format: decimal */
+            readonly pack_quantity: string;
             /** Format: uri */
             readonly image: string;
             /**
@@ -16177,6 +16203,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedOpeningSheetRowList"];
+                };
+            };
+        };
+    };
+    stock_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stock"];
                 };
             };
         };

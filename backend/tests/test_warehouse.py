@@ -341,8 +341,12 @@ def test_purchase_to_pdf_formats_pack_qty(van_stocked):
     product.package_type = "qop"
     product.save(update_fields=["pack_quantity", "package_type"])
 
-    assert _format_pack_qty(Decimal("24"), product) == "2 qop"
-    assert _format_pack_qty(Decimal("26"), product) == f"2 qop 2 {product.unit.short_name}"
+    assert _format_pack_qty(Decimal("2"), product) == "2 qop"
+    product.package_type = ""
+    product.save(update_fields=["package_type"])
+    assert _format_pack_qty(Decimal("5"), product) == f"5 {product.unit.short_name}"
+    product.package_type = "qop"
+    product.save(update_fields=["package_type"])
 
     supplier = Supplier.objects.create(name="Test Ta'minotchi", phone="+998901230000")
     purchase = Purchase.objects.create(
@@ -404,13 +408,16 @@ def test_convert_warehouse_history_to_packages_is_idempotent(van_stocked):
     from apps.warehouse.models import Stock, StockMovement, VanStock
     from apps.warehouse.services.stock import (
         apply_movement,
+        convert_product_prices_to_packages,
         convert_warehouse_history_to_packages,
     )
 
     product = van_stocked["product"]
     product.pack_quantity = Decimal("10")
     product.package_type = "qop"
-    product.save(update_fields=["pack_quantity", "package_type"])
+    product.cost_price = Decimal("5000")
+    product.wholesale_price = Decimal("6000")
+    product.save(update_fields=["pack_quantity", "package_type", "cost_price", "wholesale_price"])
 
     wh = van_stocked["warehouse"]
     apply_movement(
@@ -433,3 +440,35 @@ def test_convert_warehouse_history_to_packages_is_idempotent(van_stocked):
     assert res2["products"] == 0
     st.refresh_from_db()
     assert st.quantity == Decimal("20.000")
+
+    assert convert_product_prices_to_packages() >= 1
+    product.refresh_from_db()
+    assert product.cost_price == Decimal("50000.00")
+    assert product.wholesale_price == Decimal("60000.00")
+    assert convert_product_prices_to_packages() == 0
+
+
+@pytest.mark.django_db
+def test_stock_summary_per_warehouse(auth_api, van_stocked):
+    """Har bir ombor bo'yicha jami qoldiq va tovar summasi to'g'ri hisoblanadi."""
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.models import Warehouse
+    from apps.warehouse.services.stock import apply_movement
+
+    wh2 = Warehouse.objects.create(name="Filial ombor")
+    product = van_stocked["product"]
+    product.cost_price = Decimal("20000.00")
+    product.save(update_fields=["cost_price"])
+
+    apply_movement(
+        warehouse=wh2, product=product, quantity=Decimal("5"),
+        movement_type=MovementType.IN_PURCHASE, user=van_stocked["distributor"],
+    )
+
+    resp = auth_api.get("/api/v1/stock/summary/")
+    assert resp.status_code == 200
+    data = resp.data["data"]
+    by_wh = {w["warehouse"]: w for w in data["warehouses"]}
+    assert Decimal(by_wh[str(wh2.id)]["total_quantity"]) == Decimal("5.000")
+    assert Decimal(by_wh[str(wh2.id)]["total_value"]) == Decimal("100000.00")
+    assert Decimal(data["total_value"]) >= Decimal("100000.00")

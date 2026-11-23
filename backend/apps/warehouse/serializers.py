@@ -127,13 +127,22 @@ class StockSerializer(serializers.ModelSerializer):
     min_stock_alert = serializers.DecimalField(
         source="product.min_stock_alert", max_digits=14, decimal_places=3, read_only=True
     )
+    cost_price = serializers.DecimalField(
+        source="product.cost_price", max_digits=14, decimal_places=2, read_only=True
+    )
+    stock_value = serializers.SerializerMethodField()
+
+    def get_stock_value(self, obj: Stock) -> str:
+        val = (obj.quantity * obj.product.cost_price).quantize(Decimal("0.01"))
+        return f"{val:.2f}"
 
     class Meta:
         model = Stock
         fields = (
             "id", "warehouse", "warehouse_name", "product", "product_name",
             "product_sku", "product_unit", "package_type", "pack_quantity",
-            "min_stock_alert", "quantity", "reserved_quantity", "available_quantity",
+            "min_stock_alert", "cost_price", "stock_value",
+            "quantity", "reserved_quantity", "available_quantity",
             "updated_at",
         )
         read_only_fields = fields
@@ -280,6 +289,10 @@ class VanStockSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_sku = serializers.CharField(source="product.sku", read_only=True)
     unit = serializers.CharField(source="product.unit.short_name", read_only=True)
+    package_type = serializers.CharField(source="product.package_type", read_only=True)
+    pack_quantity = serializers.DecimalField(
+        source="product.pack_quantity", max_digits=14, decimal_places=3, read_only=True
+    )
     image = serializers.ImageField(source="product.image", read_only=True)
     distributor_name = serializers.CharField(
         source="distributor.full_name", read_only=True
@@ -289,7 +302,8 @@ class VanStockSerializer(serializers.ModelSerializer):
         model = VanStock
         fields = (
             "id", "distributor", "distributor_name", "product", "product_name",
-            "product_sku", "unit", "image", "quantity", "updated_at",
+            "product_sku", "unit", "package_type", "pack_quantity", "image",
+            "quantity", "updated_at",
         )
         read_only_fields = fields
 

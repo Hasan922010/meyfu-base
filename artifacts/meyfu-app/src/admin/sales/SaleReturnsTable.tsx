@@ -3,7 +3,7 @@ import { Fragment, useState, type ReactElement } from 'react';
 
 import { salesApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 const REASONS = [
   { value: '', label: 'Barcha sabablar' },
@@ -100,7 +100,7 @@ export function SaleReturnsTable(): ReactElement {
                             <li key={it.id} className="flex justify-between">
                               <span>{it.product_name}</span>
                               <span>
-                                {it.quantity} × {money(it.price ?? 0)} = {money(it.amount ?? 0)}
+                                {intQty(it.quantity)} × {money(it.price ?? 0)} = {money(it.amount ?? 0)}
                               </span>
                             </li>
                           ))}

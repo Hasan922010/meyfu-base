@@ -126,7 +126,7 @@ describe('ProductForm', () => {
   it('miqdorlar ortiqcha kasr nollarisiz ko‘rinadi (1.000 emas, 1)', async () => {
     renderForm(PRODUCT);
 
-    expect(await screen.findByLabelText('Qadoq soni')).toHaveDisplayValue('1');
+    expect(await screen.findByLabelText('Ichidagi soni (dona)')).toHaveDisplayValue('1');
     expect(screen.getByLabelText('Kam qoldiq')).toHaveDisplayValue('20');
   });
 });

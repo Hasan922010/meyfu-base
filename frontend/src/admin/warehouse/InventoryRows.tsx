@@ -1,6 +1,6 @@
 import type { KeyboardEvent, ReactElement } from 'react';
 
-import { money, plainQty, qty } from '@/shared/lib/format';
+import { intQty, money, plainIntQty } from '@/shared/lib/format';
 import type { InventoryCountItem } from '@/shared/types/warehouse';
 
 import { actualOf, differenceOf, type Drafts } from './inventory';
@@ -45,7 +45,7 @@ export function InventoryRows({ items, drafts, editable, onChange }: Props): Rea
         {items.map((item) => {
           const actual = actualOf(item, drafts);
           const diff = differenceOf(item, drafts);
-          const saved = item.actual_qty === null ? '' : plainQty(item.actual_qty);
+          const saved = item.actual_qty === null ? '' : plainIntQty(item.actual_qty);
           return (
             <tr
               key={item.id}
@@ -56,26 +56,35 @@ export function InventoryRows({ items, drafts, editable, onChange }: Props): Rea
                 <div className="text-xs text-gray-400">{item.product_sku}</div>
               </td>
               <td className="p-3 text-right">
-                {qty(item.expected_qty)} {item.product_unit}
+                {intQty(item.expected_qty)} {item.product_unit}
               </td>
               <td className="p-3 text-right">
                 {editable ? (
                   <input
                     className="field ml-auto w-28 text-right"
-                    inputMode="decimal"
+                    type="number"
+                    step="1"
+                    min="0"
+                    inputMode="numeric"
                     data-inventory-actual
                     aria-label={`${item.product_name} — haqiqiy qoldiq`}
                     placeholder="—"
                     value={drafts[item.id] ?? saved}
-                    onChange={(e) => onChange(item.id, e.target.value.replace(',', '.'))}
-                    onKeyDown={focusNext}
+                    onKeyDown={(e) => {
+                      if (e.key === '.' || e.key === ',') {
+                        e.preventDefault();
+                        return;
+                      }
+                      focusNext(e);
+                    }}
+                    onChange={(e) => onChange(item.id, e.target.value.replace(/[^\d]/g, ''))}
                   />
                 ) : (
-                  <span>{actual === null ? '—' : qty(actual)}</span>
+                  <span>{actual === null ? '—' : intQty(actual)}</span>
                 )}
               </td>
               <td className={`p-3 text-right font-medium ${diffTone(diff)}`}>
-                {diff === null ? '—' : `${diff > 0 ? '+' : ''}${qty(diff)}`}
+                {diff === null ? '—' : `${diff > 0 ? '+' : ''}${intQty(diff)}`}
               </td>
               <td className={`p-3 text-right ${diffTone(diff)}`}>
                 {diff === null || diff === 0 ? '—' : money(diff * Number(item.cost_price))}

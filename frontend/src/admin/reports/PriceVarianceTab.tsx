@@ -4,7 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { catalogApi } from '@/shared/api/catalog';
 import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 interface Props {
   range: { date_from: string; date_to: string };
@@ -131,7 +131,7 @@ export function PriceVarianceTab({ range }: Props): ReactElement {
                       <div className="text-xs text-gray-400 font-mono">{r.product_sku}</div>
                     </td>
                     <td className="p-3 text-right font-medium">
-                      {qty(r.quantity)} {r.unit}
+                      {intQty(r.quantity)} {r.unit}
                     </td>
                     <td className="p-3 text-right text-gray-500">{money(r.cost_price)}</td>
                     <td className="p-3 text-right font-medium">{money(r.price)}</td>

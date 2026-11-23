@@ -74,6 +74,21 @@ export function plainQty(value: string): string {
   return value === '' || Number.isNaN(n) ? value : String(n);
 }
 
+/** Input maydoni uchun butun miqdor: "12.000" -> "12". */
+export function plainIntQty(value: string | number): string {
+  if (value === '') return '';
+  const n = typeof value === 'string' ? Number(value) : value;
+  return Number.isNaN(n) ? String(value) : String(Math.round(n));
+}
+
+/** Ombor kirim-chiqimi uchun butun son ko'rinishi: 1200 -> "1 200". */
+export function intQty(value: string | number): string {
+  const n = typeof value === 'string' ? Number(value) : value;
+  if (Number.isNaN(n)) return String(value);
+  const sign = n < 0 ? '−' : '';
+  return `${sign}${groupThousands(String(Math.round(Math.abs(n))))}`;
+}
+
 /** Miqdor — kasr qism bo'lsa saqlanadi (masalan kg): 3 -> "3", 2.5 -> "2.5". */
 export function qty(value: string | number): string {
   const n = typeof value === 'string' ? Number(value) : value;
@@ -126,22 +141,38 @@ export function dateTimeShort(iso: string | Date): string {
   return `${dateFmt.format(d)} ${timeFmt.format(d)}`;
 }
 
-/** Buyurtma miqdorini butun sonda qop/quti yoki asosiy birlikda ko'rsatadi. */
+/** Mahsulotning asosiy ko'rinadigan birligi (karopka / xalta / dona). */
+export function productUnitLabel(item?: {
+  pack_quantity?: string | number | undefined;
+  package_type?: string | undefined;
+  unit_name?: string | undefined;
+  product_unit?: string | undefined;
+  unit?: string | undefined;
+}): string {
+  const packQty = Number(item?.pack_quantity) || 1;
+  const packType = item?.package_type?.trim();
+  if (packQty > 1 && packType) return packType;
+  return (
+    item?.unit_name?.trim() ||
+    item?.product_unit?.trim() ||
+    item?.unit?.trim() ||
+    packType ||
+    'dona'
+  );
+}
+
+/** Buyurtma/kirim miqdorini mahsulotning o'z birligida ko'rsatadi. */
 export function formatOrderQty(
   rawQty: string | number,
   item?: {
     pack_quantity?: string | number | undefined;
     package_type?: string | undefined;
     unit_name?: string | undefined;
+    product_unit?: string | undefined;
+    unit?: string | undefined;
   },
 ): string {
-  const q = Math.round(Number(rawQty) || 0);
+  const q = Number(rawQty) || 0;
   if (q === 0) return '0';
-  const packQty = Math.round(Number(item?.pack_quantity) || 1);
-  const unit = item?.unit_name?.trim() || 'dona';
-  const packLabel = item?.package_type?.trim() || 'qadoq';
-  if (packQty > 1 && q % packQty === 0) {
-    return `${q / packQty} ${packLabel}`;
-  }
-  return `${q} ${unit}`;
+  return `${intQty(q)} ${productUnitLabel(item)}`;
 }

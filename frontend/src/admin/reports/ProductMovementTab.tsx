@@ -9,7 +9,7 @@ import {
   type ProductMovementRow,
 } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
-import { money, qty } from '@/shared/lib/format';
+import { intQty, money } from '@/shared/lib/format';
 import { useToast } from '@/shared/lib/toast';
 import type { Category } from '@/shared/types/catalog';
 
@@ -200,7 +200,7 @@ export function ProductMovementTab({ range }: Props): ReactElement {
                     </td>
                     <td className="p-3.5 text-gray-500 text-xs">{r.category_name}</td>
                     <td className="p-3.5 text-right font-medium">
-                      {qty(r.sold_qty)} {r.unit}
+                      {intQty(r.sold_qty)} {r.unit}
                     </td>
                     <td className="p-3.5 text-right font-bold text-gray-900 dark:text-gray-100">
                       {money(r.sold_amount)}
@@ -209,7 +209,7 @@ export function ProductMovementTab({ range }: Props): ReactElement {
                       {hasBonusGiven ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                           <Gift size={12} />
-                          <span>+{qty(r.bonus_qty)} {r.unit}</span>
+                          <span>+{intQty(r.bonus_qty)} {r.unit}</span>
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400">0</span>
@@ -219,7 +219,7 @@ export function ProductMovementTab({ range }: Props): ReactElement {
                       {hasBonusGiven ? money(r.bonus_cost) : '—'}
                     </td>
                     <td className="p-3.5 text-right font-extrabold text-brand">
-                      {qty(r.total_qty)} {r.unit}
+                      {intQty(r.total_qty)} {r.unit}
                     </td>
                     <td className="p-3.5 text-right text-xs text-gray-600 dark:text-gray-300">
                       {money(r.avg_price)}

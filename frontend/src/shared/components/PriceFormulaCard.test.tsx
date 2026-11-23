@@ -12,14 +12,15 @@ describe('PriceFormulaCard component', () => {
         packageType="karopka"
         packQuantity={12}
         baseUnit="dona"
-        totalBaseQty={120}
-        unitPrice={25000}
-        totalPrice={3000000}
+        totalBaseQty={10}
+        unitPrice={250000}
+        totalPrice={2500000}
       />,
     );
 
-    expect(screen.getByText('10 karopka × 12 dona = 120 dona')).toBeInTheDocument();
-    expect(screen.getByText(/3 000 000/)).toBeInTheDocument();
+    expect(screen.getByText(/10 karopka × 250 000/)).toBeInTheDocument();
+    expect(screen.getByText(/1 karopka = 12 dona \(120 dona\)/)).toBeInTheDocument();
+    expect(screen.getByText(/2 500 000/)).toBeInTheDocument();
   });
 
   it('dona holatida ixcham hisobni ko‘rsatadi', () => {

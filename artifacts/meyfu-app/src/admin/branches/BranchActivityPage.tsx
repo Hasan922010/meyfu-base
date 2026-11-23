@@ -12,7 +12,7 @@ import {
 import { downloadBlob } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
 import { PeriodSwitcher } from '@/shared/components/PeriodSwitcher';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 import { usePeriodParam } from './usePeriodParam';
 
@@ -134,7 +134,7 @@ export function BranchActivityPage(): ReactElement {
                       Number(r.quantity) < 0 ? 'text-danger' : ''
                     }`}
                   >
-                    {qty(r.quantity)} {r.unit}
+                    {intQty(r.quantity)} {r.unit}
                   </td>
                   <td className="whitespace-nowrap p-3 text-right">{money(r.amount)}</td>
                   <td className="p-3 text-gray-500">{r.movement_type}</td>

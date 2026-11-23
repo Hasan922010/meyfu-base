@@ -13,7 +13,7 @@ import { walletApi } from '@/shared/api/finance';
 import { financeApi } from '@/shared/api/finance2';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 import { ROLE_LABELS } from '@/shared/lib/labels';
 import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
@@ -153,7 +153,7 @@ function HistoryTable({
                     }`}
                   >
                     {Number(r.amount) > 0 ? '+' : ''}
-                    {kind === 'qty' ? qty(r.amount) : money(r.amount)}
+                    {kind === 'qty' ? intQty(r.amount) : money(r.amount)}
                   </td>
                   <td className="p-3 text-gray-500">{r.note || '—'}</td>
                 </tr>

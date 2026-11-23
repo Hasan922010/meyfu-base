@@ -9,7 +9,7 @@ import type { Loading } from '@/shared/types/warehouse';
 
 import { ProductLineEditor, type LineRow } from './ProductLineEditor';
 import { businessDateISO } from '@/shared/lib/businessDay';
-import { plainQty } from '@/shared/lib/format';
+import { plainIntQty } from '@/shared/lib/format';
 import { withOnlyOption } from '@/shared/lib/select';
 
 function today(): string {
@@ -47,7 +47,7 @@ export function LoadingForm({ loading = null, onDone }: Props): ReactElement {
     () =>
       loading?.items.map((i) => ({
         product: i.product,
-        quantity: plainQty(i.quantity),
+        quantity: plainIntQty(i.quantity),
         price: i.price ?? '',
       })) ?? [],
   );

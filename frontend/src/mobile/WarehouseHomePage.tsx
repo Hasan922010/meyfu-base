@@ -16,6 +16,7 @@ import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
 import { warehouseApi } from '@/shared/api/warehouse';
+import { intQty } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 
 /**
@@ -210,7 +211,7 @@ export function WarehouseHomePage(): ReactElement {
                   {s.product_name}
                 </span>
                 <span className="rounded-full bg-rose-50 px-2.5 py-1 font-bold text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
-                  {s.quantity} ta qoldi
+                  {intQty(s.quantity)} ta qoldi
                 </span>
               </div>
             ))}

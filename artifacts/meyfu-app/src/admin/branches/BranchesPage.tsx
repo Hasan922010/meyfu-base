@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 import { branchesApi } from '@/shared/api/branches';
 import { DataState } from '@/shared/components/DataState';
-import { money, qty } from '@/shared/lib/format';
+import { intQty, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 
 import { BranchComparison } from './BranchComparison';
@@ -72,13 +72,13 @@ export function BranchesPage(): ReactElement {
               <div>
                 <div className="text-xs text-gray-500">Qoldiq (tannarx bo'yicha)</div>
                 <div className="text-xl font-bold">{money(b.stock_amount)}</div>
-                <div className="text-xs text-gray-500">{qty(b.stock_quantity)} dona/birlik</div>
+                <div className="text-xs text-gray-500">{intQty(b.stock_quantity)} dona/birlik</div>
               </div>
 
               <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-300">
                 {Number(b.in_transit_quantity) > 0 && (
                   <span className="inline-flex items-center gap-1 text-pending">
-                    <Truck size={14} aria-hidden /> Yo'lda: {qty(b.in_transit_quantity)}
+                    <Truck size={14} aria-hidden /> Yo'lda: {intQty(b.in_transit_quantity)}
                   </span>
                 )}
                 <span>Bugun: {b.today_movements} ta harakat</span>

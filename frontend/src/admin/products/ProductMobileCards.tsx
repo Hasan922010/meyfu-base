@@ -1,7 +1,7 @@
 import { Image as ImageIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { money, qty } from '@/shared/lib/format';
+import { intQty, money, productUnitLabel } from '@/shared/lib/format';
 import type { Product } from '@/shared/types/catalog';
 
 interface Props {
@@ -127,8 +127,8 @@ export function ProductMobileCards({
                 <div className="flex items-center gap-1.5">
                   <StockBadge status={p.stock_status} />
                   <span className="font-semibold tabular-nums text-slate-900 dark:text-white">
-                    {qty(p.available_stock ?? 0)}{' '}
-                    <span className="text-[10px] font-normal text-slate-500">{p.unit_name}</span>
+                    {intQty(p.available_stock ?? 0)}{' '}
+                    <span className="text-[10px] font-normal text-slate-500">{productUnitLabel(p)}</span>
                   </span>
                 </div>
               </div>

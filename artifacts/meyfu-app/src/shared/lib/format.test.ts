@@ -4,8 +4,10 @@ import {
   amountDigits,
   dateShort,
   groupThousands,
+  intQty,
   money,
   numberToWordsUz,
+  plainIntQty,
   plainQty,
   qty,
 } from './format';
@@ -51,6 +53,13 @@ describe('qty', () => {
     expect(qty(2.5)).toBe('2.5');
     expect(qty('12.500')).toBe('12.5');
     expect(qty(1000.25)).toBe('1 000.25');
+  });
+
+  it('intQty va plainIntQty ombor sonlarini butun int ko‘rinishida qaytaradi', () => {
+    expect(intQty('12.000')).toBe('12');
+    expect(intQty(1250.4)).toBe('1 250');
+    expect(intQty(-20)).toBe('−20');
+    expect(plainIntQty('15.000')).toBe('15');
   });
 });
 

@@ -7,7 +7,7 @@ import { dayCloseApi } from '@/shared/api/reports';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { dateShort, formatOrderQty, money, qty } from '@/shared/lib/format';
+import { dateShort, formatOrderQty, intQty, money } from '@/shared/lib/format';
 
 /** Har xil hujjat turlari uchun yagona ko'rinish. */
 interface DocView {
@@ -36,9 +36,9 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
           key: i.id,
           cells: [
             i.product_name,
-            `${qty(i.quantity)} ${i.product_unit}`,
-            i.received_quantity === null ? '—' : qty(i.received_quantity),
-            i.difference === null || Number(i.difference) === 0 ? '—' : qty(i.difference),
+            `${intQty(i.quantity)} ${i.product_unit}`,
+            i.received_quantity === null ? '—' : intQty(i.received_quantity),
+            i.difference === null || Number(i.difference) === 0 ? '—' : intQty(i.difference),
           ],
         })),
       };
@@ -56,7 +56,7 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
         columns: ['Mahsulot', 'Miqdor', 'Narx'],
         rows: p.items.map((i, n) => ({
           key: i.id ?? String(n),
-          cells: [i.product_name ?? i.product, formatOrderQty(i.quantity, i), qty(i.cost_price)],
+          cells: [i.product_name ?? i.product, formatOrderQty(i.quantity, i), intQty(i.cost_price)],
         })),
         pdf: (stamp) => warehouseApi.purchasePdf(doc.id, stamp),
       };
@@ -93,9 +93,9 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
           key: i.id,
           cells: [
             i.product_name,
-            qty(i.expected_qty),
-            qty(i.actual_qty ?? '0'),
-            i.difference === null ? '—' : qty(i.difference),
+            intQty(i.expected_qty),
+            intQty(i.actual_qty ?? '0'),
+            i.difference === null ? '—' : intQty(i.difference),
           ],
         })),
       };

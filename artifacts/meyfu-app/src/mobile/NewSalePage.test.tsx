@@ -55,10 +55,10 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
       sku: 'GEL-1L',
       barcode: '998877',
       unit: 'dona',
-      wholesale_price: '20000',
-      retail_price: '25000',
-      cost_price: '16000',
-      min_price: '18000',
+      wholesale_price: '240000',
+      retail_price: '300000',
+      cost_price: '240000',
+      min_price: '216000',
       pack_quantity: '12',
       package_type: 'karopka',
       is_active: true,
@@ -74,7 +74,7 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
     });
   });
 
-  it('mijoz tanlangach, qadoq ma’lumoti ko‘rinadi va tovar savatga qo‘shiladi', async () => {
+  it('mijoz tanlangach, karopka birligi ko‘rinadi va tovar savatga qo‘shiladi', async () => {
     renderWithClient(<NewSalePage />);
 
     // 1. Mijozni tanlash
@@ -82,19 +82,18 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
     expect(screen.getByText(/1 500 000.*qarz/)).toBeInTheDocument();
     fireEvent.click(clientBtn);
 
-    // 2. Tovar va qadoq ma'lumoti ko'rinishi
+    // 2. Tovar va karopka birligi ko'rinishi
     expect(await screen.findByText('Toza Gel 1L')).toBeInTheDocument();
     expect(screen.getByText('1 karopka = 12 dona')).toBeInTheDocument();
-    expect(screen.getByText('50 dona qoldi')).toBeInTheDocument();
+    expect(screen.getByText('50 karopka qoldi')).toBeInTheDocument();
 
-    // 3. Tovarga bosib savatga 1 dona qo'shish
+    // 3. Tovarga bosib savatga 1 karopka qo'shish
     const addProductBtn = screen.getByRole('button', { name: /Toza Gel 1L — 1 ta qo'shish/ });
     fireEvent.click(addProductBtn);
 
     // 4. Pastdagi panelda jami summa va Naqd tugmasi
     expect(screen.getByText('Jami summa')).toBeInTheDocument();
-    expect(screen.getByText('1 dona tovar')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Naqd · 20 000/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Naqd · 240 000/ })).toBeInTheDocument();
   });
 
   it('boshqa to‘lov bosilganda ergonomik to‘lov turlari va qarz muddati tezkor chiplari chiqadi', async () => {
@@ -142,7 +141,7 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
             expect.objectContaining({
               product: 'p1',
               quantity: 1,
-              price: 20000,
+              price: 240000,
             }),
           ],
         }),
@@ -151,10 +150,10 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
   });
 
   it('aksiyali tovar xarid qilinganda avtomatik bepul aksiya bonusi qo‘shiladi va saqlanadi', async () => {
-    // p1 mahsulotiga aksiya qo'shamiz: 10 ta olinsa -> 1 ta sovg'a
+    // p1 mahsulotiga aksiya qo'shamiz: 1 karopka olinsa -> 1 ta sovg'a
     await db.products.update('p1', {
       has_bonus: true,
-      bonus_trigger_qty: 10,
+      bonus_trigger_qty: 1,
       bonus_reward_qty: 1,
       bonus_product: 'p1',
       bonus_product_name: 'Toza Gel 1L',
@@ -166,13 +165,9 @@ describe('NewSalePage — Mobil Sotuv va Ergonomik To‘lov Oqimi', () => {
     const clientBtn = await screen.findByRole('button', { name: /Guliston Savdo Do‘koni/ });
     fireEvent.click(clientBtn);
 
-    // 2. Qadoq modalini ochish va 1 karopka (12 dona) tanlash
-    const packBtn = await screen.findByTitle('Qadoqda kiritish uchun bosing');
-    fireEvent.click(packBtn);
-
-    // Modalda tasdiqlash
-    const savePackBtn = screen.getByRole('button', { name: /Savatga qo'shish · 240 000/ });
-    fireEvent.click(savePackBtn);
+    // 2. Tovar kartasini bosib 1 karopka tanlash
+    const addBtn = await screen.findByRole('button', { name: /Toza Gel 1L — 1 ta qo'shish/ });
+    fireEvent.click(addBtn);
 
     // 3. Aksiya bonusi banneri paydo bo'lganini tekshirish
     expect(await screen.findByText('Aksiya bonusi (Mijozga bepul beriladi):')).toBeInTheDocument();

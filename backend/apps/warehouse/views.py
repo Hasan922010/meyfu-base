@@ -341,6 +341,48 @@ class StockViewSet(_OwnWarehouseMixin, BaseReadOnlyViewSet):
         )
         return ok(self.get_serializer(qs, many=True).data)
 
+    @extend_schema(summary="Har bir ombor bo'yicha jami qoldiq va tovar summasi")
+    @action(detail=False, methods=["get"], url_path="summary")
+    def summary(self, request: Request) -> Response:
+        from decimal import Decimal
+
+        from django.db.models import Count, DecimalField, ExpressionWrapper, Q, Sum
+
+        val_expr = ExpressionWrapper(
+            F("quantity") * F("product__cost_price"),
+            output_field=DecimalField(max_digits=18, decimal_places=2),
+        )
+        rows = (
+            self.get_queryset()
+            .values("warehouse_id", "warehouse__name")
+            .annotate(
+                total_quantity=Sum("quantity"),
+                total_value=Sum(val_expr),
+                items_count=Count("id", filter=Q(quantity__gt=0)),
+            )
+            .order_by("warehouse__name")
+        )
+        warehouses = []
+        grand_qty = Decimal("0")
+        grand_val = Decimal("0")
+        for r in rows:
+            q = r["total_quantity"] or Decimal("0")
+            v = (r["total_value"] or Decimal("0")).quantize(Decimal("0.01"))
+            grand_qty += q
+            grand_val += v
+            warehouses.append({
+                "warehouse": str(r["warehouse_id"]),
+                "warehouse_name": r["warehouse__name"],
+                "items_count": r["items_count"],
+                "total_quantity": f"{q:.3f}",
+                "total_value": f"{v:.2f}",
+            })
+        return ok({
+            "warehouses": warehouses,
+            "total_quantity": f"{grand_qty:.3f}",
+            "total_value": f"{grand_val.quantize(Decimal('0.01')):.2f}",
+        })
+
     @extend_schema(
         summary="Mavjud mahsulot uchun boshlang'ich qoldiq",
         request=StockOpeningBalanceSerializer, responses=StockMovementSerializer,

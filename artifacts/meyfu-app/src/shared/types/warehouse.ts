@@ -68,10 +68,26 @@ export interface Stock {
   pack_quantity?: string;
   /** Mahsulotning "kam qoldiq" chegarasi (0 — belgilanmagan) */
   min_stock_alert: string;
+  cost_price?: string;
+  stock_value?: string;
   quantity: string;
   reserved_quantity: string;
   available_quantity: string;
   updated_at: string;
+}
+
+export interface WarehouseStockSummaryItem {
+  warehouse: string;
+  warehouse_name: string;
+  items_count: number;
+  total_quantity: string;
+  total_value: string;
+}
+
+export interface WarehouseStockSummary {
+  warehouses: WarehouseStockSummaryItem[];
+  total_quantity: string;
+  total_value: string;
 }
 
 export type PurchaseStatus = 'DRAFT' | 'CONFIRMED';

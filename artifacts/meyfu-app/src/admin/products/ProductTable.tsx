@@ -1,7 +1,7 @@
 import { Image as ImageIcon, Package } from 'lucide-react';
 import type { ReactElement } from 'react';
 
-import { money, qty } from '@/shared/lib/format';
+import { intQty, money, productUnitLabel } from '@/shared/lib/format';
 import type { Product } from '@/shared/types/catalog';
 
 import { SortableHeader } from './SortableHeader';
@@ -158,13 +158,12 @@ export function ProductTable({
               </td>
               <td className="p-3 text-right">
                 <div className="font-semibold text-slate-900 dark:text-white">
-                  Dona: {money(p.cost_price)}
+                  {money(p.cost_price)}{' '}
+                  <span className="text-xs font-normal text-slate-500">
+                    / {productUnitLabel(p)}
+                  </span>
                 </div>
                 <div className="mt-0.5 flex flex-col gap-0.5 text-[11px] text-slate-500">
-                  <span title="Tannarx (qop/quti)">
-                    Qop/quti:{' '}
-                    {money(Number(p.cost_price || 0) * (Number(p.pack_quantity) || 1))}
-                  </span>
                   {(Number(p.order_commission_rate || 0) > 0 ||
                     Number(p.delivery_commission_rate || 0) > 0) && (
                     <span title="Komissiya (Zakaz / Yetkazish)">
@@ -179,20 +178,26 @@ export function ProductTable({
                   <div className="flex items-center gap-1.5">
                     <StockBadge status={p.stock_status} />
                     <span className="font-semibold tabular-nums text-slate-900 dark:text-white">
-                      {qty(p.available_stock ?? 0)}{' '}
-                      <span className="text-xs font-normal text-slate-500">{p.unit_name}</span>
+                      {intQty(p.available_stock ?? 0)}{' '}
+                      <span className="text-xs font-normal text-slate-500">
+                        {productUnitLabel(p)}
+                      </span>
                     </span>
                   </div>
-                  <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
-                    <span title="Qadoq soni">Qadoq: {p.pack_quantity}</span>
-                  </div>
+                  {Number(p.pack_quantity) > 1 && (
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
+                      <span>
+                        1 {productUnitLabel(p)} = {intQty(p.pack_quantity)} {p.unit_name}
+                      </span>
+                    </div>
+                  )}
                   {Number(p.reserved_stock ?? 0) > 0 && (
                     <div
                       className="flex items-center gap-1 text-[11px] text-slate-500"
                       title="Bant qilingan / Jami"
                     >
                       <Package className="h-3 w-3" />
-                      Bant: {qty(p.reserved_stock ?? 0)} / Jami: {qty(p.total_stock ?? 0)}
+                      Bant: {intQty(p.reserved_stock ?? 0)} / Jami: {intQty(p.total_stock ?? 0)}
                     </div>
                   )}
                 </div>

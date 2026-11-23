@@ -370,11 +370,7 @@ function FulfillScreen({
         paymentLabel: paymentLabel(paymentType),
         lines: lines.map((l) => {
           const it = order.items.find((x) => x.id === l.item);
-          const packQty = Math.round(Number(it?.pack_quantity) || 1);
-          const qtyLabel =
-            it && packQty > 1 && l.delivered_quantity > 0 && l.delivered_quantity % packQty === 0
-              ? formatOrderQty(l.delivered_quantity, it)
-              : undefined;
+          const qtyLabel = it ? formatOrderQty(l.delivered_quantity, it) : undefined;
           return {
             name: it?.product_name ?? '',
             qty: l.delivered_quantity,

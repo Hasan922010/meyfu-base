@@ -285,3 +285,34 @@ def convert_warehouse_history_to_packages() -> dict[str, int]:
         converted += 1
 
     return {"products": converted, "movements": movements_updated}
+
+
+@transaction.atomic
+def convert_product_prices_to_packages() -> int:
+    """pack_quantity > 1 bo'lgan mahsulotlarning katalog narxlarini (1 dona -> 1 karopka/xalta) ko'paytiradi."""
+    from apps.core.models import AuditLog
+
+    done_ids = set(
+        AuditLog.objects.filter(action="product.prices_converted_to_packages")
+        .values_list("object_id", flat=True)
+    )
+    m2 = Decimal("0.01")
+    converted = 0
+    for product in Product.objects.select_for_update().filter(pack_quantity__gt=Decimal("1")):
+        if str(product.id) in done_ids:
+            continue
+        pack_qty = product.pack_quantity
+        Product.objects.filter(pk=product.pk).update(
+            cost_price=(product.cost_price * pack_qty).quantize(m2),
+            wholesale_price=(product.wholesale_price * pack_qty).quantize(m2),
+            retail_price=(product.retail_price * pack_qty).quantize(m2),
+            min_price=(product.min_price * pack_qty).quantize(m2),
+        )
+        AuditLog.objects.create(
+            action="product.prices_converted_to_packages",
+            model_name="Product",
+            object_id=str(product.id),
+            changes={"pack_quantity": str(pack_qty)},
+        )
+        converted += 1
+    return converted

@@ -17,8 +17,14 @@ class Command(BaseCommand):
         from apps.catalog.models import Brand, Category, Unit
         from apps.warehouse.models import Supplier, Warehouse
 
-        units = [("Dona", "dona"), ("Kilogramm", "kg"), ("Litr", "l"),
-                 ("Quti", "quti")]
+        units = [
+            ("Dona", "dona"),
+            ("Karopka", "karopka"),
+            ("Xalta", "xalta"),
+            ("Kilogramm", "kg"),
+            ("Litr", "l"),
+            ("Quti", "quti"),
+        ]
         for name, short in units:
             Unit.objects.get_or_create(name=name, defaults={"short_name": short})
 

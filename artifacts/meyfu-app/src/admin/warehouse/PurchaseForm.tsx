@@ -36,22 +36,13 @@ export function PurchaseForm({ onDone }: { onDone: () => void }): ReactElement {
 
   const mutation = useMutation({
     mutationFn: () => {
-      const productMap = new Map(
-        (products.data?.results ?? []).map((p) => [p.id, p]),
-      );
       const items = rows
         .filter((r) => r.product && Number(r.quantity) > 0)
-        .map((r) => {
-          const p = productMap.get(r.product);
-          const packQty = p ? Math.round(Number(p.pack_quantity) || 1) : 1;
-          const mult = packQty > 1 ? packQty : 1;
-          const packCost = Math.round((Number(r.price) || 0) * mult * 100) / 100;
-          return {
-            product: r.product,
-            quantity: String(Number(r.quantity) || 0),
-            cost_price: String(packCost),
-          };
-        });
+        .map((r) => ({
+          product: r.product,
+          quantity: String(Number(r.quantity) || 0),
+          cost_price: String(Math.round((Number(r.price) || 0) * 100) / 100),
+        }));
       return warehouseApi.createPurchase({
         supplier,
         warehouse,

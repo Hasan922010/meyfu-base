@@ -5,7 +5,7 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { businessDateISO } from '@/shared/lib/businessDay';
-import { qty } from '@/shared/lib/format';
+import { intQty } from '@/shared/lib/format';
 import type { Stock } from '@/shared/types/warehouse';
 
 interface Row {
@@ -141,7 +141,7 @@ export function TransferForm({ onDone }: { onDone: () => void }): ReactElement {
           </option>
           {unpicked.map((s) => (
             <option key={s.product} value={s.product}>
-              {s.product_name} — {qty(s.available_quantity)} {s.product_unit}
+              {s.product_name} — {intQty(s.available_quantity)} {s.product_unit}
             </option>
           ))}
         </select>
@@ -157,15 +157,21 @@ export function TransferForm({ onDone }: { onDone: () => void }): ReactElement {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">{s?.product_name}</div>
                   <div className={`text-xs ${tooMuch ? 'text-danger' : 'text-gray-500'}`}>
-                    Omborda: {qty(s?.available_quantity ?? '0')} {s?.product_unit}
+                    Omborda: {intQty(s?.available_quantity ?? '0')} {s?.product_unit}
                   </div>
                 </div>
                 <input
                   className="field w-28 text-right"
-                  inputMode="decimal"
+                  type="number"
+                  step="1"
+                  min="1"
+                  inputMode="numeric"
                   aria-label={`${s?.product_name ?? ''} miqdori`}
                   value={r.quantity}
-                  onChange={(e) => setQuantity(r.product, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === '.' || e.key === ',') e.preventDefault();
+                  }}
+                  onChange={(e) => setQuantity(r.product, e.target.value.replace(/[^\d]/g, ''))}
                 />
                 <button
                   type="button"

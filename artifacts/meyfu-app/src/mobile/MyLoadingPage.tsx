@@ -5,7 +5,7 @@ import { pullVanStock } from '@/offline/sync';
 import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 export function MyLoadingPage(): ReactElement {
   const qc = useQueryClient();
@@ -71,7 +71,7 @@ export function MyLoadingPage(): ReactElement {
                 {l.items.map((it) => (
                   <li key={it.id} className="flex justify-between py-1.5">
                     <span>{it.product_name}</span>
-                    <span className="font-medium">{qty(it.quantity)}</span>
+                    <span className="font-medium">{intQty(it.quantity)}</span>
                   </li>
                 ))}
               </ul>

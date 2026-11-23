@@ -7889,6 +7889,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedOpeningSheetRowList'
           description: ''
+  /api/v1/stock/summary/:
+    get:
+      operationId: stock_summary_retrieve
+      description: Filial omborchisi uchun ro'yxat va yaratishni o'z omboriga cheklaydi.
+      summary: Har bir ombor bo'yicha jami qoldiq va tovar summasi
+      tags:
+      - stock
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
+          description: ''
   /api/v1/stock/unlock-opening/:
     post:
       operationId: stock_unlock_opening_create
@@ -17710,6 +17726,14 @@ components:
           format: decimal
           pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
           readOnly: true
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        stock_value:
+          type: string
+          readOnly: true
         quantity:
           type: string
           format: decimal
@@ -17734,6 +17758,7 @@ components:
           title: Yangilangan vaqti
       required:
       - available_quantity
+      - cost_price
       - id
       - min_stock_alert
       - pack_quantity
@@ -17744,6 +17769,7 @@ components:
       - product_unit
       - quantity
       - reserved_quantity
+      - stock_value
       - updated_at
       - warehouse
       - warehouse_name
@@ -18693,6 +18719,14 @@ components:
         unit:
           type: string
           readOnly: true
+        package_type:
+          type: string
+          readOnly: true
+        pack_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
         image:
           type: string
           format: uri
@@ -18713,6 +18747,8 @@ components:
       - distributor_name
       - id
       - image
+      - pack_quantity
+      - package_type
       - product
       - product_name
       - product_sku

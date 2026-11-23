@@ -2,7 +2,7 @@ import { Minus, Package, Plus } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
 import type { CachedVanStock } from '@/offline/db';
-import { money } from '@/shared/lib/format';
+import { money, productUnitLabel } from '@/shared/lib/format';
 
 import {
   addToCart,
@@ -12,7 +12,6 @@ import {
   type AddResult,
   type CartLine,
 } from './lib/cart';
-import { PackagingModal } from './PackagingModal';
 
 // UX audit M4: tovarlar mijoz tanlangach darhol ko'rinadi, qatorga bosish = +1,
 // miqdor va narxni ustiga bosib yozish yoki qadoqda kiritish mumkin. Naqd tugmasi sahifa pastida.
@@ -43,7 +42,6 @@ export function SaleProductList({
 }: Props): ReactElement {
   const [search, setSearch] = useState<string>('');
   const [editing, setEditing] = useState<Editing>(null);
-  const [modalStock, setModalStock] = useState<CachedVanStock | null>(null);
 
   const q = search.trim().toLowerCase();
   const normQ = q.replace(/[‘'’`]/g, "'");
@@ -61,80 +59,40 @@ export function SaleProductList({
 
   function lineFor(v: CachedVanStock, quantity: number): CartLine {
     const inCart = cart.find((l) => l.product === v.product);
+    const packInfo = packInfoOf?.(v.product);
+    const unitLabel = productUnitLabel({ ...packInfo, unit: v.unit });
     return {
       product: v.product,
       product_name: v.product_name,
       quantity,
       price: inCart?.price ?? priceOf(v.product),
+      package_type: packInfo?.package_type,
+      pack_quantity: Number(packInfo?.pack_quantity) || 1,
+      unit_name: unitLabel,
       max: v.quantity,
     };
   }
 
   function handleAdd(v: CachedVanStock): void {
-    const line = cart.find((l) => l.product === v.product);
     const packInfo = packInfoOf?.(v.product);
-    const packQty = Number(packInfo?.pack_quantity) || 1;
-
-    if (line?.unit_mode === 'package' && line.package_count && packQty > 1) {
-      const nextPackCount = line.package_count + 1;
-      if (nextPackCount <= v.quantity) {
-        const updated: CartLine = {
-          ...line,
-          quantity: nextPackCount,
-          package_count: nextPackCount,
-          max: v.quantity,
-        };
-        onChange(
-          cart.map((l) => (l.product === v.product ? updated : l)),
-          '',
-        );
-      } else {
-        onChange(cart, `Mashinada faqat ${v.quantity} ${line.package_type || v.unit} bor`);
-      }
-      return;
-    }
-
-    emit(addToCart(cart, lineFor(v, 1), v.quantity), v.unit);
+    const unitLabel = productUnitLabel({ ...packInfo, unit: v.unit });
+    emit(addToCart(cart, lineFor(v, 1), v.quantity), unitLabel);
   }
 
   function handleRemoveOne(v: CachedVanStock, currentQty: number): void {
-    const line = cart.find((l) => l.product === v.product);
     const packInfo = packInfoOf?.(v.product);
-    const packQty = Number(packInfo?.pack_quantity) || 1;
-
-    if (line?.unit_mode === 'package' && line.package_count && packQty > 1) {
-      const nextPackCount = line.package_count - 1;
-      if (nextPackCount <= 0) {
-        onChange(cart.filter((l) => l.product !== v.product), '');
-      } else {
-        const updated: CartLine = {
-          ...line,
-          quantity: nextPackCount,
-          package_count: nextPackCount,
-          max: v.quantity,
-        };
-        onChange(
-          cart.map((l) => (l.product === v.product ? updated : l)),
-          '',
-        );
-      }
-      return;
-    }
-
-    emit(setLineQuantity(cart, lineFor(v, currentQty - 1), v.quantity), v.unit);
+    const unitLabel = productUnitLabel({ ...packInfo, unit: v.unit });
+    emit(setLineQuantity(cart, lineFor(v, currentQty - 1), v.quantity), unitLabel);
   }
 
   function commit(v: CachedVanStock, field: 'qty' | 'price', raw: string): void {
     setEditing(null);
     const value = Number(raw);
-    const inCart = cart.find((l) => l.product === v.product);
     const packInfo = packInfoOf?.(v.product);
-    const packQty = Number(packInfo?.pack_quantity) || 1;
+    const unitLabel = productUnitLabel({ ...packInfo, unit: v.unit });
     if (field === 'price') {
       const storedVal = Math.round(value * 100) / 100;
-      const minUnit = minPriceOf?.(v.product) ?? 0;
-      const minAllowed =
-        inCart?.unit_mode === 'package' && packQty > 1 ? minUnit * packQty : minUnit;
+      const minAllowed = minPriceOf?.(v.product) ?? 0;
       const notice =
         minAllowed > 0 && storedVal < minAllowed
           ? `Minimal narx ${money(minAllowed)} — bu sotuv admin ko‘rigiga belgilanadi`
@@ -143,36 +101,7 @@ export function SaleProductList({
       return;
     }
 
-    if (inCart?.unit_mode === 'package' && packQty > 1) {
-      const packCount = Math.floor(value);
-      if (!Number.isFinite(packCount) || packCount <= 0) {
-        onChange(cart.filter((l) => l.product !== v.product), '');
-        return;
-      }
-      const totalQty = Math.min(v.quantity, packCount);
-      const updated: CartLine = {
-        ...inCart,
-        quantity: totalQty,
-        package_count: totalQty,
-        max: v.quantity,
-      };
-      onChange(
-        cart.map((l) => (l.product === v.product ? updated : l)),
-        packCount > v.quantity ? `Mashinada faqat ${v.quantity} ${inCart.package_type || v.unit} bor` : '',
-      );
-      return;
-    }
-
-    emit(setLineQuantity(cart, lineFor(v, value), v.quantity), v.unit);
-  }
-
-  function handleConfirmPackLine(savedLine: CartLine): void {
-    const exists = cart.some((l) => l.product === savedLine.product);
-    const nextCart = exists
-      ? cart.map((l) => (l.product === savedLine.product ? savedLine : l))
-      : [...cart, savedLine];
-    onChange(nextCart, '');
-    setModalStock(null);
+    emit(setLineQuantity(cart, lineFor(v, value), v.quantity), unitLabel);
   }
 
   return (
@@ -204,23 +133,9 @@ export function SaleProductList({
             onRemoveOne={(q) => handleRemoveOne(v, q)}
             onEdit={(field) => setEditing({ product: v.product, field })}
             onCommit={(field, raw) => commit(v, field, raw)}
-            onOpenPackModal={() => setModalStock(v)}
           />
         ))}
       </ul>
-
-      {modalStock && (
-        <PackagingModal
-          open={Boolean(modalStock)}
-          stock={modalStock}
-          packInfo={packInfoOf?.(modalStock.product)}
-          currentLine={cart.find((l) => l.product === modalStock.product)}
-          defaultPrice={priceOf(modalStock.product)}
-          minPrice={minPriceOf?.(modalStock.product)}
-          onClose={() => setModalStock(null)}
-          onConfirm={handleConfirmPackLine}
-        />
-      )}
     </div>
   );
 }
@@ -237,7 +152,6 @@ interface RowProps {
   onRemoveOne: (currentQty: number) => void;
   onEdit: (field: 'qty' | 'price') => void;
   onCommit: (field: 'qty' | 'price', raw: string) => void;
-  onOpenPackModal: () => void;
 }
 
 function ProductRow({
@@ -252,14 +166,12 @@ function ProductRow({
   onRemoveOne,
   onEdit,
   onCommit,
-  onOpenPackModal,
 }: RowProps): ReactElement {
   const name = stock.product_name;
   const price = line?.price ?? defaultPrice;
   const selected = line != null;
   const packQty = Number(packInfo?.pack_quantity) || 1;
-  const hasPackaging = Boolean(packInfo?.package_type) && packQty > 1;
-  const isPackageMode = line?.unit_mode === 'package' && Boolean(line.package_count);
+  const unitLabel = productUnitLabel({ ...packInfo, unit: stock.unit });
 
   return (
     <li
@@ -286,35 +198,14 @@ function ProductRow({
           <span className="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{name}</span>
           <span className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
             <span>
-              {remaining} {stock.unit} qoldi
+              {remaining} {unitLabel} qoldi
             </span>
-            {hasPackaging && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenPackModal();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.stopPropagation();
-                    onOpenPackModal();
-                  }
-                }}
-                className="cursor-pointer rounded bg-brand/10 hover:bg-brand/20 px-1.5 py-0.5 text-[10px] font-semibold text-brand dark:bg-brand/20 dark:text-brand transition inline-flex items-center gap-1"
-                title="Qadoqda kiritish uchun bosing"
-              >
-                <span>1 {packInfo?.package_type} = {packInfo?.pack_quantity} {stock.unit}</span>
-                <span className="rounded bg-brand/20 px-1 text-[9px] font-bold uppercase tracking-wider">Qadoq</span>
+            {packQty > 1 && (
+              <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand dark:bg-brand/20">
+                1 {unitLabel} = {packQty} {stock.unit}
               </span>
             )}
           </span>
-          {line != null && isPackageMode && (
-            <span className="block mt-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-              {line.package_count} {line.package_type || 'qadoq'} ({line.quantity} {stock.unit})
-            </span>
-          )}
         </span>
       </button>
 
@@ -334,11 +225,6 @@ function ProductRow({
           aria-label={`${name} narxini o‘zgartirish`}
         >
           <span>{money(price)}</span>
-          {isPackageMode && packQty > 1 && (
-            <span className="text-[10px] font-normal text-gray-400 leading-none">
-              {money(Math.round((price / packQty) * 100) / 100)} / {stock.unit}
-            </span>
-          )}
         </button>
       )}
 
@@ -353,25 +239,17 @@ function ProductRow({
       )}
       {selected &&
         (editing === 'qty' ? (
-          <InlineNumber label={`${name} miqdori`} initial={isPackageMode ? line.package_count! : line.quantity} onCommit={(raw) => onCommit('qty', raw)} />
+          <InlineNumber label={`${name} miqdori`} initial={line.quantity} onCommit={(raw) => onCommit('qty', raw)} />
         ) : (
           <button
             className="min-h-[48px] min-w-[3rem] shrink-0 text-center text-lg font-bold flex flex-col items-center justify-center"
-            onClick={() => {
-              if (hasPackaging) {
-                onOpenPackModal();
-              } else {
-                onEdit('qty');
-              }
-            }}
+            onClick={() => onEdit('qty')}
             aria-label={`${name} miqdorini yozish`}
           >
-            <span>{isPackageMode ? line.package_count : line.quantity}</span>
-            {isPackageMode && (
-              <span className="text-[10px] font-normal text-gray-500 leading-none">
-                {line.package_type || 'qadoq'}
-              </span>
-            )}
+            <span>{line.quantity}</span>
+            <span className="text-[10px] font-normal text-gray-500 leading-none">
+              {unitLabel}
+            </span>
           </button>
         ))}
       <button

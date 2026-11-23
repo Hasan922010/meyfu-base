@@ -8,7 +8,7 @@ import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { DataState } from '@/shared/components/DataState';
-import { money, numberToWordsUz } from '@/shared/lib/format';
+import { money, numberToWordsUz, productUnitLabel } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { withOnlyOption } from '@/shared/lib/select';
 
@@ -79,10 +79,10 @@ export function MobileReceivePage(): ReactElement {
       .slice(0, 8);
   }, [products.data, search, chosen]);
 
-  const total = rows.reduce((s, r) => {
-    const packQty = r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1;
-    return s + (Number(r.quantity) || 0) * packQty * (Number(r.price) || 0);
-  }, 0);
+  const total = rows.reduce(
+    (s, r) => s + (Number(r.quantity) || 0) * (Number(r.price) || 0),
+    0,
+  );
 
   const save = useMutation({
     mutationFn: () =>
@@ -93,15 +93,11 @@ export function MobileReceivePage(): ReactElement {
         invoice_number: invoice,
         items: rows
           .filter((r) => Number(r.quantity) > 0)
-          .map((r) => {
-            const packQty = r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1;
-            const packCost = Math.round((Number(r.price) || 0) * packQty * 100) / 100;
-            return {
-              product: r.product,
-              quantity: String(Number(r.quantity) || 0),
-              cost_price: String(packCost),
-            };
-          }),
+          .map((r) => ({
+            product: r.product,
+            quantity: String(Number(r.quantity) || 0),
+            cost_price: String(Math.round((Number(r.price) || 0) * 100) / 100),
+          })),
       }),
     onSuccess: (p) => {
       void qc.invalidateQueries({ queryKey: ['purchases'] });
@@ -217,8 +213,7 @@ export function MobileReceivePage(): ReactElement {
                     onClick={() => {
                       const packQty = Math.round(Number(p.pack_quantity) || 1);
                       const packType = p.package_type?.trim() || '';
-                      const isPack = packQty > 1 || Boolean(packType);
-                      const unit = isPack ? (packType || 'qadoq') : p.unit_name;
+                      const unit = productUnitLabel(p);
                       setRows((prev) => [
                         ...prev,
                         {
@@ -229,7 +224,7 @@ export function MobileReceivePage(): ReactElement {
                           price: p.cost_price
                             ? String(Math.round(Number(p.cost_price)))
                             : '',
-                          pack_quantity: isPack ? packQty : 1,
+                          pack_quantity: packQty,
                           package_type: packType,
                           base_unit: p.unit_name,
                         },
@@ -288,13 +283,17 @@ export function MobileReceivePage(): ReactElement {
                   <input
                     className="field h-10"
                     type="number"
-                    inputMode="decimal"
-                    step={r.pack_quantity && r.pack_quantity > 1 ? '1' : '0.001'}
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
                     value={r.quantity}
+                    onKeyDown={(e) => {
+                      if (e.key === '.' || e.key === ',') e.preventDefault();
+                    }}
                     onChange={(e) =>
                       setRows((prev) =>
                         prev.map((x, i) =>
-                          i === idx ? { ...x, quantity: e.target.value } : x,
+                          i === idx ? { ...x, quantity: e.target.value.replace(/[^\d]/g, '') } : x,
                         ),
                       )
                     }
@@ -302,7 +301,7 @@ export function MobileReceivePage(): ReactElement {
                 </label>
                 <div className="flex-1 space-y-0.5">
                   <span className="text-xs text-gray-500">
-                    Kelish narxi ({r.base_unit || r.unit})
+                    Kelish narxi ({r.unit})
                   </span>
                   <AmountInput
                     className="h-10"
@@ -319,15 +318,11 @@ export function MobileReceivePage(): ReactElement {
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>
                   {r.pack_quantity && r.pack_quantity > 1
-                    ? `${Number(r.quantity) || 0} ${r.unit} × ${r.pack_quantity} ${r.base_unit || 'dona'} = ${(Number(r.quantity) || 0) * r.pack_quantity} ${r.base_unit || 'dona'}`
+                    ? `1 ${r.unit} = ${r.pack_quantity} ${r.base_unit || 'dona'}`
                     : ''}
                 </span>
                 <span className="text-sm font-medium">
-                  {money(
-                    (Number(r.quantity) || 0) *
-                      (r.pack_quantity && r.pack_quantity > 1 ? r.pack_quantity : 1) *
-                      (Number(r.price) || 0),
-                  )}
+                  {money((Number(r.quantity) || 0) * (Number(r.price) || 0))}
                 </span>
               </div>
             </li>

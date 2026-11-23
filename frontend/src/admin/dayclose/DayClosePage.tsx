@@ -5,7 +5,7 @@ import { extractApiError } from '@/shared/api/client';
 import { dayCloseApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
 import { Modal } from '@/shared/components/Modal';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { DayClose } from '@/shared/types/dayclose';
 
@@ -101,7 +101,7 @@ export function DayClosePage(): ReactElement {
                       Number(d.stock_difference_qty) !== 0 ? 'text-danger' : ''
                     }`}
                   >
-                    {qty(d.stock_difference_qty)}
+                    {intQty(d.stock_difference_qty)}
                   </td>
                   <td className="p-3">
                     <span
@@ -150,7 +150,7 @@ export function DayClosePage(): ReactElement {
               />
               <Row
                 label="Tovar farqi"
-                value={`${qty(detail.stock_difference_qty)} (${money(
+                value={`${intQty(detail.stock_difference_qty)} (${money(
                   detail.stock_difference_amount,
                 )})`}
                 danger={Number(detail.stock_difference_qty) !== 0}
@@ -177,7 +177,7 @@ export function DayClosePage(): ReactElement {
                           <span className="text-danger">({it.condition})</span>
                         )}
                       </span>
-                      <span>{qty(it.quantity)}</span>
+                      <span>{intQty(it.quantity)}</span>
                     </li>
                   ))}
                 </ul>

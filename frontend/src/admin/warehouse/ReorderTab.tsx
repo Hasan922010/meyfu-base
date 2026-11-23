@@ -3,7 +3,7 @@ import { useState, type ReactElement } from 'react';
 
 import { reportsAdvancedApi } from '@/shared/api/reportsAdvanced';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, qty } from '@/shared/lib/format';
+import { dateShort, intQty } from '@/shared/lib/format';
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   URGENT: { label: 'Shoshilinch', cls: 'bg-danger/10 text-danger' },
@@ -102,12 +102,12 @@ export function ReorderTab(): ReactElement {
                     {r.name}
                     <span className="block font-mono text-xs text-gray-400">{r.sku}</span>
                   </td>
-                  <td className="p-3 text-right">{qty(r.avg_daily)}</td>
-                  <td className="p-3 text-right">{qty(r.stock)}</td>
-                  <td className="p-3 text-right">{qty(r.on_vans)}</td>
+                  <td className="p-3 text-right">{intQty(r.avg_daily)}</td>
+                  <td className="p-3 text-right">{intQty(r.stock)}</td>
+                  <td className="p-3 text-right">{intQty(r.on_vans)}</td>
                   <td className="p-3 text-right">{r.days_left ?? '—'}</td>
                   <td className="p-3 text-right font-semibold">
-                    {Number(r.suggested) > 0 ? qty(r.suggested) : '—'}
+                    {Number(r.suggested) > 0 ? intQty(r.suggested) : '—'}
                   </td>
                   <td className="p-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS[r.status]?.cls ?? ''}`}>

@@ -2,7 +2,7 @@ import { Search, X } from 'lucide-react';
 import { useMemo, useRef, useState, type ReactElement } from 'react';
 
 import { AmountInput } from '@/shared/components/AmountInput';
-import { money, numberToWordsUz, qty } from '@/shared/lib/format';
+import { intQty, money, numberToWordsUz, productUnitLabel } from '@/shared/lib/format';
 import type { Product } from '@/shared/types/catalog';
 
 export interface LineRow {
@@ -91,12 +91,10 @@ export function ProductLineEditor({
     onChange(value.filter((_, i) => i !== idx));
   }
 
-  const total = value.reduce((s, r) => {
-    const p = byId.get(r.product);
-    const packQty = usePackUnits && p ? Math.round(Number(p.pack_quantity) || 1) : 1;
-    const mult = packQty > 1 ? packQty : 1;
-    return s + (Number(r.quantity) || 0) * mult * (Number(r.price) || 0);
-  }, 0);
+  const total = value.reduce(
+    (s, r) => s + (Number(r.quantity) || 0) * (Number(r.price) || 0),
+    0,
+  );
 
   return (
     <div className="space-y-2">
@@ -151,7 +149,7 @@ export function ProductLineEditor({
                       )}
                     </span>
                     <span className="shrink-0 text-xs text-gray-400">
-                      {available && `omborda ${qty(available.get(p.id) ?? 0)} · `}
+                      {available && `omborda ${intQty(available.get(p.id) ?? 0)} · `}
                       {money(p[priceSource])} / {p.unit_name}
                     </span>
                   </button>
@@ -185,13 +183,9 @@ export function ProductLineEditor({
             <tbody>
               {value.map((r, idx) => {
                 const p = byId.get(r.product);
-                const packQty = usePackUnits && p ? Math.round(Number(p.pack_quantity) || 1) : 1;
-                const packType = p?.package_type?.trim() || '';
-                const isPack = usePackUnits && p != null && (packQty > 1 || Boolean(packType));
-                const displayUnit = isPack ? (packType || 'qadoq') : p?.unit_name;
-                const mult = packQty > 1 ? packQty : 1;
-                const line =
-                  (Number(r.quantity) || 0) * mult * (Number(r.price) || 0);
+                const packQty = p ? Math.round(Number(p.pack_quantity) || 1) : 1;
+                const displayUnit = p ? productUnitLabel(p) : '';
+                const line = (Number(r.quantity) || 0) * (Number(r.price) || 0);
                 const free = available?.get(r.product);
                 const over = free !== undefined && Number(r.quantity) > free;
                 return (
@@ -206,16 +200,16 @@ export function ProductLineEditor({
                           {displayUnit}
                         </span>
                       )}
-                      {isPack && packQty > 1 && (
+                      {usePackUnits && packQty > 1 && (
                         <span className="block text-[11px] text-gray-400">
-                          = {(Number(r.quantity) || 0) * packQty} {p?.unit_name}
+                          1 {displayUnit} = {packQty} {p?.unit_name}
                         </span>
                       )}
                       {free !== undefined && (
                         <span
                           className={`block text-xs ${over ? 'text-danger' : 'text-gray-400'}`}
                         >
-                          {over ? `Omborda faqat ${qty(free)} bor` : `omborda ${qty(free)}`}
+                          {over ? `Omborda faqat ${intQty(free)} bor` : `omborda ${intQty(free)}`}
                         </span>
                       )}
                     </td>
@@ -223,12 +217,17 @@ export function ProductLineEditor({
                       <input
                         className="field h-8 w-20 px-2 py-1"
                         type="number"
-                        step="0.001"
+                        step="1"
+                        min="1"
+                        inputMode="numeric"
                         aria-label={`${p?.name ?? 'Mahsulot'} — soni`}
                         aria-invalid={over || undefined}
                         value={r.quantity}
+                        onKeyDown={(e) => {
+                          if (e.key === '.' || e.key === ',') e.preventDefault();
+                        }}
                         onChange={(e) =>
-                          patch(idx, { quantity: e.target.value })
+                          patch(idx, { quantity: e.target.value.replace(/[^\d]/g, '') })
                         }
                       />
                     </td>

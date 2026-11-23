@@ -230,10 +230,8 @@ export function NewSalePage(): ReactElement {
         paymentLabel: paymentLabel(paymentType),
         lines: [
           ...cart.map((l) => {
-            const qtyLabel =
-              l.unit_mode === 'package' && l.package_count
-                ? `${l.package_count} ${l.package_type || 'qadoq'}`
-                : undefined;
+            const unit = l.unit_name || l.package_type;
+            const qtyLabel = unit ? `${l.quantity} ${unit}` : undefined;
             return {
               name: l.product_name,
               qty: l.quantity,

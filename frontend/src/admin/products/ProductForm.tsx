@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { catalogApi } from '@/shared/api/catalog';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
-import { money, plainQty } from '@/shared/lib/format';
+import { plainQty, productUnitLabel } from '@/shared/lib/format';
 import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
@@ -230,7 +230,15 @@ function ProductFormFields({
         </legend>
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium">Tannarx (1 dona narxi) *</span>
+            <span className="text-sm font-medium">
+              Tannarx (1{' '}
+              {productUnitLabel({
+                pack_quantity: watch('pack_quantity'),
+                package_type: watch('package_type'),
+                unit_name: units.find((u) => u.id === watch('unit'))?.short_name,
+              })}{' '}
+              narxi) *
+            </span>
             <Controller
               name="cost_price"
               control={control}
@@ -339,28 +347,36 @@ function ProductFormFields({
       {(() => {
         const selectedUnitId = watch('unit');
         const selectedUnit = units.find((u) => u.id === selectedUnitId);
-        const costPrice = watch('cost_price');
         const packQuantity = watch('pack_quantity');
+        const rawPackType = watch('package_type') || '';
         const packQtyNum = parseInt(String(packQuantity || '0'), 10);
-        const costPriceNum = Number(costPrice || 0);
-        const boxCost = packQtyNum * costPriceNum;
-        const packageType = watch('package_type') || (
-          (selectedUnit?.name || selectedUnit?.short_name || '').toLowerCase().includes('kg') ? 'xalta' : 'quti'
-        );
+        const baseShort = selectedUnit?.short_name || 'dona';
+        const effectiveUnit = productUnitLabel({
+          pack_quantity: packQtyNum,
+          package_type: rawPackType,
+          unit_name: baseShort,
+        });
+        const standardPackTypes = new Set(['', 'karopka', 'xalta', 'qop', 'pachka', 'blok']);
 
         return (
           <div className="space-y-2">
             <div className="grid grid-cols-4 gap-3">
               <label className="block space-y-1">
                 <span className="text-sm">Qadoq turi</span>
-                <input
-                  className="field"
-                  placeholder="masalan: qop, karopka, pachka"
-                  {...register('package_type')}
-                />
+                <select className="field" {...register('package_type')}>
+                  <option value="">Asosiy birlik ({baseShort})</option>
+                  <option value="karopka">Karopka</option>
+                  <option value="xalta">Xalta</option>
+                  <option value="qop">Qop</option>
+                  <option value="pachka">Pachka</option>
+                  <option value="blok">Blok</option>
+                  {rawPackType && !standardPackTypes.has(rawPackType) && (
+                    <option value={rawPackType}>{rawPackType}</option>
+                  )}
+                </select>
               </label>
               <label className="block space-y-1">
-                <span className="text-sm">Qadoq soni</span>
+                <span className="text-sm">Ichidagi soni ({baseShort})</span>
                 <input
                   className="field"
                   type="number"
@@ -407,15 +423,9 @@ function ProductFormFields({
               </label>
             </div>
 
-            {packQtyNum > 0 && costPriceNum > 0 && (
+            {packQtyNum > 1 && (
               <div className="rounded-lg border border-brand/30 bg-brand/5 p-2.5 text-xs text-brand-700 dark:text-brand-300">
-                <span className="font-semibold">
-                  📦 1 {packageType} narxi:
-                </span>{' '}
-                <span className="text-sm font-bold text-brand">{money(boxCost)}</span>{' '}
-                <span className="text-gray-500">
-                  ({packQtyNum} {selectedUnit?.short_name || 'dona'} × {money(costPriceNum)})
-                </span>
+                1 {effectiveUnit} ichida <strong>{packQtyNum} {baseShort}</strong> bor (kirim va chiqim to&apos;g&apos;ridan-to&apos;g&apos;ri <strong>{effectiveUnit}</strong> hisobida yuritiladi).
               </div>
             )}
           </div>

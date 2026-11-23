@@ -33,9 +33,9 @@ describe('orderToReceipt', () => {
           product: 'p1',
           product_name: 'Poroshok 900gr',
           product_sku: 'P-900',
-          quantity: '24.000',
+          quantity: '2.000',
           delivered_quantity: '0',
-          price: '12600.00',
+          price: '151200.00',
           amount: '302400.00',
           pack_quantity: '12.000',
           package_type: 'qop',
@@ -48,9 +48,9 @@ describe('orderToReceipt', () => {
     const receipt = orderToReceipt(order);
     expect(receipt.lines[0]).toEqual({
       name: 'Poroshok 900gr',
-      qty: 24,
+      qty: 2,
       qtyLabel: '2 qop',
-      price: 12600,
+      price: 151200,
     });
 
     const blob = buildReceiptPdf(receipt, null);

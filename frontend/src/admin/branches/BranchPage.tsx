@@ -6,7 +6,7 @@ import { Link, useParams } from 'react-router-dom';
 import { branchesApi, type BranchCard } from '@/shared/api/branches';
 import { DataState } from '@/shared/components/DataState';
 import { PeriodSwitcher } from '@/shared/components/PeriodSwitcher';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 import { usePeriodParam } from './usePeriodParam';
 
@@ -95,7 +95,7 @@ export function BranchPage(): ReactElement {
               <div className="text-xl font-bold">{money(card.amount)}</div>
               <div className="flex justify-between text-xs text-gray-500">
                 <span>{countLabel(card)}</span>
-                <span>{qty(card.quantity)}</span>
+                <span>{intQty(card.quantity)}</span>
               </div>
               {Boolean(card.low_count) && (
                 <div className="text-xs text-danger">Kam qolgan: {card.low_count}</div>

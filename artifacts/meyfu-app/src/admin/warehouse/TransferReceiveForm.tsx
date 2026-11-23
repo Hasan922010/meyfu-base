@@ -3,7 +3,7 @@ import { useState, type ReactElement } from 'react';
 
 import { extractApiError } from '@/shared/api/client';
 import { warehouseApi } from '@/shared/api/warehouse';
-import { qty } from '@/shared/lib/format';
+import { intQty, plainIntQty } from '@/shared/lib/format';
 import type { Transfer } from '@/shared/types/warehouse';
 
 /** Kelgan tovarni sanab qabul qilish. Farq bo'lsa izoh so'raladi (ayblovsiz). */
@@ -16,12 +16,11 @@ export function TransferReceiveForm({
 }): ReactElement {
   const qc = useQueryClient();
   const [received, setReceived] = useState<Record<string, string>>(() =>
-    Object.fromEntries(transfer.items.map((i) => [i.id, i.quantity])),
+    Object.fromEntries(transfer.items.map((i) => [i.id, plainIntQty(i.quantity)])),
   );
   const [note, setNote] = useState<string>('');
 
-  // "1,5" ham qabul qilinadi; son bo'lmagan qiymat — bo'sh hisoblanadi (FE-112)
-  const valueOf = (id: string): number => Number((received[id] ?? '').replace(',', '.'));
+  const valueOf = (id: string): number => Number(received[id] ?? '');
   const tooMuch = transfer.items.some((i) => valueOf(i.id) > Number(i.quantity));
   const empty = transfer.items.some(
     (i) => received[i.id]?.trim() === '' || !Number.isFinite(valueOf(i.id)) || valueOf(i.id) < 0,
@@ -36,7 +35,7 @@ export function TransferReceiveForm({
       warehouseApi.receiveTransfer(transfer.id, {
         items: transfer.items.map((i) => ({
           id: i.id,
-          received_quantity: (received[i.id] ?? i.quantity).replace(',', '.'),
+          received_quantity: received[i.id] ?? plainIntQty(i.quantity),
         })),
         ...(note.trim() ? { note: note.trim() } : {}),
       }),
@@ -63,15 +62,26 @@ export function TransferReceiveForm({
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{i.product_name}</div>
                 <div className={`text-xs ${over ? 'text-danger' : 'text-gray-500'}`}>
-                  Jo'natilgan: {qty(i.quantity)} {i.product_unit}
+                  Jo'natilgan: {intQty(i.quantity)} {i.product_unit}
                 </div>
               </div>
               <input
                 className="field w-28 text-right"
-                inputMode="decimal"
+                type="number"
+                step="1"
+                min="0"
+                inputMode="numeric"
                 aria-label={`${i.product_name} — qabul qilingan miqdor`}
                 value={received[i.id] ?? ''}
-                onChange={(e) => setReceived((prev) => ({ ...prev, [i.id]: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === '.' || e.key === ',') e.preventDefault();
+                }}
+                onChange={(e) =>
+                  setReceived((prev) => ({
+                    ...prev,
+                    [i.id]: e.target.value.replace(/[^\d]/g, ''),
+                  }))
+                }
               />
             </li>
           );

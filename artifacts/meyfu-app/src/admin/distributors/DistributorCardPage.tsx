@@ -35,7 +35,7 @@ import {
 } from '@/shared/api/reports360';
 import { DataState } from '@/shared/components/DataState';
 import { PeriodSwitcher } from '@/shared/components/PeriodSwitcher';
-import { dateShort, money } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 type Tab =
   | 'overview'
@@ -489,7 +489,7 @@ function ProductsTab({ d }: { d: DistributorFull }): ReactElement {
           {d.products.top_products.map((r) => (
             <li key={r.product} className="flex justify-between">
               <span>
-                {r.product} <span className="text-gray-400">· {r.quantity}</span>
+                {r.product} <span className="text-gray-400">· {intQty(r.quantity)}</span>
               </span>
               <span className="font-medium">{money(r.amount)}</span>
             </li>

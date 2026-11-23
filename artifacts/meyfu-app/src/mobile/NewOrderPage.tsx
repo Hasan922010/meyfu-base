@@ -13,7 +13,7 @@ import { db } from '@/offline/db';
 import { useSync } from '@/offline/useSync';
 import { PriceFormulaCard } from '@/shared/components/PriceFormulaCard';
 import { QuantityStepper } from '@/shared/components/QuantityStepper';
-import { money } from '@/shared/lib/format';
+import { money, productUnitLabel } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
 import { computePromotionalBonuses } from '@/shared/lib/bonusCalculator';
@@ -40,10 +40,9 @@ function orderUnitInfo(p: {
 }) {
   const packQty = Number(p.pack_quantity) || 1;
   const packType = p.package_type?.trim() || '';
-  const isPack = packQty > 1 || Boolean(packType);
   const baseUnit = p.unit || 'dona';
-  const packLabel = packType || 'qadoq';
-  return { packQty, packType, isPack, baseUnit, packLabel };
+  const unitLabel = productUnitLabel(p);
+  return { packQty, packType, isPack: packQty > 1, baseUnit, unitLabel };
 }
 
 export function NewOrderPage(): ReactElement {
@@ -62,7 +61,6 @@ export function NewOrderPage(): ReactElement {
   const [qty, setQty] = useState<number>(0);
   const [picked, setPicked] = useState<string>('');
   const [pickedPrice, setPickedPrice] = useState<string>('');
-  const [pickedPackPrice, setPickedPackPrice] = useState<string>('');
   const [intent, setIntent] = useState<Intent>('');
   const [desired, setDesired] = useState<string>(plusDays(1));
   const [note, setNote] = useState<string>('');
@@ -123,10 +121,7 @@ export function NewOrderPage(): ReactElement {
     const p = productMap.get(picked);
     const unitPrice = Math.round(Number(pickedPrice || suggestedPrice(picked)) * 100) / 100;
     if (!p || qty <= 0 || unitPrice <= 0) return;
-    const { packQty, isPack, baseUnit, packLabel } = orderUnitInfo(p);
-    const linePrice = isPack
-      ? Math.round((Number(pickedPackPrice) || unitPrice * packQty) * 100) / 100
-      : unitPrice;
+    const { packQty, unitLabel } = orderUnitInfo(p);
 
     setCart((prev) => [
       ...prev.filter((l) => l.product !== picked),
@@ -134,17 +129,14 @@ export function NewOrderPage(): ReactElement {
         product: p.id,
         product_name: p.name,
         quantity: qty,
-        price: linePrice,
-        unit_mode: isPack ? 'package' : 'base',
-        package_count: isPack ? qty : undefined,
-        package_type: isPack ? packLabel : undefined,
+        price: unitPrice,
+        package_type: unitLabel,
         pack_quantity: packQty,
-        unit_name: baseUnit,
+        unit_name: unitLabel,
       },
     ]);
     setPicked('');
     setPickedPrice('');
-    setPickedPackPrice('');
     setQty(0);
     setProductSearch('');
   }
@@ -272,7 +264,7 @@ export function NewOrderPage(): ReactElement {
           {productSearch && !picked && (
             <ul className="max-h-48 space-y-1 overflow-y-auto">
               {filteredProducts.slice(0, 20).map((p) => {
-                const { packQty, isPack, baseUnit, packLabel } = orderUnitInfo(p);
+                const { packQty, isPack, baseUnit, unitLabel } = orderUnitInfo(p);
                 const unitPrice = Number(suggestedPrice(p.id) || 0);
                 return (
                   <li key={p.id}>
@@ -283,11 +275,6 @@ export function NewOrderPage(): ReactElement {
                         setPicked(p.id);
                         setQty(0);
                         setPickedPrice(sug);
-                        setPickedPackPrice(
-                          isPack && sug
-                            ? String(Math.round(Number(sug) * packQty * 100) / 100)
-                            : '',
-                        );
                       }}
                     >
                       {p.image_thumb ? (
@@ -302,11 +289,11 @@ export function NewOrderPage(): ReactElement {
                       <span className="flex-1">{p.name}</span>
                       <span className="text-right text-xs text-gray-500">
                         <span className="block font-medium text-gray-700 dark:text-gray-200">
-                          {money(unitPrice)} / {baseUnit}
+                          {money(unitPrice)} / {unitLabel}
                         </span>
                         {isPack && (
                           <span className="block text-[11px] text-gray-400">
-                            1 {packLabel}: {money(unitPrice * packQty)}
+                            1 {unitLabel} = {packQty} {baseUnit}
                           </span>
                         )}
                       </span>
@@ -320,10 +307,9 @@ export function NewOrderPage(): ReactElement {
           {picked && (() => {
             const p = products.find((x) => x.id === picked);
             if (!p) return null;
-            const { packQty, packType, isPack, baseUnit, packLabel } = orderUnitInfo(p);
-            const totalBaseQty = isPack ? qty * packQty : qty;
+            const { packQty, isPack, baseUnit, unitLabel } = orderUnitInfo(p);
             const unitPrice = Number(pickedPrice || suggestedPrice(picked));
-            const lineTotal = totalBaseQty * unitPrice;
+            const lineTotal = qty * unitPrice;
 
             return (
               <div className="card-minimal space-y-4">
@@ -333,15 +319,8 @@ export function NewOrderPage(): ReactElement {
                       {p.name}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {isPack ? (
-                        <>
-                          Birlik: <span className="font-medium">{packLabel}</span> ({packQty} {baseUnit})
-                        </>
-                      ) : (
-                        <>
-                          Birlik: <span className="font-medium">{baseUnit}</span>
-                        </>
-                      )}
+                      Birlik: <span className="font-medium">{unitLabel}</span>
+                      {isPack ? ` (${packQty} ${baseUnit})` : ''}
                     </div>
                   </div>
                   <button
@@ -350,7 +329,6 @@ export function NewOrderPage(): ReactElement {
                     onClick={() => {
                       setPicked('');
                       setPickedPrice('');
-                      setPickedPackPrice('');
                       setQty(0);
                     }}
                     aria-label="Bekor qilish"
@@ -361,7 +339,7 @@ export function NewOrderPage(): ReactElement {
 
                 <QuantityStepper
                   value={qty}
-                  unitLabel={isPack ? packLabel : baseUnit}
+                  unitLabel={unitLabel}
                   min={0}
                   accumulateQuick
                   onChange={setQty}
@@ -370,99 +348,36 @@ export function NewOrderPage(): ReactElement {
                 <PriceFormulaCard
                   isPackage={isPack}
                   packageCount={qty}
-                  packageType={packType}
+                  packageType={unitLabel}
                   packQuantity={packQty}
                   baseUnit={baseUnit}
-                  totalBaseQty={totalBaseQty}
+                  totalBaseQty={qty}
                   unitPrice={unitPrice}
                   totalPrice={lineTotal}
                 />
 
-                {isPack ? (
-                  <div className="space-y-1.5">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label htmlFor="order-pack-price" className="mb-1 block text-xs font-medium text-gray-500">
-                          1 {packLabel} narxi (so&apos;m)
-                        </label>
-                        <input
-                          id="order-pack-price"
-                          className="field font-semibold"
-                          type="number"
-                          inputMode="decimal"
-                          aria-label="Qadoq narxi"
-                          placeholder={`${packLabel} narxi`}
-                          value={pickedPackPrice}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            setPickedPackPrice(raw);
-                            const v = Number(raw);
-                            setPickedPrice(
-                              raw && Number.isFinite(v) && v > 0
-                                ? String(Math.round((v / packQty) * 100) / 100)
-                                : '',
-                            );
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="order-unit-price" className="mb-1 block text-xs font-medium text-gray-500">
-                          1 {baseUnit} narxi (so&apos;m)
-                        </label>
-                        <input
-                          id="order-unit-price"
-                          className="field"
-                          type="number"
-                          inputMode="decimal"
-                          aria-label="Tovar narxi"
-                          placeholder={`${baseUnit} narxi`}
-                          value={pickedPrice}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            setPickedPrice(raw);
-                            const v = Number(raw);
-                            setPickedPackPrice(
-                              raw && Number.isFinite(v) && v > 0
-                                ? String(Math.round(v * packQty * 100) / 100)
-                                : '',
-                            );
-                          }}
-                        />
-                      </div>
-                    </div>
-                    {unitPrice > 0 && (
-                      <div className="text-right text-[11px] text-gray-500">
-                        1 {baseUnit} = {money(Number(pickedPackPrice || unitPrice * packQty))} / {packQty} ={' '}
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">
-                          {money(unitPrice)} so&apos;m
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <label htmlFor="order-unit-price" className="block text-xs font-medium text-gray-500">
-                      1 {baseUnit} narxi (so&apos;m)
-                    </label>
-                    <input
-                      id="order-unit-price"
-                      className="field"
-                      type="number"
-                      inputMode="decimal"
-                      aria-label="Tovar narxi"
-                      placeholder={`Narx (${baseUnit} uchun taxminan ${suggestedPrice(picked)})`}
-                      value={pickedPrice}
-                      onChange={(e) => setPickedPrice(e.target.value)}
-                    />
-                  </div>
-                )}
+                <div className="space-y-1">
+                  <label htmlFor="order-unit-price" className="block text-xs font-medium text-gray-500">
+                    1 {unitLabel} narxi (so&apos;m)
+                  </label>
+                  <input
+                    id="order-unit-price"
+                    className="field"
+                    type="number"
+                    inputMode="decimal"
+                    aria-label="Tovar narxi"
+                    placeholder={`Narx (${unitLabel} uchun taxminan ${suggestedPrice(picked)})`}
+                    value={pickedPrice}
+                    onChange={(e) => setPickedPrice(e.target.value)}
+                  />
+                </div>
                 <button
                   type="button"
                   className="btn-brand w-full shadow-md shadow-brand/20"
                   disabled={qty <= 0 || unitPrice <= 0}
                   onClick={addToCart}
                 >
-                  Savatga qo'shish ({money(lineTotal)})
+                  Savatga qo&apos;shish ({money(lineTotal)})
                 </button>
               </div>
             );
@@ -475,24 +390,13 @@ export function NewOrderPage(): ReactElement {
                   <div className="min-w-0 flex-1 pr-2">
                     <div className="truncate font-medium">{l.product_name}</div>
                     <div className="text-xs text-gray-500">
-                      {l.unit_mode === 'package' && l.package_count ? (
-                        <>
-                          <span className="font-semibold text-brand">
-                            {l.package_count} {l.package_type || 'qadoq'}
-                          </span>{' '}
-                          ({l.package_count * (l.pack_quantity || 1)} {l.unit_name || 'dona'}) × {money(l.price)} ={' '}
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {money(l.quantity * l.price)}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          {l.quantity} {l.unit_name || 'dona'} × {money(l.price)} ={' '}
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
-                            {money(l.quantity * l.price)}
-                          </span>
-                        </>
-                      )}
+                      <span className="font-semibold text-brand">
+                        {l.quantity} {l.package_type || l.unit_name || 'dona'}
+                      </span>{' '}
+                      × {money(l.price)} ={' '}
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {money(l.quantity * l.price)}
+                      </span>
                     </div>
                   </div>
                   <button

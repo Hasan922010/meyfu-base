@@ -4,7 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { dayCloseApi } from '@/shared/api/reports';
 import { DataState } from '@/shared/components/DataState';
-import { dateShort, money, qty } from '@/shared/lib/format';
+import { dateShort, intQty, money } from '@/shared/lib/format';
 
 export function MobileAdminDayClose(): ReactElement {
   const qc = useQueryClient();
@@ -111,7 +111,7 @@ export function MobileAdminDayClose(): ReactElement {
                   />
                   <Row
                     label="Tovar farqi"
-                    value={`${qty(d.stock_difference_qty)} (${money(
+                    value={`${intQty(d.stock_difference_qty)} (${money(
                       d.stock_difference_amount,
                     )})`}
                     danger={Number(d.stock_difference_qty) !== 0}

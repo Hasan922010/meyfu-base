@@ -22,6 +22,7 @@ import type {
   TransferInput,
   VanStock,
   Warehouse,
+  WarehouseStockSummary,
 } from '@/shared/types/warehouse';
 
 export const warehouseApi = {
@@ -39,6 +40,7 @@ export const warehouseApi = {
     listPage<SupplierTransaction>('/supplier-transactions/', params),
 
   stock: (params?: QueryParams) => listPage<Stock>('/stock/', params),
+  stockSummary: () => retrieve<WarehouseStockSummary>('/stock/summary/'),
   lowStock: () => retrieve<Stock[]>('/stock/low/'),
   stockMovements: (params?: QueryParams) =>
     listPage<StockMovement>('/stock-movements/', params),
