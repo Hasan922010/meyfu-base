@@ -10,6 +10,7 @@ import {
   Receipt,
   Truck,
   Undo2,
+  Users,
 } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
@@ -188,6 +189,24 @@ export function MobileHomePage(): ReactElement {
               </span>
               <span className="block text-xs font-medium text-purple-700/80 dark:text-purple-300/80">
                 Yoqilg‘i, tushlik va h.k.
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            to="/m/clients"
+            className="flex flex-col justify-between rounded-2xl bg-amber-50/70 p-4 border border-amber-100 hover:border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 active:scale-[0.98] transition"
+          >
+            <div className="flex items-center justify-between">
+              <Users size={24} className="text-amber-600 dark:text-amber-400" />
+              <span className="text-sm text-amber-500 font-bold">→</span>
+            </div>
+            <div className="mt-3">
+              <span className="block font-black text-base text-amber-950 dark:text-amber-100">
+                Barcha Mijozlar
+              </span>
+              <span className="block text-xs font-medium text-amber-700/80 dark:text-amber-300/80">
+                Qarzlar, avans, tashrif
               </span>
             </div>
           </Link>

@@ -35,6 +35,7 @@ export function MyClientsPage(): ReactElement {
   const [debtNote, setDebtNote] = useState<string>('');
   const [collectClient, setCollectClient] = useState<Client | null>(null);
   const [payAmount, setPayAmount] = useState<string>('');
+  const [payInitializedFor, setPayInitializedFor] = useState<string | null>(null);
   const [payType, setPayType] = useState<'NAQD' | 'PLASTIK' | 'OTKAZMA'>('NAQD');
   const [paySaved, setPaySaved] = useState<boolean>(false);
   const [showNewModal, setShowNewModal] = useState<boolean>(false);
@@ -110,10 +111,11 @@ export function MyClientsPage(): ReactElement {
   );
 
   useEffect(() => {
-    if (collectClient && totalClientDebt > 0 && !payAmount) {
+    if (collectClient && totalClientDebt > 0 && payInitializedFor !== collectClient.id) {
       setPayAmount(String(Math.round(totalClientDebt)));
+      setPayInitializedFor(collectClient.id);
     }
-  }, [collectClient, totalClientDebt, payAmount]);
+  }, [collectClient, totalClientDebt, payInitializedFor]);
 
   const collectMut = useMutation({
     mutationFn: async () => {
@@ -137,6 +139,7 @@ export function MyClientsPage(): ReactElement {
     collectMut.reset();
     setCollectClient(null);
     setPayAmount('');
+    setPayInitializedFor(null);
     setPaySaved(false);
   }
 
@@ -216,6 +219,7 @@ export function MyClientsPage(): ReactElement {
                       collectMut.reset();
                       setCollectClient(c);
                       setPayAmount('');
+                      setPayInitializedFor(null);
                       setPayType('NAQD');
                       setPaySaved(false);
                     }}

@@ -162,6 +162,8 @@ describe('MyClientsPage — omborchi uchun ortiqcha to‘lov (avans)', () => {
 
     const amountInput = await screen.findByLabelText("To'lov summasi");
     expect(amountInput).toHaveValue('120 000');
+    fireEvent.change(amountInput, { target: { value: '' } });
+    expect(amountInput).toHaveValue('');
     fireEvent.change(amountInput, { target: { value: '50000' } });
 
     fireEvent.click(screen.getByRole('button', { name: "To'lovni qabul qilish" }));
