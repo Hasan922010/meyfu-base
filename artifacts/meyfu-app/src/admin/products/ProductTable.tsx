@@ -78,6 +78,9 @@ export function ProductTable({
             <SortableHeader field="category__name" currentOrdering={ordering} onSort={onSort}>
               Kategoriya / Brend
             </SortableHeader>
+            <SortableHeader field="warehouse__name" currentOrdering={ordering} onSort={onSort}>
+              Ombor
+            </SortableHeader>
             <SortableHeader field="cost_price" currentOrdering={ordering} onSort={onSort} align="right">
               Tannarx
             </SortableHeader>
@@ -154,6 +157,15 @@ export function ProductTable({
                 <div className="text-slate-800 dark:text-slate-200">{p.category_name}</div>
                 {p.brand_name && (
                   <div className="mt-0.5 text-xs text-slate-500">{p.brand_name}</div>
+                )}
+              </td>
+              <td className="p-3">
+                {p.warehouse_name ? (
+                  <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    {p.warehouse_name}
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">Biriktirilmagan</span>
                 )}
               </td>
               <td className="p-3 text-right">

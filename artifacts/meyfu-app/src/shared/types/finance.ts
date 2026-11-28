@@ -15,6 +15,7 @@ export interface Wallet {
   balance: string;
   live_balance: string;
   pending_expense_amount: string;
+  pending_handover_amount?: string | undefined;
   card_amount?: string | undefined;
   transfer_amount?: string | undefined;
   total_collected?: string | undefined;

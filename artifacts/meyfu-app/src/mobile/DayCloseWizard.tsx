@@ -95,6 +95,7 @@ export function DayCloseWizard(): ReactElement {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['day-close'] });
       void qc.invalidateQueries({ queryKey: ['van-stock', 'my'] });
+      void qc.invalidateQueries({ queryKey: ['wallet'] });
       setStep(4);
     },
   });

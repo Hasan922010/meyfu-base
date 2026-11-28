@@ -26,6 +26,13 @@ export interface ProductImportReport {
   rows: ProductImportRow[];
 }
 
+export interface AssignWarehouseResult {
+  warehouse: string | null;
+  warehouse_name: string | null;
+  requested: number;
+  updated: number;
+}
+
 export const catalogApi = {
   products: (params?: QueryParams, signal?: AbortSignal) =>
     listPage<Product>('/products/', params, signal),
@@ -37,6 +44,11 @@ export const catalogApi = {
 
   bulkActions: (body: { ids: string[]; action: 'activate' | 'deactivate' | 'delete' }) =>
     api.post<ApiSuccess<void>>('/products/bulk/', body).then((r) => r.data),
+
+  assignWarehouse: (body: { ids: string[]; warehouse: string | null }) =>
+    api
+      .post<ApiSuccess<AssignWarehouseResult>>('/products/assign-warehouse/', body)
+      .then((r) => r.data.data),
 
   exportProducts: async (params?: QueryParams): Promise<Blob> => {
     const { data } = await api.get<Blob>('/products/export/', { params, responseType: 'blob' });

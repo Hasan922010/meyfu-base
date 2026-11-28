@@ -52,6 +52,8 @@ describe('DocumentModal — qadoq/quti miqdor formati', () => {
           product: 'p1',
           product_name: 'Poroshok 900gr',
           quantity: '2.000',
+          price: '120000.00',
+          amount: '240000.00',
           pack_quantity: '12.000',
           package_type: 'qop',
           unit_name: 'dona',
@@ -63,6 +65,8 @@ describe('DocumentModal — qadoq/quti miqdor formati', () => {
 
     expect(await screen.findByText('Poroshok 900gr')).toBeInTheDocument();
     expect(screen.getByText('2 qop')).toBeInTheDocument();
+    expect(screen.getByText('Dona narxi')).toBeInTheDocument();
+    expect(screen.getByText("10 000 so'm")).toBeInTheDocument();
   });
 
   it('kirim hujjatida qadoqli mahsulot miqdorini qop/qutida ko‘rsatadi', async () => {

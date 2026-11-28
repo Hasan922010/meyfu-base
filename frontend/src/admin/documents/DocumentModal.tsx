@@ -70,11 +70,22 @@ async function loadDocument(doc: ActivityDocument): Promise<DocView> {
           ['Ombor', l.warehouse_name],
           ['Holat', l.status_display],
         ],
-        columns: ['Mahsulot', 'Miqdor'],
-        rows: l.items.map((i, n) => ({
-          key: i.id ?? String(n),
-          cells: [i.product_name ?? i.product, formatOrderQty(i.quantity, i)],
-        })),
+        columns: ['Mahsulot', 'Miqdor', 'Ichidagi soni', 'Narx', 'Dona narxi', 'Summa'],
+        rows: l.items.map((i, n) => {
+          const packQty = Number(i.pack_quantity) > 0 ? Number(i.pack_quantity) : 1;
+          const unitPrice = i.price != null ? Number(i.price) / packQty : null;
+          return {
+            key: i.id ?? String(n),
+            cells: [
+              i.product_name ?? i.product,
+              formatOrderQty(i.quantity, i),
+              String(Math.round(packQty)),
+              i.price != null ? money(i.price) : '—',
+              unitPrice != null ? money(Math.round(unitPrice)) : '—',
+              i.amount != null ? money(i.amount) : '—',
+            ],
+          };
+        }),
         pdf: (stamp) => warehouseApi.loadingPdf(doc.id, stamp),
       };
     }

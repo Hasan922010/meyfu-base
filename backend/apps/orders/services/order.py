@@ -65,21 +65,34 @@ def _order_warehouse(client, taken_by=None, user=None):
     )
 
 
+def _item_warehouse(product, fallback_wh, client=None):
+    """Mahsulot ombori: mijoz filiali -> mahsulotning o'z ombori -> buyurtma ombori."""
+    if getattr(client, "branch", None) is not None:
+        return client.branch
+    product_wh = getattr(product, "warehouse", None)
+    if product_wh is not None:
+        return product_wh
+    return fallback_wh
+
+
 def _reserve_order_stock(order: Order, wh) -> None:
     if wh is None:
         return
     from apps.warehouse.models import Stock
     from apps.warehouse.services.stock import reserve_stock
 
-    for it in order.items.select_related("product").order_by("product_id"):
+    for it in order.items.select_related("product", "product__warehouse").order_by("product_id"):
+        item_wh = _item_warehouse(it.product, wh, order.client)
+        if item_wh is None:
+            continue
         stock = (
             Stock.objects.select_for_update()
-            .filter(warehouse=wh, product=it.product)
+            .filter(warehouse=item_wh, product=it.product)
             .first()
         )
         if stock is not None and stock.available_quantity > _ZERO:
             to_reserve = min(it.quantity, stock.available_quantity)
-            reserve_stock(warehouse=wh, product=it.product, quantity=to_reserve)
+            reserve_stock(warehouse=item_wh, product=it.product, quantity=to_reserve)
             it.reserved_quantity = to_reserve
             it.save(update_fields=["reserved_quantity", "updated_at"])
 
@@ -90,11 +103,14 @@ def _release_order_reservation(order: Order, wh) -> None:
     from apps.warehouse.services.stock import release_reservation
 
     for it in (
-        order.items.select_related("product")
+        order.items.select_related("product", "product__warehouse")
         .filter(reserved_quantity__gt=_ZERO)
         .order_by("product_id")
     ):
-        release_reservation(warehouse=wh, product=it.product, quantity=it.reserved_quantity)
+        item_wh = _item_warehouse(it.product, wh, order.client)
+        if item_wh is None:
+            continue
+        release_reservation(warehouse=item_wh, product=it.product, quantity=it.reserved_quantity)
         it.reserved_quantity = _ZERO
         it.save(update_fields=["reserved_quantity", "updated_at"])
 
@@ -390,7 +406,7 @@ def fulfill_order(
             return SaleResult(sale=existing, created=False, duplicate=True)
 
     order = Order.objects.select_for_update().get(pk=order.pk)
-    _guard(order, (OrderStatus.APPROVED, OrderStatus.LOADED), "yetkazish")
+    _guard(order, (OrderStatus.APPROVED, OrderStatus.LOADED, OrderStatus.PARTIALLY_DELIVERED), "yetkazish")
 
     distributor = distributor or order.assigned_to
     if distributor is None:
@@ -537,7 +553,17 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
         )
 
     order = Order.objects.select_for_update().get(pk=order.pk)
-    _guard(order, (OrderStatus.DRAFT, OrderStatus.PLACED, OrderStatus.APPROVED), "berish")
+    _guard(
+        order,
+        (
+            OrderStatus.DRAFT,
+            OrderStatus.PLACED,
+            OrderStatus.APPROVED,
+            OrderStatus.LOADED,
+            OrderStatus.PARTIALLY_DELIVERED,
+        ),
+        "berish",
+    )
     if order.total_amount <= _ZERO:
         raise BusinessError(
             message="Buyurtma summasi musbat bo'lishi kerak.",
@@ -553,6 +579,49 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
             code="CLIENT_BLOCKED",
         )
 
+    order_items = list(
+        order.items.select_related("product", "product__warehouse").order_by("product_id")
+    )
+    remaining_items: list[tuple[OrderItem, Decimal]] = []
+    for it in order_items:
+        rem = it.quantity - (it.delivered_quantity or _ZERO)
+        if rem > _ZERO:
+            remaining_items.append((it, rem))
+    if not remaining_items:
+        raise BusinessError(
+            message="Yetkaziladigan tovar qolmagan.",
+            code="NOTHING_DELIVERED",
+        )
+
+    # Agar buyurtma tasdiqlangan yuklamaga biriktirilgan bo'lsa, tovarlar tarqatuvchi
+    # mashinasida (VanStock) turadi — o'sha yerdan qarzga sotuv yaratib yakunlaymiz.
+    if order.loading_id is not None:
+        from apps.warehouse.constants import LoadingStatus
+
+        loading = order.loading
+        if loading.status == LoadingStatus.SENT:
+            raise BusinessError(
+                message="Buyurtma yuborilgan yuklamada — avval yuklamani tasdiqlang.",
+                code="LOADING_NOT_CONFIRMED",
+            )
+        if loading.status == LoadingStatus.CONFIRMED:
+            distributor = order.assigned_to or loading.distributor or user
+            fulfill_lines = [
+                FulfillLine(item=it, delivered_quantity=rem, price=it.price)
+                for it, rem in remaining_items
+            ]
+            fulfill_order(
+                order,
+                fulfill_lines,
+                distributor=distributor,
+                payment_type=PaymentType.DEBT,
+                due_date=order.desired_date or (business_date() + timedelta(days=14)),
+                note=f"Buyurtma {order.number}",
+                user=user,
+            )
+            order.refresh_from_db()
+            return order
+
     wh = _order_warehouse(client, order.taken_by, user)
     if wh is None:
         raise BusinessError(
@@ -560,23 +629,24 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
             code="WAREHOUSE_REQUIRED",
         )
     _release_order_reservation(order, wh)
-    order_items = list(order.items.select_related("product").order_by("product_id"))
-    for it in order_items:
+    for it, rem in remaining_items:
+        item_wh = _item_warehouse(it.product, wh, client)
         apply_movement(
-            warehouse=wh,
+            warehouse=item_wh,
             product=it.product,
-            quantity=-it.quantity,
+            quantity=-rem,
             movement_type=MovementType.OUT_SALE,
             user=user,
             reference_type="order",
             reference_id=str(order.id),
-            from_location=wh.name,
+            from_location=item_wh.name,
             to_location=client.name,
             note=f"Buyurtma {order.number}",
         )
 
-    advance_used = min(max(_ZERO, client.advance_balance), order.total_amount)
-    debt_amount = max(_ZERO, order.total_amount - advance_used)
+    remaining_total = sum((rem * it.price for it, rem in remaining_items), _ZERO)
+    advance_used = min(max(_ZERO, client.advance_balance), remaining_total)
+    debt_amount = max(_ZERO, remaining_total - advance_used)
     if debt_amount > _ZERO and client.debt_limit > _ZERO:
         projected = client.current_debt + debt_amount
         if projected > client.debt_limit:
@@ -604,7 +674,7 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
         order=order,
         branch=wh if wh.is_branch else None,
         payment_type=PaymentType.DEBT,
-        total_amount=order.total_amount,
+        total_amount=remaining_total,
         paid_amount=_ZERO,
         advance_used=advance_used,
         debt_amount=debt_amount,
@@ -617,11 +687,11 @@ def give_order_on_debt(order: Order, *, user=None) -> Order:
     sale.save()
 
     sale_items: list[SaleItem] = []
-    for it in order_items:
+    for it, rem in remaining_items:
         si = SaleItem(
             sale=sale,
             product=it.product,
-            quantity=it.quantity,
+            quantity=rem,
             price=it.price,
             cost_price=it.product.cost_price,
             is_bonus=it.is_bonus,

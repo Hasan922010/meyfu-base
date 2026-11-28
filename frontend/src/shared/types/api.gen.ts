@@ -2574,6 +2574,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/assign-warehouse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mahsulotlarni ombor bo'yicha ajratish
+         * @description `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+         *
+         *     View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+         */
+        post: operations["products_assign_warehouse_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/bulk/": {
         parameters: {
             query?: never;
@@ -5579,7 +5601,6 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
-             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -5619,7 +5640,6 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
-             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -6394,10 +6414,7 @@ export interface components {
              * Format: decimal
              */
             price_per_liter: string;
-            /**
-             * Odometr
-             * Format: int64
-             */
+            /** Odometr */
             odometer?: number | null;
             /** Shoxobcha */
             station_name?: string;
@@ -6413,10 +6430,7 @@ export interface components {
              * Format: decimal
              */
             price_per_liter: string;
-            /**
-             * Odometr
-             * Format: int64
-             */
+            /** Odometr */
             odometer?: number | null;
             /** Shoxobcha */
             station_name?: string;
@@ -7910,7 +7924,6 @@ export interface components {
             valid_to?: string | null;
             /**
              * Ustuvorlik
-             * Format: int64
              * @description Bir xil qamrovda kattasi yutadi
              */
             priority?: number;
@@ -8055,6 +8068,11 @@ export interface components {
              * Format: uuid
              */
             unit?: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse?: string | null;
             /**
              * Rasm
              * Format: binary
@@ -8647,6 +8665,12 @@ export interface components {
             unit: string;
             readonly unit_name: string;
             /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse?: string | null;
+            readonly warehouse_name: string | null;
+            /**
              * Rasm
              * Format: uri
              */
@@ -8743,6 +8767,19 @@ export interface components {
              */
             readonly updated_at: string;
         };
+        ProductAssignWarehouseRequest: {
+            /** @description Ko'pi bilan 500 ta mahsulot IDsi. */
+            ids: string[];
+            /** Format: uuid */
+            warehouse: string | null;
+        };
+        ProductAssignWarehouseResult: {
+            /** Format: uuid */
+            warehouse: string | null;
+            warehouse_name: string | null;
+            requested: number;
+            updated: number;
+        };
         ProductBulkRequest: {
             /** @description Ko'pi bilan 100 ta mahsulot IDsi. */
             ids: string[];
@@ -8792,6 +8829,11 @@ export interface components {
             /** Shtrix-kod */
             readonly barcode: string;
             readonly unit: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            readonly warehouse: string | null;
             /**
              * Rasm
              * Format: uri
@@ -8901,6 +8943,11 @@ export interface components {
              * Format: uuid
              */
             unit: string;
+            /**
+             * Ombor
+             * Format: uuid
+             */
+            warehouse?: string | null;
             /**
              * Rasm
              * Format: binary
@@ -10147,6 +10194,8 @@ export interface components {
             readonly live_balance: string;
             /** Format: decimal */
             readonly pending_expense_amount: string;
+            /** Format: decimal */
+            readonly pending_handover_amount: string;
             /** Format: decimal */
             readonly card_amount: string;
             /** Format: decimal */
@@ -14202,6 +14251,7 @@ export interface operations {
                  *     * `ok` - ok
                  */
                 stock_status?: "low" | "ok" | "out";
+                unassigned?: boolean;
                 unit?: string;
                 warehouse?: string;
             };
@@ -14369,6 +14419,7 @@ export interface operations {
                  *     * `ok` - ok
                  */
                 stock_status?: "low" | "ok" | "out";
+                unassigned?: boolean;
                 unit?: string;
                 warehouse?: string;
             };
@@ -14473,6 +14524,7 @@ export interface operations {
                  *     * `ok` - ok
                  */
                 stock_status?: "low" | "ok" | "out";
+                unassigned?: boolean;
                 unit?: string;
                 warehouse?: string;
             };
@@ -14513,6 +14565,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Product"];
+                };
+            };
+        };
+    };
+    products_assign_warehouse_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductAssignWarehouseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductAssignWarehouseRequest"];
+                "multipart/form-data": components["schemas"]["ProductAssignWarehouseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductAssignWarehouseResult"];
                 };
             };
         };

@@ -53,6 +53,17 @@ def _pending_expense_total(distributor) -> Decimal:
     )
 
 
+def _pending_handover_total(distributor) -> Decimal:
+    from apps.dayclose.models import CashHandover
+
+    return (
+        CashHandover.objects.filter(
+            distributor=distributor, confirmed=False
+        ).aggregate(s=Sum("amount"))["s"]
+        or _ZERO
+    )
+
+
 class WalletViewSet(BaseReadOnlyViewSet):
     serializer_class = WalletSerializer
     branch_lookup = "distributor__warehouse"
@@ -120,7 +131,8 @@ class WalletViewSet(BaseReadOnlyViewSet):
 
         wallet = get_or_create_wallet(request.user)
         pending = _pending_expense_total(request.user)
-        live_balance = wallet.balance - pending
+        pending_handover = _pending_handover_total(request.user)
+        live_balance = wallet.balance - pending - pending_handover
         today = business_date()
 
         sales_by_type = {
@@ -151,6 +163,7 @@ class WalletViewSet(BaseReadOnlyViewSet):
         cents = Decimal("0.01")
         data = WalletSerializer(wallet).data
         data["pending_expense_amount"] = str(pending.quantize(cents))
+        data["pending_handover_amount"] = str(pending_handover.quantize(cents))
         data["live_balance"] = str(live_balance.quantize(cents))
         data["card_amount"] = str(card_amount.quantize(cents))
         data["transfer_amount"] = str(transfer_amount.quantize(cents))

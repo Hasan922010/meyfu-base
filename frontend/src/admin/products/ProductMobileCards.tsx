@@ -98,6 +98,12 @@ export function ProductMobileCards({
                   <span className="font-mono">{p.sku}</span>
                   <span className="text-slate-300 dark:text-slate-600">•</span>
                   <span className="truncate">{p.category_name}</span>
+                  {p.warehouse_name && (
+                    <>
+                      <span className="text-slate-300 dark:text-slate-600">•</span>
+                      <span className="truncate font-medium text-brand">{p.warehouse_name}</span>
+                    </>
+                  )}
                   {p.updated_at && (
                     <>
                       <span className="text-slate-300 dark:text-slate-600">•</span>

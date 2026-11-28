@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { catalogApi } from '@/shared/api/catalog';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { useDebounce } from '@/shared/lib/useDebounce';
 
 import type { useProductFilters } from './useProductFilters';
@@ -70,9 +71,15 @@ export function ProductFiltersBar({
     queryFn: () => catalogApi.brands({ page_size: 500 }),
   });
 
+  const warehouses = useQuery({
+    queryKey: ['warehouses', 'all'],
+    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
+  });
+
   const activeExtraCount = [
     filters.category,
     filters.brand,
+    filters.warehouse,
     filters.is_active,
     filters.stock_status,
     filters.retail_price_min,
@@ -166,6 +173,21 @@ export function ProductFiltersBar({
           {brands.data?.results.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="field h-10 w-full border-slate-200 bg-slate-50 sm:w-44 dark:border-slate-700 dark:bg-slate-800"
+          value={filters.warehouse}
+          onChange={(e) => setFilter('warehouse', e.target.value)}
+          aria-label="Omborni tanlang"
+        >
+          <option value="">Barcha omborlar</option>
+          <option value="__unassigned__">Biriktirilmagan</option>
+          {warehouses.data?.results.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
             </option>
           ))}
         </select>

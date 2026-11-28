@@ -151,6 +151,9 @@ describe('MyOrdersPage — Yetkazish (FulfillScreen) Ergonomik Boshqaruvi', () =
     await waitFor(() => {
       expect(ordersApi.giveOnDebt).toHaveBeenCalledWith('ord-taken-1');
     });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
   it('Buyurtmani berish xatosini tasdiqlash oynasida ko‘rsatadi', async () => {

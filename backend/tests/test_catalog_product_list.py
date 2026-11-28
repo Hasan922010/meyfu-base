@@ -157,3 +157,57 @@ def test_product_xlsx_export_reuses_filters_and_sorts_by_category_then_name(mana
     wb_f = load_workbook(io.BytesIO(filtered.content))
     skus = [r[3] for r in list(wb_f.active.iter_rows(values_only=True))[1:]]
     assert "PWD-3KG" in skus
+
+
+@pytest.mark.django_db
+def test_product_warehouse_assignment_and_filtering(manager_api, catalog, warehouse):
+    """Har bir mahsulot omborga biriktiriladi va ombor bo'yicha ajratiladi."""
+    from apps.catalog.models import Product
+    from apps.warehouse.models import Warehouse
+
+    wh1 = warehouse["warehouse"]
+    wh2 = Warehouse.objects.create(name="Ikkinchi ombor", address="Toshkent 2")
+
+    p1 = Product.objects.create(
+        name="Choy 100g",
+        sku="CHOY-100",
+        category=catalog["category"],
+        unit=catalog["unit"],
+        retail_price="10000",
+        warehouse=wh1,
+    )
+    p2 = Product.objects.create(
+        name="Kofe 50g",
+        sku="KOFE-50",
+        category=catalog["category"],
+        unit=catalog["unit"],
+        retail_price="20000",
+    )
+
+    r_unassigned = manager_api.get("/api/v1/products/", {"unassigned": "true"})
+    assert r_unassigned.status_code == 200
+    unassigned_skus = [row["sku"] for row in r_unassigned.data["data"]["results"]]
+    assert "KOFE-50" in unassigned_skus
+    assert "CHOY-100" not in unassigned_skus
+
+    r_assign = manager_api.post(
+        "/api/v1/products/assign-warehouse/",
+        {"ids": [str(p2.id)], "warehouse": str(wh2.id)},
+        format="json",
+    )
+    assert r_assign.status_code == 200, r_assign.data
+    assert r_assign.data["data"]["updated"] == 1
+    assert r_assign.data["data"]["warehouse_name"] == "Ikkinchi ombor"
+
+    p2.refresh_from_db()
+    assert p2.warehouse_id == wh2.id
+
+    r_wh1 = manager_api.get("/api/v1/products/", {"warehouse": str(wh1.id)})
+    assert [row["sku"] for row in r_wh1.data["data"]["results"]] == ["CHOY-100"]
+
+    r_wh2 = manager_api.get("/api/v1/products/", {"warehouse": str(wh2.id)})
+    assert [row["sku"] for row in r_wh2.data["data"]["results"]] == ["KOFE-50"]
+    assert r_wh2.data["data"]["results"][0]["warehouse_name"] == "Ikkinchi ombor"
+
+    p1.refresh_from_db()
+    assert p1.warehouse_id == wh1.id

@@ -102,7 +102,14 @@ def submit_day_close(
 
     from apps.core.branch import staff_branch
     from apps.notifications.services import notify_admins
-    from realtime.broadcast import broadcast_admin
+    from realtime.broadcast import broadcast, broadcast_admin
+
+    if cash_handed and cash_handed > _ZERO:
+        broadcast(
+            f"distributor_{distributor.id}",
+            "wallet.updated",
+            {"pending_handover": str(cash_handed)},
+        )
 
     broadcast_admin(day_close.branch_id, "dayclose.submitted", {
         "day_close_id": str(day_close.id),

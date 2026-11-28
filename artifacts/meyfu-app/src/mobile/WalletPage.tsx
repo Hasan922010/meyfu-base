@@ -62,6 +62,12 @@ export function WalletPage(): ReactElement {
                   <span>−{money(wallet.data.pending_expense_amount)}</span>
                 </div>
               )}
+              {Number(wallet.data.pending_handover_amount ?? 0) > 0 && (
+                <div className="flex justify-between">
+                  <span>Kun yopishda topshirilgan (tasdiq kutilmoqda)</span>
+                  <span>−{money(wallet.data.pending_handover_amount ?? '0')}</span>
+                </div>
+              )}
             </div>
           </>
         ) : wallet.isError ? (

@@ -146,6 +146,9 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     brand_name = serializers.CharField(source="brand.name", read_only=True, default=None)
     unit_name = serializers.CharField(source="unit.short_name", read_only=True)
+    warehouse_name = serializers.CharField(
+        source="warehouse.name", read_only=True, allow_null=True, default=None
+    )
     bonus_product_name = serializers.CharField(
         source="bonus_product.name", read_only=True, allow_null=True, default=None
     )
@@ -181,7 +184,8 @@ class ProductSerializer(BranchPricedMixin, serializers.ModelSerializer):
         fields = (
             "id", "name", "sku", "barcode",
             "category", "category_name", "brand", "brand_name",
-            "unit", "unit_name", "image", "images", "image_thumb",
+            "unit", "unit_name", "warehouse", "warehouse_name",
+            "image", "images", "image_thumb",
             "cost_price", "wholesale_price", "retail_price", "min_price",
             "pack_quantity", "package_type",
             "order_commission_rate", "delivery_commission_rate",
@@ -290,6 +294,27 @@ class ProductBulkResultSerializer(serializers.Serializer):
     errors = serializers.ListField(child=serializers.CharField())
 
 
+class ProductAssignWarehouseSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=False,
+        max_length=500,
+        help_text="Ko'pi bilan 500 ta mahsulot IDsi.",
+    )
+    warehouse = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.filter(is_active=True),
+        allow_null=True,
+        required=True,
+    )
+
+
+class ProductAssignWarehouseResultSerializer(serializers.Serializer):
+    warehouse = serializers.UUIDField(allow_null=True)
+    warehouse_name = serializers.CharField(allow_null=True)
+    requested = serializers.IntegerField()
+    updated = serializers.IntegerField()
+
+
 class ProductLiteSerializer(BranchPricedMixin, serializers.ModelSerializer):
     """Offline katalog sinxronizatsiyasi uchun yengil variant (CLAUDE.md 4.1)."""
 
@@ -299,7 +324,7 @@ class ProductLiteSerializer(BranchPricedMixin, serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
-            "id", "name", "sku", "barcode", "unit", "image", "image_thumb",
+            "id", "name", "sku", "barcode", "unit", "warehouse", "image", "image_thumb",
             "cost_price", "wholesale_price", "retail_price", "min_price",
             "pack_quantity", "package_type", "is_active", "is_deleted", "updated_at",
         )

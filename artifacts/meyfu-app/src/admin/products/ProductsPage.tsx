@@ -57,6 +57,7 @@ export function ProductsPage(): ReactElement {
     filters.page_size,
     filters.category,
     filters.brand,
+    filters.warehouse,
     filters.is_active,
     filters.stock_status,
     filters.retail_price_min,
@@ -70,6 +71,11 @@ export function ProductsPage(): ReactElement {
     page_size: filters.page_size,
     category: filters.category || undefined,
     brand: filters.brand || undefined,
+    warehouse:
+      filters.warehouse && filters.warehouse !== '__unassigned__'
+        ? filters.warehouse
+        : undefined,
+    unassigned: filters.warehouse === '__unassigned__' ? 'true' : undefined,
     is_active: filters.is_active || undefined,
     stock_status: filters.stock_status || undefined,
     retail_price_min: filters.retail_price_min || undefined,
@@ -134,6 +140,7 @@ export function ProductsPage(): ReactElement {
     filters.search ||
       filters.category ||
       filters.brand ||
+      filters.warehouse ||
       filters.is_active ||
       filters.stock_status ||
       filters.retail_price_min ||

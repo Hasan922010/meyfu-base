@@ -229,13 +229,27 @@
     - `MobileHomePage.tsx`: 2×2 tezkor harakatlar panjarasida «Xarajat Yozish» yoniga «Barcha Mijozlar» (`/m/clients`) kartochkasi qo'shildi.
     - `MyClientsPage.tsx`: `payInitializedFor` holati bilan «To'lov qabul qilish» modalida summa inputi faqat bir marta to'ldiriladigan qilindi — foydalanuvchi summani o'chirganda qaytadan avtomatik yozilib qolmaydi (`MyClientsPage.test.tsx` — 4/4 test).
 
+32. **Mahsulotlarni Ombor Bo'yicha Ajratish va Buyurtmani Yetkazgandan So'ng «Buyurtmani berish» Tasdig'i:**
+    - **Backend Katalog (`catalog/models.py`, `0007_product_warehouse.py`, `filters.py`, `serializers.py`, `views.py`):** `Product.warehouse` (`SET_NULL`) FK qo'shildi; `ProductFilter` (`warehouse`, `unassigned`) va `POST /api/v1/products/assign-warehouse/` (ommaviy/yagona biriktirish, `MANAGER`/`SUPER_ADMIN`/`WAREHOUSE`) yaratildi; `ProductSerializer` va `ProductLiteSerializer` hamda XLSX eksport ombor maydoni bilan boyitildi (`schema.yml` va `api.gen.ts` yangilandi).
+    - **Frontend Mahsulotlar va Ombor (`ProductFiltersBar.tsx`, `ProductForm.tsx`, `ProductTable.tsx`, `ProductMobileCards.tsx`, `AssignProductsTab.tsx`, `WarehousePage.tsx`):** Mahsulotlar ro'yxatida ombor filtri (`Barcha omborlar`, `Biriktirilmagan`, omborlar), ombor ustuni/karta belgisi va formadagi ombor tanlovi qo'shildi; Ombor sahifasida alohida **«Mahsulotlarni ombor bo'yicha ajratish»** tabi (ommaviy va satr ichida tezkor o'zgartirish, unassigned filtri) joriy qilindi.
+    - **Buyurtmani Berish Tasdig'i (`users/models.py`, `0012_order_taker_can_sell_on_debt.py`, `permissions.ts`, `orders/services/order.py`, `MyOrdersPage.tsx`):** `ORDER_TAKER` uchun birlamchi `can_sell_on_debt=True` yoqildi; `give_order_on_debt` `DRAFT`/`PLACED`/`APPROVED`/`LOADED`/`PARTIALLY_DELIVERED` holatlarni (shu jumladan `CONFIRMED` yuklamali buyurtmalarda `VanStock` orqali va mahsulotning o'z ombori bo'yicha) yakunlaydigan qilindi; `TakenTab` muvaffaqiyatli tasdiqdan so'ng `db.orders` ni yangilaydi va `Buyurtma tasdiqlandi` toastini chiqaradi.
+    - **Verifikatsiya:** Backend **686/686** pytest, `ruff` (o'zgartirilgan fayllarda) 0 xato; Frontend `tsc -b --noEmit` 0 xato, `eslint --max-warnings 0` 0 ogohlantirish, Vitest **66/66 fayl (277/277 test)**, `artifacts/meyfu-app/` 1:1 sinxron.
+
+33. **Yuklama Hujjatida «Dona narxi» Ustuni (`pdf.py`, `DocumentModal.tsx`):**
+    - `backend/apps/warehouse/pdf.py` (`loading_to_pdf`): jadvalga `"Dona narxi"` ustuni (`item.price / pack_qty`) qo'shildi va ustun kengliklari (`180 mm`) muvozanatlandi.
+    - `frontend/src/admin/documents/DocumentModal.tsx`: yuklama ko'rish modaliga `'Ichidagi soni'`, `'Narx'`, `'Dona narxi'` (`price / pack_quantity`) va `'Summa'` ustunlari qo'shildi (`DocumentModal.test.tsx`, `test_loading.py`).
+
+34. **Kunni Yopganda «Qo'limdagi pul» Darhol 0 Bo'lishi Tuzatildi (`wallet`, `dayclose`, `DayCloseWizard.tsx`):**
+    - `backend/apps/wallet/views.py` (`_pending_handover_total`, `WalletViewSet.my`) va `serializers.py`: `live_balance = wallet.balance - pending_expenses - pending_handover` qilindi (`pending_handover_amount` ham qaytariladi), shu sababli tarqatuvchi kunni yopishi bilanoq («Tasdiq kutilmoqda» holatida ham) «Qo'limdagi pul» `0` bo'ladi va admin tasdiqlagach ikki marta ayirilmaydi.
+    - `backend/apps/dayclose/services/close.py`: `submit_day_close` `distributor_{id}` kanaliga `wallet.updated` yuboradi; `DayCloseWizard.tsx` va `DayClosePage.tsx` `onSuccess` da `['wallet']` keshini invalidatsiya qiladi; `WalletCard.tsx` va `WalletPage.tsx` kun yopishda topshirilgan naqd qatorini ko'rsatadi (`test_dayclose.py`, `wallet.test.tsx`, `DayCloseWizard.test.tsx`).
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)
 
-- **Backend:** Python 3.12 · Django 5.2 · DRF · Channels/Daphne (`backend/`) — lokal port: `8001` (`664/664` pytest)
-- **Frontend (GitHub source):** React 18 · TypeScript · Vite · Dexie PWA (`frontend/`) — lokal port: `5173` (`63` test fayli / `261` test)
-- **Deployable Web Artifact (Replit):** `artifacts/meyfu-app/` — `bash scripts/sync-frontend.sh --check` orqali `frontend/{src,public}` bilan 1:1 paritet (`63` test fayli / `261` test)
+- **Backend:** Python 3.12 · Django 5.2 · DRF · Channels/Daphne (`backend/`) — lokal port: `8001` (`686/686` pytest)
+- **Frontend (GitHub source):** React 18 · TypeScript · Vite · Dexie PWA (`frontend/`) — lokal port: `5173` (`66` test fayli / `277` test)
+- **Deployable Web Artifact (Replit):** `artifacts/meyfu-app/` — `bash scripts/sync-frontend.sh --check` orqali `frontend/{src,public}` bilan 1:1 paritet (`66` test fayli / `277` test)
 - **Ishga tushirish:** `./start.sh` (Backend `:8001`, Frontend `:5173`) yoki pnpm workspace skriptlari
 - **Bilimlar grafi:** `graphify-out/` (kod o'zgarganda `graphify update .` bilan yangilanadi)
 

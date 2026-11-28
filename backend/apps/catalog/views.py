@@ -56,6 +56,8 @@ from .serializers import (
     BranchPriceSerializer,
     BrandSerializer,
     CategorySerializer,
+    ProductAssignWarehouseResultSerializer,
+    ProductAssignWarehouseSerializer,
     ProductBulkResultSerializer,
     ProductBulkSerializer,
     ProductImagePatchSerializer,
@@ -105,7 +107,7 @@ class UnitViewSet(BaseModelViewSet):
 
 
 class ProductViewSet(BaseModelViewSet):
-    queryset = Product.objects.select_related("category", "brand", "unit")
+    queryset = Product.objects.select_related("category", "brand", "unit", "warehouse")
     serializer_class = ProductSerializer
     write_roles = _CATALOG_WRITE
     central_only_write = True  # katalog va narx — faqat markaz (filial o'qiydi)
@@ -119,7 +121,8 @@ class ProductViewSet(BaseModelViewSet):
     )
     # Admin jadvalidagi har bir ustun (UI: shared/table)
     ordering_fields = (
-        "name", "sku", "category__name", "cost_price", "retail_price", "wholesale_price", "min_price",
+        "name", "sku", "category__name", "warehouse__name",
+        "cost_price", "retail_price", "wholesale_price", "min_price",
         "is_active", "created_at", "available_stock", "updated_at",
     )
 
@@ -159,6 +162,7 @@ class ProductViewSet(BaseModelViewSet):
         "images": _CATALOG_WRITE,
         "image_detail": _CATALOG_WRITE,
         "bulk": _CATALOG_WRITE,
+        "assign_warehouse": (*_CATALOG_WRITE, Role.WAREHOUSE),
         "export": (*_CATALOG_WRITE, Role.ACCOUNTANT),
         "import_excel": _CATALOG_WRITE,
         "import_template": _CATALOG_WRITE,
@@ -329,6 +333,41 @@ class ProductViewSet(BaseModelViewSet):
         return ok(ProductBulkResultSerializer(result).data)
 
     @extend_schema(
+        summary="Mahsulotlarni ombor bo'yicha ajratish",
+        request=ProductAssignWarehouseSerializer,
+        responses={200: ProductAssignWarehouseResultSerializer},
+    )
+    @action(detail=False, methods=["post"], url_path="assign-warehouse")
+    @transaction.atomic
+    def assign_warehouse(self, request: Request) -> Response:
+        serializer = ProductAssignWarehouseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+        warehouse = serializer.validated_data["warehouse"]
+        updated = Product.objects.filter(id__in=ids).update(
+            warehouse=warehouse,
+            updated_at=timezone.now(),
+        )
+        write_audit(
+            request,
+            "product.assign_warehouse",
+            warehouse or request.user,
+            {
+                "warehouse_id": str(warehouse.id) if warehouse else None,
+                "warehouse_name": warehouse.name if warehouse else None,
+                "requested": len(ids),
+                "updated": updated,
+            },
+        )
+        result = {
+            "warehouse": warehouse.id if warehouse else None,
+            "warehouse_name": warehouse.name if warehouse else None,
+            "requested": len(ids),
+            "updated": updated,
+        }
+        return ok(ProductAssignWarehouseResultSerializer(result).data)
+
+    @extend_schema(
         summary="Mahsulotlar ro'yxatini XLSX eksport qilish",
         responses={200: OpenApiResponse(
             response=OpenApiTypes.BINARY, description="Excel (.xlsx) fayl."
@@ -342,7 +381,7 @@ class ProductViewSet(BaseModelViewSet):
 
         headers = [
             "№", "Kategoriya", "Mahsulot nomi", "SKU", "Shtrix-kod", "Brend", "Holat",
-            "Tannarx", "Jami qoldiq", "Mavjud qoldiq", "Zaxira holati",
+            "Tannarx", "Jami qoldiq", "Mavjud qoldiq", "Zaxira holati", "Ombor",
         ]
         stock_labels = {"ok": "Yetarli", "low": "Kam", "out": "Tugagan"}
         rows: list[list[object]] = [headers]
@@ -359,6 +398,7 @@ class ProductViewSet(BaseModelViewSet):
                 float(product.total_stock),
                 float(product.available_stock),
                 stock_labels.get(product.stock_status, _safe_cell(product.stock_status)),
+                _safe_cell(product.warehouse.name if product.warehouse_id else ""),
             ])
 
         wb = Workbook()

@@ -10,13 +10,24 @@ class ProductFilter(filters.FilterSet):
     retail_price_min = filters.NumberFilter(field_name="retail_price", lookup_expr="gte")
     retail_price_max = filters.NumberFilter(field_name="retail_price", lookup_expr="lte")
     warehouse = filters.UUIDFilter(method="filter_warehouse")
+    unassigned = filters.BooleanFilter(method="filter_unassigned")
     stock_status = filters.ChoiceFilter(
         choices=(("out", "out"), ("low", "low"), ("ok", "ok")),
         method="filter_stock_status",
     )
 
     def filter_warehouse(self, queryset, name, value):
-        return queryset.filter(stocks__warehouse_id=value, stocks__is_deleted=False).distinct()
+        return queryset.filter(
+            models.Q(warehouse_id=value)
+            | models.Q(
+                warehouse__isnull=True,
+                stocks__warehouse_id=value,
+                stocks__is_deleted=False,
+            )
+        ).distinct()
+
+    def filter_unassigned(self, queryset, name, value):
+        return queryset.filter(warehouse__isnull=value)
 
     def filter_stock_status(self, queryset, name, value):
         if value == "out":

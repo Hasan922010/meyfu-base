@@ -284,7 +284,7 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
     ]))
     elements.append(hdr_table)
 
-    header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx", "Summa"]
+    header = ["№", "Nomi", "Miqdor", "Ichidagi soni", "Narx", "Dona narxi", "Summa"]
     data = [[Paragraph(h, st["th"]) for h in header]]
     for idx, item in enumerate(
         loading.items.select_related("product", "product__unit").all(), start=1
@@ -293,16 +293,18 @@ def loading_to_pdf(loading, *, with_stamp: bool = False,
         unit_label = _product_unit_label(item.product)
         qty_label = f"{_int_qty(item.quantity)} {unit_label}"
         pack_info = _int_qty(pack_qty) if pack_qty > 1 else "1"
+        unit_price = item.price / pack_qty if pack_qty > 0 else item.price
         data.append([
             Paragraph(str(idx), st["cell"]),
             Paragraph(_esc(item.product.name), st["cell"]),
             Paragraph(_esc(qty_label), st["cellr"]),
             Paragraph(_esc(pack_info), st["cellr"]),
             Paragraph(_esc(_money(item.price)), st["cellr"]),
+            Paragraph(_esc(_money(unit_price)), st["cellr"]),
             Paragraph(_esc(_money(item.amount)), st["cellr"]),
         ])
 
-    col_widths = [9 * mm, 66 * mm, 28 * mm, 24 * mm, 26 * mm, 27 * mm]
+    col_widths = [8 * mm, 52 * mm, 24 * mm, 22 * mm, 24 * mm, 24 * mm, 26 * mm]
     table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4f46e5")),

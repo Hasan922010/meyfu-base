@@ -19,6 +19,7 @@ import { useAuthStore } from '@/shared/store/authStore';
 import { dateTimeShort, formatOrderQty, money } from '@/shared/lib/format';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { paymentLabel } from '@/shared/lib/labels';
+import { useToast } from '@/shared/lib/toast';
 
 type Tab = 'taken' | 'deliver';
 type PayType = 'NAQD' | 'PLASTIK' | 'QARZ';
@@ -179,6 +180,7 @@ function DeliverTab({
 
 function TakenTab(): ReactElement {
   const qc = useQueryClient();
+  const toast = useToast();
   const { setCancelling, dialog } = useCancelOrder();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [givingOrder, setGivingOrder] = useState<{
@@ -188,12 +190,26 @@ function TakenTab(): ReactElement {
     total_amount: string;
   } | null>(null);
   const giveMut = useMutation({
-    mutationFn: (id: string) => ordersApi.giveOnDebt(id),
-    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      const updated = await ordersApi.giveOnDebt(id);
+      await db.orders.update(id, {
+        status: updated.status,
+        status_display: updated.status_display ?? 'Yetkazildi',
+      });
+      return updated;
+    },
+    onSuccess: (updated) => {
       setGivingOrder(null);
+      toast.push({
+        kind: 'success',
+        title: 'Buyurtma tasdiqlandi',
+        body: `${updated.number ?? ''} yetkazildi deb tasdiqlandi`.trim(),
+      });
       void qc.invalidateQueries({ queryKey: ['orders', 'my-to-take'] });
+      void qc.invalidateQueries({ queryKey: ['orders'] });
       void qc.invalidateQueries({ queryKey: ['clients'] });
       void qc.invalidateQueries({ queryKey: ['debts'] });
+      void qc.invalidateQueries({ queryKey: ['stock'] });
     },
   });
   const q = useQuery({

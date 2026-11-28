@@ -40,6 +40,8 @@ export interface Product {
   brand_name: string | null;
   unit: string;
   unit_name: string;
+  warehouse?: string | null;
+  warehouse_name?: string | null;
   image: string | null;
   images: ProductImage[];
   image_thumb: string | null;
@@ -75,6 +77,7 @@ export interface ProductInput {
   category: string;
   brand?: string | null;
   unit: string;
+  warehouse?: string | null;
   cost_price?: string;
   wholesale_price?: string;
   retail_price?: string;

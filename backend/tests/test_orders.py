@@ -883,22 +883,30 @@ def test_give_order_on_debt_allows_unset_zero_debt_limit(van_stocked):
 
 
 @pytest.mark.django_db
-def test_give_order_on_debt_rejects_loaded_order(van_stocked):
-    """Yuklamaga olingan (LOADED) buyurtmani give-on-debt bilan yakunlab bo'lmaydi."""
+def test_give_order_on_debt_completes_loaded_and_default_order_taker(van_stocked):
+    """LOADED va standart ORDER_TAKER buyurtmalari ham give-on-debt bosilganda tasdiqlanadi (DELIVERED)."""
     from rest_framework.test import APIClient
 
     from apps.orders.constants import OrderStatus
     from apps.orders.models import Order
     from apps.users.models import User
+    from apps.warehouse.constants import MovementType
+    from apps.warehouse.services.stock import apply_movement
 
+    # Standart ORDER_TAKER yaratilganda can_sell_on_debt=True bo'lishi kerak
     agent = User.objects.create_user(
         phone="+998907770096", password="pass12345", full_name="Agent 96",
-        role="ORDER_TAKER", can_sell_on_debt=True,
+        role="ORDER_TAKER",
     )
+    assert agent.can_sell_on_debt is True
     agent_api = APIClient()
     agent_api.force_authenticate(user=agent)
 
     client, product = van_stocked["client"], _product(van_stocked["product"])
+    apply_movement(
+        warehouse=van_stocked["warehouse"], product=product,
+        quantity=Decimal("5"), movement_type=MovementType.IN_PURCHASE, user=agent,
+    )
     client.assigned_to = agent
     client.save(update_fields=["assigned_to"])
 
@@ -917,7 +925,14 @@ def test_give_order_on_debt_rejects_loaded_order(van_stocked):
     Order.objects.filter(pk=oid).update(status=OrderStatus.LOADED)
 
     r_loaded = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
-    assert r_loaded.status_code == 409
+    assert r_loaded.status_code == 200, r_loaded.data
+    assert r_loaded.data["data"]["status"] == OrderStatus.DELIVERED
+    client.refresh_from_db()
+    assert client.current_debt == Decimal("25000.00")
+
+    # DELIVERED buyurtma qayta berilsa 409 qaytaradi
+    r_again = agent_api.post(f"/api/v1/orders/{oid}/give-on-debt/")
+    assert r_again.status_code == 409
 
 
 @pytest.mark.django_db

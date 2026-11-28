@@ -235,16 +235,32 @@ def test_warehouse_operator_can_confirm_own_loading(stocked):
 
 @pytest.mark.django_db
 def test_loading_to_pdf_uses_pack_columns_without_images(stocked, distributor):
-    from apps.warehouse.pdf import loading_to_pdf
+    from unittest.mock import patch
+
+    from apps.warehouse.pdf import Paragraph, loading_to_pdf
 
     wh, prod = stocked["warehouse"], stocked["product"]
     prod.pack_quantity = Decimal("12.000")
     prod.package_type = "karopka"
     prod.save(update_fields=["pack_quantity", "package_type"])
     loading = _make_loading(distributor, wh, prod, qty="24.000")
+    item = loading.items.first()
+    assert item is not None
+    item.price = Decimal("120000.00")
+    item.amount = Decimal("2880000.00")
+    item.save(update_fields=["price", "amount"])
 
-    pdf_bytes = loading_to_pdf(loading)
+    rendered_texts: list[str] = []
+
+    def _capture(text, *args, **kwargs):
+        rendered_texts.append(str(text))
+        return Paragraph(text, *args, **kwargs)
+
+    with patch("apps.warehouse.pdf.Paragraph", side_effect=_capture):
+        pdf_bytes = loading_to_pdf(loading)
     assert pdf_bytes.startswith(b"%PDF")
+    assert "Dona narxi" in rendered_texts
+    assert "10 000" in rendered_texts
 
     # Qoldiq qadoqqa bo'linmasa ham (masalan, 40 dona / 24) cheksiz kasr chiqmasin
     loading_rem = _make_loading(distributor, wh, prod, qty="20.000")

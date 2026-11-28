@@ -15,6 +15,7 @@ export function WalletCard(): ReactElement {
   });
 
   const pending = Number(wallet.data?.pending_expense_amount ?? 0);
+  const pendingHandover = Number(wallet.data?.pending_handover_amount ?? 0);
 
   return (
     <Link
@@ -62,6 +63,11 @@ export function WalletCard(): ReactElement {
       {pending > 0 && (
         <div className="mt-1 text-xs opacity-80">
           {money(wallet.data?.pending_expense_amount ?? '0')} tasdiqlanmagan xarajat
+        </div>
+      )}
+      {pendingHandover > 0 && (
+        <div className="mt-1 text-xs opacity-80">
+          {money(wallet.data?.pending_handover_amount ?? '0')} kun yopishda topshirildi
         </div>
       )}
       {wallet.data && Number(wallet.data.balance) < 0 && (

@@ -11,6 +11,7 @@ export function useProductFilters() {
   const pageSize = [20, 50, 100].includes(parsedPageSize) ? parsedPageSize : 20;
   const category = params.get('category') || '';
   const brand = params.get('brand') || '';
+  const warehouse = params.get('warehouse') || '';
   const isActive = params.get('is_active') || '';
   const stockStatus = params.get('stock_status') || '';
   const ordering = params.get('ordering') || '';
@@ -49,6 +50,7 @@ export function useProductFilters() {
       page_size: pageSize,
       category,
       brand,
+      warehouse,
       is_active: isActive,
       stock_status: stockStatus,
       ordering,

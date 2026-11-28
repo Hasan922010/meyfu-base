@@ -3,12 +3,14 @@ import { useState, type ReactElement } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { catalogApi } from '@/shared/api/catalog';
+import { warehouseApi } from '@/shared/api/warehouse';
 import { AmountInput } from '@/shared/components/AmountInput';
 import { applyServerErrors } from '@/shared/lib/formErrors';
 import { plainQty, productUnitLabel } from '@/shared/lib/format';
 import { useToast } from '@/shared/lib/toast';
 import { useAuthStore } from '@/shared/store/authStore';
 import type { Brand, Category, Product, ProductInput, Unit } from '@/shared/types/catalog';
+import type { Warehouse } from '@/shared/types/warehouse';
 
 import { ProductImages } from './ProductImages';
 
@@ -40,6 +42,10 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
     queryKey: ['products-bonus-select'],
     queryFn: () => catalogApi.products({ page_size: 200 }),
   });
+  const warehouses = useQuery({
+    queryKey: ['warehouses', 'all'],
+    queryFn: () => warehouseApi.warehouses({ page_size: 200 }),
+  });
 
   // Forma ma'lumotnomalar kelgandan keyin mount qilinadi: aks holda select'da hali
   // option yo'qligida defaultValue qo'yilmay qoladi va birlik/brend bo'sh ko'rinadi.
@@ -60,6 +66,7 @@ export function ProductForm({ product, onDone }: Props): ReactElement {
       categories={categories.data.results}
       units={units.data.results}
       brands={brands.data.results}
+      warehouses={warehouses.data?.results ?? []}
       otherProducts={otherProducts.data?.results ?? []}
     />
   );
@@ -69,6 +76,7 @@ interface FieldsProps extends Props {
   categories: Category[];
   units: Unit[];
   brands: Brand[];
+  warehouses: Warehouse[];
   otherProducts: Product[];
 }
 
@@ -78,6 +86,7 @@ function ProductFormFields({
   categories,
   units,
   brands,
+  warehouses,
   otherProducts,
 }: FieldsProps): ReactElement {
   const qc = useQueryClient();
@@ -95,6 +104,7 @@ function ProductFormFields({
           category: product.category,
           brand: product.brand ?? '',
           unit: product.unit,
+          warehouse: product.warehouse ?? '',
           cost_price: product.cost_price,
           pack_quantity: plainQty(product.pack_quantity),
           package_type: product.package_type || '',
@@ -119,6 +129,7 @@ function ProductFormFields({
           bonus_reward_qty: '0',
           bonus_product: '',
           track_variance: false,
+          warehouse: '',
         },
   });
 
@@ -127,6 +138,7 @@ function ProductFormFields({
       const body: ProductInput = {
         ...values,
         brand: values.brand || null,
+        warehouse: values.warehouse || null,
         bonus_product: values.bonus_product || null,
       };
       if (product && !canEditPrice) {
@@ -208,13 +220,24 @@ function ProductFormFields({
             <span className="text-xs text-danger">{formState.errors.unit.message}</span>
           )}
         </label>
-        <label className="col-span-2 block space-y-1">
+        <label className="block space-y-1">
           <span className="text-sm font-medium">Brend</span>
           <select className="field" {...register('brand')}>
             <option value="">—</option>
             {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Ombor</span>
+          <select className="field" {...register('warehouse')}>
+            <option value="">Biriktirilmagan</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
               </option>
             ))}
           </select>

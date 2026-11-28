@@ -387,3 +387,42 @@ def test_dayclose_my_today_includes_card_debt_collection(auth_api, van_stocked):
     assert p["debt_collected_amount"] == "100000.00"
     assert p["debt_collected_card_amount"] == "50000.00"
     assert p["cash_expected"] == "100000.00"
+
+
+@pytest.mark.django_db
+def test_wallet_live_balance_becomes_zero_on_day_close_submit_and_confirm(
+    auth_api, admin_api, van_stocked
+):
+    """Kun yopish yuborilishi bilanoq Qo'limdagi pul (live_balance) 0 bo'ladi va tasdiqdan keyin ham 0 qoladi."""
+    client, product = van_stocked["client"], van_stocked["product"]
+    assert _sale(auth_api, client, product, "100", price="27000").status_code == 201
+
+    w_before = auth_api.get("/api/v1/wallet/my/").data["data"]
+    assert w_before["live_balance"] == "2700000.00"
+    assert w_before["pending_handover_amount"] == "0.00"
+
+    submit = auth_api.post(
+        "/api/v1/day-close/submit/",
+        {
+            "warehouse": str(van_stocked["warehouse"].id),
+            "cash_handed": "2700000",
+            "items": [{"product": str(product.id), "quantity": "400", "condition": "GOOD"}],
+        },
+        format="json",
+    )
+    assert submit.status_code == 201, submit.data
+    dc_id = submit.data["data"]["id"]
+
+    # Kunni yopish bosilgandan darhol keyin (tasdiq kutilayotganida ham) qo'limdagi pul 0 bo'lishi kerak
+    w_pending = auth_api.get("/api/v1/wallet/my/").data["data"]
+    assert w_pending["balance"] == "2700000.00"
+    assert w_pending["pending_handover_amount"] == "2700000.00"
+    assert w_pending["live_balance"] == "0.00"
+
+    # Admin tasdiqlagandan keyin ikki marta ayrilib manfiy bo'lib qolmasligi kerak
+    assert admin_api.post(f"/api/v1/day-close/{dc_id}/confirm/").status_code == 200
+    w_after = auth_api.get("/api/v1/wallet/my/").data["data"]
+    assert w_after["balance"] == "0.00"
+    assert w_after["pending_handover_amount"] == "0.00"
+    assert w_after["live_balance"] == "0.00"
+

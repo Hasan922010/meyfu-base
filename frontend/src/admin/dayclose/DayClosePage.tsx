@@ -32,6 +32,7 @@ export function DayClosePage(): ReactElement {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['day-closes'] });
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
+      void qc.invalidateQueries({ queryKey: ['wallet'] });
       setDetail(null);
     },
   });

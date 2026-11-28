@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { AssignProductsTab } from './AssignProductsTab';
 import { InventoryTab } from './InventoryTab';
 import { LoadingsTab } from './LoadingsTab';
 import { PurchasesTab } from './PurchasesTab';
@@ -8,7 +9,7 @@ import { ReorderTab } from './ReorderTab';
 import { StockTab } from './StockTab';
 import { TransfersTab } from './TransfersTab';
 
-type Tab = 'stock' | 'reorder' | 'purchases' | 'loadings' | 'transfers' | 'inventory';
+type Tab = 'stock' | 'reorder' | 'purchases' | 'loadings' | 'transfers' | 'inventory' | 'assign';
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'stock', label: 'Qoldiq' },
@@ -17,6 +18,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: 'loadings', label: 'Yuklamalar' },
   { id: 'transfers', label: "Ko'chirishlar (filiallarga)" },
   { id: 'inventory', label: 'Inventarizatsiya' },
+  { id: 'assign', label: "Mahsulotlarni ombor bo'yicha ajratish" },
 ];
 
 export function WarehousePage(): ReactElement {
@@ -55,6 +57,7 @@ export function WarehousePage(): ReactElement {
       {tab === 'loadings' && <LoadingsTab />}
       {tab === 'transfers' && <TransfersTab />}
       {tab === 'inventory' && <InventoryTab />}
+      {tab === 'assign' && <AssignProductsTab />}
     </div>
   );
 }

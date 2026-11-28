@@ -76,6 +76,14 @@ class Product(BaseModel):
         Unit, on_delete=models.PROTECT, related_name="products",
         verbose_name=_("o'lchov birligi"),
     )
+    warehouse = models.ForeignKey(
+        "warehouse.Warehouse",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        verbose_name=_("ombor"),
+    )
     image = models.ImageField(
         _("rasm"), upload_to="products/", null=True, blank=True
     )

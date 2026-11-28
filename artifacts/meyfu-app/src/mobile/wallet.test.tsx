@@ -73,4 +73,20 @@ describe('Hamyon xato holati (UX audit)', () => {
     expect(await screen.findAllByText("4 978 000 so'm")).not.toHaveLength(0);
     expect(screen.queryByText('Tasdiqlanmagan xarajat')).not.toBeInTheDocument();
   });
+
+  it('kun yopishda topshirilgan pul tasdiq kutilayotganda ham Qo‘limdagi pul 0 ko‘rinadi', async () => {
+    my.mockResolvedValue({
+      ...WALLET,
+      balance: '950000.00',
+      pending_handover_amount: '950000.00',
+      live_balance: '0.00',
+      card_amount: '0.00',
+      total_collected: '0.00',
+    });
+
+    renderWithClient(<WalletCard />);
+
+    expect(await screen.findAllByText("0 so'm")).not.toHaveLength(0);
+    expect(screen.getByText(/950 000 so'm kun yopishda topshirildi/)).toBeInTheDocument();
+  });
 });

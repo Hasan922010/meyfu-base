@@ -5153,6 +5153,10 @@ paths:
           * `low` - low
           * `ok` - ok
       - in: query
+        name: unassigned
+        schema:
+          type: boolean
+      - in: query
         name: unit
         schema:
           type: string
@@ -5405,6 +5409,10 @@ paths:
           * `low` - low
           * `ok` - ok
       - in: query
+        name: unassigned
+        schema:
+          type: boolean
+      - in: query
         name: unit
         schema:
           type: string
@@ -5591,6 +5599,10 @@ paths:
           * `low` - low
           * `ok` - ok
       - in: query
+        name: unassigned
+        schema:
+          type: boolean
+      - in: query
         name: unit
         schema:
           type: string
@@ -5637,6 +5649,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/products/assign-warehouse/:
+    post:
+      operationId: products_assign_warehouse_create
+      description: |-
+        `created_by` ni avtomatik to'ldiradi, rolga asoslangan ruxsatni qo'llaydi.
+
+        View'da `read_roles` / `write_roles` (yoki `allowed_roles`) belgilang.
+      summary: Mahsulotlarni ombor bo'yicha ajratish
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAssignWarehouseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductAssignWarehouseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductAssignWarehouseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAssignWarehouseResult'
           description: ''
   /api/v1/products/bulk/:
     post:
@@ -11339,9 +11382,8 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -11391,9 +11433,8 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -12630,9 +12671,8 @@ components:
           title: Litr narxi
         odometer:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
           nullable: true
           title: Odometr
         station_name:
@@ -12657,9 +12697,8 @@ components:
           title: Litr narxi
         odometer:
           type: integer
-          maximum: 9223372036854775807
+          maximum: 2147483647
           minimum: 0
-          format: int64
           nullable: true
           title: Odometr
         station_name:
@@ -15159,9 +15198,8 @@ components:
           title: Amal qiladi (gacha)
         priority:
           type: integer
-          maximum: 9223372036854775807
-          minimum: -9223372036854775808
-          format: int64
+          maximum: 2147483647
+          minimum: -2147483648
           title: Ustuvorlik
           description: Bir xil qamrovda kattasi yutadi
         is_active:
@@ -15366,6 +15404,11 @@ components:
           type: string
           format: uuid
           title: O'lchov birligi
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+          title: Ombor
         image:
           type: string
           format: binary
@@ -16237,6 +16280,15 @@ components:
         unit_name:
           type: string
           readOnly: true
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+          title: Ombor
+        warehouse_name:
+          type: string
+          readOnly: true
+          nullable: true
         image:
           type: string
           format: uri
@@ -16375,6 +16427,43 @@ components:
       - unit
       - unit_name
       - updated_at
+      - warehouse_name
+    ProductAssignWarehouseRequest:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Ko'pi bilan 500 ta mahsulot IDsi.
+          maxItems: 500
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - ids
+      - warehouse
+    ProductAssignWarehouseResult:
+      type: object
+      properties:
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+        warehouse_name:
+          type: string
+          nullable: true
+        requested:
+          type: integer
+        updated:
+          type: integer
+      required:
+      - requested
+      - updated
+      - warehouse
+      - warehouse_name
     ProductBulkRequest:
       type: object
       properties:
@@ -16487,6 +16576,12 @@ components:
         unit:
           type: string
           readOnly: true
+        warehouse:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          title: Ombor
         image:
           type: string
           format: uri
@@ -16561,6 +16656,7 @@ components:
       - sku
       - unit
       - updated_at
+      - warehouse
       - wholesale_price
     ProductPrice:
       type: object
@@ -16650,6 +16746,11 @@ components:
           type: string
           format: uuid
           title: O'lchov birligi
+        warehouse:
+          type: string
+          format: uuid
+          nullable: true
+          title: Ombor
         image:
           type: string
           format: binary
@@ -18786,6 +18887,11 @@ components:
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
+        pending_handover_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
         card_amount:
           type: string
           format: decimal
@@ -18814,6 +18920,7 @@ components:
       - id
       - live_balance
       - pending_expense_amount
+      - pending_handover_amount
       - total_collected
       - transfer_amount
       - updated_at

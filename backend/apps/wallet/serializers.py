@@ -46,6 +46,9 @@ class WalletSerializer(serializers.ModelSerializer):
     pending_expense_amount = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True
     )
+    pending_handover_amount = serializers.DecimalField(
+        max_digits=14, decimal_places=2, read_only=True, required=False
+    )
     card_amount = serializers.DecimalField(
         max_digits=14, decimal_places=2, read_only=True, required=False
     )
@@ -60,7 +63,7 @@ class WalletSerializer(serializers.ModelSerializer):
         model = DistributorWallet
         fields = (
             "id", "distributor", "distributor_name", "balance",
-            "live_balance", "pending_expense_amount",
+            "live_balance", "pending_expense_amount", "pending_handover_amount",
             "card_amount", "transfer_amount", "total_collected", "updated_at",
         )
         read_only_fields = fields

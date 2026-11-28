@@ -30,13 +30,14 @@ vi.mock('@/offline/outbox', () => ({
   unsentCount: () => Promise.resolve(0),
 }));
 
-function renderWithClient(ui: React.ReactElement): void {
+function renderWithClient(ui: React.ReactElement): QueryClient {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter>{ui}</MemoryRouter>
     </QueryClientProvider>,
   );
+  return client;
 }
 
 const TODAY_DATA = {
@@ -64,7 +65,8 @@ describe('DayCloseWizard — 3 Bosqichli Ergonomik Kun Yopish', () => {
   });
 
   it('3 bosqichli ko‘rsatkich, tovar qaytarish va naqd pul kiritish to‘liq ishlaydi', async () => {
-    renderWithClient(<DayCloseWizard />);
+    const qc = renderWithClient(<DayCloseWizard />);
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     // 1. 3 bosqichli ko'rsatkich ko'rinishi
     expect(await screen.findByRole('tablist', { name: 'Kun yopish bosqichlari' })).toBeInTheDocument();
@@ -129,7 +131,8 @@ describe('DayCloseWizard — 3 Bosqichli Ergonomik Kun Yopish', () => {
       );
     });
 
-    // 7. Muvaffaqiyatli yakunlangach "Kun yopildi" xabari ko'rinadi
+    // 7. Muvaffaqiyatli yakunlangach "Kun yopildi" xabari ko'rinadi va wallet keshi yangilanadi
     expect(await screen.findByText('Kun yopildi')).toBeInTheDocument();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['wallet'] });
   });
 });
