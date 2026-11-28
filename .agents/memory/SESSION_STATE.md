@@ -243,6 +243,11 @@
     - `backend/apps/wallet/views.py` (`_pending_handover_total`, `WalletViewSet.my`) va `serializers.py`: `live_balance = wallet.balance - pending_expenses - pending_handover` qilindi (`pending_handover_amount` ham qaytariladi), shu sababli tarqatuvchi kunni yopishi bilanoq («Tasdiq kutilmoqda» holatida ham) «Qo'limdagi pul» `0` bo'ladi va admin tasdiqlagach ikki marta ayirilmaydi.
     - `backend/apps/dayclose/services/close.py`: `submit_day_close` `distributor_{id}` kanaliga `wallet.updated` yuboradi; `DayCloseWizard.tsx` va `DayClosePage.tsx` `onSuccess` da `['wallet']` keshini invalidatsiya qiladi; `WalletCard.tsx` va `WalletPage.tsx` kun yopishda topshirilgan naqd qatorini ko'rsatadi (`test_dayclose.py`, `wallet.test.tsx`, `DayCloseWizard.test.tsx`).
 
+35. **Qarzdorlikda Xodim Bo'yicha Filtr, Mobil Mijozlar Qarzi Jami va Summani Guruhlab Yozish:**
+    - **Backend (`clients/models.py`, `reports/services/aggregates.py`, `reports/views.py`, `sales/views.py`):** `staff_clients_q()` helper qo'shildi; `GET /api/v1/reports/debt-aging/?staff=`, `GET /api/v1/debts/by-client/?staff=` va `GET /api/v1/debt-payments/?staff=` xodim mijozlari bo'yicha filtrlab jami qarzdorlikni hisoblaydi (`test_debt_aging_and_by_client_filter_by_staff`).
+    - **Admin va Mobil Admin (`DebtsPage.tsx`, `MobileAdminDebts.tsx`, `finance2.ts`):** «Xodim mijozlari» filtri va shu filtrga mos jami qarzdorlik kartochkalari qo'shildi (`DebtsPage.test.tsx`).
+    - **Mobil Profil va Guruhlab Yozish (`MyClientsPage.tsx`, `MobileHomePage.tsx`, `OrderTakerHomePage.tsx`, `AmountInput.tsx`):** `MyClientsPage` da «Mijozlarimdan jami qarzdorlik» kartochkasi va bosh sahifalarda qarzdorlik ko'rsatkichi qo'shildi; `AmountInput` da `1000000 -> 1 000 000` guruhlash paytida kursor pozitsiyasi saqlanadigan qilindi (`AmountInput.test.tsx`, `MyClientsPage.test.tsx`).
+
 ---
 
 ## 2. Joriy Texnik Holat (Current Environment & State)

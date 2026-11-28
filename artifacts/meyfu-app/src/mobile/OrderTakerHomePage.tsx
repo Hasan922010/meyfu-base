@@ -12,6 +12,7 @@ import {
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
+import { debtsApi } from '@/shared/api/debts';
 import { ordersApi } from '@/shared/api/orders';
 import { businessDateISO } from '@/shared/lib/businessDay';
 import { money } from '@/shared/lib/format';
@@ -29,6 +30,14 @@ export function OrderTakerHomePage(): ReactElement {
     queryKey: ['orders', 'my-to-take'],
     queryFn: () => ordersApi.myToTake(),
   });
+  const myDebts = useQuery({
+    queryKey: ['debts', 'my-summary'],
+    queryFn: () => debtsApi.byClient({ only_open: 1, page_size: 500 }),
+  });
+  const totalMyClientsDebt = (myDebts.data?.results ?? []).reduce(
+    (s, d) => s + Number(d.remaining || 0),
+    0,
+  );
 
   const today = businessDateISO();
   const todays = (orders.data ?? []).filter(
@@ -116,7 +125,7 @@ export function OrderTakerHomePage(): ReactElement {
                 Mijozlarim
               </span>
               <span className="block text-xs font-medium text-emerald-700/80 dark:text-emerald-300/80">
-                Do‘konlar va manzillar
+                {myDebts.data ? `Qarz: ${money(totalMyClientsDebt)}` : 'Do‘konlar va manzillar'}
               </span>
             </div>
           </Link>

@@ -143,6 +143,11 @@ export function MyClientsPage(): ReactElement {
     setPaySaved(false);
   }
 
+  const myDebtsSummary = useQuery({
+    queryKey: ['debts', 'my-summary'],
+    queryFn: () => debtsApi.byClient({ only_open: 1, page_size: 500 }),
+  });
+
   const query = useQuery({
     queryKey: ['clients', 'mine', search],
     queryFn: () =>
@@ -155,6 +160,12 @@ export function MyClientsPage(): ReactElement {
   });
 
   const rows = query.data?.results ?? [];
+  const totalMyClientsDebt = myDebtsSummary.data?.results
+    ? myDebtsSummary.data.results.reduce((s, d) => s + Number(d.remaining || 0), 0)
+    : rows.reduce((s, c) => s + Math.max(0, Number(c.current_debt || 0)), 0);
+  const debtorsCount = myDebtsSummary.data?.results
+    ? myDebtsSummary.data.results.length
+    : rows.filter((c) => Number(c.current_debt || 0) > 0).length;
 
   return (
     <div className="space-y-3">
@@ -167,6 +178,13 @@ export function MyClientsPage(): ReactElement {
         >
           <Plus size={16} aria-hidden /> Yangi mijoz
         </button>
+      </div>
+      <div className="flex items-center justify-between rounded-xl bg-white p-3.5 shadow-sm dark:bg-gray-900">
+        <div>
+          <div className="text-xs text-gray-500">Mijozlarimdan jami qarzdorlik</div>
+          <div className="text-xs text-gray-400">{debtorsCount} ta qarzdor mijoz</div>
+        </div>
+        <div className="text-lg font-extrabold text-danger">{money(totalMyClientsDebt)}</div>
       </div>
       <input
         className="field"

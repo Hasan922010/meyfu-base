@@ -2,6 +2,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 
 import { debtsApi } from '@/shared/api/debts';
+import { financeApi } from '@/shared/api/finance2';
+import { authApi } from '@/shared/api/users';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, money } from '@/shared/lib/format';
 
@@ -19,15 +21,30 @@ function normalizeDebtSearch(raw: string): string {
 }
 
 export function MobileAdminDebts(): ReactElement {
+  const [staff, setStaff] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const searchQuery = normalizeDebtSearch(search);
 
+  const staffQuery = useQuery({
+    queryKey: ['users', 'staff'],
+    queryFn: () => authApi.staff(),
+  });
+  const staffOptions = (staffQuery.data ?? []).filter((u) =>
+    ['DISTRIBUTOR', 'ORDER_TAKER', 'WAREHOUSE', 'BRANCH_MANAGER'].includes(u.role),
+  );
+
+  const aging = useQuery({
+    queryKey: ['debt-aging', { staff }],
+    queryFn: () => financeApi.debtAging(staff ? { staff } : undefined),
+  });
+
   const query = useQuery({
-    queryKey: ['admin-debts-m', 'by-client', { status, search: searchQuery, page }],
+    queryKey: ['admin-debts-m', 'by-client', { staff, status, search: searchQuery, page }],
     queryFn: () =>
       debtsApi.byClient({
+        staff: staff || undefined,
         status: status || undefined,
         search: searchQuery || undefined,
         page,
@@ -42,6 +59,23 @@ export function MobileAdminDebts(): ReactElement {
   return (
     <div className="space-y-3">
       <h1 className="text-xl font-bold">Qarzdorlik</h1>
+
+      <select
+        className="field"
+        aria-label="Xodim mijozlari"
+        value={staff}
+        onChange={(e) => {
+          setStaff(e.target.value);
+          setPage(1);
+        }}
+      >
+        <option value="">Barcha xodimlar</option>
+        {staffOptions.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.full_name}
+          </option>
+        ))}
+      </select>
 
       <input
         className="field"
@@ -78,10 +112,19 @@ export function MobileAdminDebts(): ReactElement {
         ))}
       </div>
 
-      {rows.length > 0 && (
+      {(aging.data || rows.length > 0) && (
         <div className="rounded-xl bg-white p-3 text-sm shadow-sm dark:bg-gray-900">
-          Ushbu ro'yxatda jami:{' '}
-          <span className="font-bold">{money(totalRemaining)}</span>
+          <div>
+            Jami qarzdorlik:{' '}
+            <span className="font-bold">
+              {money(aging.data ? aging.data.total_outstanding : totalRemaining)}
+            </span>
+          </div>
+          {aging.data && Number(aging.data.overdue_total) > 0 && (
+            <div className="mt-0.5 text-xs text-danger">
+              Muddati o&apos;tgan: {money(aging.data.overdue_total)}
+            </div>
+          )}
         </div>
       )}
 

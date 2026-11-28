@@ -195,6 +195,56 @@ def test_debt_aging_report(manager_api, auth_api, van_stocked):
 
 
 @pytest.mark.django_db
+def test_debt_aging_and_by_client_filter_by_staff(
+    manager_api, auth_api, van_stocked
+):
+    """Xodim mijozlari bo'yicha filterlaganda jami qarzdorlik faqat o'sha xodim mijozlari bo'yicha hisoblanadi."""
+    from apps.clients.models import Client, Route
+    from apps.sales.models import Debt, Sale
+    from apps.users.models import User
+
+    dist1 = van_stocked["distributor"]
+    client1 = van_stocked["client"]
+    client1.assigned_to = dist1
+    client1.save(update_fields=["assigned_to"])
+
+    dist2 = User.objects.create_user(
+        phone="+998901239900", password="pass12345", full_name="Ikkinchi Xodim",
+        role="DISTRIBUTOR",
+    )
+    route2 = Route.objects.create(name="Ikkinchi marshrut", distributor=dist2)
+    client2 = Client.objects.create(name="Do'kon B", route=route2, phone="+998909998877")
+
+    _sale(auth_api, client1, van_stocked["product"], "10", price="27000",
+          payment="QARZ", due_date="2026-09-06")
+    sale2 = Sale.objects.create(
+        number="SAL-STAFF-2", date=timezone.localdate(), distributor=dist2,
+        client=client2, payment_type="QARZ", total_amount=Decimal("500000"),
+        paid_amount=Decimal("0"), debt_amount=Decimal("500000"), status="COMPLETED",
+    )
+    Debt.objects.create(
+        client=client2, sale=sale2, amount=Decimal("500000"),
+        remaining=Decimal("500000"), due_date=timezone.localdate(), status="ACTIVE",
+    )
+
+    all_resp = manager_api.get("/api/v1/reports/debt-aging/")
+    assert all_resp.status_code == 200
+    assert all_resp.data["data"]["total_outstanding"] == "770000.00"
+
+    dist1_resp = manager_api.get(f"/api/v1/reports/debt-aging/?staff={dist1.id}")
+    assert dist1_resp.status_code == 200
+    assert dist1_resp.data["data"]["total_outstanding"] == "270000.00"
+
+    dist2_resp = manager_api.get(f"/api/v1/reports/debt-aging/?staff={dist2.id}")
+    assert dist2_resp.status_code == 200
+    assert dist2_resp.data["data"]["total_outstanding"] == "500000.00"
+
+    by_client_resp = manager_api.get(f"/api/v1/debts/by-client/?staff={dist2.id}")
+    assert by_client_resp.status_code == 200
+    assert [r["client_name"] for r in by_client_resp.data["data"]["results"]] == ["Do'kon B"]
+
+
+@pytest.mark.django_db
 def test_profit_report(manager_api, admin_api, auth_api, van_stocked):
     client, product = van_stocked["client"], van_stocked["product"]
     # tannarx 20000, sotuv 27000 → foyda 7000/dona

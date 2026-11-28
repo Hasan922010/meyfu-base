@@ -6351,6 +6351,11 @@ paths:
     get:
       operationId: reports_debt_aging_retrieve
       summary: Qarzdorlik yoshi (aging)
+      parameters:
+      - in: query
+        name: staff
+        schema:
+          type: string
       tags:
       - reports
       security:

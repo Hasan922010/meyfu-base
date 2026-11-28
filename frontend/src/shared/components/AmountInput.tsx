@@ -1,4 +1,4 @@
-import { forwardRef, type ReactElement } from 'react';
+import { forwardRef, useLayoutEffect, useRef, type ReactElement } from 'react';
 
 import { amountDigits, groupThousands, numberToWordsUz } from '@/shared/lib/format';
 
@@ -35,12 +35,37 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(function AmountIn
   ref,
 ): ReactElement {
   const digits = amountDigits(String(value ?? ''));
+  const formatted = digits ? groupThousands(digits) : '';
   const n = Number(digits || 0);
+  const innerRef = useRef<HTMLInputElement | null>(null);
+  const caretDigitsRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = innerRef.current;
+    const digitsBefore = caretDigitsRef.current;
+    if (!el || digitsBefore === null || document.activeElement !== el) return;
+    caretDigitsRef.current = null;
+    let seen = 0;
+    let pos = formatted.length;
+    for (let i = 0; i < formatted.length; i++) {
+      if (/\d/.test(formatted[i]!)) seen++;
+      if (seen >= digitsBefore) {
+        pos = digitsBefore === 0 ? 0 : i + 1;
+        break;
+      }
+    }
+    el.setSelectionRange(pos, pos);
+  }, [formatted]);
+
   return (
     <div>
       <input
-        ref={ref}
-        className={`field ${className}`}
+        ref={(el) => {
+          innerRef.current = el;
+          if (typeof ref === 'function') ref(el);
+          else if (ref) ref.current = el;
+        }}
+        className={`field tabular-nums ${className}`}
         type="text"
         inputMode="numeric"
         autoComplete="off"
@@ -48,8 +73,12 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(function AmountIn
         placeholder={placeholder}
         disabled={disabled}
         autoFocus={autoFocus}
-        value={digits ? groupThousands(digits) : ''}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
+        value={formatted}
+        onChange={(e) => {
+          const caret = e.target.selectionStart ?? e.target.value.length;
+          caretDigitsRef.current = e.target.value.slice(0, caret).replace(/\D/g, '').length;
+          onChange(e.target.value.replace(/\D/g, ''));
+        }}
       />
       {showWords && n > 0 && (
         <p className="mt-1 text-xs text-gray-500 first-letter:uppercase">

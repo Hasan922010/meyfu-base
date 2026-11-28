@@ -12,9 +12,13 @@ const debtsApi = vi.hoisted(() => ({
 const financeApi = vi.hoisted(() => ({
   debtAging: vi.fn(),
 }));
+const authApi = vi.hoisted(() => ({
+  staff: vi.fn(),
+}));
 
 vi.mock('@/shared/api/debts', () => ({ debtsApi }));
 vi.mock('@/shared/api/finance2', () => ({ financeApi }));
+vi.mock('@/shared/api/users', () => ({ authApi }));
 vi.mock('@/shared/store/authStore', () => ({
   useAuthStore: (sel: (s: { user: { role: string; is_superuser: boolean } }) => unknown) =>
     sel({ user: { role: 'SUPER_ADMIN', is_superuser: true } }),
@@ -33,6 +37,10 @@ function renderPage(): void {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  authApi.staff.mockResolvedValue([
+    { id: 'u1', full_name: 'Ali Tarqatuvchi', role: 'DISTRIBUTOR' },
+    { id: 'u2', full_name: 'Vali Zakazchi', role: 'ORDER_TAKER' },
+  ]);
   financeApi.debtAging.mockResolvedValue({
     as_of: '2026-11-11',
     total_outstanding: '300000',
@@ -153,6 +161,31 @@ describe('DebtsPage — bir xil nomli mijozlarni telefon orqali farqlash', () =>
     await waitFor(() => {
       expect(debtsApi.cancelPayment).toHaveBeenCalledWith('pay-new');
     });
+  });
+
+  it("xodim mijozlari bo'yicha filterlaganda jami qarzdorlik qayta hisoblanadi", async () => {
+    financeApi.debtAging.mockImplementation((params?: { staff?: string }) =>
+      Promise.resolve({
+        as_of: '2026-11-11',
+        total_outstanding: params?.staff === 'u1' ? '100000' : '300000',
+        overdue_total: params?.staff === 'u1' ? '100000' : '300000',
+        buckets: { current: '0', d1_30: '100000', d31_60: '0', d61_90: '0', d90_plus: '0' },
+        overdue_clients: [],
+      }),
+    );
+
+    renderPage();
+
+    expect((await screen.findAllByText("300 000 so'm")).length).toBeGreaterThanOrEqual(1);
+    const staffSelect = await screen.findByLabelText('Xodim mijozlari');
+    await screen.findByRole('option', { name: 'Ali Tarqatuvchi' });
+
+    fireEvent.change(staffSelect, { target: { value: 'u1' } });
+
+    await waitFor(() => {
+      expect(financeApi.debtAging).toHaveBeenCalledWith({ staff: 'u1' });
+    });
+    expect(await screen.findAllByText("100 000 so'm")).not.toHaveLength(0);
   });
 });
 

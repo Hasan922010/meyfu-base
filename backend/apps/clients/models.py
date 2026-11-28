@@ -196,6 +196,30 @@ class ClientAdvance(BaseModel):
         return f"{self.client.name}: +{self.amount}"
 
 
+def staff_clients_q(staff, prefix: str = "") -> models.Q:
+    """Tanlangan xodim mijozlari filtri (hisobot va qarzdorlik filtrlari uchun)."""
+    from apps.users.constants import Role
+
+    role = getattr(staff, "role", None)
+    assigned_key = f"{prefix}assigned_to"
+    assigned_null = f"{prefix}assigned_to__isnull"
+    if role == Role.DISTRIBUTOR:
+        return models.Q(**{assigned_key: staff}) | (
+            models.Q(**{assigned_null: True})
+            & models.Q(**{f"{prefix}route__distributor": staff})
+        )
+    if role == Role.ORDER_TAKER:
+        return models.Q(**{assigned_key: staff}) | (
+            models.Q(**{assigned_null: True})
+            & models.Q(**{f"{prefix}route__order_taker": staff})
+        )
+    return (
+        models.Q(**{assigned_key: staff})
+        | models.Q(**{assigned_null: True, f"{prefix}route__distributor": staff})
+        | models.Q(**{assigned_null: True, f"{prefix}route__order_taker": staff})
+    )
+
+
 def own_clients_q(user, prefix: str = "") -> models.Q | None:
     """Maydon xodimiga ko'rinadigan mijozlar filtri; rahbar/buxgalter uchun `None`.
 

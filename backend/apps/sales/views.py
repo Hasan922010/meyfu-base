@@ -221,11 +221,24 @@ class DebtViewSet(BaseReadOnlyViewSet):
     ordering_fields = ("created_at", "due_date", "remaining")
 
     def get_queryset(self) -> QuerySet[Debt]:
-        from apps.clients.models import own_clients_q
+        from uuid import UUID
+
+        from apps.clients.models import own_clients_q, staff_clients_q
+        from apps.users.models import User
 
         qs = Debt.objects.select_related("client", "sale")
         own = own_clients_q(self.request.user, prefix="client__")
-        return qs.filter(own) if own is not None else qs
+        if own is not None:
+            return qs.filter(own)
+        staff_id = (self.request.query_params.get("staff") or "").strip()
+        if staff_id:
+            try:
+                UUID(staff_id)
+            except ValueError:
+                return qs.none()
+            staff_user = User.objects.filter(pk=staff_id).first()
+            return qs.filter(staff_clients_q(staff_user, prefix="client__")) if staff_user else qs.none()
+        return qs
 
     @extend_schema(summary="Marshrutimdagi qarzdorlar")
     @action(detail=False, methods=["get"], url_path="my")
@@ -365,9 +378,26 @@ class DebtPaymentViewSet(BaseModelViewSet):
     }
 
     def get_queryset(self) -> QuerySet[DebtPayment]:
+        from uuid import UUID
+
+        from apps.clients.models import staff_clients_q
+        from apps.users.models import User
+
         qs = DebtPayment.objects.select_related("debt__client", "collected_by")
         if _is_self_only(self.request.user):
             return qs.filter(collected_by=self.request.user)
+        staff_id = (self.request.query_params.get("staff") or "").strip()
+        if staff_id:
+            try:
+                UUID(staff_id)
+            except ValueError:
+                return qs.none()
+            staff_user = User.objects.filter(pk=staff_id).first()
+            return (
+                qs.filter(staff_clients_q(staff_user, prefix="debt__client__"))
+                if staff_user
+                else qs.none()
+            )
         return qs
 
     @extend_schema(request=DebtPaymentCreateSerializer, responses=DebtPaymentSerializer)

@@ -4,6 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { extractApiError } from '@/shared/api/client';
 import { debtsApi, type DebtPaymentItem } from '@/shared/api/debts';
 import { financeApi } from '@/shared/api/finance2';
+import { authApi } from '@/shared/api/users';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataState } from '@/shared/components/DataState';
 import { dateShort, dateTimeShort, money } from '@/shared/lib/format';
@@ -46,6 +47,7 @@ export function DebtsPage(): ReactElement {
   const qc = useQueryClient();
   const isSuperAdmin = useAuthStore((s) => s.user?.role === 'SUPER_ADMIN');
   const [tab, setTab] = useState<Tab>('overview');
+  const [staff, setStaff] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
@@ -53,15 +55,24 @@ export function DebtsPage(): ReactElement {
   const [cancelling, setCancelling] = useState<DebtPaymentItem | null>(null);
   const searchQuery = normalizeDebtSearch(search);
 
+  const staffQuery = useQuery({
+    queryKey: ['users', 'staff'],
+    queryFn: () => authApi.staff(),
+  });
+  const staffOptions = (staffQuery.data ?? []).filter((u) =>
+    ['DISTRIBUTOR', 'ORDER_TAKER', 'WAREHOUSE', 'BRANCH_MANAGER'].includes(u.role),
+  );
+
   const aging = useQuery({
-    queryKey: ['debt-aging'],
-    queryFn: () => financeApi.debtAging(),
-    enabled: tab === 'overview',
+    queryKey: ['debt-aging', { staff }],
+    queryFn: () => financeApi.debtAging(staff ? { staff } : undefined),
+    enabled: tab === 'overview' || tab === 'debts',
   });
   const list = useQuery({
-    queryKey: ['debts', 'by-client', { status, search: searchQuery, page }],
+    queryKey: ['debts', 'by-client', { staff, status, search: searchQuery, page }],
     queryFn: () =>
       debtsApi.byClient({
+        staff: staff || undefined,
         status: status || undefined,
         search: searchQuery || undefined,
         page,
@@ -71,9 +82,10 @@ export function DebtsPage(): ReactElement {
     enabled: tab === 'debts',
   });
   const payments = useQuery({
-    queryKey: ['debt-payments', { search: searchQuery, payPage }],
+    queryKey: ['debt-payments', { staff, search: searchQuery, payPage }],
     queryFn: () =>
       debtsApi.listPayments({
+        staff: staff || undefined,
         search: searchQuery || undefined,
         page: payPage,
         page_size: 25,
@@ -98,7 +110,29 @@ export function DebtsPage(): ReactElement {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Qarzdorlik</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Qarzdorlik</h1>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500">Xodim mijozlari:</span>
+          <select
+            className="field min-w-[200px]"
+            aria-label="Xodim mijozlari"
+            value={staff}
+            onChange={(e) => {
+              setStaff(e.target.value);
+              setPage(1);
+              setPayPage(1);
+            }}
+          >
+            <option value="">Barcha xodimlar</option>
+            {staffOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.full_name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
         {TABS.map((t) => (
@@ -184,8 +218,24 @@ export function DebtsPage(): ReactElement {
       )}
 
       {tab === 'debts' && (
-      <div>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+      <div className="space-y-3">
+        {aging.data && (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            <div className="rounded-xl bg-white p-3.5 shadow-sm dark:bg-gray-900">
+              <div className="text-xs text-gray-500">
+                {staff ? 'Tanlangan xodim bo‘yicha jami qarzdorlik' : 'Jami qarzdorlik'}
+              </div>
+              <div className="mt-1 text-lg font-bold">{money(aging.data.total_outstanding)}</div>
+            </div>
+            <div className="rounded-xl bg-white p-3.5 shadow-sm dark:bg-gray-900">
+              <div className="text-xs text-gray-500">Muddati o&apos;tgan</div>
+              <div className="mt-1 text-lg font-bold text-danger">
+                {money(aging.data.overdue_total)}
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">Barcha qarzlar</h2>
           <div className="flex flex-wrap items-center gap-2">
             <input

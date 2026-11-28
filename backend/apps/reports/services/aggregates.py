@@ -193,13 +193,17 @@ def sales_summary(
     ]
 
 
-def debt_aging(*, branch=None) -> dict:
+def debt_aging(*, branch=None, staff=None) -> dict:
     """Qarzdorlik yoshi (CLAUDE.md 10, 13). Muddat bo'yicha guruhlar."""
     today = business_date()
     active = in_branch(
         Debt.objects.exclude(status="PAID").select_related("client"), branch,
         "client__branch",
     )
+    if staff is not None:
+        from apps.clients.models import staff_clients_q
+
+        active = active.filter(staff_clients_q(staff, prefix="client__"))
 
     buckets = {
         "current": _ZERO,       # muddati kelmagan / muddat yo'q

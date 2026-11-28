@@ -132,10 +132,33 @@ class SalesSummaryView(_ReportView):
 
 
 class DebtAgingView(_ReportView):
-    @extend_schema(summary="Qarzdorlik yoshi (aging)", request=None,
-                   responses={200: dict})
+    @extend_schema(
+        summary="Qarzdorlik yoshi (aging)",
+        parameters=[OpenApiParameter("staff", str, required=False)],
+        request=None,
+        responses={200: dict},
+    )
     def get(self, request: Request) -> Response:
-        return ok(debt_aging(branch=self._scope(request)))
+        staff_user = None
+        staff_id = (request.query_params.get("staff") or "").strip()
+        if staff_id:
+            try:
+                UUID(staff_id)
+            except ValueError as exc:
+                raise ValidationError({"staff": "Noto'g'ri xodim ID."}) from exc
+            staff_user = get_user_model().objects.filter(pk=staff_id).first()
+            if staff_user is None:
+                return ok({
+                    "as_of": str(business_date()),
+                    "total_outstanding": "0.00",
+                    "overdue_total": "0.00",
+                    "buckets": {
+                        "current": "0.00", "d1_30": "0.00", "d31_60": "0.00",
+                        "d61_90": "0.00", "d90_plus": "0.00",
+                    },
+                    "overdue_clients": [],
+                })
+        return ok(debt_aging(branch=self._scope(request), staff=staff_user))
 
 
 class ProfitView(_ReportView):

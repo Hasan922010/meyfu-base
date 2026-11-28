@@ -15124,7 +15124,9 @@ export interface operations {
     };
     reports_debt_aging_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                staff?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

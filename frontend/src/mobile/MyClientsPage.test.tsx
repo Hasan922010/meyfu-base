@@ -152,8 +152,11 @@ describe('MyClientsPage — omborchi uchun ortiqcha to‘lov (avans)', () => {
     expect(screen.queryByText('Xato yuz berdi')).not.toBeInTheDocument();
   });
 
-  it("mijozlar ro'yxatidan mijozni tanlab qarz to'lovini qabul qiladi", async () => {
+  it("mijozlar ro'yxatidan mijozni tanlab qarz to'lovini qabul qiladi va summani guruhlab ko'rsatadi", async () => {
     renderPage();
+
+    expect(await screen.findByText('Mijozlarimdan jami qarzdorlik')).toBeInTheDocument();
+    expect(await screen.findByText("120 000 so'm")).toBeInTheDocument();
 
     fireEvent.click(await screen.findByRole('button', { name: "To'lov qabul qilish" }));
     expect(
@@ -164,7 +167,10 @@ describe('MyClientsPage — omborchi uchun ortiqcha to‘lov (avans)', () => {
     expect(amountInput).toHaveValue('120 000');
     fireEvent.change(amountInput, { target: { value: '' } });
     expect(amountInput).toHaveValue('');
+    fireEvent.change(amountInput, { target: { value: '1000000' } });
+    expect(amountInput).toHaveValue('1 000 000');
     fireEvent.change(amountInput, { target: { value: '50000' } });
+    expect(amountInput).toHaveValue('50 000');
 
     fireEvent.click(screen.getByRole('button', { name: "To'lovni qabul qilish" }));
 

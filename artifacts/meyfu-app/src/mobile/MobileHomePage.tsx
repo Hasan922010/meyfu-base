@@ -16,6 +16,7 @@ import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
 import { clientsApi } from '@/shared/api/clients';
+import { debtsApi } from '@/shared/api/debts';
 import { dayCloseApi } from '@/shared/api/reports';
 import { warehouseApi } from '@/shared/api/warehouse';
 import { money } from '@/shared/lib/format';
@@ -45,6 +46,14 @@ export function MobileHomePage(): ReactElement {
     queryFn: () => warehouseApi.myTodayLoadings(),
   });
   const awaitingLoadings = (loadings.data ?? []).filter((l) => l.status === 'SENT');
+  const myDebts = useQuery({
+    queryKey: ['debts', 'my-summary'],
+    queryFn: () => debtsApi.byClient({ only_open: 1, page_size: 500 }),
+  });
+  const totalMyClientsDebt = (myDebts.data?.results ?? []).reduce(
+    (s, d) => s + Number(d.remaining || 0),
+    0,
+  );
 
   return (
     <div className="space-y-4">
@@ -206,7 +215,7 @@ export function MobileHomePage(): ReactElement {
                 Barcha Mijozlar
               </span>
               <span className="block text-xs font-medium text-amber-700/80 dark:text-amber-300/80">
-                Qarzlar, avans, tashrif
+                {myDebts.data ? `Qarz: ${money(totalMyClientsDebt)}` : 'Qarzlar, avans, tashrif'}
               </span>
             </div>
           </Link>

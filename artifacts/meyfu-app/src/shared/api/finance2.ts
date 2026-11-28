@@ -68,7 +68,8 @@ export interface CompanyExpense {
 }
 
 export const financeApi = {
-  debtAging: () => retrieve<DebtAging>('/reports/debt-aging/'),
+  debtAging: (params?: { staff?: string }) =>
+    retrieve<DebtAging>(`/reports/debt-aging/${qs(params)}`),
   profit: (params?: QueryParams) => retrieve<ProfitReport>(`/reports/profit/${qs(params)}`),
 
   cashAccount: () => retrieve<CashAccount>('/cash-transactions/account/'),
